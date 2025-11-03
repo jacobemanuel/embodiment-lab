@@ -6,39 +6,60 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { scenarios } from "@/data/scenarios";
 import logo from "@/assets/logo-white.png";
+import { saveScenarioData } from "@/lib/studyData";
+import { useToast } from "@/hooks/use-toast";
 
 const ScenarioFeedback = () => {
   const { mode, scenarioId } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const [confidenceRating, setConfidenceRating] = useState(5);
   const [trustRating, setTrustRating] = useState(5);
   const [wasEngaging, setWasEngaging] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const scenario = scenarios.find(s => s.id === scenarioId);
   const scenarioIndex = scenarios.findIndex(s => s.id === scenarioId);
   const isLastScenario = scenarioIndex === scenarios.length - 1;
 
-  const handleContinue = () => {
-    // Save feedback
-    const sessionData = JSON.parse(sessionStorage.getItem('sessionData') || '{}');
-    const scenarios = sessionData.scenarios || [];
-    const lastScenario = scenarios[scenarios.length - 1];
-    
-    if (lastScenario) {
-      lastScenario.confidenceRating = confidenceRating;
-      lastScenario.trustRating = trustRating;
-      lastScenario.engagementRating = wasEngaging;
-    }
-    
-    sessionStorage.setItem('sessionData', JSON.stringify(sessionData));
-
-    // Navigate to next scenario or post-test
-    if (isLastScenario) {
-      navigate("/post-test");
-    } else {
-      const nextScenario = scenarios[scenarioIndex + 1];
-      navigate(`/scenario/${mode}/${nextScenario.id}`);
+  const handleContinue = async () => {
+    setIsLoading(true);
+    try {
+      const sessionId = sessionStorage.getItem('sessionId');
+      if (!sessionId) throw new Error('Session not found');
+      
+      // Get messages from sessionStorage
+      const scenarioMessages = JSON.parse(sessionStorage.getItem(`scenario-${scenarioId}`) || '[]');
+      
+      // Save to database
+      await saveScenarioData(
+        sessionId,
+        scenarioId!,
+        scenarioMessages,
+        confidenceRating,
+        trustRating,
+        wasEngaging
+      );
+      
+      // Clean up this scenario's messages
+      sessionStorage.removeItem(`scenario-${scenarioId}`);
+      
+      // Navigate to next scenario or post-test
+      if (isLastScenario) {
+        navigate("/post-test");
+      } else {
+        const nextScenario = scenarios[scenarioIndex + 1];
+        navigate(`/scenario/${mode}/${nextScenario.id}`);
+      }
+    } catch (error) {
+      console.error('Error saving scenario feedback:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save your feedback. Please try again.",
+        variant: "destructive"
+      });
+      setIsLoading(false);
     }
   };
 
@@ -105,8 +126,14 @@ const ScenarioFeedback = () => {
             size="lg"
             className="w-full"
             onClick={handleContinue}
+            disabled={isLoading}
           >
-            {isLastScenario ? "Continue to Post-Test" : "Continue to Next Scenario"}
+            {isLoading 
+              ? "Saving..." 
+              : isLastScenario 
+                ? "Continue to Post-Test" 
+                : "Continue to Next Scenario"
+            }
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">

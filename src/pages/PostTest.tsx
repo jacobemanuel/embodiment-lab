@@ -5,27 +5,38 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import logo from "@/assets/logo-white.png";
 import { postTestQuestions } from "@/data/questions";
+import { savePostTestResponses, completeStudySession } from "@/lib/studyData";
+import { useToast } from "@/hooks/use-toast";
 
 const PostTest = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [responses, setResponses] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const allQuestionsAnswered = postTestQuestions.every(q => responses[q.id]);
   const progress = Object.keys(responses).length / postTestQuestions.length * 100;
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (allQuestionsAnswered) {
-      // Save post-test data
-      const sessionData = JSON.parse(sessionStorage.getItem('sessionData') || '{}');
-      sessionData.postTest = Object.entries(responses).map(([questionId, answer]) => ({
-        questionId,
-        answer
-      }));
-      sessionData.completedAt = Date.now();
-      
-      sessionStorage.setItem('sessionData', JSON.stringify(sessionData));
-      
-      navigate("/completion");
+      setIsLoading(true);
+      try {
+        const sessionId = sessionStorage.getItem('sessionId');
+        if (!sessionId) throw new Error('Session not found');
+        
+        await savePostTestResponses(sessionId, responses);
+        await completeStudySession(sessionId);
+        
+        navigate("/completion");
+      } catch (error) {
+        console.error('Error completing study:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save your responses. Please try again.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+      }
     }
   };
 
@@ -98,9 +109,14 @@ const PostTest = () => {
               size="lg"
               className="w-full"
               onClick={handleComplete}
-              disabled={!allQuestionsAnswered}
+              disabled={!allQuestionsAnswered || isLoading}
             >
-              {allQuestionsAnswered ? "Complete Study" : `Answer all questions to continue (${Object.keys(responses).length}/${postTestQuestions.length})`}
+              {isLoading 
+                ? "Saving..." 
+                : allQuestionsAnswered 
+                  ? "Complete Study" 
+                  : `Answer all questions to continue (${Object.keys(responses).length}/${postTestQuestions.length})`
+              }
             </Button>
           </div>
         </div>

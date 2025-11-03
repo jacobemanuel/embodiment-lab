@@ -14,7 +14,208 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      demographics: {
+        Row: {
+          age_range: string | null
+          ai_experience: string | null
+          created_at: string
+          education: string | null
+          id: string
+          session_id: string
+        }
+        Insert: {
+          age_range?: string | null
+          ai_experience?: string | null
+          created_at?: string
+          education?: string | null
+          id?: string
+          session_id: string
+        }
+        Update: {
+          age_range?: string | null
+          ai_experience?: string | null
+          created_at?: string
+          education?: string | null
+          id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demographics_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "study_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dialogue_turns: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          scenario_id: string
+          timestamp: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          scenario_id: string
+          timestamp?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          scenario_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialogue_turns_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_test_responses: {
+        Row: {
+          answer: string
+          created_at: string
+          id: string
+          question_id: string
+          session_id: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          id?: string
+          question_id: string
+          session_id: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_test_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "study_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pre_test_responses: {
+        Row: {
+          answer: string
+          created_at: string
+          id: string
+          question_id: string
+          session_id: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          id?: string
+          question_id: string
+          session_id: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_test_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "study_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scenarios: {
+        Row: {
+          completed_at: string
+          confidence_rating: number
+          created_at: string
+          engagement_rating: boolean
+          id: string
+          scenario_id: string
+          session_id: string
+          trust_rating: number
+        }
+        Insert: {
+          completed_at?: string
+          confidence_rating: number
+          created_at?: string
+          engagement_rating: boolean
+          id?: string
+          scenario_id: string
+          session_id: string
+          trust_rating: number
+        }
+        Update: {
+          completed_at?: string
+          confidence_rating?: number
+          created_at?: string
+          engagement_rating?: boolean
+          id?: string
+          scenario_id?: string
+          session_id?: string
+          trust_rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenarios_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "study_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          mode: Database["public"]["Enums"]["study_mode"]
+          session_id: string
+          started_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          mode: Database["public"]["Enums"]["study_mode"]
+          session_id: string
+          started_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          mode?: Database["public"]["Enums"]["study_mode"]
+          session_id?: string
+          started_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +224,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      study_mode: "text" | "voice" | "avatar"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +351,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      study_mode: ["text", "voice", "avatar"],
+    },
   },
 } as const

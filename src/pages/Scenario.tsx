@@ -75,18 +75,8 @@ const Scenario = () => {
   };
 
   const saveScenarioData = () => {
-    const sessionData = JSON.parse(sessionStorage.getItem('sessionData') || '{}');
-    const scenarioData: ScenarioData = {
-      scenarioId: scenarioId!,
-      messages,
-      confidenceRating: 0,
-      trustRating: 0,
-      engagementRating: false,
-      completedAt: Date.now()
-    };
-    
-    sessionData.scenarios = [...(sessionData.scenarios || []), scenarioData];
-    sessionStorage.setItem('sessionData', JSON.stringify(sessionData));
+    // Save messages to sessionStorage temporarily
+    sessionStorage.setItem(`scenario-${scenarioId}`, JSON.stringify(messages));
   };
 
   if (!scenario) {

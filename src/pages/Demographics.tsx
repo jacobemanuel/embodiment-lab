@@ -5,18 +5,36 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import logo from "@/assets/logo-white.png";
 import { demographicQuestions } from "@/data/questions";
+import { saveDemographics } from "@/lib/studyData";
+import { useToast } from "@/hooks/use-toast";
 
 const Demographics = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [responses, setResponses] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const allQuestionsAnswered = demographicQuestions.every(q => responses[q.id]);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (allQuestionsAnswered) {
-      // Store demographics in sessionStorage for later
-      sessionStorage.setItem('demographics', JSON.stringify(responses));
-      navigate("/pre-test");
+      setIsLoading(true);
+      try {
+        const sessionId = sessionStorage.getItem('sessionId');
+        if (!sessionId) throw new Error('Session not found');
+        
+        await saveDemographics(sessionId, responses);
+        sessionStorage.setItem('demographics', JSON.stringify(responses));
+        navigate("/pre-test");
+      } catch (error) {
+        console.error('Error saving demographics:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save your responses. Please try again.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+      }
     }
   };
 
@@ -65,9 +83,9 @@ const Demographics = () => {
             size="lg"
             className="w-full"
             onClick={handleContinue}
-            disabled={!allQuestionsAnswered}
+            disabled={!allQuestionsAnswered || isLoading}
           >
-            Continue to Pre-Test
+            {isLoading ? "Saving..." : "Continue to Pre-Test"}
           </Button>
         </div>
       </main>

@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import logo from "@/assets/logo-white.png";
-import { postTestQuestions } from "@/data/questions";
+import { postTestQuestions } from "@/data/postTestQuestions";
 import { savePostTestResponses, completeStudySession } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
 
@@ -56,7 +56,7 @@ const PostTest = () => {
           <div>
             <h1 className="text-3xl font-semibold mb-2">Post-Test Assessment</h1>
             <p className="text-muted-foreground mb-6">
-              Let's see what you've learned! Answer the same questions from before.
+              Please share your experience and test your knowledge about the German tax system.
             </p>
             
             {/* Progress bar */}
@@ -68,40 +68,138 @@ const PostTest = () => {
             </div>
           </div>
 
-          <div className="space-y-6">
-            {postTestQuestions.map((question, index) => (
-              <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm">
-                    {index + 1}
-                  </span>
-                  <h3 className="font-semibold flex-1 pt-1">{question.text}</h3>
+          {/* Group questions by category */}
+          <div className="space-y-8">
+            {/* Trust Section */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-primary">Trust & Credibility</h2>
+              {postTestQuestions.filter(q => q.category === 'trust').map((question, index) => (
+                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
+                  <h3 className="font-medium">{question.text}</h3>
+                  <RadioGroup
+                    value={responses[question.id] || ""}
+                    onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                  >
+                    <div className="flex gap-2 flex-wrap">
+                      {question.options.map((option) => (
+                        <div key={option} className="flex items-center space-x-2 bg-secondary/30 rounded-lg px-3 py-2">
+                          <RadioGroupItem 
+                            value={option} 
+                            id={`${question.id}-${option}`}
+                          />
+                          <Label 
+                            htmlFor={`${question.id}-${option}`}
+                            className="cursor-pointer text-sm"
+                          >
+                            {option}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </RadioGroup>
                 </div>
-                <RadioGroup
-                  value={responses[question.id] || ""}
-                  onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
-                  className="pl-11"
-                >
-                  <div className="space-y-3">
-                    {question.options.map((option) => (
-                      <div key={option} className="flex items-start space-x-3">
-                        <RadioGroupItem 
-                          value={option} 
-                          id={`${question.id}-${option}`}
-                          className="mt-0.5"
-                        />
-                        <Label 
-                          htmlFor={`${question.id}-${option}`}
-                          className="cursor-pointer flex-1 py-1 leading-relaxed"
-                        >
-                          {option}
-                        </Label>
-                      </div>
-                    ))}
+              ))}
+            </div>
+
+            {/* Engagement Section */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-primary">Engagement</h2>
+              {postTestQuestions.filter(q => q.category === 'engagement').map((question) => (
+                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
+                  <h3 className="font-medium">{question.text}</h3>
+                  <RadioGroup
+                    value={responses[question.id] || ""}
+                    onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                  >
+                    <div className="flex gap-2 flex-wrap">
+                      {question.options.map((option) => (
+                        <div key={option} className="flex items-center space-x-2 bg-secondary/30 rounded-lg px-3 py-2">
+                          <RadioGroupItem 
+                            value={option} 
+                            id={`${question.id}-${option}`}
+                          />
+                          <Label 
+                            htmlFor={`${question.id}-${option}`}
+                            className="cursor-pointer text-sm"
+                          >
+                            {option}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                </div>
+              ))}
+            </div>
+
+            {/* Satisfaction Section */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-primary">Overall Satisfaction</h2>
+              {postTestQuestions.filter(q => q.category === 'satisfaction').map((question) => (
+                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
+                  <h3 className="font-medium">{question.text}</h3>
+                  <RadioGroup
+                    value={responses[question.id] || ""}
+                    onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                  >
+                    <div className="flex gap-2 flex-wrap">
+                      {question.options.map((option) => (
+                        <div key={option} className="flex items-center space-x-2 bg-secondary/30 rounded-lg px-3 py-2">
+                          <RadioGroupItem 
+                            value={option} 
+                            id={`${question.id}-${option}`}
+                          />
+                          <Label 
+                            htmlFor={`${question.id}-${option}`}
+                            className="cursor-pointer text-sm"
+                          >
+                            {option}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                </div>
+              ))}
+            </div>
+
+            {/* Knowledge Check Section */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-primary">Knowledge Check</h2>
+              {postTestQuestions.filter(q => q.category === 'knowledge').map((question, index) => (
+                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
+                  <div className="flex gap-3">
+                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm">
+                      {index + 1}
+                    </span>
+                    <h3 className="font-semibold flex-1 pt-1">{question.text}</h3>
                   </div>
-                </RadioGroup>
-              </div>
-            ))}
+                  <RadioGroup
+                    value={responses[question.id] || ""}
+                    onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                    className="pl-11"
+                  >
+                    <div className="space-y-3">
+                      {question.options.map((option) => (
+                        <div key={option} className="flex items-start space-x-3">
+                          <RadioGroupItem 
+                            value={option} 
+                            id={`${question.id}-${option}`}
+                            className="mt-0.5"
+                          />
+                          <Label 
+                            htmlFor={`${question.id}-${option}`}
+                            className="cursor-pointer flex-1 py-1 leading-relaxed"
+                          >
+                            {option}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="sticky bottom-6 bg-background/95 backdrop-blur-sm border border-border rounded-2xl p-4 shadow-medium">

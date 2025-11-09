@@ -21,13 +21,21 @@ export async function streamChat({
       content: msg.content
     }));
 
+    // Get pre-test data from sessionStorage if available
+    const preTestData = sessionStorage.getItem('preTest') 
+      ? JSON.parse(sessionStorage.getItem('preTest')!) 
+      : null;
+
     const resp = await fetch(CHAT_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages: formattedMessages }),
+      body: JSON.stringify({ 
+        messages: formattedMessages,
+        preTestData 
+      }),
     });
 
     if (!resp.ok) {

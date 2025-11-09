@@ -92,17 +92,6 @@ export const AvatarMode = ({ messages, onSendMessage, onSkip, isLoading }: Avata
             <div className="w-3 h-3 rounded-full bg-primary animate-pulse shadow-glow" title="Active" />
           </div>
         </div>
-
-        {/* Latest AI message transcript */}
-        {messages.length > 0 && messages[messages.length - 1].role === 'ai' && (
-          <div className="mt-6 max-w-md w-full">
-            <div className="bg-card border border-border rounded-2xl p-4">
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {messages[messages.length - 1].content}
-              </p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Voice input area */}

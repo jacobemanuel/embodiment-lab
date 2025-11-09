@@ -10,9 +10,9 @@ interface ModuleNavigationProps {
 
 export const ModuleNavigation = ({ currentMode, onModeChange }: ModuleNavigationProps) => {
   const modules = [
-    { id: 'text' as StudyMode, label: 'Moduł Tekstowy', icon: MessageSquare },
-    { id: 'voice' as StudyMode, label: 'Moduł Voice', icon: Mic },
-    { id: 'avatar' as StudyMode, label: 'Moduł Avatar', icon: Video },
+    { id: 'text' as StudyMode, label: 'Text Mode', icon: MessageSquare },
+    { id: 'voice' as StudyMode, label: 'Voice Mode', icon: Mic },
+    { id: 'avatar' as StudyMode, label: 'Avatar Mode', icon: Video },
   ];
 
   return (

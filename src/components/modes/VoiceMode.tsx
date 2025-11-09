@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Message } from "@/types/study";
 import { useState, useRef, useEffect } from "react";
-import { Mic, MicOff } from "lucide-react";
+import { Mic, MicOff, Square } from "lucide-react";
 import { streamChat } from "@/utils/aiChat";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,6 +26,15 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Cleanup speech on unmount
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   // Speak AI messages - but only when not streaming (to avoid speaking partial messages)
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
@@ -38,6 +47,13 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
       window.speechSynthesis.speak(utterance);
     }
   }, [messages, isStreaming]);
+
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+  };
 
   const toggleListening = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -137,7 +153,18 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
               />
             ))}
           </div>
-          <p className="text-center text-sm text-muted-foreground mt-4">AI speaking...</p>
+          <div className="flex items-center justify-center gap-4 mt-4">
+            <p className="text-center text-sm text-muted-foreground">AI speaking...</p>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={stopSpeaking}
+              className="gap-2"
+            >
+              <Square className="w-3 h-3" />
+              Stop
+            </Button>
+          </div>
         </div>
       )}
 

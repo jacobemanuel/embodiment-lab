@@ -33,7 +33,7 @@ const Completion = () => {
           <div className="space-y-4">
             <h1 className="text-4xl font-semibold">Thank You!</h1>
             <p className="text-xl text-muted-foreground max-w-lg mx-auto">
-              You've completed the AI literacy study. Your responses have been recorded and will help improve educational AI systems.
+              You've completed the tax education study. Your responses have been recorded and will help improve educational systems for students in Germany.
             </p>
           </div>
 
@@ -41,9 +41,9 @@ const Completion = () => {
             <div className="space-y-3">
               <h2 className="text-2xl font-semibold">What You Learned</h2>
               <p className="text-muted-foreground leading-relaxed">
-                You explored four critical topics in AI: bias in machine learning, transparency and interpretability, 
-                LLM hallucinations and limitations, and societal impact. These concepts are fundamental to understanding 
-                how AI systems work and their effects on society.
+                You explored the German tax system basics relevant to students in Munich and Bavaria, including Minijobs, 
+                Werkstudent positions, tax deductions, filing procedures (ELSTER), and how to get refunds. These concepts 
+                are fundamental for managing your finances as a student in Germany.
               </p>
             </div>
 

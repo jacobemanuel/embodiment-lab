@@ -84,6 +84,10 @@ const Scenario = () => {
   };
 
   const handleModeChange = (newMode: StudyMode) => {
+    // Stop any ongoing speech when switching modes
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
     setCurrentMode(newMode);
     navigate(`/scenario/${newMode}/${scenarioId}`, { replace: true });
   };

@@ -6,79 +6,112 @@ const Welcome = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-6 py-4">
-          <img src={logo} alt="Wiiniffrare" className="h-8" />
-        </div>
-      </header>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Modern gradient mesh background */}
+      <div className="fixed inset-0 gradient-mesh opacity-60" />
+      <div className="fixed inset-0 bg-gradient-to-br from-background via-background/95 to-background/90" />
+      
+      {/* Floating elements */}
+      <div className="fixed top-20 left-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+      <div className="fixed bottom-20 right-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      <div className="relative z-10 flex flex-col min-h-screen">
+        {/* Glassmorphic Header */}
+        <header className="glass-card border-b">
+          <div className="container mx-auto px-6 py-4">
+            <img src={logo} alt="Wiiniffrare" className="h-8" />
+          </div>
+        </header>
 
-      {/* Main content */}
-      <main className="flex-1 flex items-center justify-center p-6">
-        <div className="max-w-2xl w-full space-y-8">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-semibold tracking-tight">
-              Steuern lernen für Studenten
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Learn about the German tax system as a student in Munich
+        {/* Main content */}
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="max-w-2xl w-full space-y-8 animate-fade-in">
+            {/* Hero section with gradient text */}
+            <div className="text-center space-y-6">
+              <div className="inline-block">
+                <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-fade-in">
+                  Steuern lernen für Studenten
+                </h1>
+              </div>
+              <p className="text-xl text-muted-foreground max-w-xl mx-auto">
+                Master the German tax system as a student in Munich through interactive learning
+              </p>
+            </div>
+
+            {/* Premium glass card */}
+            <div className="glass-card rounded-3xl p-8 md:p-10 space-y-8 shadow-large hover:shadow-glow transition-all duration-500">
+              <div className="space-y-4">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                  Willkommen!
+                </h2>
+                <p className="text-muted-foreground leading-relaxed text-lg">
+                  Thank you for participating in this tax education study. You'll explore four important topics about taxes in Germany through interactive conversations designed for students in Munich.
+                </p>
+              </div>
+
+              {/* Features grid */}
+              <div className="grid gap-4">
+                <div className="flex gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors">
+                  <span className="text-2xl">⏱️</span>
+                  <div>
+                    <strong className="text-foreground">40-45 minutes</strong>
+                    <p className="text-sm text-muted-foreground">Complete at your own pace</p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4 p-4 rounded-xl bg-accent/5 border border-accent/10 hover:bg-accent/10 transition-colors">
+                  <span className="text-2xl">📚</span>
+                  <div>
+                    <strong className="text-foreground">4 Learning Scenarios</strong>
+                    <p className="text-sm text-muted-foreground">Tax basics, deductions, filing, and Munich specifics</p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors">
+                  <span className="text-2xl">🎯</span>
+                  <div>
+                    <strong className="text-foreground">Interactive Format</strong>
+                    <p className="text-sm text-muted-foreground">Pre-test, learning scenarios, and post-test</p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4 p-4 rounded-xl bg-accent/5 border border-accent/10 hover:bg-accent/10 transition-colors">
+                  <span className="text-2xl">🔒</span>
+                  <div>
+                    <strong className="text-foreground">Completely Anonymous</strong>
+                    <p className="text-sm text-muted-foreground">Your privacy is our priority</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Privacy callout */}
+              <div className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-primary/10 via-accent/5 to-primary/5 border border-primary/20">
+                <div className="relative z-10 space-y-3">
+                  <h3 className="font-bold text-lg">Your privacy matters</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Your responses help researchers design better tax education tools for students. No personally identifiable information is collected. Withdraw anytime without penalty.
+                  </p>
+                </div>
+              </div>
+
+              {/* CTA Button */}
+              <div className="pt-2">
+                <Button 
+                  onClick={() => navigate("/consent")}
+                  size="lg"
+                  className="w-full text-lg h-16 rounded-2xl gradient-primary hover:shadow-glow transition-all duration-300 hover:scale-[1.02] font-semibold"
+                >
+                  Continue to Consent Form →
+                </Button>
+              </div>
+            </div>
+
+            <p className="text-center text-sm text-muted-foreground">
+              Questions? <a href="mailto:study@wiiniffrare.com" className="text-primary hover:text-accent transition-colors font-medium">study@wiiniffrare.com</a>
             </p>
           </div>
-
-          <div className="bg-card border border-border rounded-2xl p-8 space-y-6 shadow-subtle">
-            <div className="space-y-4">
-              <h2 className="text-2xl font-semibold">Willkommen!</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                Thank you for participating in this tax education study. You'll explore four important topics about taxes in Germany through interactive conversations designed for students in Munich.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="font-semibold">What to expect:</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li className="flex gap-3">
-                  <span className="text-primary">•</span>
-                  <span><strong className="text-foreground">Duration:</strong> Approximately 40-45 minutes</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-primary">•</span>
-                  <span><strong className="text-foreground">Topics:</strong> Tax basics, deductions, filing, and Munich-specific considerations</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-primary">•</span>
-                  <span><strong className="text-foreground">Format:</strong> Pre-test, 4 learning scenarios, post-test</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-primary">•</span>
-                  <span><strong className="text-foreground">Privacy:</strong> All responses are completely anonymous</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="bg-secondary/50 rounded-xl p-6 space-y-3">
-              <h3 className="font-semibold">Your privacy matters</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Your responses will help researchers understand how to design better tax education tools for students. No personally identifiable information will be collected or stored. You can withdraw at any time without penalty.
-              </p>
-            </div>
-
-            <div className="pt-4">
-              <Button 
-                onClick={() => navigate("/consent")}
-                size="lg"
-                className="w-full text-lg h-14 rounded-xl"
-              >
-                Continue to Consent Form
-              </Button>
-            </div>
-          </div>
-
-          <p className="text-center text-sm text-muted-foreground">
-            Questions? Contact the research team at <a href="mailto:study@wiiniffrare.com" className="text-primary hover:underline">study@wiiniffrare.com</a>
-          </p>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };

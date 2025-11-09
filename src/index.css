@@ -8,74 +8,91 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Apple-style design system - clean, minimal, professional */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 13%;
+    /* Modern design system - sophisticated and professional */
+    --background: 245 25% 98%;
+    --foreground: 222 47% 11%;
     
-    /* Apple blue accent - the only color highlight */
-    --primary: 211 100% 50%;
+    /* Rich blue-purple gradient accent */
+    --primary: 237 82% 58%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 250 95% 68%;
     
-    /* Subtle backgrounds */
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 13%;
+    /* Sophisticated neutrals */
+    --secondary: 240 10% 95%;
+    --secondary-foreground: 222 47% 11%;
     
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 240 10% 95%;
+    --muted-foreground: 215 16% 47%;
     
-    --accent: 211 100% 50%;
+    --accent: 250 95% 68%;
     --accent-foreground: 0 0% 100%;
     
-    /* UI elements */
+    /* Glass-morphism cards */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 13%;
+    --card-foreground: 222 47% 11%;
     
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 13%;
+    --popover-foreground: 222 47% 11%;
     
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 211 100% 50%;
+    --border: 240 10% 90%;
+    --input: 240 10% 90%;
+    --ring: 237 82% 58%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --radius: 0.75rem;
+    --radius: 1rem;
     
-    /* Custom tokens for Apple aesthetic */
-    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    --shadow-subtle: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-    --shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    /* Premium gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(237 82% 58%) 0%, hsl(250 95% 68%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(245 25% 98%) 0%, hsl(240 20% 96%) 100%);
+    --gradient-mesh: radial-gradient(at 0% 0%, hsl(237 82% 58% / 0.15) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, hsl(250 95% 68% / 0.1) 0px, transparent 50%),
+                      radial-gradient(at 100% 100%, hsl(237 82% 58% / 0.08) 0px, transparent 50%);
+    
+    /* Sophisticated shadows */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-subtle: 0 2px 8px -2px rgb(0 0 0 / 0.08);
+    --shadow-medium: 0 8px 24px -4px rgb(0 0 0 / 0.12);
+    --shadow-large: 0 20px 40px -8px rgb(0 0 0 / 0.16);
+    --shadow-glow: 0 0 40px hsl(237 82% 58% / 0.2);
   }
   
   .dark {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 98%;
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
     
-    --primary: 211 100% 50%;
+    --primary: 237 82% 58%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 250 95% 68%;
     
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 217 33% 12%;
+    --secondary-foreground: 210 40% 98%;
     
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 217 33% 12%;
+    --muted-foreground: 215 20% 65%;
     
-    --accent: 211 100% 50%;
+    --accent: 250 95% 68%;
     --accent-foreground: 0 0% 100%;
     
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 98%;
+    --card: 222 47% 10%;
+    --card-foreground: 210 40% 98%;
     
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
     
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 211 100% 50%;
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 237 82% 58%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
+    
+    --gradient-primary: linear-gradient(135deg, hsl(237 82% 58%) 0%, hsl(250 95% 68%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(222 47% 7%) 0%, hsl(217 33% 10%) 100%);
+    --gradient-mesh: radial-gradient(at 0% 0%, hsl(237 82% 58% / 0.2) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, hsl(250 95% 68% / 0.15) 0px, transparent 50%),
+                      radial-gradient(at 100% 100%, hsl(237 82% 58% / 0.1) 0px, transparent 50%);
   }
 }
 
@@ -100,7 +117,7 @@ All colors MUST be HSL.
   }
 }
 
-/* Utility classes for Apple aesthetic */
+/* Modern utility classes */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -112,5 +129,32 @@ All colors MUST be HSL.
   
   .shadow-medium {
     box-shadow: var(--shadow-medium);
+  }
+  
+  .shadow-large {
+    box-shadow: var(--shadow-large);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-mesh {
+    background: var(--gradient-mesh);
+  }
+  
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .dark .glass-card {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 }

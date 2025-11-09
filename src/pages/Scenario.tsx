@@ -6,14 +6,16 @@ import { TextMode } from "@/components/modes/TextMode";
 import { VoiceMode } from "@/components/modes/VoiceMode";
 import { AvatarMode } from "@/components/modes/AvatarMode";
 import { ScenarioProgress } from "@/components/ScenarioProgress";
+import { ModuleNavigation } from "@/components/ModuleNavigation";
 import logo from "@/assets/logo-white.png";
 import { Button } from "@/components/ui/button";
 import { HelpCircle } from "lucide-react";
 
 const Scenario = () => {
-  const { mode, scenarioId } = useParams<{ mode: StudyMode; scenarioId: string }>();
+  const { mode: urlMode, scenarioId } = useParams<{ mode: StudyMode; scenarioId: string }>();
   const navigate = useNavigate();
   
+  const [currentMode, setCurrentMode] = useState<StudyMode>(urlMode || 'text');
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,7 +67,7 @@ const Scenario = () => {
         // Scenario complete
         setIsLoading(false);
         saveScenarioData();
-        navigate(`/scenario/${mode}/${scenarioId}/feedback`);
+        navigate(`/scenario/${currentMode}/${scenarioId}/feedback`);
       }
     }, 1500);
   };
@@ -79,20 +81,25 @@ const Scenario = () => {
     sessionStorage.setItem(`scenario-${scenarioId}`, JSON.stringify(messages));
   };
 
+  const handleModeChange = (newMode: StudyMode) => {
+    setCurrentMode(newMode);
+    navigate(`/scenario/${newMode}/${scenarioId}`, { replace: true });
+  };
+
   if (!scenario) {
     return <div>Scenario not found</div>;
   }
 
-  const ModeComponent = mode === 'text' ? TextMode : mode === 'voice' ? VoiceMode : AvatarMode;
+  const ModeComponent = currentMode === 'text' ? TextMode : currentMode === 'voice' ? VoiceMode : AvatarMode;
 
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card px-6 py-4 flex-shrink-0">
+      <header className="border-b border-border bg-card/50 backdrop-blur-md px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <img src={logo} alt="Wiiniffrare" className="h-8" />
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground capitalize">{mode} Mode</span>
+            <ModuleNavigation currentMode={currentMode} onModeChange={handleModeChange} />
             <Button variant="ghost" size="icon">
               <HelpCircle className="w-5 h-5" />
             </Button>
@@ -100,7 +107,7 @@ const Scenario = () => {
         </div>
         <ScenarioProgress current={scenarioIndex + 1} total={scenarios.length} />
         <div className="mt-3">
-          <h2 className="font-semibold">{scenario.title}</h2>
+          <h2 className="font-semibold text-lg">{scenario.title}</h2>
           <p className="text-sm text-muted-foreground">{scenario.description}</p>
         </div>
       </header>

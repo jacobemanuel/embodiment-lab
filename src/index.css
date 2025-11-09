@@ -8,34 +8,34 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Modern design system - sophisticated and professional */
-    --background: 245 25% 98%;
-    --foreground: 222 47% 11%;
+    /* Dark modern design system */
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
     
     /* Rich blue-purple gradient accent */
     --primary: 237 82% 58%;
     --primary-foreground: 0 0% 100%;
     --primary-glow: 250 95% 68%;
     
-    /* Sophisticated neutrals */
-    --secondary: 240 10% 95%;
-    --secondary-foreground: 222 47% 11%;
+    /* Sophisticated dark neutrals */
+    --secondary: 217 33% 15%;
+    --secondary-foreground: 210 40% 98%;
     
-    --muted: 240 10% 95%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 217 33% 15%;
+    --muted-foreground: 215 20% 65%;
     
     --accent: 250 95% 68%;
     --accent-foreground: 0 0% 100%;
     
-    /* Glass-morphism cards */
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    /* Dark glass-morphism cards */
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
     
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
     
-    --border: 240 10% 90%;
-    --input: 240 10% 90%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
     --ring: 237 82% 58%;
     
     --destructive: 0 84% 60%;
@@ -45,17 +45,17 @@ All colors MUST be HSL.
     
     /* Premium gradients */
     --gradient-primary: linear-gradient(135deg, hsl(237 82% 58%) 0%, hsl(250 95% 68%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(245 25% 98%) 0%, hsl(240 20% 96%) 100%);
-    --gradient-mesh: radial-gradient(at 0% 0%, hsl(237 82% 58% / 0.15) 0px, transparent 50%),
-                      radial-gradient(at 100% 0%, hsl(250 95% 68% / 0.1) 0px, transparent 50%),
-                      radial-gradient(at 100% 100%, hsl(237 82% 58% / 0.08) 0px, transparent 50%);
+    --gradient-subtle: linear-gradient(180deg, hsl(222 47% 8%) 0%, hsl(217 33% 12%) 100%);
+    --gradient-mesh: radial-gradient(at 0% 0%, hsl(237 82% 58% / 0.2) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, hsl(250 95% 68% / 0.15) 0px, transparent 50%),
+                      radial-gradient(at 100% 100%, hsl(237 82% 58% / 0.1) 0px, transparent 50%);
     
     /* Sophisticated shadows */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --shadow-subtle: 0 2px 8px -2px rgb(0 0 0 / 0.08);
-    --shadow-medium: 0 8px 24px -4px rgb(0 0 0 / 0.12);
-    --shadow-large: 0 20px 40px -8px rgb(0 0 0 / 0.16);
-    --shadow-glow: 0 0 40px hsl(237 82% 58% / 0.2);
+    --shadow-subtle: 0 2px 8px -2px rgb(0 0 0 / 0.3);
+    --shadow-medium: 0 8px 24px -4px rgb(0 0 0 / 0.4);
+    --shadow-large: 0 20px 40px -8px rgb(0 0 0 / 0.5);
+    --shadow-glow: 0 0 40px hsl(237 82% 58% / 0.3);
   }
   
   .dark {

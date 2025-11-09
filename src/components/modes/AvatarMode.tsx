@@ -78,24 +78,18 @@ export const AvatarMode = ({ messages, onSendMessage, onSkip, isLoading }: Avata
     <div className="flex flex-col h-full">
       {/* Avatar display area */}
       <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-secondary/30 to-background p-8">
-        <div className="relative w-full max-w-md aspect-[3/4] bg-secondary rounded-3xl overflow-hidden shadow-medium">
-          {/* Placeholder for avatar - in production this would be D-ID video */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center">
-                  <div className="text-4xl">👤</div>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground px-8">
-                {isLoading ? 'Thinking...' : messages.length > 0 ? 'Listening to your response' : 'Ready to begin'}
-              </p>
-            </div>
-          </div>
+        <div className="relative w-full max-w-4xl aspect-video bg-secondary/50 rounded-3xl overflow-hidden shadow-large border border-border/50">
+          {/* LiveAvatar iframe */}
+          <iframe 
+            src="https://embed.liveavatar.com/v1/fb2090fc-4174-463b-aa9a-7117840f73d5" 
+            allow="microphone" 
+            title="LiveAvatar Embed" 
+            className="w-full h-full"
+          />
           
           {/* Engagement indicators */}
-          <div className="absolute top-4 right-4 flex gap-2">
-            <div className="w-3 h-3 rounded-full bg-primary animate-pulse" title="Active" />
+          <div className="absolute top-4 right-4 flex gap-2 z-10">
+            <div className="w-3 h-3 rounded-full bg-primary animate-pulse shadow-glow" title="Active" />
           </div>
         </div>
 

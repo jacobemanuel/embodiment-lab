@@ -102,9 +102,24 @@ serve(async (req) => {
           );
         }
 
+        // Get session UUID from session_id string
+        const { data: demoSession, error: demoSessionError } = await supabase
+          .from('study_sessions')
+          .select('id')
+          .eq('session_id', sessionId)
+          .single();
+
+        if (demoSessionError || !demoSession) {
+          console.error('Session not found for demographics:', demoSessionError);
+          return new Response(
+            JSON.stringify({ error: "Session not found" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
         const { error: demoError } = await supabase
           .from('demographics')
-          .insert({ session_id: sessionId, ...demographics });
+          .insert({ session_id: demoSession.id, ...demographics });
 
         if (demoError) throw demoError;
         result = { success: true };
@@ -118,8 +133,23 @@ serve(async (req) => {
           );
         }
 
+        // Get session UUID from session_id string
+        const { data: preSession, error: preSessionError } = await supabase
+          .from('study_sessions')
+          .select('id')
+          .eq('session_id', sessionId)
+          .single();
+
+        if (preSessionError || !preSession) {
+          console.error('Session not found for pre-test:', preSessionError);
+          return new Response(
+            JSON.stringify({ error: "Session not found" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
         const preTestData = preTestResponses.map(r => ({
-          session_id: sessionId,
+          session_id: preSession.id,
           question_id: r.questionId,
           answer: r.answer
         }));
@@ -158,11 +188,26 @@ serve(async (req) => {
           );
         }
 
+        // Get session UUID from session_id string
+        const { data: scenarioSession, error: scenarioSessionError } = await supabase
+          .from('study_sessions')
+          .select('id')
+          .eq('session_id', sessionId)
+          .single();
+
+        if (scenarioSessionError || !scenarioSession) {
+          console.error('Session not found for scenario:', scenarioSessionError);
+          return new Response(
+            JSON.stringify({ error: "Session not found" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
         // Insert scenario
         const { data: scenario, error: scenarioError } = await supabase
           .from('scenarios')
           .insert({
-            session_id: sessionId,
+            session_id: scenarioSession.id,
             scenario_id: scenarioId,
             confidence_rating: confidenceRating,
             trust_rating: trustRating,
@@ -198,8 +243,23 @@ serve(async (req) => {
           );
         }
 
+        // Get session UUID from session_id string
+        const { data: postSession, error: postSessionError } = await supabase
+          .from('study_sessions')
+          .select('id')
+          .eq('session_id', sessionId)
+          .single();
+
+        if (postSessionError || !postSession) {
+          console.error('Session not found for post-test:', postSessionError);
+          return new Response(
+            JSON.stringify({ error: "Session not found" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
         const postTestData = postTestResponses.map(r => ({
-          session_id: sessionId,
+          session_id: postSession.id,
           question_id: r.questionId,
           answer: r.answer
         }));

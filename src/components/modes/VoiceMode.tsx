@@ -18,6 +18,7 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
@@ -191,7 +192,7 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
             </div>
           </div>
         ))}
-        {isLoading && (
+        {hasStarted && isLoading && (
           <div className="space-y-2">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               AI Study Buddy

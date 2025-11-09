@@ -109,7 +109,7 @@ const Scenario = () => {
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-md px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
-          <img src={logo} alt="Wiiniffrare" className="h-8" />
+          <img src={logo} alt="Majewski Studio" className="h-8" />
           <div className="flex items-center gap-4">
             <ModuleNavigation currentMode={currentMode} onModeChange={handleModeChange} />
             <Button variant="ghost" size="icon">

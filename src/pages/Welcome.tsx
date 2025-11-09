@@ -19,7 +19,7 @@ const Welcome = () => {
         {/* Glassmorphic Header */}
         <header className="glass-card border-b">
           <div className="container mx-auto px-6 py-4">
-            <img src={logo} alt="Wiiniffrare" className="h-8" />
+            <img src={logo} alt="Majewski Studio" className="h-8" />
           </div>
         </header>
 
@@ -107,7 +107,7 @@ const Welcome = () => {
             </div>
 
             <p className="text-center text-sm text-muted-foreground">
-              Questions? <a href="mailto:study@wiiniffrare.com" className="text-primary hover:text-accent transition-colors font-medium">study@wiiniffrare.com</a>
+              Questions? <a href="mailto:contact@majewski.studio" className="text-primary hover:text-accent transition-colors font-medium">contact@majewski.studio</a>
             </p>
           </div>
         </main>

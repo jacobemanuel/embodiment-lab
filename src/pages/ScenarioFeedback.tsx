@@ -71,7 +71,7 @@ const ScenarioFeedback = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4">
-          <img src={logo} alt="Wiiniffrare" className="h-8" />
+          <img src={logo} alt="Majewski Studio" className="h-8" />
         </div>
       </header>
 

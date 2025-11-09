@@ -20,7 +20,7 @@ const Completion = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4">
-          <img src={logo} alt="Wiiniffrare" className="h-8" />
+          <img src={logo} alt="Majewski Studio" className="h-8" />
         </div>
       </header>
 
@@ -75,7 +75,7 @@ const Completion = () => {
               Questions about this study?
             </p>
             <p className="text-sm">
-              Contact: <a href="mailto:study@wiiniffrare.com" className="text-primary hover:underline">study@wiiniffrare.com</a>
+              Contact: <a href="mailto:contact@majewski.studio" className="text-primary hover:underline">contact@majewski.studio</a> | <a href="https://majewski.studio" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">majewski.studio</a>
             </p>
           </div>
         </div>

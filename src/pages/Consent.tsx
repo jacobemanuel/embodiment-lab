@@ -33,7 +33,7 @@ const Consent = () => {
             <section className="space-y-3">
               <h2 className="text-xl font-semibold">Purpose of the Study</h2>
               <p className="text-muted-foreground leading-relaxed">
-                This research examines how different presentation formats affect learning about German tax concepts for students. You will complete a brief pre-test, engage with four educational scenarios about taxes in Munich and Bavaria, and complete a post-test.
+                This research examines how different presentation formats affect learning about German tax concepts for students. You will complete a brief pre-test, engage with one educational scenario about taxes in Munich and Bavaria, and complete a post-test.
               </p>
             </section>
 
@@ -46,15 +46,15 @@ const Consent = () => {
                 </li>
                 <li className="flex gap-2">
                   <span>2.</span>
-                  <span>Participate in four interactive learning scenarios (~40 minutes)</span>
+                  <span>Participate in one interactive learning scenario (~5 minutes)</span>
                 </li>
                 <li className="flex gap-2">
                   <span>3.</span>
-                  <span>Rate your confidence and trust after each scenario</span>
+                  <span>Complete a post-test evaluating trust, engagement, and satisfaction</span>
                 </li>
                 <li className="flex gap-2">
                   <span>4.</span>
-                  <span>Complete the same 10-question post-test</span>
+                  <span>Complete a brief knowledge assessment</span>
                 </li>
               </ul>
             </section>
@@ -76,7 +76,7 @@ const Consent = () => {
             <section className="space-y-3">
               <h2 className="text-xl font-semibold">Risks & Benefits</h2>
               <p className="text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the 45-minute session.
+                <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the 10-minute session.
               </p>
               <p className="text-muted-foreground leading-relaxed">
                 <strong className="text-foreground">Benefits:</strong> You will learn about important tax concepts relevant to students in Germany and contribute to research on educational technology.

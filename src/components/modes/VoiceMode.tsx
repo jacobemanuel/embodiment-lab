@@ -3,6 +3,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Message } from "@/types/study";
 import { useState, useRef, useEffect } from "react";
 import { Mic, MicOff } from "lucide-react";
+import { streamChat } from "@/utils/aiChat";
+import { useToast } from "@/hooks/use-toast";
 
 interface VoiceModeProps {
   messages: Message[];
@@ -15,24 +17,27 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Speak AI messages
+  // Speak AI messages - but only when not streaming (to avoid speaking partial messages)
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
-    if (lastMessage?.role === 'ai' && 'speechSynthesis' in window) {
+    if (lastMessage?.role === 'ai' && 'speechSynthesis' in window && !isStreaming) {
+      // Only speak if this is a new complete message
       setIsSpeaking(true);
       const utterance = new SpeechSynthesisUtterance(lastMessage.content);
       utterance.rate = 0.9;
       utterance.onend = () => setIsSpeaking(false);
       window.speechSynthesis.speak(utterance);
     }
-  }, [messages]);
+  }, [messages, isStreaming]);
 
   const toggleListening = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -69,10 +74,48 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
     }
   };
 
-  const handleSend = () => {
-    if (input.trim() && !isLoading) {
-      onSendMessage(input);
+  const handleSend = async () => {
+    if (input.trim() && !isLoading && !isStreaming) {
+      const userMessage = input;
       setInput("");
+      onSendMessage(userMessage);
+      
+      // Stream AI response
+      setIsStreaming(true);
+      let aiResponse = "";
+      
+      try {
+        await streamChat({
+          messages: [...messages, { role: 'user', content: userMessage, timestamp: Date.now() }],
+          onDelta: (chunk) => {
+            aiResponse += chunk;
+            onSendMessage(`__AI_RESPONSE__${aiResponse}`);
+          },
+          onDone: () => {
+            setIsStreaming(false);
+            
+            // Speak the complete AI response
+            if ('speechSynthesis' in window) {
+              setIsSpeaking(true);
+              const utterance = new SpeechSynthesisUtterance(aiResponse);
+              utterance.rate = 0.9;
+              utterance.onend = () => setIsSpeaking(false);
+              window.speechSynthesis.speak(utterance);
+            }
+          },
+          onError: (error) => {
+            console.error("AI error:", error);
+            toast({
+              title: "AI Error",
+              description: "Failed to get AI response. Please try again.",
+              variant: "destructive"
+            });
+            setIsStreaming(false);
+          }
+        });
+      } catch (error) {
+        setIsStreaming(false);
+      }
     }
   };
 
@@ -162,7 +205,7 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
             placeholder="Your response (transcribed)..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={isLoading}
+            disabled={isLoading || isStreaming}
             className="min-h-[80px] resize-none"
           />
           <div className="flex gap-3">
@@ -176,10 +219,10 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
             </Button>
             <Button
               onClick={handleSend}
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || isStreaming || !input.trim()}
               className="flex-1"
             >
-              Send
+              {isStreaming ? "AI is typing..." : "Send"}
             </Button>
           </div>
         </div>

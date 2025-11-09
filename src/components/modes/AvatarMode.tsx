@@ -81,7 +81,7 @@ export const AvatarMode = ({ messages, onSendMessage, onSkip, isLoading }: Avata
         <div className="relative w-full max-w-4xl aspect-video bg-secondary/50 rounded-3xl overflow-hidden shadow-large border border-border/50">
           {/* LiveAvatar iframe */}
           <iframe 
-            src="https://embed.liveavatar.com/v1/fb2090fc-4174-463b-aa9a-7117840f73d5" 
+            src="https://embed.liveavatar.com/v1/d5643ff4-596f-4f3e-983c-84206d6ee7bc" 
             allow="microphone" 
             title="LiveAvatar Embed" 
             className="w-full h-full"

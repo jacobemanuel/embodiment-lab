@@ -38,6 +38,22 @@ const Scenario = () => {
   const handleSendMessage = (content: string) => {
     if (!scenario) return;
 
+    // Handle AI streaming response marker
+    if (content.startsWith('__AI_RESPONSE__')) {
+      const aiContent = content.replace('__AI_RESPONSE__', '');
+      setMessages(prev => {
+        const lastMsg = prev[prev.length - 1];
+        if (lastMsg?.role === 'ai') {
+          // Update existing AI message
+          return [...prev.slice(0, -1), { ...lastMsg, content: aiContent }];
+        } else {
+          // Create new AI message
+          return [...prev, { role: 'ai', content: aiContent, timestamp: Date.now() }];
+        }
+      });
+      return;
+    }
+
     // Add user message
     const userMessage: Message = {
       role: 'user',
@@ -46,30 +62,16 @@ const Scenario = () => {
     };
     setMessages(prev => [...prev, userMessage]);
 
-    // Simulate AI thinking
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      // Move to next dialogue turn
-      const nextIndex = currentTurnIndex + 1;
-      
-      if (nextIndex < scenario.dialogue.length) {
-        const nextTurn = scenario.dialogue[nextIndex];
-        const aiMessage: Message = {
-          role: 'ai',
-          content: nextTurn.aiMessage,
-          timestamp: Date.now()
-        };
-        setMessages(prev => [...prev, aiMessage]);
-        setCurrentTurnIndex(nextIndex);
-        setIsLoading(false);
-      } else {
-        // Scenario complete
-        setIsLoading(false);
-        saveScenarioData();
+    // Check if we've completed the dialogue
+    const nextIndex = currentTurnIndex + 1;
+    if (nextIndex >= scenario.dialogue.length) {
+      saveScenarioData();
+      setTimeout(() => {
         navigate(`/scenario/${currentMode}/${scenarioId}/feedback`);
-      }
-    }, 1500);
+      }, 1000);
+    } else {
+      setCurrentTurnIndex(nextIndex);
+    }
   };
 
   const handleSkip = () => {

@@ -7,6 +7,7 @@ import logo from "@/assets/logo-white.png";
 import { demographicQuestions } from "@/data/questions";
 import { saveDemographics } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
+import { StudyMode } from "@/types/study";
 
 const Demographics = () => {
   const navigate = useNavigate();
@@ -20,8 +21,18 @@ const Demographics = () => {
     if (allQuestionsAnswered) {
       setIsLoading(true);
       try {
-        const sessionId = sessionStorage.getItem('sessionId');
-        if (!sessionId) throw new Error('Session not found');
+        let sessionId = sessionStorage.getItem('sessionId');
+        
+        // If no session exists, create one
+        if (!sessionId) {
+          sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+          sessionStorage.setItem('sessionId', sessionId);
+          const mode = sessionStorage.getItem('studyMode') as StudyMode || 'text';
+          
+          // Create session in database
+          const { createStudySession } = await import('@/lib/studyData');
+          await createStudySession(sessionId, mode);
+        }
         
         await saveDemographics(sessionId, responses);
         sessionStorage.setItem('demographics', JSON.stringify(responses));

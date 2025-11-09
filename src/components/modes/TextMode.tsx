@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Message } from "@/types/study";
 import { useState, useRef, useEffect } from "react";
+import { streamChat } from "@/utils/aiChat";
+import { useToast } from "@/hooks/use-toast";
 
 interface TextModeProps {
   messages: Message[];
@@ -12,16 +14,48 @@ interface TextModeProps {
 
 export const TextMode = ({ messages, onSendMessage, onSkip, isLoading }: TextModeProps) => {
   const [input, setInput] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = () => {
-    if (input.trim() && !isLoading) {
-      onSendMessage(input);
+  const handleSend = async () => {
+    if (input.trim() && !isLoading && !isStreaming) {
+      const userMessage = input;
       setInput("");
+      onSendMessage(userMessage);
+      
+      // Stream AI response
+      setIsStreaming(true);
+      let aiResponse = "";
+      
+      try {
+        await streamChat({
+          messages: [...messages, { role: 'user', content: userMessage, timestamp: Date.now() }],
+          onDelta: (chunk) => {
+            aiResponse += chunk;
+            // Update the last message in real-time through parent
+            onSendMessage(`__AI_RESPONSE__${aiResponse}`);
+          },
+          onDone: () => {
+            setIsStreaming(false);
+          },
+          onError: (error) => {
+            console.error("AI error:", error);
+            toast({
+              title: "AI Error",
+              description: "Failed to get AI response. Please try again.",
+              variant: "destructive"
+            });
+            setIsStreaming(false);
+          }
+        });
+      } catch (error) {
+        setIsStreaming(false);
+      }
     }
   };
 
@@ -81,7 +115,7 @@ export const TextMode = ({ messages, onSendMessage, onSkip, isLoading }: TextMod
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          disabled={isLoading}
+          disabled={isLoading || isStreaming}
           className="min-h-[100px] resize-none"
         />
         <div className="flex gap-3">
@@ -95,10 +129,10 @@ export const TextMode = ({ messages, onSendMessage, onSkip, isLoading }: TextMod
           </Button>
           <Button
             onClick={handleSend}
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || isStreaming || !input.trim()}
             className="flex-1"
           >
-            Send
+            {isStreaming ? "AI is typing..." : "Send"}
           </Button>
         </div>
       </div>

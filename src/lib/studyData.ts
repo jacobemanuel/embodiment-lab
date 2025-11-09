@@ -128,10 +128,10 @@ export const savePostTestResponses = async (sessionId: string, responses: Record
 };
 
 export const completeStudySession = async (sessionId: string) => {
-  const { error } = await supabase
-    .from('study_sessions')
-    .update({ completed_at: new Date().toISOString() })
-    .eq('session_id', sessionId);
-
+  const { data, error } = await supabase.functions.invoke('complete-session', {
+    body: { sessionId }
+  });
+  
   if (error) throw error;
+  if (data?.error) throw new Error(data.error);
 };

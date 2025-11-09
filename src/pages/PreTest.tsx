@@ -43,7 +43,7 @@ const PreTest = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <img src={logo} alt="Majewski Studio" className="h-8" />
+          <img src={logo} alt="TUM Logo" className="h-8" />
           <div className="text-sm text-muted-foreground">
             {Object.keys(responses).length} of {preTestQuestions.length} answered
           </div>

@@ -36,10 +36,10 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
     };
   }, []);
 
-  // Speak AI messages - but only when not streaming (to avoid speaking partial messages)
+  // Speak AI messages - but only when not streaming and hasStarted is true
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
-    if (lastMessage?.role === 'ai' && 'speechSynthesis' in window && !isStreaming) {
+    if (hasStarted && lastMessage?.role === 'ai' && 'speechSynthesis' in window && !isStreaming) {
       // Only speak if this is a new complete message
       setIsSpeaking(true);
       const utterance = new SpeechSynthesisUtterance(lastMessage.content);
@@ -47,7 +47,7 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
       utterance.onend = () => setIsSpeaking(false);
       window.speechSynthesis.speak(utterance);
     }
-  }, [messages, isStreaming]);
+  }, [messages, isStreaming, hasStarted]);
 
   const stopSpeaking = () => {
     if ('speechSynthesis' in window) {
@@ -93,6 +93,9 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
 
   const handleSend = async () => {
     if (input.trim() && !isLoading && !isStreaming) {
+      if (!hasStarted) {
+        setHasStarted(true);
+      }
       const userMessage = input;
       setInput("");
       onSendMessage(userMessage);
@@ -171,7 +174,14 @@ export const VoiceMode = ({ messages, onSendMessage, onSkip, isLoading }: VoiceM
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        {messages.map((msg, idx) => (
+        {!hasStarted && (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground text-lg mb-4">
+              Click the microphone button below to start the conversation
+            </p>
+          </div>
+        )}
+        {hasStarted && messages.map((msg, idx) => (
           <div
             key={idx}
             className={`space-y-2 ${msg.role === 'ai' ? '' : 'pl-12'}`}

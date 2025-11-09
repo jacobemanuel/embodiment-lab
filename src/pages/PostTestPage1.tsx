@@ -32,7 +32,12 @@ const PostTestPage1 = () => {
 
   const handleNext = () => {
     if (allQuestionsAnswered) {
-      navigate("/post-test-2");
+      // Convert numbers to strings before saving
+      const stringResponses = Object.fromEntries(
+        Object.entries(responses).map(([key, value]) => [key, String(value)])
+      );
+      sessionStorage.setItem('postTest1', JSON.stringify(stringResponses));
+      navigate('/post-test-2');
     }
   };
 
@@ -45,7 +50,7 @@ const PostTestPage1 = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <img src={logo} alt="Majewski Studio" className="h-8" />
+          <img src={logo} alt="TUM Logo" className="h-8" />
           <div className="text-sm text-muted-foreground">
             Page 1 of 2 • {Object.keys(responses).length} of {likertQuestions.length} answered
           </div>

@@ -19,7 +19,7 @@ const Welcome = () => {
         {/* Glassmorphic Header */}
         <header className="glass-card border-b">
           <div className="container mx-auto px-6 py-4">
-            <img src={logo} alt="Majewski Studio" className="h-8" />
+            <img src={logo} alt="TUM Logo" className="h-8" />
           </div>
         </header>
 

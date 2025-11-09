@@ -13,10 +13,50 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Build context from pre-test if available
-    let contextNote = "";
+    // Analyze pre-test data to identify knowledge gaps
+    let userKnowledgeContext = '';
     if (preTestData) {
-      contextNote = `\n\nCONTEXT: The user completed a pre-test. Here are their answers that might need clarification:\n${JSON.stringify(preTestData, null, 2)}`;
+      const correctAnswers: Record<string, string> = {
+        'pre-q1': 'c',
+        'pre-q2': 'b', 
+        'pre-q3': 'b',
+        'pre-q4': 'c',
+        'pre-q5': 'a',
+        'pre-q6': 'b',
+        'pre-q7': 'b',
+        'pre-q8': 'b',
+        'pre-q9': 'b',
+        'pre-q10': 'b'
+      };
+      
+      const weakAreas: string[] = [];
+      const strongAreas: string[] = [];
+      
+      Object.entries(correctAnswers).forEach(([questionId, correctAnswer]) => {
+        const userAnswer = preTestData[questionId];
+        const topicMap: Record<string, string> = {
+          'pre-q1': 'basic tax system',
+          'pre-q2': 'income tax basics',
+          'pre-q3': 'tax brackets',
+          'pre-q4': 'student job taxation',
+          'pre-q5': 'tax-free allowances',
+          'pre-q6': 'mini-jobs (450€ jobs)',
+          'pre-q7': 'Werkstudent status',
+          'pre-q8': 'tax filing requirements',
+          'pre-q9': 'tax deductions for students',
+          'pre-q10': 'Bavarian-specific tax rules'
+        };
+        
+        if (userAnswer !== correctAnswer) {
+          weakAreas.push(topicMap[questionId]);
+        } else {
+          strongAreas.push(topicMap[questionId]);
+        }
+      });
+      
+      if (weakAreas.length > 0) {
+        userKnowledgeContext = `\n\nUser's knowledge profile:\n- Areas that may need more explanation: ${weakAreas.join(', ')}\n- Areas where user showed understanding: ${strongAreas.join(', ')}\n\nWhen these topics come up, provide extra clarification and examples for the weaker areas.`;
+      }
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -61,7 +101,7 @@ SCOPE:
 SAFETY & PRIVACY:
 - Never ask for real personal data (SSN, exact income, etc.)
 - Provide general guidance, not personalized legal advice
-- Suggest consulting a Steuerberater (tax advisor) for complex situations${contextNote}` 
+- Suggest consulting a Steuerberater (tax advisor) for complex situations${userKnowledgeContext}` 
           },
           ...messages,
         ],

@@ -25,7 +25,7 @@ const Demographics = () => {
         
         // If no session exists, create one
         if (!sessionId) {
-          sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+          sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
           sessionStorage.setItem('sessionId', sessionId);
           const mode = sessionStorage.getItem('studyMode') as StudyMode || 'text';
           
@@ -53,7 +53,7 @@ const Demographics = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4">
-          <img src={logo} alt="Majewski Studio" className="h-8" />
+          <img src={logo} alt="TUM Logo" className="h-8" />
         </div>
       </header>
 

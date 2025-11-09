@@ -1,26 +1,74 @@
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import logo from "@/assets/logo-white.png";
+import { preTestQuestions } from "@/data/questions";
+import { postTestQuestions } from "@/data/postTestQuestions";
 
 const Completion = () => {
   const handleDownloadData = () => {
-    const sessionData = sessionStorage.getItem('sessionData');
-    const blob = new Blob([sessionData || ''], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `study-data-${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      // Gather all data from sessionStorage
+      const sessionId = sessionStorage.getItem('sessionId') || 'unknown';
+      const demographics = JSON.parse(sessionStorage.getItem('demographics') || '{}');
+      const preTest = JSON.parse(sessionStorage.getItem('preTest') || '{}');
+      const postTest1 = JSON.parse(sessionStorage.getItem('postTest1') || '{}');
+      const postTest2 = JSON.parse(sessionStorage.getItem('postTest2') || '{}');
+      const mode = sessionStorage.getItem('studyMode') || 'unknown';
+      
+      // Create CSV content
+      let csvContent = 'Category,Question,Response\n';
+      
+      // Add session info
+      csvContent += `Session Info,Session ID,${sessionId}\n`;
+      csvContent += `Session Info,Mode,${mode}\n`;
+      csvContent += '\n';
+      
+      // Add demographics
+      csvContent += 'Demographics,Age Range,' + (demographics['demo-age'] || '') + '\n';
+      csvContent += 'Demographics,Education,' + (demographics['demo-education'] || '') + '\n';
+      csvContent += 'Demographics,Tax Experience,' + (demographics['demo-tax-experience'] || '') + '\n';
+      csvContent += '\n';
+      
+      // Add pre-test responses
+      preTestQuestions.forEach(q => {
+        const answer = preTest[q.id] || '';
+        csvContent += `Pre-Test,"${q.text.replace(/"/g, '""')}","${answer.replace(/"/g, '""')}"\n`;
+      });
+      csvContent += '\n';
+      
+      // Add post-test responses (Likert)
+      const likertQuestions = postTestQuestions.filter(q => q.type === 'likert');
+      likertQuestions.forEach(q => {
+        const answer = postTest1[q.id] || '';
+        csvContent += `Post-Test (Likert),"${q.text.replace(/"/g, '""')}",${answer}\n`;
+      });
+      csvContent += '\n';
+      
+      // Add post-test responses (Knowledge)
+      const knowledgeQuestions = postTestQuestions.filter(q => q.category === 'knowledge');
+      knowledgeQuestions.forEach(q => {
+        const answer = postTest2[q.id] || '';
+        csvContent += `Post-Test (Knowledge),"${q.text.replace(/"/g, '""')}","${answer.replace(/"/g, '""')}"\n`;
+      });
+      
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `study-responses-${sessionId}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error creating CSV:', error);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4">
-          <img src={logo} alt="Majewski Studio" className="h-8" />
+          <img src={logo} alt="TUM Logo" className="h-8" />
         </div>
       </header>
 

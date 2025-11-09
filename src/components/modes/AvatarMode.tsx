@@ -25,16 +25,16 @@ export const AvatarMode = ({ messages, onSendMessage, onSkip, isLoading }: Avata
   // TODO: Generate avatar video with D-ID API when AI responds
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
-    if (lastMessage?.role === 'ai') {
+    if (lastMessage?.role === "ai") {
       // For now, show placeholder avatar
       // In production, call D-ID API here to generate lip-synced video
-      console.log('Would generate avatar video for:', lastMessage.content);
+      console.log("Would generate avatar video for:", lastMessage.content);
     }
   }, [messages]);
 
   const toggleListening = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert('Speech recognition is not supported in your browser. Please use text input.');
+    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+      alert("Speech recognition is not supported in your browser. Please use text input.");
       return;
     }
 
@@ -44,21 +44,21 @@ export const AvatarMode = ({ messages, onSendMessage, onSkip, isLoading }: Avata
     } else {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
-      
+
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.lang = 'en-US';
+      recognition.lang = "en-US";
 
       recognition.onstart = () => setIsListening(true);
       recognition.onend = () => setIsListening(false);
-      
+
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
       };
 
       recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
+        console.error("Speech recognition error:", event.error);
         setIsListening(false);
       };
 
@@ -80,13 +80,8 @@ export const AvatarMode = ({ messages, onSendMessage, onSkip, isLoading }: Avata
       <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-secondary/30 to-background p-8">
         <div className="relative w-full max-w-4xl aspect-video bg-secondary/50 rounded-3xl overflow-hidden shadow-large border border-border/50">
           {/* LiveAvatar iframe */}
-          <iframe 
-            src="https://embed.liveavatar.com/v1/d5643ff4-596f-4f3e-983c-84206d6ee7bc" 
-            allow="microphone" 
-            title="LiveAvatar Embed" 
-            className="w-full h-full"
-          />
-          
+          <iframe src="" allow="microphone" title="LiveAvatar Embed" className="w-full h-full" />
+
           {/* Engagement indicators */}
           <div className="absolute top-4 right-4 flex gap-2 z-10">
             <div className="w-3 h-3 rounded-full bg-primary animate-pulse shadow-glow" title="Active" />
@@ -102,14 +97,12 @@ export const AvatarMode = ({ messages, onSendMessage, onSkip, isLoading }: Avata
             size="lg"
             onClick={toggleListening}
             disabled={isLoading}
-            className={`w-20 h-20 rounded-full ${isListening ? 'bg-destructive hover:bg-destructive/90' : ''}`}
+            className={`w-20 h-20 rounded-full ${isListening ? "bg-destructive hover:bg-destructive/90" : ""}`}
           >
             {isListening ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
           </Button>
         </div>
-        <p className="text-center text-sm text-muted-foreground">
-          {isListening ? 'Listening...' : 'Press to respond'}
-        </p>
+        <p className="text-center text-sm text-muted-foreground">{isListening ? "Listening..." : "Press to respond"}</p>
 
         {/* Text fallback */}
         <div className="space-y-3">
@@ -122,19 +115,10 @@ export const AvatarMode = ({ messages, onSendMessage, onSkip, isLoading }: Avata
             className="min-h-[60px] resize-none"
           />
           <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={onSkip}
-              disabled={isLoading}
-              className="flex-1"
-            >
+            <Button variant="outline" onClick={onSkip} disabled={isLoading} className="flex-1">
               Skip
             </Button>
-            <Button
-              onClick={handleSend}
-              disabled={isLoading || !input.trim()}
-              className="flex-1"
-            >
+            <Button onClick={handleSend} disabled={isLoading || !input.trim()} className="flex-1">
               Send
             </Button>
           </div>

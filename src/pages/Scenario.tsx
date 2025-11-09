@@ -9,7 +9,15 @@ import { ScenarioProgress } from "@/components/ScenarioProgress";
 import { ModuleNavigation } from "@/components/ModuleNavigation";
 import logo from "@/assets/logo-white.png";
 import { Button } from "@/components/ui/button";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, LogOut } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Scenario = () => {
   const { mode: urlMode, scenarioId } = useParams<{ mode: StudyMode; scenarioId: string }>();
@@ -114,10 +122,55 @@ const Scenario = () => {
       <header className="border-b border-border bg-card/50 backdrop-blur-md px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <img src={logo} alt="Majewski Studio" className="h-8" />
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <ModuleNavigation currentMode={currentMode} onModeChange={handleModeChange} />
-            <Button variant="ghost" size="icon">
-              <HelpCircle className="w-5 h-5" />
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <HelpCircle className="w-5 h-5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Learning Modes</DialogTitle>
+                  <DialogDescription>
+                    Choose how you want to learn about German taxes
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">💬</span>
+                      Text Mode
+                    </h4>
+                    <p className="text-sm text-muted-foreground pl-10">
+                      Classic chat interface - read and type your responses at your own pace.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">🎤</span>
+                      Voice Mode
+                    </h4>
+                    <p className="text-sm text-muted-foreground pl-10">
+                      Hear the AI speak while you type your answers - perfect for multitasking.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">🎥</span>
+                      Avatar Mode
+                    </h4>
+                    <p className="text-sm text-muted-foreground pl-10">
+                      Audio-only experience - listen to the AI and respond by typing.
+                    </p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button variant="outline" size="sm" onClick={() => navigate('/post-test')} className="gap-2">
+              <LogOut className="w-4 h-4" />
+              Finish
             </Button>
           </div>
         </div>

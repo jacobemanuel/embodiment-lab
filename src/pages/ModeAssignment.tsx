@@ -10,9 +10,8 @@ const ModeAssignment = () => {
   useEffect(() => {
     const initSession = async () => {
       try {
-        // Random assignment to one of three modes
-        const modes: StudyMode[] = ['text', 'voice', 'avatar'];
-        const randomMode = modes[Math.floor(Math.random() * modes.length)];
+        // Always start with text mode
+        const randomMode: StudyMode = 'text';
         
         // Generate unique session ID
         const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -31,8 +30,7 @@ const ModeAssignment = () => {
       } catch (error) {
         console.error('Error creating session:', error);
         // Still navigate even if db save fails (fallback to sessionStorage only)
-        const modes: StudyMode[] = ['text', 'voice', 'avatar'];
-        const randomMode = modes[Math.floor(Math.random() * modes.length)];
+        const randomMode: StudyMode = 'text';
         const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         sessionStorage.setItem('studyMode', randomMode);
         sessionStorage.setItem('sessionId', sessionId);

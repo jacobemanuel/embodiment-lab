@@ -45,7 +45,7 @@ const Welcome = () => {
                   Welcome!
                 </h2>
                 <p className="text-muted-foreground leading-relaxed text-lg">
-                  Thank you for participating in this tax education study. You'll explore four important topics about taxes in Germany through interactive conversations designed for students in Munich.
+                  Thank you for participating in this tax education study. You'll explore an important topic about taxes in Germany through interactive conversation designed for students in Munich.
                 </p>
               </div>
 
@@ -54,7 +54,7 @@ const Welcome = () => {
                 <div className="flex gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors">
                   <span className="text-2xl">⏱️</span>
                   <div>
-                    <strong className="text-foreground">40-45 minutes</strong>
+                    <strong className="text-foreground">~5 minutes</strong>
                     <p className="text-sm text-muted-foreground">Complete at your own pace</p>
                   </div>
                 </div>
@@ -62,8 +62,8 @@ const Welcome = () => {
                 <div className="flex gap-4 p-4 rounded-xl bg-accent/5 border border-accent/10 hover:bg-accent/10 transition-colors">
                   <span className="text-2xl">📚</span>
                   <div>
-                    <strong className="text-foreground">4 Learning Scenarios</strong>
-                    <p className="text-sm text-muted-foreground">Tax basics, deductions, filing, and Munich specifics</p>
+                    <strong className="text-foreground">1 Learning Scenario</strong>
+                    <p className="text-sm text-muted-foreground">Interactive tax learning conversation</p>
                   </div>
                 </div>
                 

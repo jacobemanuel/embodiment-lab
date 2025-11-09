@@ -10,7 +10,8 @@ import PreTest from "./pages/PreTest";
 import ModeAssignment from "./pages/ModeAssignment";
 import Scenario from "./pages/Scenario";
 import ScenarioFeedback from "./pages/ScenarioFeedback";
-import PostTest from "./pages/PostTest";
+import PostTestPage1 from "./pages/PostTestPage1";
+import PostTestPage2 from "./pages/PostTestPage2";
 import Completion from "./pages/Completion";
 import NotFound from "./pages/NotFound";
 
@@ -30,7 +31,8 @@ const App = () => (
           <Route path="/mode-assignment" element={<ModeAssignment />} />
           <Route path="/scenario/:mode/:scenarioId" element={<Scenario />} />
           <Route path="/scenario/:mode/:scenarioId/feedback" element={<ScenarioFeedback />} />
-          <Route path="/post-test" element={<PostTest />} />
+          <Route path="/post-test" element={<PostTestPage1 />} />
+          <Route path="/post-test-2" element={<PostTestPage2 />} />
           <Route path="/completion" element={<Completion />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

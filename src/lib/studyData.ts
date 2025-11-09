@@ -31,7 +31,7 @@ export const saveDemographics = async (sessionId: string, demographics: Record<s
       session_id: session.id,
       age_range: demographics['demo-age'],
       education: demographics['demo-education'],
-      ai_experience: demographics['demo-ai-experience']
+      tax_experience: demographics['demo-tax-experience']
     });
 
   if (error) throw error;

@@ -30,7 +30,7 @@ const Welcome = () => {
             <div className="text-center space-y-6">
               <div className="inline-block">
                 <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-fade-in">
-                  Steuern lernen für Studenten
+                  Tax Learning for Students
                 </h1>
               </div>
               <p className="text-xl text-muted-foreground max-w-xl mx-auto">
@@ -42,7 +42,7 @@ const Welcome = () => {
             <div className="glass-card rounded-3xl p-8 md:p-10 space-y-8 shadow-large hover:shadow-glow transition-all duration-500">
               <div className="space-y-4">
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                  Willkommen!
+                  Welcome!
                 </h2>
                 <p className="text-muted-foreground leading-relaxed text-lg">
                   Thank you for participating in this tax education study. You'll explore four important topics about taxes in Germany through interactive conversations designed for students in Munich.

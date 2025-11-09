@@ -139,13 +139,13 @@ export const demographicQuestions: Question[] = [
     ]
   },
   {
-    id: "demo-ai-experience",
-    text: "How much experience do you have with AI?",
+    id: "demo-tax-experience",
+    text: "How familiar are you with the German tax system?",
     options: [
-      "None—I'm completely new",
-      "A little—I've used AI tools a few times",
-      "Moderate—I use AI regularly",
-      "Extensive—I work with AI professionally",
+      "Not at all—completely new to German taxes",
+      "Slightly—heard of some concepts",
+      "Moderately—have some basic understanding",
+      "Very—familiar with filing taxes in Germany",
       "Prefer not to say"
     ]
   }

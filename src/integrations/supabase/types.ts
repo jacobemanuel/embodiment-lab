@@ -17,27 +17,27 @@ export type Database = {
       demographics: {
         Row: {
           age_range: string | null
-          ai_experience: string | null
           created_at: string
           education: string | null
           id: string
           session_id: string
+          tax_experience: string | null
         }
         Insert: {
           age_range?: string | null
-          ai_experience?: string | null
           created_at?: string
           education?: string | null
           id?: string
           session_id: string
+          tax_experience?: string | null
         }
         Update: {
           age_range?: string | null
-          ai_experience?: string | null
           created_at?: string
           education?: string | null
           id?: string
           session_id?: string
+          tax_experience?: string | null
         }
         Relationships: [
           {

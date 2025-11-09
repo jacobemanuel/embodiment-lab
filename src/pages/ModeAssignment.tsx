@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { StudyMode } from "@/types/study";
 import { createStudySession } from "@/lib/studyData";
+import { scenarios } from "@/data/scenarios";
 
 const ModeAssignment = () => {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ const ModeAssignment = () => {
         
         // Navigate to first scenario after brief delay
         setTimeout(() => {
-          navigate(`/scenario/${randomMode}/bias`);
+          navigate(`/scenario/${randomMode}/${scenarios[0].id}`);
         }, 1500);
       } catch (error) {
         console.error('Error creating session:', error);
@@ -35,7 +36,7 @@ const ModeAssignment = () => {
         const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         sessionStorage.setItem('studyMode', randomMode);
         sessionStorage.setItem('sessionId', sessionId);
-        setTimeout(() => navigate(`/scenario/${randomMode}/bias`), 1500);
+        setTimeout(() => navigate(`/scenario/${randomMode}/${scenarios[0].id}`), 1500);
       }
     };
     

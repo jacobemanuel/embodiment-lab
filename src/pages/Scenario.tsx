@@ -89,7 +89,17 @@ const Scenario = () => {
   };
 
   if (!scenario) {
-    return <div>Scenario not found</div>;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-semibold">Scenario not found</h2>
+          <p className="text-muted-foreground">The scenario "{scenarioId}" doesn't exist.</p>
+          <Button onClick={() => navigate(`/scenario/${currentMode}/${scenarios[0].id}`)}>
+            Go to First Scenario
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const ModeComponent = currentMode === 'text' ? TextMode : currentMode === 'voice' ? VoiceMode : AvatarMode;

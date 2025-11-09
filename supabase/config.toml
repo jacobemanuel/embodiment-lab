@@ -1,1 +1,10 @@
 project_id = "avryyhtkgbgiqqmzxjrt"
+
+[functions.save-study-data]
+verify_jwt = false
+
+[functions.complete-session]
+verify_jwt = false
+
+[functions.chat]
+verify_jwt = false

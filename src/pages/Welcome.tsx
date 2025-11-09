@@ -19,18 +19,18 @@ const Welcome = () => {
         <div className="max-w-2xl w-full space-y-8">
           <div className="text-center space-y-4">
             <h1 className="text-4xl font-semibold tracking-tight">
-              AI Literacy Study
+              Steuern lernen für Studenten
             </h1>
             <p className="text-xl text-muted-foreground">
-              Help us understand how people learn about AI
+              Learn about the German tax system as a student in Munich
             </p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-8 space-y-6 shadow-subtle">
             <div className="space-y-4">
-              <h2 className="text-2xl font-semibold">Welcome!</h2>
+              <h2 className="text-2xl font-semibold">Willkommen!</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Thank you for participating in this research study. You'll explore four important topics about artificial intelligence through interactive conversations.
+                Thank you for participating in this tax education study. You'll explore four important topics about taxes in Germany through interactive conversations designed for students in Munich.
               </p>
             </div>
 
@@ -43,7 +43,7 @@ const Welcome = () => {
                 </li>
                 <li className="flex gap-3">
                   <span className="text-primary">•</span>
-                  <span><strong className="text-foreground">Topics:</strong> AI bias, transparency, limitations, and societal impact</span>
+                  <span><strong className="text-foreground">Topics:</strong> Tax basics, deductions, filing, and Munich-specific considerations</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-primary">•</span>
@@ -59,7 +59,7 @@ const Welcome = () => {
             <div className="bg-secondary/50 rounded-xl p-6 space-y-3">
               <h3 className="font-semibold">Your privacy matters</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Your responses will help researchers understand how to design better AI educational tools. No personally identifiable information will be collected or stored. You can withdraw at any time without penalty.
+                Your responses will help researchers understand how to design better tax education tools for students. No personally identifiable information will be collected or stored. You can withdraw at any time without penalty.
               </p>
             </div>
 

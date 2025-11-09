@@ -8,113 +8,113 @@ export interface Question {
 export const preTestQuestions: Question[] = [
   {
     id: "pre-1",
-    text: "What is machine learning bias?",
+    text: "What is a Minijob in Germany?",
     options: [
-      "When an AI system performs poorly",
-      "When an AI system reflects unfair patterns from training data",
-      "When an AI system is too slow",
-      "When an AI system crashes frequently"
+      "A job requiring minimal qualifications",
+      "A part-time position earning up to €538/month tax-free",
+      "Any student job under 10 hours per week",
+      "A job that lasts less than 3 months"
     ],
-    correctAnswer: "When an AI system reflects unfair patterns from training data"
+    correctAnswer: "A part-time position earning up to €538/month tax-free"
   },
   {
     id: "pre-2",
-    text: "Why is AI transparency important?",
+    text: "What is the Grundfreibetrag (basic tax allowance) in 2024?",
     options: [
-      "To make AI faster",
-      "To reduce computing costs",
-      "To enable users to understand and challenge decisions",
-      "To improve graphics"
+      "€9,984",
+      "€10,908",
+      "€11,604",
+      "€12,000"
     ],
-    correctAnswer: "To enable users to understand and challenge decisions"
+    correctAnswer: "€11,604"
   },
   {
     id: "pre-3",
-    text: "What is an AI hallucination?",
+    text: "As a student, when should you file a Steuererklärung (tax return)?",
     options: [
-      "When AI generates visual illusions",
-      "When AI confidently produces false information",
-      "When AI becomes self-aware",
-      "When AI refuses to respond"
+      "Only if you earned over €50,000",
+      "Never—students are exempt",
+      "Always mandatory by July 31",
+      "Voluntary, but beneficial if taxes were withheld from your income"
     ],
-    correctAnswer: "When AI confidently produces false information"
+    correctAnswer: "Voluntary, but beneficial if taxes were withheld from your income"
   },
   {
     id: "pre-4",
-    text: "Who should be responsible for harmful AI decisions?",
+    text: "What is the difference between 'Sonderausgaben' and 'Werbungskosten'?",
     options: [
-      "Only the end users",
-      "Only the AI itself",
-      "The organizations deploying the AI",
-      "No one—it's just technology"
+      "They are the same thing",
+      "Sonderausgaben are for first degrees (limited to €6,000), Werbungskosten are for career-related expenses (unlimited)",
+      "Werbungskosten are only for business owners",
+      "Sonderausgaben are always better for students"
     ],
-    correctAnswer: "The organizations deploying the AI"
+    correctAnswer: "Sonderausgaben are for first degrees (limited to €6,000), Werbungskosten are for career-related expenses (unlimited)"
   },
   {
     id: "pre-5",
-    text: "Historical hiring data that favored men would likely cause an AI to:",
+    text: "Can you deduct your laptop purchase as a student?",
     options: [
-      "Hire more women to balance it out",
-      "Continue favoring male candidates",
-      "Ignore gender entirely",
-      "Hire randomly"
+      "No, personal electronics aren't deductible",
+      "Yes, but only 50% of the cost",
+      "Yes, fully deductible as study equipment (depreciated over 3 years if over €800)",
+      "Only if you're studying computer science"
     ],
-    correctAnswer: "Continue favoring male candidates"
+    correctAnswer: "Yes, fully deductible as study equipment (depreciated over 3 years if over €800)"
   },
   {
     id: "pre-6",
-    text: "A 'black box' AI system is one that:",
+    text: "What is ELSTER?",
     options: [
-      "Is physically black in color",
-      "Only works in darkness",
-      "Makes decisions without explanation",
-      "Is very simple to understand"
+      "A German tax consulting company",
+      "The official government portal for electronic tax filing",
+      "A type of tax deduction for students",
+      "A Munich-specific tax form"
     ],
-    correctAnswer: "Makes decisions without explanation"
+    correctAnswer: "The official government portal for electronic tax filing"
   },
   {
     id: "pre-7",
-    text: "Why can't large language models verify if information is true?",
+    text: "How long do you have to file a voluntary tax return retroactively?",
     options: [
-      "They're too slow",
-      "They predict patterns, but don't have real knowledge",
-      "They're not connected to the internet",
-      "They don't want to"
+      "1 year",
+      "2 years",
+      "4 years",
+      "10 years"
     ],
-    correctAnswer: "They predict patterns, but don't have real knowledge"
+    correctAnswer: "4 years"
   },
   {
     id: "pre-8",
-    text: "Which field needs explainable AI most urgently?",
+    text: "Is a mandatory internship (Pflichtpraktikum) taxed the same as a voluntary internship?",
     options: [
-      "Video games",
-      "Social media likes",
-      "Medical diagnosis",
-      "Weather prediction"
+      "Yes, all internships are taxed identically",
+      "No—Pflichtpraktikum under 3 months earning under €538/month is often tax-free",
+      "Mandatory internships are always completely tax-free",
+      "Only international students pay taxes on internships"
     ],
-    correctAnswer: "Medical diagnosis"
+    correctAnswer: "No—Pflichtpraktikum under 3 months earning under €538/month is often tax-free"
   },
   {
     id: "pre-9",
-    text: "What should you do if AI gives you medical advice?",
+    text: "Can you deduct your Munich semester ticket (MVV transit pass)?",
     options: [
-      "Follow it immediately",
-      "Verify with trusted sources and professionals",
-      "Ignore it completely",
-      "Share it widely"
+      "No, transportation is never deductible",
+      "Only if you live more than 20km from university",
+      "Yes, fully deductible as part of your semester contribution",
+      "Only for Master's students"
     ],
-    correctAnswer: "Verify with trusted sources and professionals"
+    correctAnswer: "Yes, fully deductible as part of your semester contribution"
   },
   {
     id: "pre-10",
-    text: "When AI content moderation removes legitimate posts, this affects:",
+    text: "What happens if you earn less than the Grundfreibetrag but had taxes withheld?",
     options: [
-      "Only the platform, not users",
-      "No one—it's just digital content",
-      "Real people who lose access to information",
-      "Only computer systems"
+      "You lose that money permanently",
+      "It automatically gets refunded without filing",
+      "You can get it refunded by filing a Steuererklärung",
+      "You can only use it as credit for next year"
     ],
-    correctAnswer: "Real people who lose access to information"
+    correctAnswer: "You can get it refunded by filing a Steuererklärung"
   }
 ];
 

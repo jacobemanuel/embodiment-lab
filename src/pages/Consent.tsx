@@ -33,7 +33,7 @@ const Consent = () => {
             <section className="space-y-3">
               <h2 className="text-xl font-semibold">Purpose of the Study</h2>
               <p className="text-muted-foreground leading-relaxed">
-                This research examines how different presentation formats affect learning about artificial intelligence concepts. You will complete a brief pre-test, engage with four educational scenarios, and complete a post-test.
+                This research examines how different presentation formats affect learning about German tax concepts for students. You will complete a brief pre-test, engage with four educational scenarios about taxes in Munich and Bavaria, and complete a post-test.
               </p>
             </section>
 
@@ -79,7 +79,7 @@ const Consent = () => {
                 <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the 45-minute session.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Benefits:</strong> You will learn about important AI concepts and contribute to research on educational technology.
+                <strong className="text-foreground">Benefits:</strong> You will learn about important tax concepts relevant to students in Germany and contribute to research on educational technology.
               </p>
             </section>
 

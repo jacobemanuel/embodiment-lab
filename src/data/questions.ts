@@ -8,113 +8,113 @@ export interface Question {
 export const preTestQuestions: Question[] = [
   {
     id: "pre-1",
-    text: "What is a Minijob in Germany?",
+    text: "What is a 'prompt' in AI image generation?",
     options: [
-      "A job requiring minimal qualifications",
-      "A part-time position earning up to €538/month tax-free",
-      "Any student job under 10 hours per week",
-      "A job that lasts less than 3 months"
+      "A button to start the generation process",
+      "A text description that guides the AI to create an image",
+      "The image file format",
+      "A payment method for AI services"
     ],
-    correctAnswer: "A part-time position earning up to €538/month tax-free"
+    correctAnswer: "A text description that guides the AI to create an image"
   },
   {
     id: "pre-2",
-    text: "What is the Grundfreibetrag (basic tax allowance) in 2024?",
+    text: "Which parameter controls how closely the AI follows your prompt?",
     options: [
-      "€9,984",
-      "€10,908",
-      "€11,604",
-      "€12,000"
+      "Temperature",
+      "CFG Scale (Classifier-Free Guidance)",
+      "Resolution",
+      "Seed number"
     ],
-    correctAnswer: "€11,604"
+    correctAnswer: "CFG Scale (Classifier-Free Guidance)"
   },
   {
     id: "pre-3",
-    text: "As a student, when should you file a Steuererklärung (tax return)?",
+    text: "What does 'negative prompt' do?",
     options: [
-      "Only if you earned over €50,000",
-      "Never—students are exempt",
-      "Always mandatory by July 31",
-      "Voluntary, but beneficial if taxes were withheld from your income"
+      "Creates dark or scary images",
+      "Deletes the previous image",
+      "Tells the AI what NOT to include in the image",
+      "Reduces the image quality"
     ],
-    correctAnswer: "Voluntary, but beneficial if taxes were withheld from your income"
+    correctAnswer: "Tells the AI what NOT to include in the image"
   },
   {
     id: "pre-4",
-    text: "What is the difference between 'Sonderausgaben' and 'Werbungskosten'?",
+    text: "What is 'Stable Diffusion'?",
     options: [
-      "They are the same thing",
-      "Sonderausgaben are for first degrees (limited to €6,000), Werbungskosten are for career-related expenses (unlimited)",
-      "Werbungskosten are only for business owners",
-      "Sonderausgaben are always better for students"
+      "A photo editing app",
+      "An AI model for generating images from text",
+      "A color correction technique",
+      "A camera stabilization feature"
     ],
-    correctAnswer: "Sonderausgaben are for first degrees (limited to €6,000), Werbungskosten are for career-related expenses (unlimited)"
+    correctAnswer: "An AI model for generating images from text"
   },
   {
     id: "pre-5",
-    text: "Can you deduct your laptop purchase as a student?",
+    text: "What does the 'seed' parameter control?",
     options: [
-      "No, personal electronics aren't deductible",
-      "Yes, but only 50% of the cost",
-      "Yes, fully deductible as study equipment (depreciated over 3 years if over €800)",
-      "Only if you're studying computer science"
+      "The cost of generation",
+      "The randomness/reproducibility of results",
+      "The color palette",
+      "The generation speed"
     ],
-    correctAnswer: "Yes, fully deductible as study equipment (depreciated over 3 years if over €800)"
+    correctAnswer: "The randomness/reproducibility of results"
   },
   {
     id: "pre-6",
-    text: "What is ELSTER?",
+    text: "Which aspect ratio is best for portrait-oriented images?",
     options: [
-      "A German tax consulting company",
-      "The official government portal for electronic tax filing",
-      "A type of tax deduction for students",
-      "A Munich-specific tax form"
+      "16:9 (landscape)",
+      "1:1 (square)",
+      "9:16 (portrait)",
+      "21:9 (ultra-wide)"
     ],
-    correctAnswer: "The official government portal for electronic tax filing"
+    correctAnswer: "9:16 (portrait)"
   },
   {
     id: "pre-7",
-    text: "How long do you have to file a voluntary tax return retroactively?",
+    text: "What is an ethical concern with AI image generation?",
     options: [
-      "1 year",
-      "2 years",
-      "4 years",
-      "10 years"
+      "It uses too much electricity",
+      "It can create deepfakes or copyright violations",
+      "It's too expensive for students",
+      "It only works in English"
     ],
-    correctAnswer: "4 years"
+    correctAnswer: "It can create deepfakes or copyright violations"
   },
   {
     id: "pre-8",
-    text: "Is a mandatory internship (Pflichtpraktikum) taxed the same as a voluntary internship?",
+    text: "What does 'img2img' mean?",
     options: [
-      "Yes, all internships are taxed identically",
-      "No—Pflichtpraktikum under 3 months earning under €538/month is often tax-free",
-      "Mandatory internships are always completely tax-free",
-      "Only international students pay taxes on internships"
+      "Converting images to different formats",
+      "Using an existing image as a base for AI generation",
+      "Copying images from the internet",
+      "Compressing images"
     ],
-    correctAnswer: "No—Pflichtpraktikum under 3 months earning under €538/month is often tax-free"
+    correctAnswer: "Using an existing image as a base for AI generation"
   },
   {
     id: "pre-9",
-    text: "Can you deduct your Munich semester ticket (MVV transit pass)?",
+    text: "What is 'inpainting'?",
     options: [
-      "No, transportation is never deductible",
-      "Only if you live more than 20km from university",
-      "Yes, fully deductible as part of your semester contribution",
-      "Only for Master's students"
+      "Painting on a canvas",
+      "Editing specific parts of an image while keeping the rest",
+      "Printing images on paper",
+      "Creating animations"
     ],
-    correctAnswer: "Yes, fully deductible as part of your semester contribution"
+    correctAnswer: "Editing specific parts of an image while keeping the rest"
   },
   {
     id: "pre-10",
-    text: "What happens if you earn less than the Grundfreibetrag but had taxes withheld?",
+    text: "Which prompt would likely produce BETTER results?",
     options: [
-      "You lose that money permanently",
-      "It automatically gets refunded without filing",
-      "You can get it refunded by filing a Steuererklärung",
-      "You can only use it as credit for next year"
+      "cat",
+      "a fluffy orange tabby cat sitting on a windowsill at sunset, detailed fur, photorealistic",
+      "CAT CAT CAT",
+      "give me a cat picture"
     ],
-    correctAnswer: "You can get it refunded by filing a Steuererklärung"
+    correctAnswer: "a fluffy orange tabby cat sitting on a windowsill at sunset, detailed fur, photorealistic"
   }
 ];
 
@@ -124,7 +124,7 @@ export const demographicQuestions: Question[] = [
   {
     id: "demo-age",
     text: "What is your age range?",
-    options: ["18-24", "25-34", "35-44", "45-54", "55+", "Prefer not to say"]
+    options: ["<18", "18-24", "25-34", "35-44", "45-60", "60+", "Prefer not to say"]
   },
   {
     id: "demo-education",
@@ -139,14 +139,14 @@ export const demographicQuestions: Question[] = [
     ]
   },
   {
-    id: "demo-tax-experience",
-    text: "How familiar are you with the German tax system?",
+    id: "demo-digital-experience",
+    text: "Experience with digital learning platforms",
     options: [
-      "Not at all—completely new to German taxes",
-      "Slightly—heard of some concepts",
-      "Moderately—have some basic understanding",
-      "Very—familiar with filing taxes in Germany",
-      "Prefer not to say"
+      "1 - No Experience",
+      "2 - Limited Experience",
+      "3 - Moderate Experience",
+      "4 - Good Experience",
+      "5 - Extensive Experience"
     ]
   }
 ];

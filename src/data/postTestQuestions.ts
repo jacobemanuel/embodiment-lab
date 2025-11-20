@@ -3,14 +3,104 @@ export interface PostTestQuestion {
   text: string;
   type: 'likert' | 'multiple-choice';
   options: string[];
-  category?: 'trust' | 'engagement' | 'satisfaction' | 'knowledge';
+  category?: 'expectations' | 'avatar-qualities' | 'realism' | 'trust' | 'engagement' | 'satisfaction' | 'knowledge';
 }
 
 export const postTestQuestions: PostTestQuestion[] = [
-  // Trust questions
+  // === EXPECTATIONS TOWARD LEARNING WITH AN AVATAR ===
+  {
+    id: "expectation-main",
+    text: "What is your main expectation from a teaching avatar? (Select the TWO most important)",
+    type: 'multiple-choice',
+    category: 'expectations',
+    options: [
+      "Clear and easy-to-understand explanations",
+      "Personalized feedback based on my learning needs",
+      "Guidance through exercises and problem-solving",
+      "Motivation and encouragement during learning",
+      "Availability to answer questions anytime",
+      "Providing structure and helping me stay on track",
+      "Simplifying complex topics",
+      "A friendly and supportive learning experience"
+    ]
+  },
+  {
+    id: "learning-tasks",
+    text: "For which learning tasks would you use an avatar? (Select all that apply)",
+    type: 'multiple-choice',
+    category: 'expectations',
+    options: [
+      "Explanations of concepts",
+      "Guided exercises",
+      "Q&A sessions",
+      "Exam preparation",
+      "Motivation and coaching",
+      "Other"
+    ]
+  },
+  
+  // === AVATAR QUALITIES RATINGS (1-5) ===
+  {
+    id: "quality-clear-language",
+    text: "How important is CLEAR LANGUAGE for an avatar?",
+    type: 'likert',
+    category: 'avatar-qualities',
+    options: ["1 - Not important", "2", "3", "4", "5 - Very important"]
+  },
+  {
+    id: "quality-patience",
+    text: "How important is PATIENCE / ABILITY TO REPEAT for an avatar?",
+    type: 'likert',
+    category: 'avatar-qualities',
+    options: ["1 - Not important", "2", "3", "4", "5 - Very important"]
+  },
+  {
+    id: "quality-emotional-support",
+    text: "How important is EMOTIONAL SUPPORT for an avatar?",
+    type: 'likert',
+    category: 'avatar-qualities',
+    options: ["1 - Not important", "2", "3", "4", "5 - Very important"]
+  },
+  {
+    id: "quality-personalized-feedback",
+    text: "How important is PERSONALIZED FEEDBACK for an avatar?",
+    type: 'likert',
+    category: 'avatar-qualities',
+    options: ["1 - Not important", "2", "3", "4", "5 - Very important"]
+  },
+  
+  // === AVATAR REALISM & PERCEPTION ===
+  {
+    id: "visual-style",
+    text: "What visual style do you prefer for a teaching avatar?",
+    type: 'likert',
+    category: 'realism',
+    options: [
+      "1 - Highly stylized/cartoon-like",
+      "2",
+      "3 - Balanced",
+      "4",
+      "5 - Highly realistic/photo-like"
+    ]
+  },
+  {
+    id: "human-likeness",
+    text: "What level of human-likeness do you prefer?",
+    type: 'likert',
+    category: 'realism',
+    options: [
+      "1 - Not human-like at all",
+      "2",
+      "3 - Somewhat human-like",
+      "4",
+      "5 - Very human-like"
+    ]
+  },
+  
+  // === TRUST & ENGAGEMENT (updated for AI image generation) ===
   {
     id: "trust-1",
-    text: "I trust the AI system to provide accurate tax information",
+    text: "I trust the AI system to provide accurate information about AI image generation",
     type: 'likert',
     category: 'trust',
     options: [
@@ -23,7 +113,7 @@ export const postTestQuestions: PostTestQuestion[] = [
   },
   {
     id: "trust-2",
-    text: "I would rely on this AI system for making important tax decisions",
+    text: "I would rely on this AI system for learning complex technical topics",
     type: 'likert',
     category: 'trust',
     options: [
@@ -47,8 +137,41 @@ export const postTestQuestions: PostTestQuestion[] = [
       "Strongly agree"
     ]
   },
+  {
+    id: "trust-builds",
+    text: "What builds trust in an avatar? (Select all that apply)",
+    type: 'multiple-choice',
+    category: 'trust',
+    options: [
+      "Competence in the subject matter",
+      "Transparency about limitations",
+      "Calm voice and demeanor",
+      "Consistency in responses",
+      "Likeability and friendliness"
+    ]
+  },
+  {
+    id: "trust-willingness",
+    text: "How willing are you to trust an avatar with complex learning tasks?",
+    type: 'likert',
+    category: 'trust',
+    options: ["1 - Not willing", "2", "3 - Neutral", "4", "5 - Very willing"]
+  },
+  {
+    id: "trust-lost",
+    text: "When is trust in an avatar LOST? (Select all that apply)",
+    type: 'multiple-choice',
+    category: 'trust',
+    options: [
+      "Over-realistic appearance (uncanny valley)",
+      "Monotone voice",
+      "Errors in answers",
+      "Slow response time",
+      "Lack of empathy"
+    ]
+  },
   
-  // Engagement questions
+  // === ENGAGEMENT ===
   {
     id: "engagement-1",
     text: "The learning experience kept me engaged throughout",
@@ -88,8 +211,15 @@ export const postTestQuestions: PostTestQuestion[] = [
       "Strongly agree"
     ]
   },
+  {
+    id: "interaction-preference",
+    text: "What is your preferred interaction type for learning?",
+    type: 'multiple-choice',
+    category: 'engagement',
+    options: ["Video-based", "Audio-based", "Chat-based (text)", "Mixed (combination)"]
+  },
   
-  // Satisfaction questions
+  // === SATISFACTION ===
   {
     id: "satisfaction-1",
     text: "Overall, I am satisfied with this learning experience",
@@ -118,7 +248,7 @@ export const postTestQuestions: PostTestQuestion[] = [
   },
   {
     id: "satisfaction-3",
-    text: "The learning mode I used was effective for understanding tax concepts",
+    text: "The learning mode I used was effective for understanding AI image generation concepts",
     type: 'likert',
     category: 'satisfaction',
     options: [
@@ -130,65 +260,65 @@ export const postTestQuestions: PostTestQuestion[] = [
     ]
   },
   
-  // Knowledge check questions (from original pre-test)
+  // === KNOWLEDGE CHECK (AI Image Generation) ===
   {
     id: "knowledge-1",
-    text: "What is a Minijob in Germany?",
+    text: "What is a 'prompt' in AI image generation?",
     type: 'multiple-choice',
     category: 'knowledge',
     options: [
-      "A job requiring minimal qualifications",
-      "A part-time position earning up to €538/month tax-free",
-      "Any student job under 10 hours per week",
-      "A job that lasts less than 3 months"
+      "A button to start generation",
+      "A text description guiding the AI",
+      "An image file format",
+      "A payment method"
     ]
   },
   {
     id: "knowledge-2",
-    text: "What is the Grundfreibetrag (basic tax allowance) in 2024?",
+    text: "What does 'negative prompt' do?",
     type: 'multiple-choice',
     category: 'knowledge',
     options: [
-      "€9,984",
-      "€10,908",
-      "€11,604",
-      "€12,000"
+      "Creates dark images",
+      "Deletes previous images",
+      "Tells AI what NOT to include",
+      "Reduces quality"
     ]
   },
   {
     id: "knowledge-3",
-    text: "As a student, when should you file a Steuererklärung (tax return)?",
+    text: "What does 'CFG Scale' control?",
     type: 'multiple-choice',
     category: 'knowledge',
     options: [
-      "Only if you earned over €50,000",
-      "Never—students are exempt",
-      "Always mandatory by July 31",
-      "Voluntary, but beneficial if taxes were withheld from your income"
+      "Image resolution",
+      "How strictly the AI follows your prompt",
+      "Generation speed",
+      "File size"
     ]
   },
   {
     id: "knowledge-4",
-    text: "Can you deduct your laptop purchase as a student?",
+    text: "What is an ethical concern with AI image generation?",
     type: 'multiple-choice',
     category: 'knowledge',
     options: [
-      "No, personal electronics aren't deductible",
-      "Yes, but only 50% of the cost",
-      "Yes, fully deductible as study equipment (depreciated over 3 years if over €800)",
-      "Only if you're studying computer science"
+      "It's too slow",
+      "Potential for deepfakes and copyright violations",
+      "Limited to English only",
+      "Expensive for students"
     ]
   },
   {
     id: "knowledge-5",
-    text: "What is ELSTER?",
+    text: "Which prompt would produce BETTER results?",
     type: 'multiple-choice',
     category: 'knowledge',
     options: [
-      "A German tax consulting company",
-      "The official government portal for electronic tax filing",
-      "A type of tax deduction for students",
-      "A Munich-specific tax form"
+      "dog",
+      "a golden retriever puppy playing in a sunny garden, photorealistic, detailed fur",
+      "DOG DOG DOG",
+      "make dog"
     ]
   }
 ];

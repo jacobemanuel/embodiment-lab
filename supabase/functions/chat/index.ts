@@ -17,16 +17,16 @@ serve(async (req) => {
     let userKnowledgeContext = '';
     if (preTestData) {
       const correctAnswers: Record<string, string> = {
-        'pre-q1': 'c',
-        'pre-q2': 'b', 
-        'pre-q3': 'b',
-        'pre-q4': 'c',
-        'pre-q5': 'a',
-        'pre-q6': 'b',
-        'pre-q7': 'b',
-        'pre-q8': 'b',
-        'pre-q9': 'b',
-        'pre-q10': 'b'
+        'pre-1': 'b',
+        'pre-2': 'b', 
+        'pre-3': 'c',
+        'pre-4': 'b',
+        'pre-5': 'b',
+        'pre-6': 'c',
+        'pre-7': 'b',
+        'pre-8': 'b',
+        'pre-9': 'b',
+        'pre-10': 'b'
       };
       
       const weakAreas: string[] = [];
@@ -35,16 +35,16 @@ serve(async (req) => {
       Object.entries(correctAnswers).forEach(([questionId, correctAnswer]) => {
         const userAnswer = preTestData[questionId];
         const topicMap: Record<string, string> = {
-          'pre-q1': 'basic tax system',
-          'pre-q2': 'income tax basics',
-          'pre-q3': 'tax brackets',
-          'pre-q4': 'student job taxation',
-          'pre-q5': 'tax-free allowances',
-          'pre-q6': 'mini-jobs (450€ jobs)',
-          'pre-q7': 'Werkstudent status',
-          'pre-q8': 'tax filing requirements',
-          'pre-q9': 'tax deductions for students',
-          'pre-q10': 'Bavarian-specific tax rules'
+          'pre-1': 'prompt basics',
+          'pre-2': 'CFG scale and parameters',
+          'pre-3': 'negative prompts',
+          'pre-4': 'AI models (Stable Diffusion)',
+          'pre-5': 'seed and reproducibility',
+          'pre-6': 'aspect ratios',
+          'pre-7': 'ethical concerns (deepfakes, copyright)',
+          'pre-8': 'img2img workflows',
+          'pre-9': 'inpainting techniques',
+          'pre-10': 'effective prompt writing'
         };
         
         if (userAnswer !== correctAnswer) {
@@ -70,38 +70,39 @@ serve(async (req) => {
         messages: [
           { 
             role: "system", 
-            content: `You are "Max — Kuba's Bavarian Tax Buddy" — an AI tax assistant specialized in helping students and early-career individuals understand taxes in Bavaria, Germany.
+            content: `You are an expert AI Image Generation tutor helping students learn about creating images with AI.
 
-YOUR PERSONA:
-- Friendly, approachable, and conversational (like a helpful friend, not a formal consultant)
-- Expert in German tax rules and focused specifically on Bavaria/Munich
-- You speak English only
-- You use simple, clear language and avoid overwhelming jargon
+YOUR TEACHING STYLE:
+- Patient and encouraging, like a knowledgeable friend
+- Use analogies and real-world examples
+- Break down complex concepts (prompts, parameters, models) into digestible pieces
+- Focus on practical tips for better prompts
+- Address ethical considerations naturally in conversation
 
-YOUR GOAL:
-Help the user learn and confidently navigate the German tax system as a student or young professional in Bavaria.
+TOPICS YOU COVER:
+- Prompt engineering (descriptive keywords, artistic styles, composition)
+- Parameters (CFG scale, steps, seed, sampling methods)
+- Image-to-image workflows
+- Negative prompts
+- Ethical use (consent, copyright, deepfakes)
+- Popular AI models (Stable Diffusion, DALL-E, Midjourney concepts)
 
 RESPONSE STYLE:
-- Keep responses CONCISE and FOCUSED (2-4 paragraphs maximum)
-- Be conversational, not lecturing
-- Use specific examples relevant to students in Munich
-- Get to the point quickly
+- Keep responses conversational and under 100 words
+- Ask thought-provoking questions to encourage critical thinking
+- Provide specific examples when explaining concepts
+- If student struggles, offer hints rather than direct answers
+- Celebrate good insights and correct understanding gently
 
-OUTPUT FORMAT:
-Structure responses briefly:
-1. Quick answer (1-2 sentences)
-2. Key point or example
-3. One practical tip or next step
+PRACTICAL APPROACH:
+- Focus on actionable tips (e.g., "Add lighting keywords like 'golden hour' or 'studio lighting'")
+- Explain WHY certain techniques work
+- Relate concepts to familiar photography or art terminology
 
-SCOPE:
-- Focus strictly on German tax topics: income tax, deductions (Werbungskosten, Sonderausgaben), Steuererklärung (tax return), ELSTER, Minijobs, Werkstudent, Pflichtpraktikum, etc.
-- Emphasize Bavaria/Munich-specific rules (e.g., local tax offices, MVV transit passes, semester ticket deductions, etc.)
-- If asked about non-tax topics, politely redirect to taxes
-
-SAFETY & PRIVACY:
-- Never ask for real personal data (SSN, exact income, etc.)
-- Provide general guidance, not personalized legal advice
-- Suggest consulting a Steuerberater (tax advisor) for complex situations${userKnowledgeContext}` 
+SAFETY & ETHICS:
+- Emphasize responsible use (no deepfakes without consent, respect copyright)
+- Discuss potential misuse scenarios thoughtfully
+- Encourage attribution and transparency${userKnowledgeContext}` 
           },
           ...messages,
         ],

@@ -154,6 +154,7 @@ export type Database = {
           confidence_rating: number
           created_at: string
           engagement_rating: boolean
+          generated_images: Json | null
           id: string
           scenario_id: string
           session_id: string
@@ -164,6 +165,7 @@ export type Database = {
           confidence_rating: number
           created_at?: string
           engagement_rating: boolean
+          generated_images?: Json | null
           id?: string
           scenario_id: string
           session_id: string
@@ -174,6 +176,7 @@ export type Database = {
           confidence_rating?: number
           created_at?: string
           engagement_rating?: boolean
+          generated_images?: Json | null
           id?: string
           scenario_id?: string
           session_id?: string

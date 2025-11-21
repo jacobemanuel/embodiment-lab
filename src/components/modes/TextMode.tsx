@@ -4,6 +4,7 @@ import { Message } from "@/types/study";
 import { useState, useRef, useEffect } from "react";
 import { streamChat } from "@/utils/aiChat";
 import { useToast } from "@/hooks/use-toast";
+import { Send, SkipForward } from "lucide-react";
 
 interface TextModeProps {
   messages: Message[];
@@ -28,7 +29,6 @@ export const TextMode = ({ messages, onSendMessage, onSkip, isLoading }: TextMod
       setInput("");
       onSendMessage(userMessage);
       
-      // Stream AI response
       setIsStreaming(true);
       let aiResponse = "";
       
@@ -37,7 +37,6 @@ export const TextMode = ({ messages, onSendMessage, onSkip, isLoading }: TextMod
           messages: [...messages, { role: 'user', content: userMessage, timestamp: Date.now() }],
           onDelta: (chunk) => {
             aiResponse += chunk;
-            // Update the last message in real-time through parent
             onSendMessage(`__AI_RESPONSE__${aiResponse}`);
           },
           onDone: () => {
@@ -67,40 +66,32 @@ export const TextMode = ({ messages, onSendMessage, onSkip, isLoading }: TextMod
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex flex-col h-full bg-gradient-to-b from-background to-card/30">
+      {/* Messages area - simplified */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((msg, idx) => (
           <div
             key={idx}
-            className={`space-y-2 ${msg.role === 'ai' ? '' : 'pl-12'}`}
+            className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'}`}
           >
-            {msg.role === 'ai' && (
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                AI Study Buddy
-              </div>
-            )}
             <div
-              className={`rounded-2xl p-4 ${
+              className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                 msg.role === 'ai'
-                  ? 'bg-secondary text-foreground'
-                  : 'bg-primary text-primary-foreground ml-auto max-w-[85%]'
+                  ? 'bg-card border border-border/50'
+                  : 'bg-primary text-primary-foreground'
               }`}
             >
-              <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
             </div>
           </div>
         ))}
-        {isLoading && (
-          <div className="space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              AI Study Buddy
-            </div>
-            <div className="bg-secondary rounded-2xl p-4">
+        {isStreaming && (
+          <div className="flex justify-start">
+            <div className="bg-card border border-border/50 rounded-2xl px-4 py-3">
               <div className="flex gap-1">
-                <div className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
@@ -108,32 +99,36 @@ export const TextMode = ({ messages, onSendMessage, onSkip, isLoading }: TextMod
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area */}
-      <div className="border-t border-border bg-card p-6 space-y-3">
-        <Textarea
-          placeholder="Type your response here..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isLoading || isStreaming}
-          className="min-h-[100px] resize-none"
-        />
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={onSkip}
-            disabled={isLoading}
-            className="flex-1"
-          >
-            Skip
-          </Button>
-          <Button
-            onClick={handleSend}
-            disabled={isLoading || isStreaming || !input.trim()}
-            className="flex-1"
-          >
-            {isStreaming ? "AI is typing..." : "Send"}
-          </Button>
+      {/* Compact input area */}
+      <div className="border-t border-border bg-card/80 backdrop-blur-sm p-4">
+        <div className="flex gap-2">
+          <Textarea
+            placeholder="Type your response..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading || isStreaming}
+            className="min-h-[60px] resize-none flex-1"
+          />
+          <div className="flex flex-col gap-2">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={onSkip}
+              disabled={isLoading}
+              title="Skip"
+            >
+              <SkipForward className="w-4 h-4" />
+            </Button>
+            <Button
+              size="icon"
+              onClick={handleSend}
+              disabled={isLoading || isStreaming || !input.trim()}
+              title="Send"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>

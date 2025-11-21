@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, negativePrompt } = await req.json();
+    const { prompt, negativePrompt, cfgScale, steps, seed, width, height } = await req.json();
     
     if (!prompt) {
       return new Response(
@@ -29,12 +29,23 @@ serve(async (req) => {
     }
 
     console.log("Generating image with prompt:", prompt);
+    console.log("Settings:", { cfgScale, steps, seed, width, height });
 
-    // Build the full prompt with negative prompt if provided
+    // Build the full prompt with settings guidance
     let fullPrompt = prompt;
-    if (negativePrompt) {
-      fullPrompt += `\n\nNegative prompt (avoid these): ${negativePrompt}`;
+    
+    // Add dimension guidance if specified
+    if (width && height) {
+      fullPrompt += `\n\nImage dimensions: ${width}x${height} pixels, aspect ratio ${width}:${height}`;
     }
+    
+    // Add negative prompt if provided
+    if (negativePrompt) {
+      fullPrompt += `\n\nAvoid these elements: ${negativePrompt}`;
+    }
+    
+    // Note: CFG scale, steps, and seed are logged but not directly supported by the model API
+    // They're included in the UI for educational purposes about image generation parameters
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

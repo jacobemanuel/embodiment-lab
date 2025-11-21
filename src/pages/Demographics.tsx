@@ -49,13 +49,12 @@ const Demographics = () => {
         
         // If no session exists, create one
         if (!sessionId) {
-          sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-          sessionStorage.setItem('sessionId', sessionId);
           const mode = sessionStorage.getItem('studyMode') as StudyMode || 'text';
           
-          // Create session in database
+          // Create session in database (server generates secure ID)
           const { createStudySession } = await import('@/lib/studyData');
-          await createStudySession(sessionId, mode);
+          sessionId = await createStudySession(mode);
+          sessionStorage.setItem('sessionId', sessionId);
         }
         
         // Map to database column names

@@ -1,17 +1,19 @@
 import { supabase } from "@/integrations/supabase/client";
 import { StudyMode } from "@/types/study";
 
-export const createStudySession = async (sessionId: string, mode: StudyMode) => {
+export const createStudySession = async (mode: StudyMode) => {
   const { data, error } = await supabase.functions.invoke('save-study-data', {
     body: { 
       action: 'create_session',
-      sessionId,
       mode
     }
   });
   
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
+  
+  // Return the server-generated session ID
+  return data.sessionId as string;
 };
 
 export const saveDemographics = async (sessionId: string, demographics: Record<string, string>) => {

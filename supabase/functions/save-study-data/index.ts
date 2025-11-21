@@ -1,27 +1,70 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Rate limiting: store last request timestamps per IP
+// Validation schemas
+const modeSchema = z.enum(['text', 'voice', 'avatar']);
+
+const createSessionSchema = z.object({
+  action: z.literal('create_session'),
+  mode: modeSchema,
+});
+
+const demographicsSchema = z.object({
+  action: z.literal('save_demographics'),
+  sessionId: z.string().min(10).max(100),
+  demographics: z.record(z.string().max(500)),
+});
+
+const preTestSchema = z.object({
+  action: z.literal('save_pre_test'),
+  sessionId: z.string().min(10).max(100),
+  preTestResponses: z.array(z.object({
+    questionId: z.string().max(100),
+    answer: z.string().max(2000),
+  })).max(50),
+});
+
+const scenarioSchema = z.object({
+  action: z.literal('save_scenario'),
+  sessionId: z.string().min(10).max(100),
+  scenarioData: z.object({
+    scenarioId: z.string().max(100),
+    messages: z.array(z.object({
+      role: z.string().max(50),
+      content: z.string().max(10000),
+      timestamp: z.number(),
+    })).max(200),
+    confidenceRating: z.number().min(0).max(100),
+    trustRating: z.number().min(0).max(10),
+    engagementRating: z.boolean(),
+  }),
+});
+
+const postTestSchema = z.object({
+  action: z.literal('save_post_test'),
+  sessionId: z.string().min(10).max(100),
+  postTestResponses: z.array(z.object({
+    questionId: z.string().max(100),
+    answer: z.string().max(2000),
+  })).max(50),
+});
+
+// Rate limiting
 const rateLimitMap = new Map<string, number[]>();
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_WINDOW = 60000;
 const MAX_REQUESTS_PER_WINDOW = 10;
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
   const requests = rateLimitMap.get(ip) || [];
-  
-  // Remove old requests outside the window
   const recentRequests = requests.filter(time => now - time < RATE_LIMIT_WINDOW);
-  
-  if (recentRequests.length >= MAX_REQUESTS_PER_WINDOW) {
-    return false;
-  }
-  
+  if (recentRequests.length >= MAX_REQUESTS_PER_WINDOW) return false;
   recentRequests.push(now);
   rateLimitMap.set(ip, recentRequests);
   return true;
@@ -33,262 +76,287 @@ serve(async (req) => {
   }
 
   try {
-    // Rate limiting
-    const clientIP = req.headers.get("x-forwarded-for") || "unknown";
-    if (!checkRateLimit(clientIP)) {
-      console.warn(`Rate limit exceeded for IP: ${clientIP}`);
+    const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+    
+    if (!checkRateLimit(clientIp)) {
       return new Response(
-        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { 
-      action, 
-      sessionId, 
-      mode,
-      demographics,
-      preTestResponses,
-      scenarioData,
-      postTestResponses 
-    } = await req.json();
+    const body = await req.json();
+    const { action } = body;
 
-    // Validate required fields
-    if (!action || !sessionId) {
+    if (!action) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
+        JSON.stringify({ error: "Invalid request" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create Supabase client with service role key to bypass RLS
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    let result;
-
     switch (action) {
-      case "create_session":
-        if (!mode || !['text', 'voice', 'avatar'].includes(mode)) {
+      case 'create_session': {
+        let validated;
+        try {
+          validated = createSessionSchema.parse(body);
+        } catch (error) {
+          console.error('Validation error:', error);
           return new Response(
-            JSON.stringify({ error: "Invalid mode" }),
+            JSON.stringify({ error: "Invalid request data" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
-        const { error: sessionError } = await supabase
+        const sessionId = crypto.randomUUID();
+        const { error } = await supabase
           .from('study_sessions')
-          .insert({ session_id: sessionId, mode });
+          .insert({ session_id: sessionId, mode: validated.mode });
 
-        if (sessionError) throw sessionError;
-        result = { success: true };
-        break;
-
-      case "save_demographics":
-        if (!demographics) {
+        if (error) {
+          console.error('Failed to create session:', error);
           return new Response(
-            JSON.stringify({ error: "Missing demographics data" }),
+            JSON.stringify({ error: "Unable to create session. Please try again." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, sessionId }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'save_demographics': {
+        let validated;
+        try {
+          validated = demographicsSchema.parse(body);
+        } catch (error) {
+          console.error('Validation error:', error);
+          return new Response(
+            JSON.stringify({ error: "Invalid request data" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
-        // Validate demographics data
-        const { age_range, education, digital_experience } = demographics;
-        if (!age_range || !education || !digital_experience) {
-          return new Response(
-            JSON.stringify({ error: "Incomplete demographics data" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
-        // Get session UUID from session_id string
-        const { data: demoSession, error: demoSessionError } = await supabase
+        const { data: session, error: sessionError } = await supabase
           .from('study_sessions')
           .select('id')
-          .eq('session_id', sessionId)
+          .eq('session_id', validated.sessionId)
           .single();
 
-        if (demoSessionError || !demoSession) {
-          console.error('Session not found for demographics:', demoSessionError);
+        if (sessionError || !session) {
+          console.error('Session not found:', sessionError);
           return new Response(
-            JSON.stringify({ error: "Session not found" }),
-            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            JSON.stringify({ error: "Unable to save data. Please try again." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
-        const { error: demoError } = await supabase
+        const { error: insertError } = await supabase
           .from('demographics')
-          .insert({ session_id: demoSession.id, ...demographics });
+          .insert({ session_id: session.id, ...validated.demographics });
 
-        if (demoError) throw demoError;
-        result = { success: true };
-        break;
-
-      case "save_pre_test":
-        if (!Array.isArray(preTestResponses) || preTestResponses.length === 0) {
+        if (insertError) {
+          console.error('Failed to save demographics:', insertError);
           return new Response(
-            JSON.stringify({ error: "Invalid pre-test responses" }),
+            JSON.stringify({ error: "Unable to save data. Please try again." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'save_pre_test': {
+        let validated;
+        try {
+          validated = preTestSchema.parse(body);
+        } catch (error) {
+          console.error('Validation error:', error);
+          return new Response(
+            JSON.stringify({ error: "Invalid request data" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
-        // Get session UUID from session_id string
-        const { data: preSession, error: preSessionError } = await supabase
+        const { data: session, error: sessionError } = await supabase
           .from('study_sessions')
           .select('id')
-          .eq('session_id', sessionId)
+          .eq('session_id', validated.sessionId)
           .single();
 
-        if (preSessionError || !preSession) {
-          console.error('Session not found for pre-test:', preSessionError);
+        if (sessionError || !session) {
+          console.error('Session not found:', sessionError);
           return new Response(
-            JSON.stringify({ error: "Session not found" }),
-            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            JSON.stringify({ error: "Unable to save data. Please try again." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
-        const preTestData = preTestResponses.map(r => ({
-          session_id: preSession.id,
+        const preTestData = validated.preTestResponses.map(r => ({
+          session_id: session.id,
           question_id: r.questionId,
           answer: r.answer
         }));
 
-        const { error: preTestError } = await supabase
+        const { error: insertError } = await supabase
           .from('pre_test_responses')
           .insert(preTestData);
 
-        if (preTestError) throw preTestError;
-        result = { success: true };
-        break;
-
-      case "save_scenario":
-        if (!scenarioData) {
+        if (insertError) {
+          console.error('Failed to save pre-test:', insertError);
           return new Response(
-            JSON.stringify({ error: "Missing scenario data" }),
+            JSON.stringify({ error: "Unable to save data. Please try again." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'save_scenario': {
+        let validated;
+        try {
+          validated = scenarioSchema.parse(body);
+        } catch (error) {
+          console.error('Validation error:', error);
+          return new Response(
+            JSON.stringify({ error: "Invalid request data" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
-        const { 
-          scenarioId, 
-          messages, 
-          confidenceRating, 
-          trustRating, 
-          engagementRating 
-        } = scenarioData;
-
-        // Validate scenario data
-        if (!scenarioId || !Array.isArray(messages) || 
-            confidenceRating === undefined || trustRating === undefined || 
-            engagementRating === undefined) {
-          return new Response(
-            JSON.stringify({ error: "Invalid scenario data" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
-        // Get session UUID from session_id string
-        const { data: scenarioSession, error: scenarioSessionError } = await supabase
+        const { data: session, error: sessionError } = await supabase
           .from('study_sessions')
           .select('id')
-          .eq('session_id', sessionId)
+          .eq('session_id', validated.sessionId)
           .single();
 
-        if (scenarioSessionError || !scenarioSession) {
-          console.error('Session not found for scenario:', scenarioSessionError);
+        if (sessionError || !session) {
+          console.error('Session not found:', sessionError);
           return new Response(
-            JSON.stringify({ error: "Session not found" }),
-            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            JSON.stringify({ error: "Unable to save data. Please try again." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
-        // Insert scenario
         const { data: scenario, error: scenarioError } = await supabase
           .from('scenarios')
           .insert({
-            session_id: scenarioSession.id,
-            scenario_id: scenarioId,
-            confidence_rating: confidenceRating,
-            trust_rating: trustRating,
-            engagement_rating: engagementRating,
+            session_id: session.id,
+            scenario_id: validated.scenarioData.scenarioId,
+            confidence_rating: validated.scenarioData.confidenceRating,
+            trust_rating: validated.scenarioData.trustRating,
+            engagement_rating: validated.scenarioData.engagementRating,
             completed_at: new Date().toISOString()
           })
           .select()
           .single();
 
-        if (scenarioError) throw scenarioError;
+        if (scenarioError) {
+          console.error('Failed to save scenario:', scenarioError);
+          return new Response(
+            JSON.stringify({ error: "Unable to save data. Please try again." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
 
-        // Insert dialogue turns
-        const dialogueData = messages.map(msg => ({
+        const dialogueData = validated.scenarioData.messages.map(msg => ({
           scenario_id: scenario.id,
           role: msg.role,
           content: msg.content,
           timestamp: new Date(msg.timestamp).toISOString()
         }));
 
-        const { error: dialogueError } = await supabase
+        const { error: turnsError } = await supabase
           .from('dialogue_turns')
           .insert(dialogueData);
 
-        if (dialogueError) throw dialogueError;
-        result = { success: true };
-        break;
-
-      case "save_post_test":
-        if (!Array.isArray(postTestResponses) || postTestResponses.length === 0) {
+        if (turnsError) {
+          console.error('Failed to save dialogue turns:', turnsError);
           return new Response(
-            JSON.stringify({ error: "Invalid post-test responses" }),
+            JSON.stringify({ error: "Unable to save data. Please try again." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'save_post_test': {
+        let validated;
+        try {
+          validated = postTestSchema.parse(body);
+        } catch (error) {
+          console.error('Validation error:', error);
+          return new Response(
+            JSON.stringify({ error: "Invalid request data" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
-        // Get session UUID from session_id string
-        const { data: postSession, error: postSessionError } = await supabase
+        const { data: session, error: sessionError } = await supabase
           .from('study_sessions')
           .select('id')
-          .eq('session_id', sessionId)
+          .eq('session_id', validated.sessionId)
           .single();
 
-        if (postSessionError || !postSession) {
-          console.error('Session not found for post-test:', postSessionError);
+        if (sessionError || !session) {
+          console.error('Session not found:', sessionError);
           return new Response(
-            JSON.stringify({ error: "Session not found" }),
-            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            JSON.stringify({ error: "Unable to save data. Please try again." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
-        const postTestData = postTestResponses.map(r => ({
-          session_id: postSession.id,
+        const postTestData = validated.postTestResponses.map(r => ({
+          session_id: session.id,
           question_id: r.questionId,
           answer: r.answer
         }));
 
-        const { error: postTestError } = await supabase
+        const { error: insertError } = await supabase
           .from('post_test_responses')
           .insert(postTestData);
 
-        if (postTestError) throw postTestError;
-        result = { success: true };
-        break;
+        if (insertError) {
+          console.error('Failed to save post-test:', insertError);
+          return new Response(
+            JSON.stringify({ error: "Unable to save data. Please try again." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       default:
         return new Response(
-          JSON.stringify({ error: "Invalid action" }),
+          JSON.stringify({ error: "Invalid request" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }
-
-    console.log(`Successfully processed ${action} for session: ${sessionId}`);
-
-    return new Response(
-      JSON.stringify(result),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
   } catch (error) {
     console.error('Error in save-study-data function:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "Unable to process request. Please try again." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

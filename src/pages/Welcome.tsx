@@ -96,13 +96,13 @@ const Welcome = () => {
 
               {/* CTA Button */}
               <div className="pt-2">
-                <Button 
-                  onClick={() => navigate("/consent")}
-                  size="lg"
-                  className="w-full text-lg h-16 rounded-2xl gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02] font-semibold animate-gentle-glow"
-                >
-                  Continue to Consent Form →
-                </Button>
+              <Button 
+                onClick={() => navigate("/consent")}
+                size="lg"
+                className="w-full text-lg h-16 rounded-2xl gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02] font-semibold"
+              >
+                Continue to Consent Form →
+              </Button>
               </div>
             </div>
 

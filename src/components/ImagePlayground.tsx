@@ -220,8 +220,8 @@ const PlaygroundContent = () => {
       </Button>
 
       {/* Info */}
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
+      <Alert className="items-start">
+        <AlertCircle className="h-4 w-4 mt-0.5" />
         <AlertDescription className="text-xs">
           Generation takes 10-30s. Be specific for best results!
         </AlertDescription>

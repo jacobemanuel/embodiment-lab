@@ -259,10 +259,10 @@ const Scenario = () => {
 
         {/* Toggle Button - Hidden on mobile when playground is open */}
         <Button
-          variant="default"
+          variant="ghost"
           size="icon"
-          className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-l-2xl rounded-r-none bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-300 h-20 w-14 border-2 border-primary/20 ${
-            shouldPulseButton && !isPlaygroundVisible ? 'animate-attention-pulse' : ''
+          className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-l-lg rounded-r-none bg-card/90 backdrop-blur-sm border border-r-0 border-border shadow-lg hover:bg-card transition-all h-16 w-12 ${
+            shouldPulseButton && !isPlaygroundVisible ? 'animate-attention-pulse border-primary/70' : ''
           } ${isPlaygroundVisible ? 'md:block hidden' : 'block'}`}
           onClick={() => {
             setIsPlaygroundVisible(!isPlaygroundVisible);
@@ -270,7 +270,7 @@ const Scenario = () => {
           }}
           title={isPlaygroundVisible ? "Hide AI Playground" : "Open AI Playground"}
         >
-          {isPlaygroundVisible ? <ChevronRight className="w-8 h-8 text-primary-foreground" /> : <ChevronLeft className="w-8 h-8 text-primary-foreground" />}
+          {isPlaygroundVisible ? <ChevronRight className="w-6 h-6" /> : <ChevronLeft className="w-6 h-6" />}
         </Button>
       </div>
     </div>

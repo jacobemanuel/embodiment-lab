@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import logo from "@/assets/logo-white.png";
@@ -113,15 +114,13 @@ const Demographics = () => {
                   max="150"
                 />
                 <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     id="prefer-not-age"
                     checked={preferNotToSayAge}
-                    onChange={(e) => {
-                      setPreferNotToSayAge(e.target.checked);
-                      if (e.target.checked) setAge("");
+                    onCheckedChange={(checked) => {
+                      setPreferNotToSayAge(checked === true);
+                      if (checked) setAge("");
                     }}
-                    className="rounded border-border"
                   />
                   <Label htmlFor="prefer-not-age" className="cursor-pointer">
                     Prefer not to say

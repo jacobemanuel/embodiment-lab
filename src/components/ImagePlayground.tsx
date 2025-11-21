@@ -177,13 +177,18 @@ const PlaygroundContent = () => {
       {/* Advanced Settings - Collapsible */}
       <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm" className="w-full justify-between">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full justify-between border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/30 transition-all"
+          >
             <span className="flex items-center gap-2">
-              <Settings2 className="w-4 h-4" />
-              Advanced Settings
+              <Settings2 className="w-4 h-4 text-primary" />
+              <span className="font-medium">Advanced Settings</span>
+              <span className="text-xs text-muted-foreground">({showAdvanced ? "expanded" : "more options"})</span>
             </span>
-            <span className="text-xs text-muted-foreground">
-              {showAdvanced ? "Hide" : "Show"}
+            <span className="text-xs text-primary">
+              {showAdvanced ? "▲" : "▼"}
             </span>
           </Button>
         </CollapsibleTrigger>

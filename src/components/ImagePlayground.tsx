@@ -5,32 +5,31 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { Loader2, Sparkles, Image as ImageIcon, AlertCircle, Settings2 } from "lucide-react";
+import { Loader2, Sparkles, Image as ImageIcon, AlertCircle, Settings2, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
 interface ImagePlaygroundProps {
   isOpen: boolean;
   onClose: () => void;
   embedded?: boolean;
 }
-
 interface GeneratedImage {
   id: string;
   prompt: string;
   imageUrl: string;
   timestamp: number;
 }
-
 const PlaygroundContent = () => {
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
 
   // Advanced settings
   const [cfgScale, setCfgScale] = useState([7]);
@@ -38,14 +37,7 @@ const PlaygroundContent = () => {
   const [seed, setSeed] = useState("");
   const [width, setWidth] = useState(512);
   const [height, setHeight] = useState(512);
-
-  const examplePrompts = [
-    "Sunset over mountains, photorealistic",
-    "Futuristic city, cyberpunk, neon lights",
-    "Cute robot with cat, digital art",
-    "Abstract geometric shapes, vibrant colors"
-  ];
-
+  const examplePrompts = ["Sunset over mountains, photorealistic", "Futuristic city, cyberpunk, neon lights", "Cute robot with cat, digital art", "Abstract geometric shapes, vibrant colors"];
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast({
@@ -55,12 +47,13 @@ const PlaygroundContent = () => {
       });
       return;
     }
-
     setIsGenerating(true);
-
     try {
-      const { data, error } = await supabase.functions.invoke('generate-image', {
-        body: { 
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('generate-image', {
+        body: {
           prompt: prompt.trim(),
           negativePrompt: negativePrompt.trim() || undefined,
           cfgScale: cfgScale[0],
@@ -70,10 +63,8 @@ const PlaygroundContent = () => {
           height
         }
       });
-
       if (error) {
         console.error('Generation error:', error);
-        
         if (error.message?.includes('Rate limit')) {
           toast({
             title: "Rate limit exceeded",
@@ -95,25 +86,20 @@ const PlaygroundContent = () => {
         }
         return;
       }
-
       if (!data?.imageUrl) {
         throw new Error('No image URL in response');
       }
-
       const newImage: GeneratedImage = {
         id: Math.random().toString(36).substring(7),
         prompt: prompt.trim(),
         imageUrl: data.imageUrl,
         timestamp: Date.now()
       };
-
       setGeneratedImages(prev => [newImage, ...prev].slice(0, 5));
-      
       toast({
         title: "Image generated!",
-        description: "Your AI-generated image is ready",
+        description: "Your AI-generated image is ready"
       });
-
       setPrompt("");
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -126,28 +112,18 @@ const PlaygroundContent = () => {
       setIsGenerating(false);
     }
   };
-
-  return (
-    <div className="space-y-4">
+  return <div className="space-y-4">
       {/* Quick Examples */}
       <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2.5">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <ArrowRight className="w-3.5 h-3.5 text-primary" />
           <Label className="text-sm font-semibold text-foreground">Quick Start Examples</Label>
           <span className="text-xs text-muted-foreground italic">(click to use)</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          {examplePrompts.map((example, index) => (
-            <Button
-              key={index}
-              variant="outline"
-              size="sm"
-              onClick={() => setPrompt(example)}
-              className="text-xs h-auto py-2 px-2 justify-start text-left bg-background hover:bg-accent"
-            >
+          {examplePrompts.map((example, index) => <Button key={index} variant="outline" size="sm" onClick={() => setPrompt(example)} className="text-xs h-auto py-2 px-2 justify-start text-left bg-background hover:bg-accent">
               {example}
-            </Button>
-          ))}
+            </Button>)}
         </div>
       </div>
 
@@ -164,38 +140,20 @@ const PlaygroundContent = () => {
       {/* Main Prompt */}
       <div className="space-y-2">
         <Label htmlFor="prompt" className="text-sm">Prompt</Label>
-        <Textarea
-          id="prompt"
-          placeholder="Describe your image..."
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          className="min-h-[80px] resize-none text-sm"
-          maxLength={1000}
-        />
+        <Textarea id="prompt" placeholder="Describe your image..." value={prompt} onChange={e => setPrompt(e.target.value)} className="min-h-[80px] resize-none text-sm" maxLength={1000} />
         <p className="text-xs text-muted-foreground">{prompt.length}/1000</p>
       </div>
 
       {/* Negative Prompt */}
       <div className="space-y-2">
         <Label htmlFor="negativePrompt" className="text-sm">Negative Prompt</Label>
-        <Textarea
-          id="negativePrompt"
-          placeholder="What to avoid (e.g., blurry, low quality)..."
-          value={negativePrompt}
-          onChange={(e) => setNegativePrompt(e.target.value)}
-          className="min-h-[50px] resize-none text-sm"
-          maxLength={500}
-        />
+        <Textarea id="negativePrompt" placeholder="What to avoid (e.g., blurry, low quality)..." value={negativePrompt} onChange={e => setNegativePrompt(e.target.value)} className="min-h-[50px] resize-none text-sm" maxLength={500} />
       </div>
 
       {/* Advanced Settings - Collapsible */}
       <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
         <CollapsibleTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full justify-between border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/30 transition-all"
-          >
+          <Button variant="outline" size="sm" className="w-full justify-between border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/30 transition-all">
             <span className="flex items-center gap-2">
               <Settings2 className="w-4 h-4 text-primary" />
               <span className="font-medium">Advanced Settings</span>
@@ -213,14 +171,7 @@ const PlaygroundContent = () => {
               <Label className="text-sm">CFG Scale (Prompt Guidance)</Label>
               <span className="text-sm font-medium">{cfgScale[0]}</span>
             </div>
-            <Slider
-              value={cfgScale}
-              onValueChange={setCfgScale}
-              min={1}
-              max={20}
-              step={0.5}
-              className="py-4"
-            />
+            <Slider value={cfgScale} onValueChange={setCfgScale} min={1} max={20} step={0.5} className="py-4" />
             <p className="text-xs text-muted-foreground">Higher = follows prompt more closely (7-12 recommended)</p>
           </div>
 
@@ -230,28 +181,14 @@ const PlaygroundContent = () => {
               <Label className="text-sm">Steps</Label>
               <span className="text-sm font-medium">{steps[0]}</span>
             </div>
-            <Slider
-              value={steps}
-              onValueChange={setSteps}
-              min={10}
-              max={50}
-              step={5}
-              className="py-4"
-            />
+            <Slider value={steps} onValueChange={setSteps} min={10} max={50} step={5} className="py-4" />
             <p className="text-xs text-muted-foreground">More steps = higher quality, slower generation</p>
           </div>
 
           {/* Seed */}
           <div className="space-y-2">
             <Label htmlFor="seed" className="text-sm">Seed (for reproducibility)</Label>
-            <Input
-              id="seed"
-              type="number"
-              placeholder="Random (leave empty)"
-              value={seed}
-              onChange={(e) => setSeed(e.target.value)}
-              className="text-sm"
-            />
+            <Input id="seed" type="number" placeholder="Random (leave empty)" value={seed} onChange={e => setSeed(e.target.value)} className="text-sm" />
             <p className="text-xs text-muted-foreground">Same seed = same result with same prompt</p>
           </div>
 
@@ -259,52 +196,25 @@ const PlaygroundContent = () => {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="width" className="text-sm">Width</Label>
-              <Input
-                id="width"
-                type="number"
-                value={width}
-                onChange={(e) => setWidth(Math.max(256, Math.min(1024, parseInt(e.target.value) || 512)))}
-                min={256}
-                max={1024}
-                step={64}
-                className="text-sm"
-              />
+              <Input id="width" type="number" value={width} onChange={e => setWidth(Math.max(256, Math.min(1024, parseInt(e.target.value) || 512)))} min={256} max={1024} step={64} className="text-sm" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="height" className="text-sm">Height</Label>
-              <Input
-                id="height"
-                type="number"
-                value={height}
-                onChange={(e) => setHeight(Math.max(256, Math.min(1024, parseInt(e.target.value) || 512)))}
-                min={256}
-                max={1024}
-                step={64}
-                className="text-sm"
-              />
+              <Input id="height" type="number" value={height} onChange={e => setHeight(Math.max(256, Math.min(1024, parseInt(e.target.value) || 512)))} min={256} max={1024} step={64} className="text-sm" />
             </div>
           </div>
         </CollapsibleContent>
       </Collapsible>
 
       {/* Generate Button */}
-      <Button
-        onClick={handleGenerate}
-        disabled={isGenerating || !prompt.trim()}
-        className="w-full gap-2"
-        size="lg"
-      >
-        {isGenerating ? (
-          <>
+      <Button onClick={handleGenerate} disabled={isGenerating || !prompt.trim()} className="w-full gap-2" size="lg">
+        {isGenerating ? <>
             <Loader2 className="w-4 h-4 animate-spin" />
             Generating...
-          </>
-        ) : (
-          <>
+          </> : <>
             <Sparkles className="w-4 h-4" />
             Generate Image
-          </>
-        )}
+          </>}
       </Button>
 
       {/* Info */}
@@ -316,48 +226,38 @@ const PlaygroundContent = () => {
       </Alert>
 
       {/* Generated Images */}
-      {generatedImages.length > 0 && (
-        <div className="space-y-3 pt-2">
+      {generatedImages.length > 0 && <div className="space-y-3 pt-2">
           <Label className="text-sm font-medium">Recent</Label>
           <div className="space-y-3">
-            {generatedImages.map((image) => (
-              <div key={image.id} className="space-y-2 p-3 rounded-lg border border-border bg-card/50">
+            {generatedImages.map(image => <div key={image.id} className="space-y-2 p-3 rounded-lg border border-border bg-card/50">
                 <div className="relative aspect-square w-full overflow-hidden rounded-md bg-muted">
-                  <img
-                    src={image.imageUrl}
-                    alt={image.prompt}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={image.imageUrl} alt={image.prompt} className="w-full h-full object-cover" />
                 </div>
                 <p className="text-xs text-muted-foreground line-clamp-2">
                   {image.prompt}
                 </p>
-              </div>
-            ))}
+              </div>)}
           </div>
-        </div>
-      )}
+        </div>}
 
       {/* Empty State */}
-      {generatedImages.length === 0 && !isGenerating && (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
+      {generatedImages.length === 0 && !isGenerating && <div className="flex flex-col items-center justify-center py-8 text-center">
           <ImageIcon className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="text-sm text-muted-foreground">
             No images yet. Try a prompt!
           </p>
-        </div>
-      )}
-    </div>
-  );
+        </div>}
+    </div>;
 };
-
-export const ImagePlayground = ({ isOpen, onClose, embedded = false }: ImagePlaygroundProps) => {
+export const ImagePlayground = ({
+  isOpen,
+  onClose,
+  embedded = false
+}: ImagePlaygroundProps) => {
   if (embedded) {
     return <PlaygroundContent />;
   }
-
-  return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
+  return <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
@@ -373,6 +273,5 @@ export const ImagePlayground = ({ isOpen, onClose, embedded = false }: ImagePlay
           <PlaygroundContent />
         </div>
       </SheetContent>
-    </Sheet>
-  );
+    </Sheet>;
 };

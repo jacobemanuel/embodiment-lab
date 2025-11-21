@@ -19,11 +19,7 @@ export const saveDemographics = async (sessionId: string, demographics: Record<s
     body: {
       action: 'save_demographics',
       sessionId,
-      demographics: {
-        age_range: demographics['demo-age'],
-        education: demographics['demo-education'],
-        tax_experience: demographics['demo-tax-experience']
-      }
+      demographics
     }
   });
   

@@ -94,8 +94,8 @@ serve(async (req) => {
         }
 
         // Validate demographics data
-        const { age_range, education, tax_experience } = demographics;
-        if (!age_range || !education || !tax_experience) {
+        const { age_range, education, digital_experience } = demographics;
+        if (!age_range || !education || !digital_experience) {
           return new Response(
             JSON.stringify({ error: "Incomplete demographics data" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }

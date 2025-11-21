@@ -14,11 +14,8 @@ const ModeAssignment = () => {
         const modes: StudyMode[] = ['text', 'avatar'];
         const randomMode: StudyMode = modes[Math.floor(Math.random() * modes.length)];
         
-        // Generate unique session ID
-        const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        // Create session in database
-        await createStudySession(sessionId, randomMode);
+        // Create session in database (server generates session ID)
+        const sessionId = await createStudySession(randomMode);
         
         // Store in sessionStorage for client-side use
         sessionStorage.setItem('studyMode', randomMode);
@@ -33,9 +30,9 @@ const ModeAssignment = () => {
         // Still navigate even if db save fails (fallback to sessionStorage only)
         const modes: StudyMode[] = ['text', 'avatar'];
         const randomMode: StudyMode = modes[Math.floor(Math.random() * modes.length)];
-        const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const fallbackSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         sessionStorage.setItem('studyMode', randomMode);
-        sessionStorage.setItem('sessionId', sessionId);
+        sessionStorage.setItem('sessionId', fallbackSessionId);
         setTimeout(() => navigate(`/scenario/${randomMode}/${scenarios[0].id}`), 1500);
       }
     };

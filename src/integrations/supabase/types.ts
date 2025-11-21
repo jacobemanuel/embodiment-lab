@@ -18,26 +18,26 @@ export type Database = {
         Row: {
           age_range: string | null
           created_at: string
+          digital_experience: string | null
           education: string | null
           id: string
           session_id: string
-          tax_experience: string | null
         }
         Insert: {
           age_range?: string | null
           created_at?: string
+          digital_experience?: string | null
           education?: string | null
           id?: string
           session_id: string
-          tax_experience?: string | null
         }
         Update: {
           age_range?: string | null
           created_at?: string
+          digital_experience?: string | null
           education?: string | null
           id?: string
           session_id?: string
-          tax_experience?: string | null
         }
         Relationships: [
           {

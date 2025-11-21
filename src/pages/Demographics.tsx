@@ -57,10 +57,11 @@ const Demographics = () => {
           await createStudySession(sessionId, mode);
         }
         
+        // Map to database column names
         const responses = {
-          "demo-age": preferNotToSayAge ? "Prefer not to say" : age,
-          "demo-education": education,
-          "demo-digital-experience": digitalExperience
+          age_range: preferNotToSayAge ? "Prefer not to say" : age,
+          education: education,
+          digital_experience: digitalExperience
         };
         
         await saveDemographics(sessionId, responses);

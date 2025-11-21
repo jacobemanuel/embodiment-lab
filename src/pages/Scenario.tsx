@@ -9,7 +9,7 @@ import { ScenarioProgress } from "@/components/ScenarioProgress";
 import { ModuleNavigation } from "@/components/ModuleNavigation";
 import logo from "@/assets/logo-white.png";
 import { Button } from "@/components/ui/button";
-import { HelpCircle, LogOut, Sparkles } from "lucide-react";
+import { HelpCircle, LogOut, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +27,7 @@ const Scenario = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
+  const [isPlaygroundVisible, setIsPlaygroundVisible] = useState(true);
 
   const scenario = scenarios.find(s => s.id === scenarioId);
   const scenarioIndex = scenarios.findIndex(s => s.id === scenarioId);
@@ -124,15 +124,6 @@ const Scenario = () => {
         <div className="flex items-center justify-between mb-4">
           <img src={logo} alt="Majewski Studio" className="h-8" />
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsPlaygroundOpen(true)}
-              className="gap-2 gradient-ai border-ai-primary/20 hover:border-ai-primary/40 hover:shadow-ai-glow transition-all duration-300"
-            >
-              <Sparkles className="w-4 h-4 animate-pulse-glow" />
-              <span className="hidden sm:inline">AI Playground</span>
-            </Button>
             <ModuleNavigation currentMode={currentMode} onModeChange={handleModeChange} />
             <Dialog>
               <DialogTrigger asChild>
@@ -191,21 +182,49 @@ const Scenario = () => {
         </div>
       </header>
 
-      {/* Mode-specific content */}
-      <div className="flex-1 overflow-hidden">
-        <ModeComponent
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          onSkip={handleSkip}
-          isLoading={isLoading}
-        />
-      </div>
+      {/* Main Content Area - Split View */}
+      <div className="flex-1 overflow-hidden flex relative">
+        {/* Left side - Learning Content */}
+        <div className={`${isPlaygroundVisible ? 'w-1/2' : 'w-full'} transition-all duration-300 border-r border-border`}>
+          <ModeComponent
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            onSkip={handleSkip}
+            isLoading={isLoading}
+          />
+        </div>
 
-      {/* Image Playground */}
-      <ImagePlayground
-        isOpen={isPlaygroundOpen}
-        onClose={() => setIsPlaygroundOpen(false)}
-      />
+        {/* Right side - AI Playground */}
+        {isPlaygroundVisible && (
+          <div className="w-1/2 overflow-auto bg-gradient-to-br from-card/50 to-background/50">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+                <h3 className="font-semibold text-lg">AI Image Playground</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">
+                Practice what you're learning! Generate images while following the lesson.
+              </p>
+              
+              <ImagePlayground 
+                isOpen={true} 
+                onClose={() => {}} 
+                embedded={true}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Toggle Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-l-lg rounded-r-none bg-card/90 backdrop-blur-sm border border-r-0 border-border shadow-lg hover:bg-card"
+          onClick={() => setIsPlaygroundVisible(!isPlaygroundVisible)}
+        >
+          {isPlaygroundVisible ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </Button>
+      </div>
     </div>
   );
 };

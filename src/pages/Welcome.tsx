@@ -29,12 +29,12 @@ const Welcome = () => {
             {/* Hero section with gradient text */}
             <div className="text-center space-y-6">
               <div className="inline-block">
-                <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-ai-primary via-ai-accent to-ai-secondary bg-clip-text text-transparent animate-fade-in">
-                  AI Image Generation
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight bg-gradient-to-r from-ai-primary via-ai-accent to-ai-secondary bg-clip-text text-transparent animate-fade-in px-4">
+                  AI Image Generation Study
                 </h1>
               </div>
-              <p className="text-xl text-muted-foreground max-w-xl mx-auto">
-                Master AI image generation through interactive learning and hands-on practice
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                Learn the fundamentals of AI-powered image generation through interactive scenarios and hands-on practice. Explore prompt engineering, style control, and creative techniques.
               </p>
             </div>
 
@@ -99,7 +99,7 @@ const Welcome = () => {
                 <Button 
                   onClick={() => navigate("/consent")}
                   size="lg"
-                  className="w-full text-lg h-16 rounded-2xl gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02] font-semibold animate-pulse-glow"
+                  className="w-full text-lg h-16 rounded-2xl gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02] font-semibold animate-gentle-glow"
                 >
                   Continue to Consent Form →
                 </Button>

@@ -243,10 +243,20 @@ const PlaygroundContent = () => {
         </div>}
 
       {/* Empty State */}
-      {generatedImages.length === 0 && !isGenerating && <div className="flex flex-col items-center justify-center py-8 text-center">
-          <ImageIcon className="w-12 h-12 text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">
+      {generatedImages.length === 0 && !isGenerating && <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="relative mb-4">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-2 border-primary/20">
+              <ImageIcon className="w-10 h-10 text-primary" strokeWidth={1.5} />
+            </div>
+            <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+              <Sparkles className="w-3 h-3 text-primary" />
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground font-medium">
             No images yet. Try a prompt!
+          </p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Generate your first AI image above
           </p>
         </div>}
     </div>;

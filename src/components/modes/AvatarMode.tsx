@@ -2,17 +2,16 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Message } from "@/types/study";
 import { useState, useRef, useEffect } from "react";
-import { Mic, MicOff, Send, SkipForward } from "lucide-react";
+import { Mic, MicOff, Send } from "lucide-react";
 import { AvatarPlaceholder } from "@/components/AvatarPlaceholder";
 
 interface AvatarModeProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
-  onSkip: () => void;
   isLoading: boolean;
 }
 
-export const AvatarMode = ({ messages, onSendMessage, onSkip, isLoading }: AvatarModeProps) => {
+export const AvatarMode = ({ messages, onSendMessage, isLoading }: AvatarModeProps) => {
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -111,24 +110,15 @@ export const AvatarMode = ({ messages, onSendMessage, onSkip, isLoading }: Avata
             className="min-h-[60px] resize-none flex-1"
           />
 
-          {/* Action buttons */}
-          <div className="flex flex-col gap-2">
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={onSkip}
-              disabled={isLoading}
-            >
-              <SkipForward className="w-4 h-4" />
-            </Button>
-            <Button
-              size="icon"
-              onClick={handleSend}
-              disabled={isLoading || !input.trim()}
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
+          {/* Send button */}
+          <Button
+            size="icon"
+            onClick={handleSend}
+            disabled={isLoading || !input.trim()}
+            className="h-[60px] w-[60px]"
+          >
+            <Send className="w-5 h-5" />
+          </Button>
         </div>
       </div>
     </div>

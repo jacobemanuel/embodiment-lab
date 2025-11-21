@@ -95,9 +95,6 @@ const Scenario = () => {
     }
   };
 
-  const handleSkip = () => {
-    handleSendMessage("[Skipped]");
-  };
 
   const saveScenarioData = () => {
     // Save messages to sessionStorage temporarily
@@ -201,7 +198,6 @@ const Scenario = () => {
           <ModeComponent
             messages={messages}
             onSendMessage={handleSendMessage}
-            onSkip={handleSkip}
             isLoading={isLoading}
           />
         </div>

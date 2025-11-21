@@ -29,7 +29,7 @@ const Welcome = () => {
             {/* Hero section with gradient text */}
             <div className="text-center space-y-6">
               <div className="inline-block">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight bg-gradient-to-r from-ai-primary via-ai-accent to-ai-secondary bg-clip-text text-transparent animate-fade-in px-4">
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-relaxed bg-gradient-to-r from-ai-primary via-ai-accent to-ai-secondary bg-clip-text text-transparent animate-fade-in px-4 py-2">
                   AI Image Generation Study
                 </h1>
               </div>

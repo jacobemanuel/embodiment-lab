@@ -4,16 +4,15 @@ import { Message } from "@/types/study";
 import { useState, useRef, useEffect } from "react";
 import { streamChat } from "@/utils/aiChat";
 import { useToast } from "@/hooks/use-toast";
-import { Send, SkipForward } from "lucide-react";
+import { Send } from "lucide-react";
 
 interface TextModeProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
-  onSkip: () => void;
   isLoading: boolean;
 }
 
-export const TextMode = ({ messages, onSendMessage, onSkip, isLoading }: TextModeProps) => {
+export const TextMode = ({ messages, onSendMessage, isLoading }: TextModeProps) => {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -110,25 +109,15 @@ export const TextMode = ({ messages, onSendMessage, onSkip, isLoading }: TextMod
             disabled={isLoading || isStreaming}
             className="min-h-[60px] resize-none flex-1"
           />
-          <div className="flex flex-col gap-2">
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={onSkip}
-              disabled={isLoading}
-              title="Skip"
-            >
-              <SkipForward className="w-4 h-4" />
-            </Button>
-            <Button
-              size="icon"
-              onClick={handleSend}
-              disabled={isLoading || isStreaming || !input.trim()}
-              title="Send"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
+          <Button
+            size="icon"
+            onClick={handleSend}
+            disabled={isLoading || isStreaming || !input.trim()}
+            title="Send"
+            className="h-[60px] w-[60px]"
+          >
+            <Send className="w-5 h-5" />
+          </Button>
         </div>
       </div>
     </div>

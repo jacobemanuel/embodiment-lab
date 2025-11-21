@@ -130,8 +130,12 @@ const PlaygroundContent = () => {
   return (
     <div className="space-y-4">
       {/* Quick Examples */}
-      <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">Quick Start</Label>
+      <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2.5">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <Label className="text-sm font-semibold text-foreground">Quick Start Examples</Label>
+          <span className="text-xs text-muted-foreground italic">(click to use)</span>
+        </div>
         <div className="grid grid-cols-2 gap-2">
           {examplePrompts.map((example, index) => (
             <Button
@@ -139,11 +143,21 @@ const PlaygroundContent = () => {
               variant="outline"
               size="sm"
               onClick={() => setPrompt(example)}
-              className="text-xs h-auto py-2 px-2 justify-start text-left"
+              className="text-xs h-auto py-2 px-2 justify-start text-left bg-background hover:bg-accent"
             >
               {example}
             </Button>
           ))}
+        </div>
+      </div>
+
+      {/* Separator */}
+      <div className="relative py-2">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">Your Prompt</span>
         </div>
       </div>
 

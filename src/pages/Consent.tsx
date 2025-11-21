@@ -33,7 +33,7 @@ const Consent = () => {
             <section className="space-y-3">
               <h2 className="text-xl font-semibold">Purpose of the Study</h2>
               <p className="text-muted-foreground leading-relaxed">
-                This research examines how different presentation formats affect learning about German tax concepts for students. You will complete a brief pre-test, engage with one educational scenario about taxes in Munich and Bavaria, and complete a post-test.
+                This research examines how different presentation formats (text-based vs. avatar-based) affect learning about AI image generation fundamentals. You will complete a brief pre-test, engage with interactive learning scenarios about AI-powered image creation, practice with a real-time image playground, and complete a post-test assessment.
               </p>
             </section>
 
@@ -42,19 +42,19 @@ const Consent = () => {
               <ul className="space-y-2 text-muted-foreground">
                 <li className="flex gap-2">
                   <span>1.</span>
-                  <span>Complete demographic questions and a 10-question pre-test</span>
+                  <span>Complete demographic questions and a brief pre-test about AI image generation</span>
                 </li>
                 <li className="flex gap-2">
                   <span>2.</span>
-                  <span>Participate in one interactive learning scenario (~5 minutes)</span>
+                  <span>Learn AI image generation basics through interactive scenarios (~8 minutes)</span>
                 </li>
                 <li className="flex gap-2">
                   <span>3.</span>
-                  <span>Complete a post-test evaluating trust, engagement, and satisfaction</span>
+                  <span>Practice with the AI Image Playground to generate your own images</span>
                 </li>
                 <li className="flex gap-2">
                   <span>4.</span>
-                  <span>Complete a brief knowledge assessment</span>
+                  <span>Complete a post-test evaluating trust, engagement, satisfaction, and knowledge</span>
                 </li>
               </ul>
             </section>
@@ -76,10 +76,10 @@ const Consent = () => {
             <section className="space-y-3">
               <h2 className="text-xl font-semibold">Risks & Benefits</h2>
               <p className="text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the 10-minute session.
+                <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the 8-minute session.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Benefits:</strong> You will learn about important tax concepts relevant to students in Germany and contribute to research on educational technology.
+                <strong className="text-foreground">Benefits:</strong> You will learn fundamental concepts of AI image generation, including prompt engineering, style control, and creative techniques. You'll contribute to research on AI-powered educational systems.
               </p>
             </section>
 

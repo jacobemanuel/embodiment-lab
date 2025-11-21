@@ -81,7 +81,7 @@ const Completion = () => {
           <div className="space-y-4">
             <h1 className="text-4xl font-semibold">Thank You!</h1>
             <p className="text-xl text-muted-foreground max-w-lg mx-auto">
-              You've completed the tax education study. Your responses have been recorded and will help improve educational systems for students in Germany.
+              You've completed the AI image generation study. Your responses have been recorded and will help improve AI-powered educational systems.
             </p>
           </div>
 
@@ -89,9 +89,10 @@ const Completion = () => {
             <div className="space-y-3">
               <h2 className="text-2xl font-semibold">What You Learned</h2>
               <p className="text-muted-foreground leading-relaxed">
-                You explored the German tax system basics relevant to students in Munich and Bavaria, including Minijobs, 
-                Werkstudent positions, tax deductions, filing procedures (ELSTER), and how to get refunds. These concepts 
-                are fundamental for managing your finances as a student in Germany.
+                You explored the fundamentals of AI image generation, including prompt engineering, negative prompts, 
+                style control parameters (CFG scale, seed), aspect ratios, and advanced techniques like img2img and inpainting. 
+                You also practiced generating images in real-time using the AI playground. These concepts form the foundation 
+                for creative AI-powered content creation.
               </p>
             </div>
 

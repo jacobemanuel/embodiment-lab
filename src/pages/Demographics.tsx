@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import logo from "@/assets/logo-white.png";
-import { demographicQuestions } from "@/data/questions";
 import { saveDemographics } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
 import { StudyMode } from "@/types/study";
@@ -12,10 +12,33 @@ import { StudyMode } from "@/types/study";
 const Demographics = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [responses, setResponses] = useState<Record<string, string>>({});
+  const [age, setAge] = useState<string>("");
+  const [preferNotToSayAge, setPreferNotToSayAge] = useState(false);
+  const [education, setEducation] = useState<string>("");
+  const [digitalExperience, setDigitalExperience] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const allQuestionsAnswered = demographicQuestions.every(q => responses[q.id]);
+  const allQuestionsAnswered = 
+    (age.trim() !== "" || preferNotToSayAge) && 
+    education !== "" && 
+    digitalExperience !== "";
+
+  const educationOptions = [
+    "High school or less",
+    "Some college",
+    "Bachelor's degree",
+    "Master's degree",
+    "Doctoral degree",
+    "Prefer not to say"
+  ];
+
+  const digitalExperienceOptions = [
+    "1 - No Experience",
+    "2 - Limited Experience",
+    "3 - Moderate Experience",
+    "4 - Good Experience",
+    "5 - Extensive Experience"
+  ];
 
   const handleContinue = async () => {
     if (allQuestionsAnswered) {
@@ -33,6 +56,12 @@ const Demographics = () => {
           const { createStudySession } = await import('@/lib/studyData');
           await createStudySession(sessionId, mode);
         }
+        
+        const responses = {
+          "demo-age": preferNotToSayAge ? "Prefer not to say" : age,
+          "demo-education": education,
+          "demo-digital-experience": digitalExperience
+        };
         
         await saveDemographics(sessionId, responses);
         sessionStorage.setItem('demographics', JSON.stringify(responses));
@@ -53,7 +82,7 @@ const Demographics = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4">
-          <img src={logo} alt="TUM Logo" className="h-8" />
+          <img src={logo} alt="Majewski Studio" className="h-8" />
         </div>
       </header>
 
@@ -61,33 +90,90 @@ const Demographics = () => {
         <div className="space-y-8">
           <div>
             <h1 className="text-3xl font-semibold mb-2">Background Information</h1>
-            <p className="text-muted-foreground">Help us understand your background (optional)</p>
+            <p className="text-muted-foreground">Help us understand your background</p>
           </div>
 
           <div className="space-y-8">
-            {demographicQuestions.map((question) => (
-              <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
-                <h3 className="font-semibold">{question.text}</h3>
-                <RadioGroup
-                  value={responses[question.id] || ""}
-                  onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
-                >
-                  <div className="space-y-3">
-                    {question.options.map((option) => (
-                      <div key={option} className="flex items-center space-x-3">
-                        <RadioGroupItem value={option} id={`${question.id}-${option}`} />
-                        <Label 
-                          htmlFor={`${question.id}-${option}`}
-                          className="cursor-pointer flex-1 py-2"
-                        >
-                          {option}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </RadioGroup>
+            {/* Age Question - Text Input */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <h3 className="font-semibold">What is your age?</h3>
+              <div className="space-y-3">
+                <Input
+                  type="number"
+                  placeholder="Enter your age"
+                  value={age}
+                  onChange={(e) => {
+                    setAge(e.target.value);
+                    if (e.target.value) setPreferNotToSayAge(false);
+                  }}
+                  disabled={preferNotToSayAge}
+                  className="max-w-xs"
+                  min="1"
+                  max="150"
+                />
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="prefer-not-age"
+                    checked={preferNotToSayAge}
+                    onChange={(e) => {
+                      setPreferNotToSayAge(e.target.checked);
+                      if (e.target.checked) setAge("");
+                    }}
+                    className="rounded border-border"
+                  />
+                  <Label htmlFor="prefer-not-age" className="cursor-pointer">
+                    Prefer not to say
+                  </Label>
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* Education Question */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <h3 className="font-semibold">What is your highest level of education?</h3>
+              <RadioGroup
+                value={education}
+                onValueChange={setEducation}
+              >
+                <div className="space-y-3">
+                  {educationOptions.map((option) => (
+                    <div key={option} className="flex items-center space-x-3">
+                      <RadioGroupItem value={option} id={`education-${option}`} />
+                      <Label 
+                        htmlFor={`education-${option}`}
+                        className="cursor-pointer flex-1 py-2"
+                      >
+                        {option}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Digital Experience Question */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <h3 className="font-semibold">Experience with digital learning platforms</h3>
+              <RadioGroup
+                value={digitalExperience}
+                onValueChange={setDigitalExperience}
+              >
+                <div className="space-y-3">
+                  {digitalExperienceOptions.map((option) => (
+                    <div key={option} className="flex items-center space-x-3">
+                      <RadioGroupItem value={option} id={`digital-${option}`} />
+                      <Label 
+                        htmlFor={`digital-${option}`}
+                        className="cursor-pointer flex-1 py-2"
+                      >
+                        {option}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </RadioGroup>
+            </div>
           </div>
 
           <Button

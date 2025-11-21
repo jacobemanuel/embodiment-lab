@@ -56,7 +56,7 @@ const PostTest = () => {
           <div>
             <h1 className="text-3xl font-semibold mb-2">Post-Test Assessment</h1>
             <p className="text-muted-foreground mb-6">
-              Please share your experience and test your knowledge about the German tax system.
+              Please share your experience and assess your knowledge about AI image generation.
             </p>
             
             {/* Progress bar */}

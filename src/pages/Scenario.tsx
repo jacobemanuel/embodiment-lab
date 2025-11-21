@@ -27,7 +27,19 @@ const Scenario = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isPlaygroundVisible, setIsPlaygroundVisible] = useState(true);
+  const [isPlaygroundVisible, setIsPlaygroundVisible] = useState(false);
+  const [shouldPulseButton, setShouldPulseButton] = useState(false);
+
+  // Start pulsing the button after 3 seconds to encourage discovery
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isPlaygroundVisible) {
+        setShouldPulseButton(true);
+      }
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [isPlaygroundVisible]);
 
   const scenario = scenarios.find(s => s.id === scenarioId);
   const scenarioIndex = scenarios.findIndex(s => s.id === scenarioId);
@@ -219,8 +231,14 @@ const Scenario = () => {
         <Button
           variant="ghost"
           size="icon"
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-l-lg rounded-r-none bg-card/90 backdrop-blur-sm border border-r-0 border-border shadow-lg hover:bg-card"
-          onClick={() => setIsPlaygroundVisible(!isPlaygroundVisible)}
+          className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-l-lg rounded-r-none bg-card/90 backdrop-blur-sm border border-r-0 border-border shadow-lg hover:bg-card transition-all ${
+            shouldPulseButton && !isPlaygroundVisible ? 'animate-attention-pulse border-primary/70' : ''
+          }`}
+          onClick={() => {
+            setIsPlaygroundVisible(!isPlaygroundVisible);
+            setShouldPulseButton(false);
+          }}
+          title={isPlaygroundVisible ? "Hide AI Playground" : "Open AI Playground"}
         >
           {isPlaygroundVisible ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </Button>

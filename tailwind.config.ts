@@ -109,6 +109,16 @@ export default {
           "50%": { 
             boxShadow: "0 0 25px rgba(0, 191, 255, 0.4), 0 0 45px rgba(0, 191, 255, 0.2)" 
           }
+        },
+        "attention-pulse": {
+          "0%, 100%": { 
+            transform: "scale(1)",
+            boxShadow: "0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3)"
+          },
+          "50%": { 
+            transform: "scale(1.05)",
+            boxShadow: "0 0 30px rgba(59, 130, 246, 0.8), 0 0 60px rgba(59, 130, 246, 0.5)"
+          }
         }
       },
       animation: {
@@ -121,6 +131,7 @@ export default {
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "slide-out-right": "slide-out-right 0.3s ease-out",
         "gentle-glow": "gentle-glow 4s ease-in-out infinite",
+        "attention-pulse": "attention-pulse 1.5s ease-in-out infinite",
       },
     },
   },

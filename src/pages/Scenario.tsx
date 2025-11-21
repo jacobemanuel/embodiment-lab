@@ -194,10 +194,10 @@ const Scenario = () => {
         </div>
       </header>
 
-      {/* Main Content Area - Split View */}
+      {/* Main Content Area - Split View on desktop, Full view on mobile */}
       <div className="flex-1 overflow-hidden flex relative">
-        {/* Left side - Learning Content */}
-        <div className={`${isPlaygroundVisible ? 'w-1/2' : 'w-full'} transition-all duration-300 border-r border-border`}>
+        {/* Learning Content - Full width on mobile, half width on desktop when playground is open */}
+        <div className={`${isPlaygroundVisible ? 'md:w-1/2 w-full' : 'w-full'} transition-all duration-300 md:border-r border-border`}>
           <ModeComponent
             messages={messages}
             onSendMessage={handleSendMessage}
@@ -206,34 +206,68 @@ const Scenario = () => {
           />
         </div>
 
-        {/* Right side - AI Playground */}
+        {/* AI Playground - Full screen overlay on mobile, side panel on desktop */}
         {isPlaygroundVisible && (
-          <div className="w-1/2 overflow-auto bg-gradient-to-br from-card/50 to-background/50">
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-5 h-5 text-primary animate-pulse" />
-                <h3 className="font-semibold text-lg">AI Image Playground</h3>
+          <>
+            {/* Desktop version - side by side */}
+            <div className="hidden md:block md:w-1/2 overflow-auto bg-gradient-to-br from-card/50 to-background/50">
+              <div className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+                  <h3 className="font-semibold text-lg">AI Image Playground</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Practice what you're learning! Generate images while following the lesson.
+                </p>
+                
+                <ImagePlayground 
+                  isOpen={true} 
+                  onClose={() => {}} 
+                  embedded={true}
+                />
               </div>
-              <p className="text-sm text-muted-foreground mb-6">
-                Practice what you're learning! Generate images while following the lesson.
-              </p>
-              
-              <ImagePlayground 
-                isOpen={true} 
-                onClose={() => {}} 
-                embedded={true}
-              />
             </div>
-          </div>
+
+            {/* Mobile version - full screen overlay */}
+            <div className="md:hidden fixed inset-0 z-50 bg-background/95 backdrop-blur-sm">
+              <div className="h-full overflow-auto">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+                      <h3 className="font-semibold text-lg">AI Image Playground</h3>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsPlaygroundVisible(false)}
+                      className="text-muted-foreground"
+                    >
+                      Close
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Practice what you're learning! Generate images while following the lesson.
+                  </p>
+                  
+                  <ImagePlayground 
+                    isOpen={true} 
+                    onClose={() => {}} 
+                    embedded={true}
+                  />
+                </div>
+              </div>
+            </div>
+          </>
         )}
 
-        {/* Toggle Button */}
+        {/* Toggle Button - Hidden on mobile when playground is open */}
         <Button
           variant="ghost"
           size="icon"
           className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-l-lg rounded-r-none bg-card/90 backdrop-blur-sm border border-r-0 border-border shadow-lg hover:bg-card transition-all ${
             shouldPulseButton && !isPlaygroundVisible ? 'animate-attention-pulse border-primary/70' : ''
-          }`}
+          } ${isPlaygroundVisible ? 'md:block hidden' : 'block'}`}
           onClick={() => {
             setIsPlaygroundVisible(!isPlaygroundVisible);
             setShouldPulseButton(false);

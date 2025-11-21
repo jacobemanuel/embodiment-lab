@@ -10,30 +10,28 @@ const ModeAssignment = () => {
   useEffect(() => {
     const initSession = async () => {
       try {
-        // Randomly assign text or avatar mode
-        const modes: StudyMode[] = ['text', 'avatar'];
-        const randomMode: StudyMode = modes[Math.floor(Math.random() * modes.length)];
+        // Start with text mode as default
+        const defaultMode: StudyMode = 'text';
         
         // Create session in database (server generates session ID)
-        const sessionId = await createStudySession(randomMode);
+        const sessionId = await createStudySession(defaultMode);
         
         // Store in sessionStorage for client-side use
-        sessionStorage.setItem('studyMode', randomMode);
+        sessionStorage.setItem('studyMode', defaultMode);
         sessionStorage.setItem('sessionId', sessionId);
         
         // Navigate to first scenario after brief delay
         setTimeout(() => {
-          navigate(`/scenario/${randomMode}/${scenarios[0].id}`);
+          navigate(`/scenario/${defaultMode}/${scenarios[0].id}`);
         }, 1500);
       } catch (error) {
         console.error('Error creating session:', error);
         // Still navigate even if db save fails (fallback to sessionStorage only)
-        const modes: StudyMode[] = ['text', 'avatar'];
-        const randomMode: StudyMode = modes[Math.floor(Math.random() * modes.length)];
+        const defaultMode: StudyMode = 'text';
         const fallbackSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        sessionStorage.setItem('studyMode', randomMode);
+        sessionStorage.setItem('studyMode', defaultMode);
         sessionStorage.setItem('sessionId', fallbackSessionId);
-        setTimeout(() => navigate(`/scenario/${randomMode}/${scenarios[0].id}`), 1500);
+        setTimeout(() => navigate(`/scenario/${defaultMode}/${scenarios[0].id}`), 1500);
       }
     };
     

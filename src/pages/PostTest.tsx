@@ -7,6 +7,7 @@ import logo from "@/assets/logo-white.png";
 import { postTestQuestions } from "@/data/postTestQuestions";
 import { savePostTestResponses, completeStudySession } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
+import { LikertScale } from "@/components/LikertScale";
 
 const PostTest = () => {
   const navigate = useNavigate();
@@ -73,30 +74,14 @@ const PostTest = () => {
             {/* Trust Section */}
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-primary">Trust & Credibility</h2>
-              {postTestQuestions.filter(q => q.category === 'trust').map((question, index) => (
-                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
-                  <h3 className="font-medium">{question.text}</h3>
-                  <RadioGroup
+              {postTestQuestions.filter(q => q.category === 'trust' && q.type === 'likert').map((question, index) => (
+                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                  <h3 className="font-medium text-lg">{question.text}</h3>
+                  <LikertScale
+                    id={question.id}
                     value={responses[question.id] || ""}
-                    onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
-                  >
-                    <div className="flex gap-2 flex-wrap">
-                      {question.options.map((option) => (
-                        <div key={option} className="flex items-center space-x-2 bg-secondary/30 rounded-lg px-3 py-2">
-                          <RadioGroupItem 
-                            value={option} 
-                            id={`${question.id}-${option}`}
-                          />
-                          <Label 
-                            htmlFor={`${question.id}-${option}`}
-                            className="cursor-pointer text-sm"
-                          >
-                            {option}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </RadioGroup>
+                    onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                  />
                 </div>
               ))}
             </div>
@@ -104,30 +89,14 @@ const PostTest = () => {
             {/* Engagement Section */}
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-primary">Engagement</h2>
-              {postTestQuestions.filter(q => q.category === 'engagement').map((question) => (
-                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
-                  <h3 className="font-medium">{question.text}</h3>
-                  <RadioGroup
+              {postTestQuestions.filter(q => q.category === 'engagement' && q.type === 'likert').map((question) => (
+                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                  <h3 className="font-medium text-lg">{question.text}</h3>
+                  <LikertScale
+                    id={question.id}
                     value={responses[question.id] || ""}
-                    onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
-                  >
-                    <div className="flex gap-2 flex-wrap">
-                      {question.options.map((option) => (
-                        <div key={option} className="flex items-center space-x-2 bg-secondary/30 rounded-lg px-3 py-2">
-                          <RadioGroupItem 
-                            value={option} 
-                            id={`${question.id}-${option}`}
-                          />
-                          <Label 
-                            htmlFor={`${question.id}-${option}`}
-                            className="cursor-pointer text-sm"
-                          >
-                            {option}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </RadioGroup>
+                    onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                  />
                 </div>
               ))}
             </div>
@@ -135,30 +104,14 @@ const PostTest = () => {
             {/* Satisfaction Section */}
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-primary">Overall Satisfaction</h2>
-              {postTestQuestions.filter(q => q.category === 'satisfaction').map((question) => (
-                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
-                  <h3 className="font-medium">{question.text}</h3>
-                  <RadioGroup
+              {postTestQuestions.filter(q => q.category === 'satisfaction' && q.type === 'likert').map((question) => (
+                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                  <h3 className="font-medium text-lg">{question.text}</h3>
+                  <LikertScale
+                    id={question.id}
                     value={responses[question.id] || ""}
-                    onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
-                  >
-                    <div className="flex gap-2 flex-wrap">
-                      {question.options.map((option) => (
-                        <div key={option} className="flex items-center space-x-2 bg-secondary/30 rounded-lg px-3 py-2">
-                          <RadioGroupItem 
-                            value={option} 
-                            id={`${question.id}-${option}`}
-                          />
-                          <Label 
-                            htmlFor={`${question.id}-${option}`}
-                            className="cursor-pointer text-sm"
-                          >
-                            {option}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </RadioGroup>
+                    onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                  />
                 </div>
               ))}
             </div>

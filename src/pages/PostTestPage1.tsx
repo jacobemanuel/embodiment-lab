@@ -1,15 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import logo from "@/assets/logo-white.png";
 import { postTestQuestions } from "@/data/postTestQuestions";
-import { Slider } from "@/components/ui/slider";
+import { LikertScale } from "@/components/LikertScale";
 
 const PostTestPage1 = () => {
   const navigate = useNavigate();
-  const [responses, setResponses] = useState<Record<string, number>>({});
+  const [responses, setResponses] = useState<Record<string, string>>({});
 
   // Load existing responses from sessionStorage
   useEffect(() => {
@@ -26,24 +24,19 @@ const PostTestPage1 = () => {
     }
   }, [responses]);
 
-  const likertQuestions = postTestQuestions.filter(q => q.type === 'likert');
-  const allQuestionsAnswered = likertQuestions.every(q => responses[q.id] !== undefined);
+  const likertQuestions = postTestQuestions.filter(q => 
+    q.type === 'likert' && 
+    ['trust', 'engagement', 'satisfaction'].includes(q.category || '')
+  );
+  
+  const allQuestionsAnswered = likertQuestions.every(q => responses[q.id]);
   const progress = Object.keys(responses).length / likertQuestions.length * 100;
 
   const handleNext = () => {
     if (allQuestionsAnswered) {
-      // Convert numbers to strings before saving
-      const stringResponses = Object.fromEntries(
-        Object.entries(responses).map(([key, value]) => [key, String(value)])
-      );
-      sessionStorage.setItem('postTest1', JSON.stringify(stringResponses));
+      sessionStorage.setItem('postTest1', JSON.stringify(responses));
       navigate('/post-test-2');
     }
-  };
-
-  const getLikertLabel = (value: number): string => {
-    const labels = ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"];
-    return labels[value - 1] || "";
   };
 
   return (
@@ -78,26 +71,14 @@ const PostTestPage1 = () => {
             {/* Trust Section */}
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-primary">Trust & Credibility</h2>
-              {postTestQuestions.filter(q => q.category === 'trust').map((question) => (
-                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
-                  <h3 className="font-medium">{question.text}</h3>
-                  <div className="space-y-3">
-                    <Slider
-                      value={[responses[question.id] || 3]}
-                      onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value[0] }))}
-                      min={1}
-                      max={5}
-                      step={1}
-                      className="py-4"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Strongly Disagree</span>
-                      <span className="font-medium text-foreground">
-                        {responses[question.id] ? getLikertLabel(responses[question.id]) : 'Not selected'}
-                      </span>
-                      <span>Strongly Agree</span>
-                    </div>
-                  </div>
+              {postTestQuestions.filter(q => q.category === 'trust' && q.type === 'likert').map((question) => (
+                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                  <h3 className="font-medium text-lg">{question.text}</h3>
+                  <LikertScale
+                    id={question.id}
+                    value={responses[question.id] || ""}
+                    onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                  />
                 </div>
               ))}
             </div>
@@ -105,26 +86,14 @@ const PostTestPage1 = () => {
             {/* Engagement Section */}
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-primary">Engagement</h2>
-              {postTestQuestions.filter(q => q.category === 'engagement').map((question) => (
-                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
-                  <h3 className="font-medium">{question.text}</h3>
-                  <div className="space-y-3">
-                    <Slider
-                      value={[responses[question.id] || 3]}
-                      onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value[0] }))}
-                      min={1}
-                      max={5}
-                      step={1}
-                      className="py-4"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Strongly Disagree</span>
-                      <span className="font-medium text-foreground">
-                        {responses[question.id] ? getLikertLabel(responses[question.id]) : 'Not selected'}
-                      </span>
-                      <span>Strongly Agree</span>
-                    </div>
-                  </div>
+              {postTestQuestions.filter(q => q.category === 'engagement' && q.type === 'likert').map((question) => (
+                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                  <h3 className="font-medium text-lg">{question.text}</h3>
+                  <LikertScale
+                    id={question.id}
+                    value={responses[question.id] || ""}
+                    onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                  />
                 </div>
               ))}
             </div>
@@ -132,26 +101,14 @@ const PostTestPage1 = () => {
             {/* Satisfaction Section */}
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-primary">Overall Satisfaction</h2>
-              {postTestQuestions.filter(q => q.category === 'satisfaction').map((question) => (
-                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
-                  <h3 className="font-medium">{question.text}</h3>
-                  <div className="space-y-3">
-                    <Slider
-                      value={[responses[question.id] || 3]}
-                      onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value[0] }))}
-                      min={1}
-                      max={5}
-                      step={1}
-                      className="py-4"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Strongly Disagree</span>
-                      <span className="font-medium text-foreground">
-                        {responses[question.id] ? getLikertLabel(responses[question.id]) : 'Not selected'}
-                      </span>
-                      <span>Strongly Agree</span>
-                    </div>
-                  </div>
+              {postTestQuestions.filter(q => q.category === 'satisfaction' && q.type === 'likert').map((question) => (
+                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                  <h3 className="font-medium text-lg">{question.text}</h3>
+                  <LikertScale
+                    id={question.id}
+                    value={responses[question.id] || ""}
+                    onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                  />
                 </div>
               ))}
             </div>

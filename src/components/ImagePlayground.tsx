@@ -150,6 +150,7 @@ const PlaygroundContent = () => {
       <div className="space-y-2">
         <Label htmlFor="negativePrompt" className="text-sm">Negative Prompt</Label>
         <Textarea id="negativePrompt" placeholder="What to avoid (e.g., blurry, low quality)..." value={negativePrompt} onChange={e => setNegativePrompt(e.target.value)} className="min-h-[50px] resize-none text-sm" maxLength={500} />
+        <p className="text-xs text-muted-foreground">{negativePrompt.length}/500</p>
       </div>
 
       {/* Advanced Settings - Collapsible */}

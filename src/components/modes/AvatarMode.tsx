@@ -3,6 +3,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Message } from "@/types/study";
 import { useState, useRef, useEffect } from "react";
 import { Mic, MicOff, Send, SkipForward } from "lucide-react";
+import { AvatarPlaceholder } from "@/components/AvatarPlaceholder";
 
 interface AvatarModeProps {
   messages: Message[];
@@ -72,7 +73,7 @@ export const AvatarMode = ({ messages, onSendMessage, onSkip, isLoading }: Avata
         <div className="w-full max-w-3xl space-y-4">
           {/* Avatar container - compact */}
           <div className="relative aspect-video bg-card rounded-2xl overflow-hidden border border-border shadow-lg">
-            <iframe src="" allow="microphone" title="LiveAvatar" className="w-full h-full" />
+            <AvatarPlaceholder />
             <div className="absolute top-3 right-3">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-ai-glow" />
             </div>

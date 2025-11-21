@@ -114,26 +114,26 @@ const PlaygroundContent = () => {
   };
   return <div className="space-y-4">
       {/* Quick Examples */}
-      <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2.5">
-        <div className="flex items-center gap-2">
+      <div className="p-2 md:p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
           <ArrowRight className="w-3.5 h-3.5 text-primary" />
           <Label className="text-sm font-semibold text-foreground">Quick Start Examples</Label>
           <span className="text-xs text-muted-foreground italic">(click to use)</span>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {examplePrompts.map((example, index) => <Button key={index} variant="outline" size="sm" onClick={() => setPrompt(example)} className="text-xs h-auto py-2 px-2 justify-start text-left bg-background hover:bg-accent">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {examplePrompts.map((example, index) => <Button key={index} variant="outline" size="sm" onClick={() => setPrompt(example)} className="text-xs h-auto py-2.5 px-3 justify-start text-left bg-background hover:bg-accent whitespace-normal">
               {example}
             </Button>)}
         </div>
       </div>
 
       {/* Separator */}
-      <div className="relative py-6">
+      <div className="relative py-4 md:py-6">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t-2 border-primary/20" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-background px-4 py-1 text-sm font-semibold border border-primary/30 rounded-full shadow-sm text-slate-600">
+          <span className="bg-background px-3 md:px-4 py-1 text-xs md:text-sm font-semibold border border-primary/30 rounded-full shadow-sm text-slate-600">
             Your Prompt
           </span>
         </div>
@@ -196,7 +196,7 @@ const PlaygroundContent = () => {
           </div>
 
           {/* Dimensions */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="width" className="text-sm">Width</Label>
               <Input id="width" type="number" value={width} onChange={e => setWidth(Math.max(256, Math.min(1024, parseInt(e.target.value) || 512)))} min={256} max={1024} step={64} className="text-sm" />

@@ -231,11 +231,11 @@ const Scenario = () => {
             {/* Mobile version - full screen overlay */}
             <div className="md:hidden fixed inset-0 z-50 bg-background/95 backdrop-blur-sm">
               <div className="h-full overflow-auto">
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="p-3">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-5 h-5 text-primary animate-pulse" />
-                      <h3 className="font-semibold text-lg">AI Image Playground</h3>
+                      <h3 className="font-semibold text-base">AI Image Playground</h3>
                     </div>
                     <Button
                       variant="ghost"
@@ -246,7 +246,7 @@ const Scenario = () => {
                       Close
                     </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-6">
+                  <p className="text-xs text-muted-foreground mb-4">
                     Practice what you're learning! Generate images while following the lesson.
                   </p>
                   

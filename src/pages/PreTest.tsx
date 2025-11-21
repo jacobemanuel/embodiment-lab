@@ -53,25 +53,27 @@ const PreTest = () => {
       <main className="flex-1 container mx-auto px-6 py-12 max-w-2xl">
         <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-semibold mb-2">Pre-Test Assessment</h1>
+            <h1 className="text-3xl font-semibold mb-2 bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">
+              Pre-Test Assessment
+            </h1>
             <p className="text-muted-foreground mb-6">
-              Please answer these questions based on your current knowledge. Don't worry if you're not sure—this helps us measure learning gains.
+              Please answer these questions about AI image generation based on your current knowledge. Don't worry if you're not sure—this helps us measure learning gains.
             </p>
             
             {/* Progress bar */}
             <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
               <div 
-                className="h-full bg-primary transition-all duration-300"
+                className="h-full bg-gradient-to-r from-ai-primary to-ai-accent transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6 stagger-fade-in">
             {preTestQuestions.map((question, index) => (
-              <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div key={question.id} className="glass-card rounded-2xl p-6 space-y-4 hover:shadow-ai-glow transition-all duration-300">
                 <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-ai-primary to-ai-accent text-white flex items-center justify-center font-semibold text-sm">
                     {index + 1}
                   </span>
                   <h3 className="font-semibold flex-1 pt-1">{question.text}</h3>
@@ -83,7 +85,7 @@ const PreTest = () => {
                 >
                   <div className="space-y-3">
                     {question.options.map((option) => (
-                      <div key={option} className="flex items-start space-x-3">
+                      <div key={option} className="flex items-start space-x-3 group">
                         <RadioGroupItem 
                           value={option} 
                           id={`${question.id}-${option}`}
@@ -91,7 +93,7 @@ const PreTest = () => {
                         />
                         <Label 
                           htmlFor={`${question.id}-${option}`}
-                          className="cursor-pointer flex-1 py-1 leading-relaxed"
+                          className="cursor-pointer flex-1 py-1 leading-relaxed group-hover:text-foreground transition-colors"
                         >
                           {option}
                         </Label>
@@ -103,10 +105,10 @@ const PreTest = () => {
             ))}
           </div>
 
-          <div className="sticky bottom-6 bg-background/95 backdrop-blur-sm border border-border rounded-2xl p-4 shadow-medium">
+          <div className="sticky bottom-6 glass-card rounded-2xl p-4 shadow-medium">
             <Button
               size="lg"
-              className="w-full"
+              className="w-full gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02]"
               onClick={handleContinue}
               disabled={!allQuestionsAnswered || isLoading}
             >

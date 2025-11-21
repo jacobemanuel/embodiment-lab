@@ -128,9 +128,9 @@ const Scenario = () => {
               variant="outline"
               size="sm"
               onClick={() => setIsPlaygroundOpen(true)}
-              className="gap-2 bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20 hover:border-primary/40"
+              className="gap-2 gradient-ai border-ai-primary/20 hover:border-ai-primary/40 hover:shadow-ai-glow transition-all duration-300"
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-4 h-4 animate-pulse-glow" />
               <span className="hidden sm:inline">AI Playground</span>
             </Button>
             <ModuleNavigation currentMode={currentMode} onModeChange={handleModeChange} />

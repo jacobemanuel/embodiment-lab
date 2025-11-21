@@ -29,45 +29,45 @@ const Welcome = () => {
             {/* Hero section with gradient text */}
             <div className="text-center space-y-6">
               <div className="inline-block">
-                <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-fade-in">
-                  Tax Learning for Students
+                <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-ai-primary via-ai-accent to-ai-secondary bg-clip-text text-transparent animate-fade-in">
+                  AI Image Generation
                 </h1>
               </div>
               <p className="text-xl text-muted-foreground max-w-xl mx-auto">
-                Master the German tax system as a student in Munich through interactive learning
+                Master AI image generation through interactive learning and hands-on practice
               </p>
             </div>
 
             {/* Premium glass card */}
-            <div className="glass-card rounded-3xl p-8 md:p-10 space-y-8 shadow-large hover:shadow-glow transition-all duration-500">
+            <div className="glass-card rounded-3xl p-8 md:p-10 space-y-8 shadow-large hover:shadow-ai-glow transition-all duration-500">
               <div className="space-y-4">
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
                   Welcome!
                 </h2>
                 <p className="text-muted-foreground leading-relaxed text-lg">
-                  Thank you for participating in this tax education study. You'll explore an important topic about taxes in Germany through interactive conversation designed for students in Munich.
+                  Thank you for participating in this study on AI-powered learning. You'll explore AI image generation through an interactive learning experience designed to enhance your understanding and creativity.
                 </p>
               </div>
 
               {/* Features grid */}
-              <div className="grid gap-4">
-                <div className="flex gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors">
+              <div className="grid gap-4 stagger-fade-in">
+                <div className="flex gap-4 p-4 rounded-xl bg-ai-primary/5 border border-ai-primary/10 hover:bg-ai-primary/10 transition-all hover:scale-[1.02]">
                   <span className="text-2xl">⏱️</span>
                   <div>
-                    <strong className="text-foreground">~5 minutes</strong>
+                    <strong className="text-foreground">~8 minutes</strong>
                     <p className="text-sm text-muted-foreground">Complete at your own pace</p>
                   </div>
                 </div>
                 
-                <div className="flex gap-4 p-4 rounded-xl bg-accent/5 border border-accent/10 hover:bg-accent/10 transition-colors">
-                  <span className="text-2xl">📚</span>
+                <div className="flex gap-4 p-4 rounded-xl bg-ai-accent/5 border border-ai-accent/10 hover:bg-ai-accent/10 transition-all hover:scale-[1.02]">
+                  <span className="text-2xl">✨</span>
                   <div>
-                    <strong className="text-foreground">1 Learning Scenario</strong>
-                    <p className="text-sm text-muted-foreground">Interactive tax learning conversation</p>
+                    <strong className="text-foreground">AI Image Playground</strong>
+                    <p className="text-sm text-muted-foreground">Generate images while you learn</p>
                   </div>
                 </div>
                 
-                <div className="flex gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors">
+                <div className="flex gap-4 p-4 rounded-xl bg-ai-primary/5 border border-ai-primary/10 hover:bg-ai-primary/10 transition-all hover:scale-[1.02]">
                   <span className="text-2xl">🎯</span>
                   <div>
                     <strong className="text-foreground">Interactive Format</strong>
@@ -75,7 +75,7 @@ const Welcome = () => {
                   </div>
                 </div>
                 
-                <div className="flex gap-4 p-4 rounded-xl bg-accent/5 border border-accent/10 hover:bg-accent/10 transition-colors">
+                <div className="flex gap-4 p-4 rounded-xl bg-ai-accent/5 border border-ai-accent/10 hover:bg-ai-accent/10 transition-all hover:scale-[1.02]">
                   <span className="text-2xl">🔒</span>
                   <div>
                     <strong className="text-foreground">Completely Anonymous</strong>
@@ -85,11 +85,11 @@ const Welcome = () => {
               </div>
 
               {/* Privacy callout */}
-              <div className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-primary/10 via-accent/5 to-primary/5 border border-primary/20">
+              <div className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-ai-primary/10 via-ai-accent/5 to-ai-secondary/10 border border-ai-primary/20">
                 <div className="relative z-10 space-y-3">
                   <h3 className="font-bold text-lg">Your privacy matters</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Your responses help researchers design better tax education tools for students. No personally identifiable information is collected. Withdraw anytime without penalty.
+                    Your responses help researchers design better AI-powered educational tools. No personally identifiable information is collected. Withdraw anytime without penalty.
                   </p>
                 </div>
               </div>
@@ -99,7 +99,7 @@ const Welcome = () => {
                 <Button 
                   onClick={() => navigate("/consent")}
                   size="lg"
-                  className="w-full text-lg h-16 rounded-2xl gradient-primary hover:shadow-glow transition-all duration-300 hover:scale-[1.02] font-semibold"
+                  className="w-full text-lg h-16 rounded-2xl gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02] font-semibold animate-pulse-glow"
                 >
                   Continue to Consent Form →
                 </Button>

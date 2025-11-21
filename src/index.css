@@ -8,14 +8,20 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Modern dark 3D-inspired design system with enhanced contrast */
+    /* Modern dark 3D-inspired design system with AI theme */
     --background: 220 25% 6%;
     --foreground: 0 0% 98%;
     
-    /* Vibrant blue-purple gradient accent with depth */
-    --primary: 240 100% 65%;
+    /* AI-themed purple-blue gradient with pink accents */
+    --primary: 265 85% 65%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 260 100% 70%;
+    --primary-glow: 290 80% 70%;
+    
+    /* AI secondary - pink/purple */
+    --ai-primary: 265 85% 65%;
+    --ai-secondary: 310 75% 65%;
+    --ai-accent: 330 80% 70%;
+    --ai-glow: 285 90% 70%;
     
     /* Enhanced dark surfaces with depth */
     --secondary: 220 20% 14%;
@@ -24,7 +30,7 @@ All colors MUST be HSL.
     --muted: 220 20% 16%;
     --muted-foreground: 220 15% 70%;
     
-    --accent: 260 100% 70%;
+    --accent: 310 75% 65%;
     --accent-foreground: 0 0% 100%;
     
     /* 3D elevated cards */
@@ -36,26 +42,28 @@ All colors MUST be HSL.
     
     --border: 220 20% 22%;
     --input: 220 20% 22%;
-    --ring: 240 100% 65%;
+    --ring: 265 85% 65%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
     --radius: 1rem;
     
-    /* 3D-inspired gradients with depth */
-    --gradient-primary: linear-gradient(135deg, hsl(240 100% 65%) 0%, hsl(260 100% 70%) 100%);
+    /* AI-themed gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(265 85% 65%) 0%, hsl(310 75% 65%) 100%);
+    --gradient-ai: linear-gradient(135deg, hsl(265 85% 65%) 0%, hsl(290 80% 70%) 50%, hsl(330 80% 70%) 100%);
     --gradient-surface: linear-gradient(145deg, hsl(220 25% 12%) 0%, hsl(220 25% 8%) 100%);
-    --gradient-mesh: radial-gradient(at 0% 0%, hsl(240 100% 65% / 0.15) 0px, transparent 50%),
-                      radial-gradient(at 100% 0%, hsl(260 100% 70% / 0.1) 0px, transparent 50%),
-                      radial-gradient(at 100% 100%, hsl(240 100% 65% / 0.08) 0px, transparent 50%);
+    --gradient-mesh: radial-gradient(at 0% 0%, hsl(265 85% 65% / 0.2) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, hsl(310 75% 65% / 0.15) 0px, transparent 50%),
+                      radial-gradient(at 100% 100%, hsl(330 80% 70% / 0.1) 0px, transparent 50%);
     
-    /* 3D-style shadows for depth */
+    /* AI-themed shadows with glow */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --shadow-subtle: 0 2px 8px -2px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
     --shadow-medium: 0 8px 24px -4px rgb(0 0 0 / 0.5), 0 4px 8px rgb(0 0 0 / 0.4);
     --shadow-large: 0 20px 40px -8px rgb(0 0 0 / 0.6), 0 10px 20px rgb(0 0 0 / 0.5);
-    --shadow-glow: 0 0 60px hsl(240 100% 65% / 0.4), 0 0 30px hsl(260 100% 70% / 0.3);
+    --shadow-glow: 0 0 60px hsl(265 85% 65% / 0.4), 0 0 30px hsl(310 75% 65% / 0.3);
+    --shadow-ai-glow: 0 0 40px hsl(265 85% 65% / 0.35), 0 0 20px hsl(330 80% 70% / 0.25);
     --shadow-inset: inset 0 2px 8px rgb(0 0 0 / 0.3);
     
     /* 3D elevation effects */
@@ -68,9 +76,14 @@ All colors MUST be HSL.
     --background: 220 25% 5%;
     --foreground: 0 0% 98%;
     
-    --primary: 240 100% 65%;
+    --primary: 265 85% 65%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 260 100% 70%;
+    --primary-glow: 290 80% 70%;
+    
+    --ai-primary: 265 85% 65%;
+    --ai-secondary: 310 75% 65%;
+    --ai-accent: 330 80% 70%;
+    --ai-glow: 285 90% 70%;
     
     --secondary: 220 20% 12%;
     --secondary-foreground: 0 0% 98%;
@@ -78,7 +91,7 @@ All colors MUST be HSL.
     --muted: 220 20% 14%;
     --muted-foreground: 220 15% 70%;
     
-    --accent: 260 100% 70%;
+    --accent: 310 75% 65%;
     --accent-foreground: 0 0% 100%;
     
     --card: 220 25% 9%;
@@ -89,16 +102,17 @@ All colors MUST be HSL.
     
     --border: 220 20% 20%;
     --input: 220 20% 20%;
-    --ring: 240 100% 65%;
+    --ring: 265 85% 65%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --gradient-primary: linear-gradient(135deg, hsl(240 100% 65%) 0%, hsl(260 100% 70%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(265 85% 65%) 0%, hsl(310 75% 65%) 100%);
+    --gradient-ai: linear-gradient(135deg, hsl(265 85% 65%) 0%, hsl(290 80% 70%) 50%, hsl(330 80% 70%) 100%);
     --gradient-surface: linear-gradient(145deg, hsl(220 25% 11%) 0%, hsl(220 25% 7%) 100%);
-    --gradient-mesh: radial-gradient(at 0% 0%, hsl(240 100% 65% / 0.15) 0px, transparent 50%),
-                      radial-gradient(at 100% 0%, hsl(260 100% 70% / 0.1) 0px, transparent 50%),
-                      radial-gradient(at 100% 100%, hsl(240 100% 65% / 0.08) 0px, transparent 50%);
+    --gradient-mesh: radial-gradient(at 0% 0%, hsl(265 85% 65% / 0.2) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, hsl(310 75% 65% / 0.15) 0px, transparent 50%),
+                      radial-gradient(at 100% 100%, hsl(330 80% 70% / 0.1) 0px, transparent 50%);
   }
 }
 
@@ -123,7 +137,7 @@ All colors MUST be HSL.
   }
 }
 
-/* Modern 3D utility classes */
+/* Modern AI-themed utility classes */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -143,6 +157,10 @@ All colors MUST be HSL.
   
   .shadow-glow {
     box-shadow: var(--shadow-glow);
+  }
+  
+  .shadow-ai-glow {
+    box-shadow: var(--shadow-ai-glow);
   }
   
   .shadow-inset {
@@ -165,6 +183,10 @@ All colors MUST be HSL.
     background: var(--gradient-primary);
   }
   
+  .gradient-ai {
+    background: var(--gradient-ai);
+  }
+  
   .gradient-surface {
     background: var(--gradient-surface);
   }
@@ -173,7 +195,7 @@ All colors MUST be HSL.
     background: var(--gradient-mesh);
   }
   
-  /* Enhanced 3D glass-morphism */
+  /* Enhanced AI-themed glass-morphism */
   .glass-card {
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
     backdrop-filter: blur(24px) saturate(180%);
@@ -181,6 +203,15 @@ All colors MUST be HSL.
     box-shadow: 
       0 8px 32px rgba(0, 0, 0, 0.4),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 12px 40px rgba(102, 126, 234, 0.2),
+      0 8px 32px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
   
   .dark .glass-card {
@@ -191,6 +222,29 @@ All colors MUST be HSL.
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
   
+  .dark .glass-card:hover {
+    box-shadow: 
+      0 12px 40px rgba(102, 126, 234, 0.25),
+      0 8px 32px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  
+  /* AI Pulse effect */
+  .pulse-ai {
+    animation: pulse-ai 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse-ai {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.02);
+    }
+  }
+  
   /* 3D button effects */
   .btn-3d {
     position: relative;
@@ -198,6 +252,7 @@ All colors MUST be HSL.
     box-shadow: 
       0 4px 8px rgba(0, 0, 0, 0.3),
       0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   
   .btn-3d:hover {
@@ -220,6 +275,12 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-medium);
     border: 1px solid hsl(var(--border));
     position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .card-elevated:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-large);
   }
   
   .card-elevated::before {
@@ -234,4 +295,31 @@ All colors MUST be HSL.
     mask-composite: exclude;
     pointer-events: none;
   }
+  
+  /* Smooth fade in animation */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Staggered fade in for lists */
+  .stagger-fade-in > * {
+    animation: fadeIn 0.5s ease-out backwards;
+  }
+  
+  .stagger-fade-in > *:nth-child(1) { animation-delay: 0.1s; }
+  .stagger-fade-in > *:nth-child(2) { animation-delay: 0.2s; }
+  .stagger-fade-in > *:nth-child(3) { animation-delay: 0.3s; }
+  .stagger-fade-in > *:nth-child(4) { animation-delay: 0.4s; }
+  .stagger-fade-in > *:nth-child(5) { animation-delay: 0.5s; }
 }

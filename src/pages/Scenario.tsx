@@ -270,7 +270,7 @@ const Scenario = () => {
           }}
           title={isPlaygroundVisible ? "Hide AI Playground" : "Open AI Playground"}
         >
-          {isPlaygroundVisible ? <ChevronRight className="w-6 h-6" /> : <ChevronLeft className="w-6 h-6" />}
+          {isPlaygroundVisible ? <ChevronRight className="w-8 h-8" /> : <ChevronLeft className="w-8 h-8" />}
         </Button>
       </div>
     </div>

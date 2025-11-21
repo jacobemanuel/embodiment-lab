@@ -128,12 +128,14 @@ const PlaygroundContent = () => {
       </div>
 
       {/* Separator */}
-      <div className="relative py-2">
+      <div className="relative py-6">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border" />
+          <span className="w-full border-t-2 border-primary/20" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">Your Prompt</span>
+        <div className="relative flex justify-center">
+          <span className="bg-background px-4 py-1 text-sm font-semibold text-primary border border-primary/30 rounded-full shadow-sm">
+            Your Prompt
+          </span>
         </div>
       </div>
 

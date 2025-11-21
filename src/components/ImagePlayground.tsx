@@ -133,7 +133,7 @@ const PlaygroundContent = () => {
           <span className="w-full border-t-2 border-primary/20" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-background px-4 py-1 text-sm font-semibold text-primary border border-primary/30 rounded-full shadow-sm">
+          <span className="bg-background px-4 py-1 text-sm font-semibold border border-primary/30 rounded-full shadow-sm text-slate-600">
             Your Prompt
           </span>
         </div>

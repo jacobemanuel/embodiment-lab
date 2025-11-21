@@ -1,4 +1,4 @@
-export type StudyMode = 'text' | 'voice' | 'avatar';
+export type StudyMode = 'text' | 'avatar';
 
 export interface Message {
   role: 'ai' | 'user';

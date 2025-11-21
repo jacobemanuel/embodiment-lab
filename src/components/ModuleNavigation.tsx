@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquare, Mic, Video } from "lucide-react";
+import { MessageSquare, Video } from "lucide-react";
 import { StudyMode } from "@/types/study";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +11,6 @@ interface ModuleNavigationProps {
 export const ModuleNavigation = ({ currentMode, onModeChange }: ModuleNavigationProps) => {
   const modules = [
     { id: 'text' as StudyMode, label: 'Text Mode', icon: MessageSquare },
-    { id: 'voice' as StudyMode, label: 'Voice Mode', icon: Mic },
     { id: 'avatar' as StudyMode, label: 'Avatar Mode', icon: Video },
   ];
 

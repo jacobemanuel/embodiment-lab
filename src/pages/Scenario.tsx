@@ -3,13 +3,13 @@ import { useState, useEffect } from "react";
 import { Message, StudyMode, ScenarioData } from "@/types/study";
 import { scenarios } from "@/data/scenarios";
 import { TextMode } from "@/components/modes/TextMode";
-import { VoiceMode } from "@/components/modes/VoiceMode";
 import { AvatarMode } from "@/components/modes/AvatarMode";
+import { ImagePlayground } from "@/components/ImagePlayground";
 import { ScenarioProgress } from "@/components/ScenarioProgress";
 import { ModuleNavigation } from "@/components/ModuleNavigation";
 import logo from "@/assets/logo-white.png";
 import { Button } from "@/components/ui/button";
-import { HelpCircle, LogOut } from "lucide-react";
+import { HelpCircle, LogOut, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,7 @@ const Scenario = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
 
   const scenario = scenarios.find(s => s.id === scenarioId);
   const scenarioIndex = scenarios.findIndex(s => s.id === scenarioId);
@@ -114,7 +115,7 @@ const Scenario = () => {
     );
   }
 
-  const ModeComponent = currentMode === 'text' ? TextMode : currentMode === 'voice' ? VoiceMode : AvatarMode;
+  const ModeComponent = currentMode === 'text' ? TextMode : AvatarMode;
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -123,6 +124,15 @@ const Scenario = () => {
         <div className="flex items-center justify-between mb-4">
           <img src={logo} alt="Majewski Studio" className="h-8" />
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPlaygroundOpen(true)}
+              className="gap-2 bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20 hover:border-primary/40"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">AI Playground</span>
+            </Button>
             <ModuleNavigation currentMode={currentMode} onModeChange={handleModeChange} />
             <Dialog>
               <DialogTrigger asChild>
@@ -134,7 +144,7 @@ const Scenario = () => {
                 <DialogHeader>
                   <DialogTitle>Learning Modes</DialogTitle>
                   <DialogDescription>
-                    Choose how you want to learn about German taxes
+                    Choose how you want to learn about AI image generation
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
@@ -149,20 +159,20 @@ const Scenario = () => {
                   </div>
                   <div className="space-y-2">
                     <h4 className="font-semibold flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">🎤</span>
-                      Voice Mode
-                    </h4>
-                    <p className="text-sm text-muted-foreground pl-10">
-                      Hear the AI speak while you type your answers - perfect for multitasking.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-semibold flex items-center gap-2">
                       <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">🎥</span>
                       Avatar Mode
                     </h4>
                     <p className="text-sm text-muted-foreground pl-10">
-                      Audio-only experience - listen to the AI and respond by typing.
+                      Learn with a visual AI tutor that guides you through the concepts.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-primary-foreground">✨</span>
+                      AI Playground
+                    </h4>
+                    <p className="text-sm text-muted-foreground pl-10">
+                      Generate images in real-time while learning - practice what you're being taught!
                     </p>
                   </div>
                 </div>
@@ -190,6 +200,12 @@ const Scenario = () => {
           isLoading={isLoading}
         />
       </div>
+
+      {/* Image Playground */}
+      <ImagePlayground
+        isOpen={isPlaygroundOpen}
+        onClose={() => setIsPlaygroundOpen(false)}
+      />
     </div>
   );
 };

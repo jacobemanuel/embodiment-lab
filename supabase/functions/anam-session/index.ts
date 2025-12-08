@@ -13,7 +13,6 @@ interface SlideContext {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -22,7 +21,6 @@ serve(async (req) => {
     const { slideContext } = await req.json() as { slideContext?: SlideContext };
     
     const ANAM_API_KEY = Deno.env.get('ANAM_API_KEY');
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
     if (!ANAM_API_KEY) {
       console.error('ANAM_API_KEY is not configured');
@@ -39,76 +37,30 @@ Your role is to:
 2. Answer their questions clearly and concisely
 3. Provide practical examples when helpful
 4. Encourage them to try things in the AI Playground
-5. Keep responses conversational and not too long
-
-Important guidelines:
-- Be conversational, not lecture-like
-- Use analogies to explain technical concepts
-- If they ask about something not on the current slide, briefly answer but guide them back to the topic
-- Celebrate their progress and curiosity`;
+5. Keep responses conversational and not too long`;
 
     const slideSpecificPrompt = slideContext 
-      ? `
-
-CURRENT SLIDE: "${slideContext.title}"
-KEY POINTS TO COVER: ${slideContext.keyPoints.join(', ')}
-TEACHING CONTEXT: ${slideContext.systemPromptContext}
-
-Start by briefly welcoming the student to this topic and asking what aspect interests them most.`
+      ? `\n\nCURRENT SLIDE: "${slideContext.title}"\nKEY POINTS: ${slideContext.keyPoints.join(', ')}\nCONTEXT: ${slideContext.systemPromptContext}`
       : '';
 
     const fullSystemPrompt = baseSystemPrompt + slideSpecificPrompt;
 
-    // Create session with Anam API
-    const anamResponse = await fetch('https://api.anam.ai/v1/sessions', {
+    // Correct endpoint: https://api.anam.ai/v1/auth/session-token
+    const anamResponse = await fetch('https://api.anam.ai/v1/auth/session-token', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${ANAM_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        persona: {
+        personaConfig: {
           name: 'AI Tutor',
-          description: 'A friendly AI image generation tutor',
+          // Default public avatars from Anam
+          avatarId: '30fa96d0-26c4-4e55-94a0-517025942e18', // Default avatar
+          voiceId: '6bfbe25a-979d-40f3-a92b-5394170af54b',  // Default voice
+          llmId: '0934d97d-0c3a-4f33-91b0-5e136a0ef466',    // Default LLM
           systemPrompt: fullSystemPrompt,
-          voice: {
-            provider: 'elevenlabs',
-            voiceId: 'pNInz6obpgDQGcFmaJgB', // Adam - friendly male voice
-          },
-          avatar: {
-            type: 'realistic',
-            avatarId: 'anna_public', // Or another available avatar
-          },
-          llm: OPENAI_API_KEY ? {
-            provider: 'custom',
-            model: 'gpt-4o',
-            apiKey: OPENAI_API_KEY,
-            baseUrl: 'https://api.openai.com/v1',
-          } : undefined,
         },
-        tools: [
-          {
-            name: 'getCurrentSlide',
-            description: 'Get information about the current slide the user is viewing',
-            parameters: {
-              type: 'object',
-              properties: {},
-              required: [],
-            },
-          },
-          {
-            name: 'onSlideChange',
-            description: 'Called when user navigates to a different slide',
-            parameters: {
-              type: 'object',
-              properties: {
-                slideId: { type: 'string', description: 'The ID of the new slide' },
-                slideTitle: { type: 'string', description: 'The title of the new slide' },
-              },
-              required: ['slideId', 'slideTitle'],
-            },
-          },
-        ],
       }),
     });
 
@@ -119,12 +71,11 @@ Start by briefly welcoming the student to this topic and asking what aspect inte
     }
 
     const sessionData = await anamResponse.json();
-    console.log('Anam session created successfully:', sessionData.sessionId);
+    console.log('Anam session created successfully');
 
     return new Response(
       JSON.stringify({
         sessionToken: sessionData.sessionToken,
-        sessionId: sessionData.sessionId,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

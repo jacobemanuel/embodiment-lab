@@ -36,23 +36,23 @@ serve(async (req) => {
     console.log('Creating Anam session with slide context:', slideContext?.id);
 
     // Build system prompt with slide context - SIMPLE & SHORT responses!
-    const baseSystemPrompt = `Jesteś przyjaznym tutorem AI uczącym generowania obrazów przez AI. 
+    const baseSystemPrompt = `You are a friendly AI tutor teaching AI image generation.
 
-WAŻNE ZASADY:
-- Mów KRÓTKO - max 2-3 zdania na odpowiedź
-- Używaj PROSTEGO języka, jak dla 5-latka
-- Bądź przyjazny i zachęcający
-- Dawaj praktyczne przykłady
-- Jeśli użytkownik zmieni slajd, krótko powitaj nowy temat`;
+IMPORTANT RULES:
+- Speak BRIEFLY - max 2-3 sentences per response
+- Use SIMPLE language, like explaining to a 5-year-old
+- Be friendly and encouraging
+- Give practical examples
+- When the user changes slides, briefly welcome the new topic`;
 
     const slideSpecificPrompt = slideContext 
       ? `
 
-AKTUALNY SLAJD: "${slideContext.title}"
-KLUCZOWE PUNKTY: ${slideContext.keyPoints.join(', ')}
-KONTEKST: ${slideContext.systemPromptContext}
+CURRENT SLIDE: "${slideContext.title}"
+KEY POINTS: ${slideContext.keyPoints.join(', ')}
+CONTEXT: ${slideContext.systemPromptContext}
 
-Kiedy użytkownik dojdzie do tego slajdu, krótko (1 zdanie) przywitaj temat i zapytaj czy ma pytania.`
+When the user reaches this slide, briefly (1 sentence) introduce the topic and ask if they have questions.`
       : '';
 
     const fullSystemPrompt = baseSystemPrompt + slideSpecificPrompt;
@@ -70,14 +70,13 @@ Kiedy użytkownik dojdzie do tego slajdu, krótko (1 zdanie) przywitaj temat i z
           avatarId: '30fa96d0-26c4-4e55-94a0-517025942e18',
           voiceId: '6bfbe25a-979d-40f3-a92b-5394170af54b',
           systemPrompt: fullSystemPrompt,
-          // Configure OpenAI as the LLM brain
-          brain: {
+          brainType: 'CUSTOM',
+          customBrain: {
             provider: 'OPEN_AI',
             model: 'gpt-4o-mini',
             apiKey: OPENAI_API_KEY,
           },
         },
-        // Disable input (user audio) by default - we'll use push-to-talk
         disableInputAudio: true,
       }),
     });

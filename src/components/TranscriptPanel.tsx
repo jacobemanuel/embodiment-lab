@@ -32,11 +32,11 @@ export const TranscriptPanel = ({
   return (
     <div className={cn("flex flex-col h-full", className)}>
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
-        <h4 className="text-sm font-semibold text-foreground">Transkrypcja</h4>
+        <h4 className="text-sm font-semibold text-foreground">Transcript</h4>
         {isListening && (
           <div className="flex items-center gap-2 text-xs text-destructive">
             <div className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
-            Słucham...
+            Listening...
           </div>
         )}
       </div>
@@ -45,7 +45,7 @@ export const TranscriptPanel = ({
         <div className="space-y-3">
           {messages.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              Transkrypcja rozmowy pojawi się tutaj...
+              Conversation transcript will appear here...
             </p>
           ) : (
             messages.map((msg) => (
@@ -69,7 +69,7 @@ export const TranscriptPanel = ({
                       "text-xs font-semibold",
                       msg.role === 'avatar' ? "text-primary" : "text-muted-foreground"
                     )}>
-                      {msg.role === 'avatar' ? '🤖 Tutor' : '👤 Ty'}
+                      {msg.role === 'avatar' ? '🤖 Tutor' : '👤 You'}
                     </span>
                     {!msg.isFinal && (
                       <span className="text-xs text-muted-foreground/50 italic">

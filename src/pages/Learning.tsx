@@ -41,26 +41,17 @@ const Learning = () => {
         <div className="flex items-center justify-between">
           <img src={logo} alt="Logo" className="h-7" />
           <div className="flex items-center gap-2">
-            <div className="flex bg-muted rounded-lg p-1">
-              <Button
-                variant={isTextMode ? "default" : "ghost"}
-                size="sm"
-                onClick={() => handleModeSwitch('text')}
-                className="gap-1"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span className="hidden sm:inline">Text</span>
-              </Button>
-              <Button
-                variant={!isTextMode ? "default" : "ghost"}
-                size="sm"
-                onClick={() => handleModeSwitch('avatar')}
-                className="gap-1"
-              >
-                <Video className="w-4 h-4" />
-                <span className="hidden sm:inline">Avatar</span>
-              </Button>
+            <div className="flex items-center gap-1 bg-muted/50 rounded-lg px-3 py-1.5">
+              {isTextMode ? (
+                <><MessageSquare className="w-4 h-4 text-primary" /><span className="text-sm font-medium">Text Mode</span></>
+              ) : (
+                <><Video className="w-4 h-4 text-primary" /><span className="text-sm font-medium">Avatar Mode</span></>
+              )}
             </div>
+            <Button variant="outline" size="sm" onClick={() => navigate('/mode-assignment')} className="gap-2">
+              <ChevronLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Change Mode</span>
+            </Button>
             <Button variant="outline" size="sm" onClick={() => navigate('/post-test')} className="gap-2">
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Finish</span>

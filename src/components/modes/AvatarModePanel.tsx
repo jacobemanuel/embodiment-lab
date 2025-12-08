@@ -103,19 +103,19 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
           </div>
         )}
 
-        {/* Push-to-talk button - blue when listening (active), default when muted 
-            Logic: isListening=false (default, muted) -> show Mic icon, neutral color
-                   isListening=true (active, listening) -> show Mic icon with blue/primary, pulse */}
+        {/* Push-to-talk button
+            Logic: isListening=false (muted) -> RED with MicOff icon
+                   isListening=true (listening) -> BLUE with Mic icon */}
         {isConnected && (
           <div className="absolute bottom-3 right-3">
             <Button
               size="lg"
-              variant={isListening ? "default" : "outline"}
+              variant="outline"
               className={cn(
-                "rounded-full w-14 h-14 shadow-lg transition-all",
+                "rounded-full w-14 h-14 shadow-lg transition-all border-2",
                 isListening 
-                  ? "bg-primary text-primary-foreground animate-pulse ring-4 ring-primary/30" 
-                  : "bg-muted/80 text-muted-foreground border-border"
+                  ? "bg-primary text-primary-foreground border-primary animate-pulse ring-4 ring-primary/30" 
+                  : "bg-destructive/90 text-destructive-foreground border-destructive"
               )}
               onClick={handleToggleListening}
             >

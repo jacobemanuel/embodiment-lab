@@ -5,11 +5,7 @@ import { streamChat } from "@/utils/aiChat";
 import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
 import { Slide } from "@/data/slides";
-
-interface Message {
-  role: 'user' | 'ai';
-  content: string;
-}
+import { Message } from "@/types/study";
 
 interface TextModeChatProps {
   currentSlide: Slide;
@@ -33,7 +29,8 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
       prevSlideRef.current = currentSlide.id;
       setMessages(prev => [...prev, {
         role: 'ai',
-        content: `You're now viewing: **${currentSlide.title}**. Feel free to ask me any questions about this topic!`
+        content: `You're now viewing: **${currentSlide.title}**. Feel free to ask me any questions about this topic!`,
+        timestamp: Date.now()
       }]);
     }
   }, [currentSlide]);
@@ -43,26 +40,31 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
 
     const userMessage = input;
     setInput("");
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    
+    const userMsg: Message = { role: 'user', content: userMessage, timestamp: Date.now() };
+    setMessages(prev => [...prev, userMsg]);
     setIsStreaming(true);
 
     let aiResponse = "";
 
+    // Build message history for the AI - include system context as first AI message
+    const systemContext: Message = {
+      role: 'ai',
+      content: `[System: You are an AI tutor teaching about AI Image Generation. Current slide: "${currentSlide.title}". ${currentSlide.systemPromptContext}. Keep answers concise and helpful.]`,
+      timestamp: Date.now() - 1
+    };
+
     try {
       await streamChat({
-        messages: [
-          { role: 'system' as const, content: `You are an AI tutor teaching about AI Image Generation. Current slide: "${currentSlide.title}". ${currentSlide.systemPromptContext}. Keep answers concise and helpful.` },
-          ...messages.map(m => ({ role: m.role === 'ai' ? 'assistant' as const : 'user' as const, content: m.content })),
-          { role: 'user' as const, content: userMessage }
-        ],
+        messages: [systemContext, ...messages, userMsg],
         onDelta: (chunk) => {
           aiResponse += chunk;
           setMessages(prev => {
             const last = prev[prev.length - 1];
-            if (last?.role === 'ai') {
-              return [...prev.slice(0, -1), { role: 'ai', content: aiResponse }];
+            if (last?.role === 'ai' && last.timestamp > userMsg.timestamp) {
+              return [...prev.slice(0, -1), { role: 'ai' as const, content: aiResponse, timestamp: last.timestamp }];
             }
-            return [...prev, { role: 'ai', content: aiResponse }];
+            return [...prev, { role: 'ai' as const, content: aiResponse, timestamp: Date.now() }];
           });
         },
         onDone: () => setIsStreaming(false),

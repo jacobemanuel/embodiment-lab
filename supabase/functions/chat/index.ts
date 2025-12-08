@@ -12,7 +12,7 @@ const chatRequestSchema = z.object({
     role: z.string().max(50),
     content: z.string().max(10000),
   })).min(1).max(100),
-  preTestData: z.record(z.string()).optional(),
+  preTestData: z.record(z.string()).optional().nullable(),
 });
 
 serve(async (req) => {

@@ -81,7 +81,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       const sessionToken = await getSessionToken();
       const client = createClient(sessionToken);
 
-      // Set up event listeners using the AnamEvent enum
+      // Set up event listeners
       client.addListener(AnamEvent.CONNECTION_ESTABLISHED, () => {
         console.log('Anam connection established');
         setState(prev => ({ ...prev, isConnected: true }));
@@ -99,7 +99,6 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
 
       client.addListener(AnamEvent.MESSAGE_HISTORY_UPDATED, (messages: any) => {
         console.log('Message history updated:', messages);
-        // Process messages for transcript
         if (messages && Array.isArray(messages)) {
           messages.forEach((msg: any) => {
             if (msg.role === 'assistant') {
@@ -123,7 +122,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
 
       clientRef.current = client;
 
-      // Stream to video element using element ID string
+      // Stream to video element
       await client.streamToVideoElement(videoElementId);
 
     } catch (error) {
@@ -156,11 +155,38 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   const notifySlideChange = useCallback(async (slide: Slide) => {
     if (clientRef.current && state.isConnected) {
       try {
+        // Short notification about slide change
         await clientRef.current.talk(
-          `The user navigated to: "${slide.title}". Key points: ${slide.keyPoints.join(', ')}. Ask if they have questions.`
+          `Przeszliśmy do: "${slide.title}". Główne punkty: ${slide.keyPoints.slice(0, 2).join(', ')}. Masz pytania?`
         );
       } catch (error) {
         console.error('Error notifying slide change:', error);
+      }
+    }
+  }, [state.isConnected]);
+
+  // Push-to-talk: Start listening (enable microphone input)
+  const startListening = useCallback(() => {
+    if (clientRef.current && state.isConnected) {
+      try {
+        // Enable audio input - user can now speak
+        clientRef.current.unmuteInputAudio();
+        console.log('Started listening - microphone enabled');
+      } catch (error) {
+        console.error('Error starting listening:', error);
+      }
+    }
+  }, [state.isConnected]);
+
+  // Push-to-talk: Stop listening (disable microphone input)
+  const stopListening = useCallback(() => {
+    if (clientRef.current && state.isConnected) {
+      try {
+        // Disable audio input
+        clientRef.current.muteInputAudio();
+        console.log('Stopped listening - microphone disabled');
+      } catch (error) {
+        console.error('Error stopping listening:', error);
       }
     }
   }, [state.isConnected]);
@@ -183,6 +209,8 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     initializeClient,
     sendMessage,
     notifySlideChange,
+    startListening,
+    stopListening,
     disconnect,
   };
 };

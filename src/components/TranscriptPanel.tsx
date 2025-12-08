@@ -31,12 +31,12 @@ export const TranscriptPanel = ({
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border">
-        <h4 className="text-sm font-semibold text-foreground">Transcript</h4>
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
+        <h4 className="text-sm font-semibold text-foreground">Transkrypcja</h4>
         {isListening && (
-          <div className="flex items-center gap-2 text-xs text-primary">
-            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-            Listening...
+          <div className="flex items-center gap-2 text-xs text-destructive">
+            <div className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
+            Słucham...
           </div>
         )}
       </div>
@@ -45,33 +45,40 @@ export const TranscriptPanel = ({
         <div className="space-y-3">
           {messages.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              Conversation transcript will appear here...
+              Transkrypcja rozmowy pojawi się tutaj...
             </p>
           ) : (
             messages.map((msg) => (
               <div
                 key={msg.id}
                 className={cn(
-                  "text-sm rounded-lg px-3 py-2",
-                  msg.role === 'avatar' 
-                    ? "bg-primary/10 border border-primary/20 text-foreground" 
-                    : "bg-muted/50 border border-border text-muted-foreground ml-4"
+                  "flex",
+                  msg.role === 'avatar' ? "justify-start" : "justify-end"
                 )}
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={cn(
-                    "text-xs font-semibold",
-                    msg.role === 'avatar' ? "text-primary" : "text-muted-foreground"
-                  )}>
-                    {msg.role === 'avatar' ? '🤖 Tutor' : '👤 You'}
-                  </span>
-                  {!msg.isFinal && (
-                    <span className="text-xs text-muted-foreground/50 italic">
-                      (typing...)
-                    </span>
+                <div
+                  className={cn(
+                    "max-w-[85%] text-sm rounded-2xl px-4 py-2 shadow-sm",
+                    msg.role === 'avatar' 
+                      ? "bg-primary/10 border border-primary/20 text-foreground rounded-bl-md" 
+                      : "bg-secondary border border-border text-foreground rounded-br-md"
                   )}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={cn(
+                      "text-xs font-semibold",
+                      msg.role === 'avatar' ? "text-primary" : "text-muted-foreground"
+                    )}>
+                      {msg.role === 'avatar' ? '🤖 Tutor' : '👤 Ty'}
+                    </span>
+                    {!msg.isFinal && (
+                      <span className="text-xs text-muted-foreground/50 italic">
+                        ...
+                      </span>
+                    )}
+                  </div>
+                  <p className="leading-relaxed">{msg.content}</p>
                 </div>
-                <p className="leading-relaxed">{msg.content}</p>
               </div>
             ))
           )}

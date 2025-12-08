@@ -39,10 +39,15 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     onTranscriptUpdate?.(transcriptMessages);
   }, [transcriptMessages, onTranscriptUpdate]);
 
-  // Add transcript message with deduplication
+  // Add transcript message with deduplication and filtering
   const addTranscriptMessage = useCallback((role: 'user' | 'avatar', content: string, isFinal: boolean = true) => {
-    // Skip empty messages
-    if (!content || content.trim() === '') return;
+    // Skip empty or very short meaningless messages
+    if (!content || content.trim().length < 2) return;
+    
+    // Filter out noise/garbage transcriptions (random words, filler sounds)
+    const trimmed = content.trim().toLowerCase();
+    const noisePatterns = ['uh', 'um', 'ah', 'hmm', 'hm', 'okay', 'ok', 'like', 'so', 'and', 'the', 'a', 'is'];
+    if (trimmed.length < 4 && noisePatterns.includes(trimmed)) return;
     
     setTranscriptMessages(prev => {
       // Check if we already have this exact final message
@@ -187,17 +192,9 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   }, [state.isConnected, addTranscriptMessage]);
 
   const notifySlideChange = useCallback(async (slide: Slide) => {
-    if (clientRef.current && state.isConnected) {
-      try {
-        // Short notification about slide change in English
-        const message = `We moved to: "${slide.title}". Key points: ${slide.keyPoints.slice(0, 2).join(', ')}. Any questions?`;
-        console.log('Notifying slide change:', message);
-        await clientRef.current.talk(message);
-      } catch (error) {
-        console.error('Error notifying slide change:', error);
-      }
-    }
-  }, [state.isConnected]);
+    // Don't auto-speak on slide change - let user ask questions
+    console.log('Slide changed to:', slide.title);
+  }, []);
 
   // Push-to-talk: Start listening (enable microphone input)
   const startListening = useCallback(() => {

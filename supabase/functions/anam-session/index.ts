@@ -21,16 +21,10 @@ serve(async (req) => {
     const { slideContext } = await req.json() as { slideContext?: SlideContext };
     
     const ANAM_API_KEY = Deno.env.get('ANAM_API_KEY');
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
     if (!ANAM_API_KEY) {
       console.error('ANAM_API_KEY is not configured');
       throw new Error('ANAM_API_KEY is not configured');
-    }
-
-    if (!OPENAI_API_KEY) {
-      console.error('OPENAI_API_KEY is not configured');
-      throw new Error('OPENAI_API_KEY is not configured');
     }
 
     console.log('Creating Anam session with slide context:', slideContext?.id);
@@ -57,7 +51,7 @@ When the user reaches this slide, briefly (1 sentence) introduce the topic and a
 
     const fullSystemPrompt = baseSystemPrompt + slideSpecificPrompt;
 
-    // Use OpenAI as the brain/LLM provider
+    // Use Anam's built-in GPT-4o-mini brain
     const anamResponse = await fetch('https://api.anam.ai/v1/auth/session-token', {
       method: 'POST',
       headers: {
@@ -69,15 +63,9 @@ When the user reaches this slide, briefly (1 sentence) introduce the topic and a
           name: 'AI Tutor',
           avatarId: '30fa96d0-26c4-4e55-94a0-517025942e18',
           voiceId: '6bfbe25a-979d-40f3-a92b-5394170af54b',
+          brainType: 'ANAM_GPT_4O_MINI_V1',
           systemPrompt: fullSystemPrompt,
-          brainType: 'CUSTOM',
-          customBrain: {
-            provider: 'OPEN_AI',
-            model: 'gpt-4o-mini',
-            apiKey: OPENAI_API_KEY,
-          },
         },
-        disableInputAudio: true,
       }),
     });
 
@@ -88,7 +76,7 @@ When the user reaches this slide, briefly (1 sentence) introduce the topic and a
     }
 
     const sessionData = await anamResponse.json();
-    console.log('Anam session created successfully with OpenAI brain');
+    console.log('Anam session created successfully');
 
     return new Response(
       JSON.stringify({

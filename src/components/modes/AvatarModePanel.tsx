@@ -84,12 +84,12 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
             {error ? (
               <div className="text-center p-4">
                 <p className="text-destructive text-sm mb-2">{error}</p>
-                <Button size="sm" onClick={initializeClient}>Spróbuj ponownie</Button>
+                <Button size="sm" onClick={initializeClient}>Try again</Button>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-sm">Łączenie z avatarem...</span>
+                <span className="text-sm">Connecting to avatar...</span>
               </div>
             )}
           </div>
@@ -99,26 +99,30 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
         {isTalking && (
           <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-full text-xs font-medium">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-            Mówię...
+            Speaking...
           </div>
         )}
 
-        {/* Push-to-talk button - prominent position */}
+        {/* Push-to-talk button - blue when listening (active), default when muted 
+            Logic: isListening=false (default, muted) -> show Mic icon, neutral color
+                   isListening=true (active, listening) -> show Mic icon with blue/primary, pulse */}
         {isConnected && (
           <div className="absolute bottom-3 right-3">
             <Button
               size="lg"
-              variant={isListening ? "destructive" : "default"}
+              variant={isListening ? "default" : "outline"}
               className={cn(
                 "rounded-full w-14 h-14 shadow-lg transition-all",
-                isListening && "animate-pulse ring-4 ring-destructive/30"
+                isListening 
+                  ? "bg-primary text-primary-foreground animate-pulse ring-4 ring-primary/30" 
+                  : "bg-muted/80 text-muted-foreground border-border"
               )}
               onClick={handleToggleListening}
             >
               {isListening ? (
-                <MicOff className="w-6 h-6" />
-              ) : (
                 <Mic className="w-6 h-6" />
+              ) : (
+                <MicOff className="w-6 h-6" />
               )}
             </Button>
           </div>
@@ -133,7 +137,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
       {/* Text Input - alternative to voice */}
       <div className="border-t border-border p-3 flex gap-2 bg-muted/20">
         <Textarea
-          placeholder={isConnected ? "Lub wpisz wiadomość..." : "Łączenie..."}
+          placeholder={isConnected ? "Or type a message..." : "Connecting..."}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}

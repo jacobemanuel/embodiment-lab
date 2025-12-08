@@ -66,13 +66,13 @@ export const TranscriptPanel = ({
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span className={cn(
-                      "text-xs font-semibold",
+                      "text-xs font-medium",
                       msg.role === 'avatar' ? "text-primary" : "text-muted-foreground"
                     )}>
-                      {msg.role === 'avatar' ? '🤖 Tutor' : '👤 You'}
+                      {msg.role === 'avatar' ? 'Tutor' : 'You'}
                     </span>
                     {!msg.isFinal && (
-                      <span className="text-xs text-muted-foreground/50 italic">
+                      <span className="text-xs text-muted-foreground/50">
                         ...
                       </span>
                     )}

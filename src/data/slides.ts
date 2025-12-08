@@ -11,24 +11,19 @@ export const slides: Slide[] = [
   {
     id: "intro",
     title: "Introduction to AI Image Generation",
-    content: `# Welcome to AI Image Generation
+    content: `AI image generation uses deep learning models to create images from text descriptions.
 
-AI image generation uses **deep learning models** to create images from text descriptions.
+The Basic Flow:
 
-## The Basic Flow
+    Text Prompt  -->  AI Model  -->  Image Output
 
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   📝 Text   │ → │   🧠 AI    │ → │   🖼️ Image  │
-│   Prompt    │    │   Model    │    │   Output   │
-└─────────────┘    └─────────────┘    └─────────────┘
+How It Works:
 
-## How It Works
+1. Text Encoding - Your prompt becomes numbers the AI understands
+2. Diffusion Process - Starting from noise, refined into an image
+3. Image Decoding - Final artwork is rendered
 
-1. **Text Encoding** - Your prompt becomes numbers the AI understands
-2. **Diffusion Process** - Starting from noise → refined image
-3. **Image Decoding** - Final artwork is rendered
-
-## Popular Models
+Popular Models:
 
 | Model | Best For |
 |-------|----------|
@@ -41,210 +36,160 @@ AI image generation uses **deep learning models** to create images from text des
       "Uses diffusion process to create images",
       "Multiple models available with different strengths"
     ],
-    systemPromptContext: "The user is learning the fundamentals of AI image generation. Explain concepts at a beginner level, focusing on the basic workflow: text input → AI processing → image output. Help them understand that AI 'imagines' images based on patterns it learned from millions of examples."
+    systemPromptContext: "The user is learning the fundamentals of AI image generation. Explain concepts at a beginner level, focusing on the basic workflow: text input, AI processing, image output."
   },
   {
     id: "prompt-anatomy",
     title: "Anatomy of a Prompt",
-    content: `# Anatomy of a Prompt
+    content: `A well-structured prompt is like a recipe for the AI.
 
-A well-structured prompt is like a recipe for the AI.
+The Formula:
 
-## The Formula
+    Subject  +  Description  +  Style  +  Quality
 
-┌──────────┬─────────────┬─────────┬──────────────┐
-│ Subject  │ Description │  Style  │   Quality    │
-│   WHO    │    WHAT     │   HOW   │   POLISH     │
-└──────────┴─────────────┴─────────┴──────────────┘
+Example Breakdown:
 
-## Example Breakdown
-
-**"A majestic lion standing on a cliff at sunset, digital art, highly detailed, 8k"**
+"A majestic lion standing on a cliff at sunset, digital art, highly detailed, 8k"
 
 | Component | Your Words |
 |-----------|------------|
-| 🎯 Subject | A majestic lion |
-| 📍 Setting | standing on a cliff at sunset |
-| 🎨 Style | digital art |
-| ✨ Quality | highly detailed, 8k |
+| Subject | A majestic lion |
+| Setting | standing on a cliff at sunset |
+| Style | digital art |
+| Quality | highly detailed, 8k |
 
-## Quick Tips
+Quick Tips:
 
-✅ "golden retriever puppy" → specific
-❌ "dog" → too vague
-
-✅ "sunset lighting, moody atmosphere" → context
-❌ "nice background" → unclear`,
+- "golden retriever puppy" is better than just "dog" (be specific)
+- "sunset lighting, moody atmosphere" is better than "nice background" (add context)`,
     keyPoints: [
       "Prompts have structure: Subject + Description + Style + Quality",
       "Specificity leads to better results",
       "Quality modifiers enhance the output"
     ],
-    systemPromptContext: "The user is learning how to write effective prompts. Explain the importance of each component and help them practice breaking down prompts into their elements. Encourage experimentation with different combinations."
+    systemPromptContext: "The user is learning how to write effective prompts. Explain the importance of each component and help them practice breaking down prompts."
   },
   {
     id: "style-keywords",
-    title: "Style Keywords & Artistic Directions",
-    content: `# Style Keywords & Artistic Directions
+    title: "Style Keywords",
+    content: `Style keywords are your creative tools.
 
-Style keywords are your creative paintbrush!
+Photography:
+portrait, landscape, macro, street photography
 
-## Style Categories
+Art Movements:
+impressionism, cyberpunk, anime, art nouveau
 
-📷 **Photography**
-│ portrait • landscape • macro • street
+Lighting:
+golden hour, dramatic lighting, rim lighting, soft diffused
 
-🎨 **Art Movements**
-│ impressionism • cyberpunk • anime • art nouveau
+Rendering:
+3D render, watercolor, oil painting, pixel art
 
-💡 **Lighting**
-│ golden hour • dramatic • rim lighting • soft diffused
+Mixing Styles:
 
-🖌️ **Rendering**
-│ 3D render • watercolor • oil painting • pixel art
-
-## Mixing Styles = Unique Art
-
-\`\`\`
-"cyberpunk" + "oil painting" = neon Renaissance
-"anime" + "golden hour" = warm Ghibli vibes
-"portrait" + "rim lighting" = dramatic headshot
-\`\`\`
-
-## Same Subject, Different Styles
-
-| Style | Result |
-|-------|--------|
-| Photo realistic | Looks like a real photo |
-| Watercolor | Soft, dreamy, flowing |
-| Cyberpunk | Neon, futuristic, tech |
-| Studio Ghibli | Whimsical, animated, warm |`,
+| Combination | Result |
+|-------------|--------|
+| cyberpunk + oil painting | neon Renaissance |
+| anime + golden hour | warm Ghibli vibes |
+| portrait + rim lighting | dramatic headshot |`,
     keyPoints: [
       "Photography styles define the camera perspective",
       "Art movements bring historical aesthetics",
       "Lighting keywords control mood and atmosphere"
     ],
-    systemPromptContext: "The user is exploring style keywords. Help them understand how different keywords affect the final image. Encourage combining styles (e.g., 'cyberpunk + oil painting') for unique results."
+    systemPromptContext: "The user is exploring style keywords. Help them understand how different keywords affect the final image."
   },
   {
     id: "parameters",
-    title: "CFG Scale & Generation Parameters",
-    content: `# CFG Scale & Generation Parameters
+    title: "CFG Scale & Parameters",
+    content: `These are your control settings.
 
-These are your control knobs! 🎛️
+CFG Scale (how strictly AI follows your prompt):
 
-## CFG Scale (How strictly AI follows your prompt)
+    Low (1-5)     Medium (7-9)     High (10-15)
+    Creative      Balanced         Strict
+                  [best for most]
 
-       CREATIVE ←───────────────→ STRICT
-          │                          │
-        1-5                       10-15
-      (loose)    ⭐ 7-9 ⭐       (rigid)
-               (sweet spot)
+Steps (refinement passes):
 
-## Steps (Refinement passes)
+    20-30 steps = quick drafts
+    40-50 steps = good quality (recommended)
+    75+ steps = diminishing returns
 
-       FAST ←─────────────────────→ DETAILED
-         │                              │
-       20-30                          75+
-      (drafts)    ⭐ 40-50 ⭐    (diminishing)
-                 (best balance)
+Seed:
 
-## Seed (Starting point)
+    Same prompt + Same seed = Same image
+    Same prompt + New seed = Variation
 
-┌─────────────────────────────────────────┐
-│  Same prompt + Same seed = Same image   │
-│  Same prompt + New seed = Variation     │
-└─────────────────────────────────────────┘
-
-## Common Dimensions
+Common Dimensions:
 
 | Ratio | Size | Best For |
 |-------|------|----------|
-| 1:1 | 1024×1024 | Portraits |
-| 16:9 | 1920×1080 | Landscapes |
-| 9:16 | 1080×1920 | Mobile/Stories |`,
+| 1:1 | 1024x1024 | Portraits |
+| 16:9 | 1920x1080 | Landscapes |
+| 9:16 | 1080x1920 | Mobile |`,
     keyPoints: [
       "CFG 7-9 is the sweet spot for most images",
       "40-50 steps balance quality and speed",
       "Seeds allow reproducible results"
     ],
-    systemPromptContext: "The user is learning technical parameters. Use simple analogies: CFG is like how 'strict' the AI follows instructions, steps are like 'refinement passes', seed is like a 'random starting point'. Encourage experimentation."
+    systemPromptContext: "The user is learning technical parameters. Use simple analogies: CFG is like how strict the AI follows instructions, steps are like refinement passes."
   },
   {
     id: "img2img",
-    title: "Image-to-Image Workflows",
-    content: `# Image-to-Image Workflows
+    title: "Image-to-Image",
+    content: `Transform existing images with AI.
 
-Transform existing images with AI! 🔄
+The Process:
 
-## The Process
+    Your Image  +  Prompt  -->  New Image
 
-┌──────────┐   ┌─────────────┐   ┌──────────┐
-│ 📷 Your  │ + │ 📝 Prompt   │ → │ 🎨 New   │
-│  Image   │   │ "make it    │   │  Image   │
-│          │   │  fantasy"   │   │          │
-└──────────┘   └─────────────┘   └──────────┘
+Denoising Strength (transformation amount):
 
-## Denoising Strength = Transformation Amount
+    Low (0.1-0.3)      Medium (0.4-0.6)      High (0.7-0.9)
+    Subtle changes     Balanced              Major changes
+    Keeps structure    [start here]          Loose interpretation
 
-      SUBTLE ←─────────────────→ DRAMATIC
-         │                          │
-       0.1-0.3                   0.7-0.9
-      (touch-ups)              (major changes)
-                 ⭐ 0.4-0.6 ⭐
-                  (balanced)
+What You Can Do:
 
-## What You Can Do
-
-| Technique | Input → Output |
-|-----------|----------------|
-| Style Transfer | Photo → Painting |
-| Upscaling | Low-res → High-res |
+| Technique | Input to Output |
+|-----------|-----------------|
+| Style Transfer | Photo to Painting |
+| Upscaling | Low-res to High-res |
 | Inpainting | Fix parts of image |
 | Outpainting | Extend boundaries |
-| Sketch → Art | Rough → Finished |`,
+| Sketch to Art | Rough to Finished |`,
     keyPoints: [
       "Denoising strength controls transformation amount",
       "Lower values preserve more of the original",
       "Great for style transfer and image editing"
     ],
-    systemPromptContext: "The user is learning image-to-image techniques. Explain denoising strength as a 'transformation dial' - low keeps the original, high creates something new. Discuss practical applications like style transfer."
+    systemPromptContext: "The user is learning image-to-image techniques. Explain denoising strength as a transformation dial."
   },
   {
     id: "negative-prompts",
     title: "Negative Prompts",
-    content: `# Negative Prompts
+    content: `Tell the AI what to avoid.
 
-Tell the AI what to AVOID! 🚫
+How It Works:
 
-## How It Works
+    Positive: "portrait of a woman"
+    Negative: "blurry, cartoon, deformed"
 
-┌───────────────────────────────────────┐
-│ Positive: "portrait of a woman"       │
-│ Negative: "blurry, cartoon, deformed" │
-│                                       │
-│     ✅ Include    │    ❌ Exclude     │
-└───────────────────────────────────────┘
+Common Negative Prompts:
 
-## Common Negative Prompts
-
-**🔧 Quality Fixes**
-\`\`\`
+Quality Fixes:
 blurry, low quality, pixelated, watermark, text
-\`\`\`
 
-**🖐️ Anatomy Fixes**
-\`\`\`
+Anatomy Fixes:
 extra fingers, mutated hands, deformed, bad anatomy
-\`\`\`
 
-**🎨 Style Control**
-\`\`\`
-cartoon, anime  ← if you want realistic
-photorealistic  ← if you want stylized
-\`\`\`
+Style Control:
+cartoon, anime (if you want realistic)
+photorealistic (if you want stylized)
 
-## Golden Rules
+Guidelines:
 
 | Do | Don't |
 |----|-------|
@@ -256,52 +201,41 @@ photorealistic  ← if you want stylized
       "Use them to fix common issues like extra fingers",
       "Don't overload with too many negatives"
     ],
-    systemPromptContext: "The user is learning about negative prompts. Explain them as 'things to avoid' - they help refine output by excluding unwanted elements. Share common negative prompt templates for quality and anatomical fixes."
+    systemPromptContext: "The user is learning about negative prompts. Explain them as things to avoid - they help refine output by excluding unwanted elements."
   },
   {
     id: "ethics",
-    title: "Ethics & Responsible AI Art",
-    content: `# Ethics & Responsible AI Art
+    title: "Ethics & Responsibility",
+    content: `With great power comes responsibility.
 
-With great power comes great responsibility! ⚖️
+Key Questions:
 
-## Key Questions
+    Copyright: Who trained the AI?
+    Deepfakes: Real people without consent?
+    Attribution: Who made this art?
 
-┌─────────────────────────────────────────┐
-│ 🎨 Copyright: Who trained the AI?       │
-│ 👤 Deepfakes: Real people without consent│
-│ ✍️ Attribution: Who "made" this art?    │
-└─────────────────────────────────────────┘
+Guidelines:
 
-## The Rules
-
-| ✅ DO | ❌ DON'T |
-|-------|----------|
+| Do | Don't |
+|----|-------|
 | Label AI art when sharing | Create fake images of real people |
-| Use for learning & creativity | Pass off as human-made art |
-| Respect platform ToS | Spread misinformation |
+| Use for learning and creativity | Pass off as human-made art |
+| Respect platform rules | Spread misinformation |
 | Support human artists too | Copy artist styles without credit |
 
-## Think Before You Generate
+Think Before You Generate:
 
-\`\`\`
-Is this...
-├── Harmful to someone? → STOP
-├── Deceptive? → STOP  
-├── Someone else's style without credit? → RECONSIDER
-└── Creative & respectful? → GO! ✅
-\`\`\`
+    Is this harmful to someone? --> Stop
+    Is this deceptive? --> Stop
+    Is this creative and respectful? --> Go ahead
 
-## Remember
-
-🛠️ AI art is a **tool** - how we use it defines its impact.
-🤝 Creativity + Responsibility = Sustainable AI Art`,
+AI art is a tool. How we use it defines its impact.`,
     keyPoints: [
       "Consider copyright and artist attribution",
       "Avoid creating deepfakes or misinformation",
       "Label AI-generated content when sharing"
     ],
-    systemPromptContext: "The user is learning about AI art ethics. Discuss the balance between creative freedom and responsibility. Encourage thoughtful use of AI tools while respecting artists and avoiding harmful applications."
+    systemPromptContext: "The user is learning about AI art ethics. Discuss the balance between creative freedom and responsibility."
   }
 ];
 

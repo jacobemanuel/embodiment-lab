@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.generate-image]
 verify_jwt = false
+
+[functions.anam-session]
+verify_jwt = false

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { StudyMode } from "@/types/study";
 import { createStudySession } from "@/lib/studyData";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Video } from "lucide-react";
+import { MessageSquare, Smile } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 
 const ModeAssignment = () => {
@@ -90,7 +90,7 @@ const ModeAssignment = () => {
             >
               <div className="space-y-4">
                 <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                  <Video className="w-8 h-8 text-primary-foreground" />
+                  <Smile className="w-8 h-8 text-primary-foreground" />
                 </div>
                 <h2 className="text-2xl font-semibold">Avatar Mode</h2>
                 <p className="text-muted-foreground">

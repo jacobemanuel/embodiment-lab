@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { createClient, AnamEvent } from '@anam-ai/js-sdk';
+import { createClient, AnamEvent, MessageRole } from '@anam-ai/js-sdk';
 import type { AnamClient } from '@anam-ai/js-sdk';
 import { Slide } from '@/data/slides';
 import { TranscriptMessage } from '@/components/TranscriptPanel';
@@ -40,15 +40,12 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   }, [transcriptMessages, onTranscriptUpdate]);
 
   // Add transcript message with deduplication
-  const addTranscriptMessage = useCallback((role: 'user' | 'avatar', content: string, isFinal: boolean = true, source: string = 'stream') => {
+  const addTranscriptMessage = useCallback((role: 'user' | 'avatar', content: string, isFinal: boolean = true) => {
     // Skip empty messages
     if (!content || content.trim() === '') return;
     
-    // Create a dedup key based on role and content
-    const dedupKey = `${role}:${content.trim().toLowerCase()}`;
-    
     setTranscriptMessages(prev => {
-      // Check if we already have this exact message
+      // Check if we already have this exact final message
       const exists = prev.some(msg => 
         msg.role === role && 
         msg.content.trim().toLowerCase() === content.trim().toLowerCase() &&
@@ -56,7 +53,6 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       );
       
       if (exists && isFinal) {
-        console.log('Skipping duplicate message:', dedupKey);
         return prev;
       }
       
@@ -123,27 +119,34 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         setState(prev => ({ ...prev, isStreaming: true }));
       });
 
-      // Message history - only for avatar messages to avoid duplicates
+      // Message history - for both user and persona messages
       client.addListener(AnamEvent.MESSAGE_HISTORY_UPDATED, (messages: any) => {
         console.log('Message history updated:', messages);
         if (messages && Array.isArray(messages)) {
           messages.forEach((msg: any) => {
-            // Only add avatar messages from history, user messages come from our sendMessage
-            if (msg.role === 'assistant' && msg.content) {
-              addTranscriptMessage('avatar', msg.content, true, 'history');
+            if (msg.role === MessageRole.PERSONA && msg.content) {
+              addTranscriptMessage('avatar', msg.content, true);
+            } else if (msg.role === MessageRole.USER && msg.content) {
+              addTranscriptMessage('user', msg.content, true);
             }
           });
         }
       });
 
-      // Stream events - for real-time updates
+      // Stream events - for real-time updates (captures voice input transcription too!)
       client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, (event: any) => {
         console.log('Stream event:', event);
-        if (event.role === 'assistant' && event.content) {
-          addTranscriptMessage('avatar', event.content, event.isFinal || false, 'stream');
-          setState(prev => ({ ...prev, isTalking: !event.isFinal }));
+        
+        // Persona (avatar) speaking
+        if (event.role === MessageRole.PERSONA && event.content) {
+          addTranscriptMessage('avatar', event.content, event.endOfSpeech || false);
+          setState(prev => ({ ...prev, isTalking: !event.endOfSpeech }));
         }
-        // Don't add user messages here - they're added via sendMessage
+        
+        // User speaking (voice input transcription)
+        if (event.role === MessageRole.USER && event.content) {
+          addTranscriptMessage('user', event.content, event.endOfSpeech || false);
+        }
       });
 
       clientRef.current = client;
@@ -169,8 +172,8 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
 
     try {
-      // Add user message to transcript (only once, here)
-      addTranscriptMessage('user', message, true, 'send');
+      // Add user message to transcript for text input
+      addTranscriptMessage('user', message, true);
       console.log('Sending message to avatar:', message);
       await clientRef.current.talk(message);
       console.log('Message sent successfully');

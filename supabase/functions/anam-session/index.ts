@@ -12,9 +12,20 @@ interface SlideContext {
   systemPromptContext: string;
 }
 
+// KILL SWITCH - set to true to re-enable API
+const API_ENABLED = false;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // API temporarily disabled
+  if (!API_ENABLED) {
+    return new Response(
+      JSON.stringify({ error: "Serwis tymczasowo niedostępny. Wróć za tydzień! 🚧" }),
+      { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   try {

@@ -341,6 +341,48 @@ export type Database = {
         }
         Relationships: []
       }
+      study_slides: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          key_points: Json
+          slide_id: string
+          sort_order: number
+          system_prompt_context: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          key_points?: Json
+          slide_id: string
+          sort_order?: number
+          system_prompt_context: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          key_points?: Json
+          slide_id?: string
+          sort_order?: number
+          system_prompt_context?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

@@ -2,12 +2,13 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import logo from "@/assets/logo-white.png";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { savePostTestResponses, completeStudySession } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2 } from "lucide-react";
+import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 
 const PostTestPage2 = () => {
   const navigate = useNavigate();
@@ -15,10 +16,14 @@ const PostTestPage2 = () => {
   const { questions: postTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('post_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const scrollToQuestion = (index: number) => {
+    questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   // Load page 1 responses from sessionStorage
   const page1Responses = JSON.parse(sessionStorage.getItem('postTestPage1') || '{}');
-
   // Load existing page 2 responses
   useEffect(() => {
     const saved = sessionStorage.getItem('postTestPage2');
@@ -125,9 +130,21 @@ const PostTestPage2 = () => {
             </div>
           </div>
 
+          <VerticalProgressBar
+            totalQuestions={knowledgeQuestions.length}
+            answeredQuestions={Object.keys(responses).length}
+            questionIds={knowledgeQuestions.map(q => q.id)}
+            responses={responses}
+            onQuestionClick={scrollToQuestion}
+          />
+
           <div className="space-y-6">
             {knowledgeQuestions.map((question, index) => (
-              <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div 
+                key={question.id} 
+                ref={el => questionRefs.current[index] = el}
+                className="bg-card border border-border rounded-2xl p-6 space-y-4"
+              >
                 <div className="flex gap-3">
                   <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm">
                     {index + 1}

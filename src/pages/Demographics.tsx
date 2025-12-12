@@ -4,13 +4,14 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import logo from "@/assets/logo-white.png";
 import { saveDemographics } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
 import { StudyMode } from "@/types/study";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { Loader2 } from "lucide-react";
+import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 
 const Demographics = () => {
   const navigate = useNavigate();
@@ -18,6 +19,11 @@ const Demographics = () => {
   const { questions: demographicQuestions, isLoading: questionsLoading, error } = useStudyQuestions('demographic');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const scrollToQuestion = (index: number) => {
+    questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   // Check if all questions are answered
   const allQuestionsAnswered = demographicQuestions.length > 0 && demographicQuestions.every(q => {
@@ -98,9 +104,21 @@ const Demographics = () => {
             <p className="text-muted-foreground">Help us understand your background</p>
           </div>
 
+          <VerticalProgressBar
+            totalQuestions={demographicQuestions.length}
+            answeredQuestions={Object.keys(responses).filter(k => responses[k]?.trim()).length}
+            questionIds={demographicQuestions.map(q => q.id)}
+            responses={responses}
+            onQuestionClick={scrollToQuestion}
+          />
+
           <div className="space-y-8">
-            {demographicQuestions.map((question) => (
-              <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
+            {demographicQuestions.map((question, index) => (
+              <div 
+                key={question.id} 
+                ref={el => questionRefs.current[index] = el}
+                className="bg-card border border-border rounded-2xl p-6 space-y-4"
+              >
                 <h3 className="font-semibold">{question.text}</h3>
                 
                 {/* Text input for age-type questions, radio for others */}

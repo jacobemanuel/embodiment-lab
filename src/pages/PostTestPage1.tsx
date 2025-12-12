@@ -1,15 +1,21 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import logo from "@/assets/logo-white.png";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { LikertScale } from "@/components/LikertScale";
 import { Loader2 } from "lucide-react";
+import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 
 const PostTestPage1 = () => {
   const navigate = useNavigate();
   const { questions: postTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('post_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
+  const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const scrollToQuestion = (index: number) => {
+    questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   // Load existing responses from sessionStorage
   useEffect(() => {
@@ -97,13 +103,25 @@ const PostTestPage1 = () => {
             </div>
           </div>
 
+          <VerticalProgressBar
+            totalQuestions={likertQuestions.length}
+            answeredQuestions={Object.keys(responses).length}
+            questionIds={likertQuestions.map(q => q.id)}
+            responses={responses}
+            onQuestionClick={scrollToQuestion}
+          />
+
           <div className="space-y-8">
             {/* Trust Section */}
             {trustQuestions.length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-primary">Trust & Credibility</h2>
-                {trustQuestions.map((question) => (
-                  <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                {trustQuestions.map((question, idx) => (
+                  <div 
+                    key={question.id} 
+                    ref={el => questionRefs.current[idx] = el}
+                    className="bg-card border border-border rounded-2xl p-6 space-y-5"
+                  >
                     <h3 className="font-medium text-lg">{question.text}</h3>
                     <LikertScale
                       id={question.id}
@@ -119,8 +137,12 @@ const PostTestPage1 = () => {
             {engagementQuestions.length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-primary">Engagement</h2>
-                {engagementQuestions.map((question) => (
-                  <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                {engagementQuestions.map((question, idx) => (
+                  <div 
+                    key={question.id} 
+                    ref={el => questionRefs.current[trustQuestions.length + idx] = el}
+                    className="bg-card border border-border rounded-2xl p-6 space-y-5"
+                  >
                     <h3 className="font-medium text-lg">{question.text}</h3>
                     <LikertScale
                       id={question.id}
@@ -136,8 +158,12 @@ const PostTestPage1 = () => {
             {satisfactionQuestions.length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-primary">Overall Satisfaction</h2>
-                {satisfactionQuestions.map((question) => (
-                  <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                {satisfactionQuestions.map((question, idx) => (
+                  <div 
+                    key={question.id} 
+                    ref={el => questionRefs.current[trustQuestions.length + engagementQuestions.length + idx] = el}
+                    className="bg-card border border-border rounded-2xl p-6 space-y-5"
+                  >
                     <h3 className="font-medium text-lg">{question.text}</h3>
                     <LikertScale
                       id={question.id}

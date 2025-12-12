@@ -2,12 +2,13 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import logo from "@/assets/logo-white.png";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { savePreTestResponses } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 
 const PreTest = () => {
   const navigate = useNavigate();
@@ -15,6 +16,11 @@ const PreTest = () => {
   const { questions: preTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('pre_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const scrollToQuestion = (index: number) => {
+    questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   const allQuestionsAnswered = preTestQuestions.length > 0 && preTestQuestions.every(q => responses[q.id]);
   const progress = preTestQuestions.length > 0 ? Object.keys(responses).length / preTestQuestions.length * 100 : 0;
@@ -93,9 +99,21 @@ const PreTest = () => {
             </div>
           </div>
 
+          <VerticalProgressBar
+            totalQuestions={preTestQuestions.length}
+            answeredQuestions={Object.keys(responses).length}
+            questionIds={preTestQuestions.map(q => q.id)}
+            responses={responses}
+            onQuestionClick={scrollToQuestion}
+          />
+
           <div className="space-y-6 stagger-fade-in">
             {preTestQuestions.map((question, index) => (
-              <div key={question.id} className="glass-card rounded-2xl p-6 space-y-4 hover:shadow-ai-glow transition-all duration-300">
+              <div 
+                key={question.id} 
+                ref={el => questionRefs.current[index] = el}
+                className="glass-card rounded-2xl p-6 space-y-4 hover:shadow-ai-glow transition-all duration-300"
+              >
                 <div className="flex gap-3">
                   <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-ai-primary to-ai-accent text-white flex items-center justify-center font-semibold text-sm">
                     {index + 1}

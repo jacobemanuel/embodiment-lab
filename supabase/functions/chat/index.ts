@@ -16,7 +16,7 @@ const chatRequestSchema = z.object({
 });
 
 // KILL SWITCH - set to false to disable API
-const API_ENABLED = true;
+const API_ENABLED = false;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });

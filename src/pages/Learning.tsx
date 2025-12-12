@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Sparkles, ChevronLeft, ChevronRight, MessageSquare, Smile, Loader2 } from "lucide-react";
 import { TextModeChat } from "@/components/modes/TextModeChat";
 import { AvatarModePanel } from "@/components/modes/AvatarModePanel";
+import { cn } from "@/lib/utils";
 
 const Learning = () => {
   const { mode } = useParams<{ mode: StudyMode }>();
@@ -17,6 +18,7 @@ const Learning = () => {
   const [currentSlide, setCurrentSlide] = useState<Slide | null>(null);
   const [isPlaygroundVisible, setIsPlaygroundVisible] = useState(false);
   const [shouldPulseButton, setShouldPulseButton] = useState(false);
+  const [showFinishProminent, setShowFinishProminent] = useState(false);
 
   // Set initial slide when slides are loaded
   useEffect(() => {
@@ -31,6 +33,14 @@ const Learning = () => {
     }, 3000);
     return () => clearTimeout(timer);
   }, [isPlaygroundVisible]);
+
+  // Make Finish button prominent after 60 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowFinishProminent(true);
+    }, 60000); // 60 seconds
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSlideChange = (slide: Slide) => {
     setCurrentSlide(slide);
@@ -82,9 +92,17 @@ const Learning = () => {
               <ChevronLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Change Mode</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/post-test')} className="gap-2">
+            <Button 
+              variant={showFinishProminent ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => navigate('/post-test')} 
+              className={cn(
+                "gap-2 transition-all",
+                showFinishProminent && "bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/50 animate-pulse"
+              )}
+            >
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Finish</span>
+              <span className={showFinishProminent ? "inline" : "hidden sm:inline"}>Finish</span>
             </Button>
           </div>
         </div>

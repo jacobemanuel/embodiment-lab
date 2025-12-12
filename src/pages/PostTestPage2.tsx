@@ -203,14 +203,13 @@ const PostTestPage2 = () => {
                     {question.options.map((option) => (
                       <div 
                         key={option} 
-                        className="flex items-start space-x-3 bg-secondary/30 rounded-lg p-3 hover:bg-secondary/50 transition-colors cursor-pointer"
+                        className="flex items-center space-x-3 bg-secondary/30 rounded-lg p-3 hover:bg-secondary/50 transition-colors cursor-pointer"
                         onClick={() => handleMultipleAnswerToggle(question.id, option)}
                       >
                         <Checkbox 
                           checked={selectedAnswers.includes(option)}
                           onCheckedChange={() => handleMultipleAnswerToggle(question.id, option)}
                           id={`${question.id}-${option}`}
-                          className="mt-0.5"
                         />
                         <Label 
                           htmlFor={`${question.id}-${option}`}

@@ -16,7 +16,8 @@ import PostTestPage1 from "./pages/PostTestPage1";
 import PostTestPage2 from "./pages/PostTestPage2";
 import Completion from "./pages/Completion";
 import NotFound from "./pages/NotFound";
-
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -45,6 +46,8 @@ const App = () => (
             <Route path="/post-test" element={<PostTestPage1 />} />
             <Route path="/post-test-2" element={<PostTestPage2 />} />
             <Route path="/completion" element={<Completion />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

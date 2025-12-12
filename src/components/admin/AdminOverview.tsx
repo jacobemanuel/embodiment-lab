@@ -1,0 +1,291 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, CheckCircle, Clock, BarChart3, TrendingUp, Percent } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+
+interface StudyStats {
+  totalSessions: number;
+  completedSessions: number;
+  textModeSessions: number;
+  avatarModeSessions: number;
+  completionRate: number;
+  avgSessionDuration: number;
+  sessionsPerDay: { date: string; count: number }[];
+  demographicBreakdown: { name: string; value: number }[];
+  modeComparison: { name: string; text: number; avatar: number }[];
+}
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+const AdminOverview = () => {
+  const [stats, setStats] = useState<StudyStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      // Fetch all study sessions
+      const { data: sessions, error: sessionsError } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (sessionsError) throw sessionsError;
+
+      // Fetch demographics
+      const { data: demographics, error: demoError } = await supabase
+        .from('demographics')
+        .select('*');
+
+      if (demoError) throw demoError;
+
+      // Calculate stats
+      const totalSessions = sessions?.length || 0;
+      const completedSessions = sessions?.filter(s => s.completed_at).length || 0;
+      const textModeSessions = sessions?.filter(s => s.mode === 'text').length || 0;
+      const avatarModeSessions = sessions?.filter(s => s.mode === 'avatar').length || 0;
+      const completionRate = totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
+
+      // Calculate average session duration
+      const completedWithDuration = sessions?.filter(s => s.completed_at && s.started_at) || [];
+      let avgDuration = 0;
+      if (completedWithDuration.length > 0) {
+        const totalDuration = completedWithDuration.reduce((sum, s) => {
+          const start = new Date(s.started_at).getTime();
+          const end = new Date(s.completed_at!).getTime();
+          return sum + (end - start);
+        }, 0);
+        avgDuration = Math.round(totalDuration / completedWithDuration.length / 1000 / 60); // in minutes
+      }
+
+      // Sessions per day (last 14 days)
+      const last14Days: { date: string; count: number }[] = [];
+      for (let i = 13; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const count = sessions?.filter(s => s.created_at.startsWith(dateStr)).length || 0;
+        last14Days.push({ date: dateStr.slice(5), count });
+      }
+
+      // Age breakdown
+      const ageBreakdown: Record<string, number> = {};
+      demographics?.forEach(d => {
+        if (d.age_range) {
+          ageBreakdown[d.age_range] = (ageBreakdown[d.age_range] || 0) + 1;
+        }
+      });
+
+      // Mode comparison for completed sessions
+      const modeComparison = [
+        { name: 'Ukończone', text: sessions?.filter(s => s.mode === 'text' && s.completed_at).length || 0, avatar: sessions?.filter(s => s.mode === 'avatar' && s.completed_at).length || 0 },
+        { name: 'W trakcie', text: sessions?.filter(s => s.mode === 'text' && !s.completed_at).length || 0, avatar: sessions?.filter(s => s.mode === 'avatar' && !s.completed_at).length || 0 },
+      ];
+
+      setStats({
+        totalSessions,
+        completedSessions,
+        textModeSessions,
+        avatarModeSessions,
+        completionRate,
+        avgSessionDuration: avgDuration,
+        sessionsPerDay: last14Days,
+        demographicBreakdown: Object.entries(ageBreakdown).map(([name, value]) => ({ name, value })),
+        modeComparison,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return <div className="text-slate-400">Błąd wczytywania statystyk</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-400">Wszystkie sesje</CardTitle>
+            <Users className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{stats.totalSessions}</div>
+            <p className="text-xs text-slate-500 mt-1">
+              Text: {stats.textModeSessions} | Avatar: {stats.avatarModeSessions}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-400">Ukończone</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{stats.completedSessions}</div>
+            <p className="text-xs text-slate-500 mt-1">
+              {stats.completionRate.toFixed(1)}% completion rate
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-400">Śr. czas sesji</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{stats.avgSessionDuration} min</div>
+            <p className="text-xs text-slate-500 mt-1">dla ukończonych sesji</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-400">Wskaźnik ukończenia</CardTitle>
+            <Percent className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{stats.completionRate.toFixed(1)}%</div>
+            <p className="text-xs text-slate-500 mt-1">
+              {stats.totalSessions - stats.completedSessions} w trakcie
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white">Sesje w czasie (14 dni)</CardTitle>
+            <CardDescription className="text-slate-400">Dzienne nowe sesje</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={stats.sessionsPerDay}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
+                <YAxis stroke="#9ca3af" fontSize={12} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                  labelStyle={{ color: '#fff' }}
+                />
+                <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white">Porównanie trybów</CardTitle>
+            <CardDescription className="text-slate-400">Text Mode vs Avatar Mode</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={stats.modeComparison}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
+                <YAxis stroke="#9ca3af" fontSize={12} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                  labelStyle={{ color: '#fff' }}
+                />
+                <Bar dataKey="text" name="Text Mode" fill="#3b82f6" />
+                <Bar dataKey="avatar" name="Avatar Mode" fill="#10b981" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white">Rozkład wiekowy</CardTitle>
+            <CardDescription className="text-slate-400">Demografika uczestników</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {stats.demographicBreakdown.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={stats.demographicBreakdown}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {stats.demographicBreakdown.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[250px] text-slate-500">
+                Brak danych demograficznych
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white">Podsumowanie</CardTitle>
+            <CardDescription className="text-slate-400">Kluczowe wskaźniki badania</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center py-2 border-b border-slate-700">
+              <span className="text-slate-400">Całkowita liczba uczestników</span>
+              <span className="text-white font-semibold">{stats.totalSessions}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-700">
+              <span className="text-slate-400">Uczestnicy Text Mode</span>
+              <span className="text-blue-400 font-semibold">{stats.textModeSessions}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-700">
+              <span className="text-slate-400">Uczestnicy Avatar Mode</span>
+              <span className="text-green-400 font-semibold">{stats.avatarModeSessions}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-700">
+              <span className="text-slate-400">Wskaźnik ukończenia</span>
+              <span className="text-purple-400 font-semibold">{stats.completionRate.toFixed(1)}%</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-slate-400">Średni czas nauki</span>
+              <span className="text-yellow-400 font-semibold">{stats.avgSessionDuration} min</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default AdminOverview;

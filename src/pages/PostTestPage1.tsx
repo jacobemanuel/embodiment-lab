@@ -86,10 +86,12 @@ const PostTestPage1 = () => {
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto px-6 py-12 max-w-3xl">
+      <main className="flex-1 container mx-auto px-6 py-12 max-w-2xl">
         <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-semibold mb-2">Experience Assessment</h1>
+            <h1 className="text-3xl font-semibold mb-2 bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">
+              Experience Assessment
+            </h1>
             <p className="text-muted-foreground mb-6">
               Please rate your experience with the learning system.
             </p>
@@ -97,7 +99,7 @@ const PostTestPage1 = () => {
             {/* Progress bar */}
             <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
               <div 
-                className="h-full bg-primary transition-all duration-300"
+                className="h-full bg-gradient-to-r from-ai-primary to-ai-accent transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -111,16 +113,16 @@ const PostTestPage1 = () => {
             onQuestionClick={scrollToQuestion}
           />
 
-          <div className="space-y-8">
+          <div className="space-y-8 stagger-fade-in">
             {/* Trust Section */}
             {trustQuestions.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-primary">Trust & Credibility</h2>
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">Trust & Credibility</h2>
                 {trustQuestions.map((question, idx) => (
                   <div 
                     key={question.id} 
                     ref={el => questionRefs.current[idx] = el}
-                    className="bg-card border border-border rounded-2xl p-6 space-y-5"
+                    className="glass-card rounded-2xl p-6 space-y-5 hover:shadow-ai-glow transition-all duration-300"
                   >
                     <h3 className="font-medium text-lg">{question.text}</h3>
                     <LikertScale
@@ -136,12 +138,12 @@ const PostTestPage1 = () => {
             {/* Engagement Section */}
             {engagementQuestions.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-primary">Engagement</h2>
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">Engagement</h2>
                 {engagementQuestions.map((question, idx) => (
                   <div 
                     key={question.id} 
                     ref={el => questionRefs.current[trustQuestions.length + idx] = el}
-                    className="bg-card border border-border rounded-2xl p-6 space-y-5"
+                    className="glass-card rounded-2xl p-6 space-y-5 hover:shadow-ai-glow transition-all duration-300"
                   >
                     <h3 className="font-medium text-lg">{question.text}</h3>
                     <LikertScale
@@ -157,12 +159,12 @@ const PostTestPage1 = () => {
             {/* Satisfaction Section */}
             {satisfactionQuestions.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-primary">Overall Satisfaction</h2>
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">Overall Satisfaction</h2>
                 {satisfactionQuestions.map((question, idx) => (
                   <div 
                     key={question.id} 
                     ref={el => questionRefs.current[trustQuestions.length + engagementQuestions.length + idx] = el}
-                    className="bg-card border border-border rounded-2xl p-6 space-y-5"
+                    className="glass-card rounded-2xl p-6 space-y-5 hover:shadow-ai-glow transition-all duration-300"
                   >
                     <h3 className="font-medium text-lg">{question.text}</h3>
                     <LikertScale
@@ -176,10 +178,10 @@ const PostTestPage1 = () => {
             )}
           </div>
 
-          <div className="sticky bottom-6 bg-background/95 backdrop-blur-sm border border-border rounded-2xl p-4 shadow-medium">
+          <div className="sticky bottom-6 glass-card rounded-2xl p-4 shadow-medium">
             <Button
               size="lg"
-              className="w-full"
+              className="w-full gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02]"
               onClick={handleNext}
               disabled={!allQuestionsAnswered}
             >

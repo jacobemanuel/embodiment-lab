@@ -8,7 +8,7 @@ import logo from "@/assets/logo-white.png";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { savePostTestResponses, completeStudySession } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 
 const PostTestPage2 = () => {
@@ -150,13 +150,12 @@ const PostTestPage2 = () => {
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto px-6 py-12 max-w-3xl">
+      <main className="flex-1 container mx-auto px-6 py-12 max-w-2xl">
         <div className="space-y-8">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Sparkles className="w-8 h-8 text-primary" />
-              <h1 className="text-3xl font-semibold">Knowledge Check!</h1>
-            </div>
+            <h1 className="text-3xl font-semibold mb-2 bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">
+              Knowledge Check!
+            </h1>
             <p className="text-muted-foreground mb-2">
               Time to test what you've learned about AI image generation. Don't worry - there's no grade!
             </p>
@@ -167,7 +166,7 @@ const PostTestPage2 = () => {
             {/* Progress bar */}
             <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
               <div 
-                className="h-full bg-primary transition-all duration-300"
+                className="h-full bg-gradient-to-r from-ai-primary to-ai-accent transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -181,19 +180,18 @@ const PostTestPage2 = () => {
             onQuestionClick={scrollToQuestion}
           />
 
-          <div className="space-y-6">
+          <div className="space-y-6 stagger-fade-in">
             {knowledgeQuestions.map((question, index) => {
-              const isMultipleAnswer = question.allowMultiple;
               const selectedAnswers = responses[question.id] ? responses[question.id].split('|||') : [];
               
               return (
                 <div 
                   key={question.id} 
                   ref={el => questionRefs.current[index] = el}
-                  className="bg-card border border-border rounded-2xl p-6 space-y-4"
+                  className="glass-card rounded-2xl p-6 space-y-4 hover:shadow-ai-glow transition-all duration-300"
                 >
                   <div className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm">
+                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-ai-primary to-ai-accent text-white flex items-center justify-center font-semibold text-sm">
                       {index + 1}
                     </span>
                     <h3 className="font-semibold pt-1">{question.text}</h3>
@@ -203,7 +201,7 @@ const PostTestPage2 = () => {
                     {question.options.map((option) => (
                       <div 
                         key={option} 
-                        className="flex items-center space-x-3 bg-secondary/30 rounded-lg p-3 hover:bg-secondary/50 transition-colors cursor-pointer"
+                        className="flex items-center space-x-3 group cursor-pointer"
                         onClick={() => handleMultipleAnswerToggle(question.id, option)}
                       >
                         <Checkbox 
@@ -213,7 +211,7 @@ const PostTestPage2 = () => {
                         />
                         <Label 
                           htmlFor={`${question.id}-${option}`}
-                          className="cursor-pointer flex-1 leading-relaxed"
+                          className="cursor-pointer flex-1 leading-relaxed group-hover:text-foreground transition-colors"
                         >
                           {option}
                         </Label>
@@ -225,10 +223,10 @@ const PostTestPage2 = () => {
             })}
           </div>
 
-          <div className="sticky bottom-6 bg-background/95 backdrop-blur-sm border border-border rounded-2xl p-4 shadow-medium">
+          <div className="sticky bottom-6 glass-card rounded-2xl p-4 shadow-medium">
             <Button
               size="lg"
-              className="w-full"
+              className="w-full gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02]"
               onClick={handleComplete}
               disabled={!allQuestionsAnswered || isLoading}
             >

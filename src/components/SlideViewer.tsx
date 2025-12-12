@@ -64,7 +64,23 @@ export const SlideViewer = ({
 
             {/* Slide Body */}
             <div className="p-8 md:p-10 space-y-6">
-              {/* Key Points - Highlighted Box */}
+              {/* Slide Image (if provided) */}
+              {currentSlide.imageUrl && (
+                <div className="rounded-xl overflow-hidden border border-border/50">
+                  <img 
+                    src={currentSlide.imageUrl} 
+                    alt={currentSlide.title}
+                    className="w-full h-auto object-contain max-h-80"
+                  />
+                </div>
+              )}
+
+              {/* Main Content Cards */}
+              <div className="space-y-4">
+                {renderSlideContent(currentSlide.content)}
+              </div>
+
+              {/* Key Points - Highlighted Box (at the end) */}
               {currentSlide.keyPoints.length > 0 && (
                 <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-6 border border-primary/20">
                   <div className="flex items-center gap-2 mb-4">
@@ -83,11 +99,6 @@ export const SlideViewer = ({
                   </ul>
                 </div>
               )}
-
-              {/* Main Content Cards */}
-              <div className="space-y-4">
-                {renderSlideContent(currentSlide.content)}
-              </div>
             </div>
           </div>
         </div>
@@ -269,6 +280,23 @@ function renderSlideContent(content: string) {
       }
       const text = line.replace(/^[-✅❌]\s/, '').replace(/^\d+\.\s/, '');
       currentSection.items.push(line.startsWith('✅') ? `✅ ${text}` : line.startsWith('❌') ? `❌ ${text}` : text);
+      return;
+    }
+
+    // Image in markdown: ![alt](url)
+    const imageMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (imageMatch) {
+      flushSection();
+      const [, alt, src] = imageMatch;
+      sections.push(
+        <div key={`img-${idx}`} className="rounded-xl overflow-hidden border border-border/50">
+          <img 
+            src={src} 
+            alt={alt || 'Slide image'}
+            className="w-full h-auto object-contain max-h-96"
+          />
+        </div>
+      );
       return;
     }
 

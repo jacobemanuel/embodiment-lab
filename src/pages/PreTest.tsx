@@ -4,18 +4,20 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import logo from "@/assets/logo-white.png";
-import { preTestQuestions } from "@/data/questions";
+import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { savePreTestResponses } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const PreTest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { questions: preTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('pre_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  const allQuestionsAnswered = preTestQuestions.every(q => responses[q.id]);
-  const progress = Object.keys(responses).length / preTestQuestions.length * 100;
+  const allQuestionsAnswered = preTestQuestions.length > 0 && preTestQuestions.every(q => responses[q.id]);
+  const progress = preTestQuestions.length > 0 ? Object.keys(responses).length / preTestQuestions.length * 100 : 0;
 
   const handleContinue = async () => {
     if (allQuestionsAnswered) {
@@ -38,6 +40,28 @@ const PreTest = () => {
       }
     }
   };
+
+  if (questionsLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || preTestQuestions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive mb-4">Failed to load questions</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

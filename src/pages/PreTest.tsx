@@ -153,18 +153,17 @@ const PreTest = () => {
                     {question.options.map((option) => (
                       <div 
                         key={option} 
-                        className="flex items-start space-x-3 group cursor-pointer"
+                        className="flex items-center space-x-3 group cursor-pointer"
                         onClick={() => handleMultipleAnswerToggle(question.id, option)}
                       >
                         <Checkbox 
                           checked={selectedAnswers.includes(option)}
                           onCheckedChange={() => handleMultipleAnswerToggle(question.id, option)}
                           id={`${question.id}-${option}`}
-                          className="mt-0.5"
                         />
                         <Label 
                           htmlFor={`${question.id}-${option}`}
-                          className="cursor-pointer flex-1 py-1 leading-relaxed group-hover:text-foreground transition-colors"
+                          className="cursor-pointer flex-1 leading-relaxed group-hover:text-foreground transition-colors"
                         >
                           {option}
                         </Label>

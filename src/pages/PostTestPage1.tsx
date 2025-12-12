@@ -2,11 +2,13 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import logo from "@/assets/logo-white.png";
-import { postTestQuestions } from "@/data/postTestQuestions";
+import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { LikertScale } from "@/components/LikertScale";
+import { Loader2 } from "lucide-react";
 
 const PostTestPage1 = () => {
   const navigate = useNavigate();
+  const { questions: postTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('post_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
 
   // Load existing responses from sessionStorage
@@ -24,13 +26,14 @@ const PostTestPage1 = () => {
     }
   }, [responses]);
 
+  // Filter for likert questions with trust, engagement, satisfaction categories
   const likertQuestions = postTestQuestions.filter(q => 
     q.type === 'likert' && 
     ['trust', 'engagement', 'satisfaction'].includes(q.category || '')
   );
   
-  const allQuestionsAnswered = likertQuestions.every(q => responses[q.id]);
-  const progress = Object.keys(responses).length / likertQuestions.length * 100;
+  const allQuestionsAnswered = likertQuestions.length > 0 && likertQuestions.every(q => responses[q.id]);
+  const progress = likertQuestions.length > 0 ? Object.keys(responses).length / likertQuestions.length * 100 : 0;
 
   const handleNext = () => {
     if (allQuestionsAnswered) {
@@ -38,6 +41,33 @@ const PostTestPage1 = () => {
       navigate('/post-test-2');
     }
   };
+
+  if (questionsLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive mb-4">Failed to load questions</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Group questions by category
+  const trustQuestions = postTestQuestions.filter(q => q.category === 'trust' && q.type === 'likert');
+  const engagementQuestions = postTestQuestions.filter(q => q.category === 'engagement' && q.type === 'likert');
+  const satisfactionQuestions = postTestQuestions.filter(q => q.category === 'satisfaction' && q.type === 'likert');
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -69,49 +99,55 @@ const PostTestPage1 = () => {
 
           <div className="space-y-8">
             {/* Trust Section */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-primary">Trust & Credibility</h2>
-              {postTestQuestions.filter(q => q.category === 'trust' && q.type === 'likert').map((question) => (
-                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
-                  <h3 className="font-medium text-lg">{question.text}</h3>
-                  <LikertScale
-                    id={question.id}
-                    value={responses[question.id] || ""}
-                    onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
-                  />
-                </div>
-              ))}
-            </div>
+            {trustQuestions.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-primary">Trust & Credibility</h2>
+                {trustQuestions.map((question) => (
+                  <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                    <h3 className="font-medium text-lg">{question.text}</h3>
+                    <LikertScale
+                      id={question.id}
+                      value={responses[question.id] || ""}
+                      onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Engagement Section */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-primary">Engagement</h2>
-              {postTestQuestions.filter(q => q.category === 'engagement' && q.type === 'likert').map((question) => (
-                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
-                  <h3 className="font-medium text-lg">{question.text}</h3>
-                  <LikertScale
-                    id={question.id}
-                    value={responses[question.id] || ""}
-                    onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
-                  />
-                </div>
-              ))}
-            </div>
+            {engagementQuestions.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-primary">Engagement</h2>
+                {engagementQuestions.map((question) => (
+                  <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                    <h3 className="font-medium text-lg">{question.text}</h3>
+                    <LikertScale
+                      id={question.id}
+                      value={responses[question.id] || ""}
+                      onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Satisfaction Section */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-primary">Overall Satisfaction</h2>
-              {postTestQuestions.filter(q => q.category === 'satisfaction' && q.type === 'likert').map((question) => (
-                <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
-                  <h3 className="font-medium text-lg">{question.text}</h3>
-                  <LikertScale
-                    id={question.id}
-                    value={responses[question.id] || ""}
-                    onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
-                  />
-                </div>
-              ))}
-            </div>
+            {satisfactionQuestions.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-primary">Overall Satisfaction</h2>
+                {satisfactionQuestions.map((question) => (
+                  <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                    <h3 className="font-medium text-lg">{question.text}</h3>
+                    <LikertScale
+                      id={question.id}
+                      value={responses[question.id] || ""}
+                      onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="sticky bottom-6 bg-background/95 backdrop-blur-sm border border-border rounded-2xl p-4 shadow-medium">

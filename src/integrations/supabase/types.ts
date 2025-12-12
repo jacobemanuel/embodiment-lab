@@ -32,6 +32,38 @@ export type Database = {
         }
         Relationships: []
       }
+      demographic_responses: {
+        Row: {
+          answer: string
+          created_at: string
+          id: string
+          question_id: string
+          session_id: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          id?: string
+          question_id: string
+          session_id: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demographic_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "study_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demographics: {
         Row: {
           age_range: string | null

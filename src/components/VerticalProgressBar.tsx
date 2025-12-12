@@ -18,24 +18,24 @@ export const VerticalProgressBar = ({
 }: VerticalProgressBarProps) => {
   if (totalQuestions === 0) return null;
 
-  const progress = (answeredQuestions / totalQuestions) * 100;
-  
   // Find first unanswered question index
   const firstUnansweredIndex = questionIds.findIndex(id => !responses[id]);
   const hasUnanswered = firstUnansweredIndex !== -1;
 
   return (
-    <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col items-center gap-2">
-      {/* Progress track */}
-      <div className="relative w-2 bg-secondary rounded-full overflow-hidden" style={{ height: `${Math.max(totalQuestions * 24, 120)}px` }}>
+    <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col items-center">
+      {/* Question dots with connecting line */}
+      <div className="relative flex flex-col items-center gap-3">
+        {/* Gray connecting line behind dots */}
         <div 
-          className="absolute bottom-0 left-0 w-full bg-primary rounded-full transition-all duration-500"
-          style={{ height: `${progress}%` }}
+          className="absolute left-1/2 -translate-x-1/2 w-0.5 bg-border rounded-full"
+          style={{ 
+            top: 6, 
+            bottom: 6,
+            height: `calc(100% - 12px)`
+          }}
         />
-      </div>
-      
-      {/* Question dots */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex flex-col justify-between h-full py-1" style={{ height: `${Math.max(totalQuestions * 24, 120)}px` }}>
+        
         {questionIds.map((id, index) => {
           const isAnswered = !!responses[id];
           const isFirstUnanswered = index === firstUnansweredIndex;
@@ -45,12 +45,12 @@ export const VerticalProgressBar = ({
               key={id}
               onClick={() => onQuestionClick?.(index)}
               className={cn(
-                "w-3 h-3 rounded-full transition-all duration-300 border-2",
+                "relative z-10 w-3 h-3 rounded-full transition-all duration-300 border-2",
                 isAnswered 
-                  ? "bg-primary border-primary scale-100" 
+                  ? "bg-primary border-primary" 
                   : isFirstUnanswered
-                    ? "bg-background border-primary animate-pulse scale-110"
-                    : "bg-background border-muted-foreground/30 scale-90"
+                    ? "bg-background border-primary animate-pulse scale-125"
+                    : "bg-background border-muted-foreground/40"
               )}
               title={`Question ${index + 1}${isAnswered ? ' (answered)' : ''}`}
             />
@@ -60,14 +60,14 @@ export const VerticalProgressBar = ({
 
       {/* Scroll indicator */}
       {hasUnanswered && (
-        <div className="mt-2 flex flex-col items-center text-muted-foreground animate-bounce">
+        <div className="mt-3 flex flex-col items-center text-muted-foreground animate-bounce">
           <ChevronDown className="w-4 h-4" />
           <span className="text-[10px] font-medium">{totalQuestions - answeredQuestions} left</span>
         </div>
       )}
 
       {/* Counter */}
-      <div className="mt-1 text-xs font-medium text-muted-foreground">
+      <div className="mt-2 text-xs font-medium text-muted-foreground">
         {answeredQuestions}/{totalQuestions}
       </div>
     </div>

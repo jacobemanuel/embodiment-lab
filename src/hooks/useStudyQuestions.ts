@@ -20,43 +20,64 @@ export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demo
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        // Always fetch all columns but only expose correct_answer when explicitly requested
-        const { data, error } = await supabase
-          .from('study_questions')
-          .select('question_id, question_text, options, question_meta, category, is_active, sort_order, correct_answer')
-          .eq('question_type', questionType)
-          .eq('is_active', true)
-          .order('sort_order');
+        if (includeCorrectAnswers) {
+          // Admin view - fetch from main table with correct_answer (requires researcher role)
+          const { data, error } = await supabase
+            .from('study_questions')
+            .select('question_id, question_text, options, question_meta, category, is_active, sort_order, correct_answer')
+            .eq('question_type', questionType)
+            .eq('is_active', true)
+            .order('sort_order');
 
-        if (error) throw error;
+          if (error) throw error;
 
-        // Transform database format to component format
-        const transformedQuestions: Question[] = (data || []).map((q) => {
-          // Parse question_meta if it exists to get the type
-          const meta = q.question_meta as Record<string, Json> | null;
-          const questionTypeFromMeta = meta?.type as string | undefined;
-          
-          // Parse correct_answer - only expose if includeCorrectAnswers is true
-          let correctAnswers: string[] | undefined;
-          if (includeCorrectAnswers && q.correct_answer) {
-            correctAnswers = q.correct_answer.split('|||').map((a: string) => a.trim()).filter(Boolean);
-          }
-          
-          // Check if question has multiple correct answers (for UI hint)
-          const hasMultipleCorrect = q.correct_answer ? q.correct_answer.includes('|||') : false;
-          
-          return {
-            id: q.question_id,
-            text: q.question_text,
-            options: Array.isArray(q.options) ? (q.options as string[]) : [],
-            correctAnswers, // Only populated if includeCorrectAnswers is true
-            category: q.category || undefined,
-            type: questionTypeFromMeta || 'multiple-choice',
-            allowMultiple: hasMultipleCorrect, // Hint for UI that multiple selections are possible
-          };
-        });
+          const transformedQuestions: Question[] = (data || []).map((q) => {
+            const meta = q.question_meta as Record<string, Json> | null;
+            const questionTypeFromMeta = meta?.type as string | undefined;
+            
+            let correctAnswers: string[] | undefined;
+            if (q.correct_answer) {
+              correctAnswers = q.correct_answer.split('|||').map((a: string) => a.trim()).filter(Boolean);
+            }
+            
+            return {
+              id: q.question_id,
+              text: q.question_text,
+              options: Array.isArray(q.options) ? (q.options as string[]) : [],
+              correctAnswers,
+              category: q.category || undefined,
+              type: questionTypeFromMeta || 'multiple-choice',
+              allowMultiple: q.correct_answer ? q.correct_answer.includes('|||') : false,
+            };
+          });
 
-        setQuestions(transformedQuestions);
+          setQuestions(transformedQuestions);
+        } else {
+          // Participant view - fetch from public view (no correct_answer exposed)
+          const { data, error } = await supabase
+            .from('study_questions_public' as any)
+            .select('question_id, question_text, options, question_meta, category, allow_multiple')
+            .eq('question_type', questionType)
+            .order('sort_order');
+
+          if (error) throw error;
+
+          const transformedQuestions: Question[] = (data || []).map((q: any) => {
+            const meta = q.question_meta as Record<string, Json> | null;
+            const questionTypeFromMeta = meta?.type as string | undefined;
+            
+            return {
+              id: q.question_id,
+              text: q.question_text,
+              options: Array.isArray(q.options) ? (q.options as string[]) : [],
+              category: q.category || undefined,
+              type: questionTypeFromMeta || 'multiple-choice',
+              allowMultiple: q.allow_multiple || false,
+            };
+          });
+
+          setQuestions(transformedQuestions);
+        }
       } catch (err) {
         console.error(`Error fetching ${questionType} questions:`, err);
         setError(err instanceof Error ? err : new Error(`Failed to fetch ${questionType} questions`));

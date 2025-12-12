@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,18 +13,41 @@ interface SlideContext {
   systemPromptContext: string;
 }
 
-// KILL SWITCH - set to false to disable API
-const API_ENABLED = false;
+// Check if API is enabled from database
+async function isApiEnabled(): Promise<boolean> {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'api_enabled')
+      .single();
+    
+    if (error) {
+      console.error('Error checking API status:', error);
+      return false;
+    }
+    
+    return data?.value?.enabled ?? false;
+  } catch (e) {
+    console.error('Error in isApiEnabled:', e);
+    return false;
+  }
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // API temporarily disabled
-  if (!API_ENABLED) {
+  // Check if API is enabled
+  const apiEnabled = await isApiEnabled();
+  if (!apiEnabled) {
     return new Response(
-      JSON.stringify({ error: "Serwis tymczasowo niedostępny. Wróć za tydzień! 🚧" }),
+      JSON.stringify({ error: "Service temporarily unavailable. Please try again later." }),
       { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

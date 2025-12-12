@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.create-admin-users]
 verify_jwt = false
+
+[functions.toggle-api]
+verify_jwt = false

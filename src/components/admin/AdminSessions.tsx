@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Search, Filter, ChevronLeft, ChevronRight, Eye } from "lucide-react";
-import { format } from "date-fns";
+import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw } from "lucide-react";
+import { format, startOfDay, endOfDay } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import DateRangeFilter from "./DateRangeFilter";
 
 interface Session {
   id: string;
@@ -30,6 +31,7 @@ interface SessionDetails {
 const AdminSessions = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [modeFilter, setModeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -37,18 +39,27 @@ const AdminSessions = () => {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    fetchSessions();
-  }, []);
-
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
+    setIsRefreshing(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('study_sessions')
         .select('*')
         .order('created_at', { ascending: false });
+
+      if (startDate) {
+        query = query.gte('created_at', startOfDay(startDate).toISOString());
+      }
+      if (endDate) {
+        query = query.lte('created_at', endOfDay(endDate).toISOString());
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setSessions(data || []);
@@ -56,8 +67,24 @@ const AdminSessions = () => {
       console.error('Error fetching sessions:', error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
-  };
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
+
+  // Auto-refresh every 30 seconds if enabled
+  useEffect(() => {
+    if (!autoRefresh) return;
+    
+    const interval = setInterval(() => {
+      fetchSessions();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, fetchSessions]);
 
   const fetchSessionDetails = async (session: Session) => {
     setIsDetailsLoading(true);
@@ -68,7 +95,7 @@ const AdminSessions = () => {
         .from('demographics')
         .select('*')
         .eq('session_id', session.id)
-        .single();
+        .maybeSingle();
 
       const { data: preTest } = await supabase
         .from('pre_test_responses')
@@ -164,13 +191,25 @@ const AdminSessions = () => {
 
   return (
     <div className="space-y-6">
+      {/* Date Range Filter */}
+      <DateRangeFilter
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+        onRefresh={fetchSessions}
+        isRefreshing={isRefreshing}
+        autoRefreshEnabled={autoRefresh}
+        onAutoRefreshToggle={setAutoRefresh}
+      />
+
       <Card className="bg-slate-800 border-slate-700">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-white">Participant Sessions</CardTitle>
               <CardDescription className="text-slate-400">
-                Browse and analyze individual study sessions
+                Browse and analyze individual study sessions ({filteredSessions.length} total)
               </CardDescription>
             </div>
             <Button onClick={exportToCSV} variant="outline" className="border-slate-600">

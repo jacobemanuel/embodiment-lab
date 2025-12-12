@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
@@ -8,7 +8,7 @@ import logo from "@/assets/logo-white.png";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { savePostTestResponses, completeStudySession } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, Info } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 
 const PostTestPage2 = () => {
@@ -157,8 +157,11 @@ const PostTestPage2 = () => {
               <Sparkles className="w-8 h-8 text-primary" />
               <h1 className="text-3xl font-semibold">Knowledge Check!</h1>
             </div>
-            <p className="text-muted-foreground mb-6">
+            <p className="text-muted-foreground mb-2">
               Time to test what you've learned about AI image generation. Don't worry - there's no grade!
+            </p>
+            <p className="text-muted-foreground/60 text-sm mb-6">
+              You may select multiple answers if you believe more than one is correct.
             </p>
             
             {/* Progress bar */}
@@ -193,67 +196,31 @@ const PostTestPage2 = () => {
                     <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm">
                       {index + 1}
                     </span>
-                    <div className="flex-1">
-                      <h3 className="font-semibold pt-1">{question.text}</h3>
-                      {isMultipleAnswer && (
-                        <p className="text-muted-foreground text-sm mt-1 flex items-center gap-1">
-                          <Info className="w-3 h-3" />
-                          You may select more than one answer. There's no penalty for incorrect selections.
-                        </p>
-                      )}
-                    </div>
+                    <h3 className="font-semibold pt-1">{question.text}</h3>
                   </div>
                   
-                  {isMultipleAnswer ? (
-                    // Multiple answer question - use checkboxes
-                    <div className="pl-11 space-y-3">
-                      {question.options.map((option) => (
-                        <div 
-                          key={option} 
-                          className="flex items-start space-x-3 bg-secondary/30 rounded-lg p-3 hover:bg-secondary/50 transition-colors cursor-pointer"
-                          onClick={() => handleMultipleAnswerToggle(question.id, option)}
+                  <div className="pl-11 space-y-3">
+                    {question.options.map((option) => (
+                      <div 
+                        key={option} 
+                        className="flex items-start space-x-3 bg-secondary/30 rounded-lg p-3 hover:bg-secondary/50 transition-colors cursor-pointer"
+                        onClick={() => handleMultipleAnswerToggle(question.id, option)}
+                      >
+                        <Checkbox 
+                          checked={selectedAnswers.includes(option)}
+                          onCheckedChange={() => handleMultipleAnswerToggle(question.id, option)}
+                          id={`${question.id}-${option}`}
+                          className="mt-0.5"
+                        />
+                        <Label 
+                          htmlFor={`${question.id}-${option}`}
+                          className="cursor-pointer flex-1 leading-relaxed"
                         >
-                          <Checkbox 
-                            checked={selectedAnswers.includes(option)}
-                            onCheckedChange={() => handleMultipleAnswerToggle(question.id, option)}
-                            id={`${question.id}-${option}`}
-                            className="mt-0.5"
-                          />
-                          <Label 
-                            htmlFor={`${question.id}-${option}`}
-                            className="cursor-pointer flex-1 leading-relaxed"
-                          >
-                            {option}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    // Single answer question - use radio buttons
-                    <RadioGroup
-                      value={responses[question.id] || ""}
-                      onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
-                      className="pl-11"
-                    >
-                      <div className="space-y-3">
-                        {question.options.map((option) => (
-                          <div key={option} className="flex items-start space-x-3 bg-secondary/30 rounded-lg p-3 hover:bg-secondary/50 transition-colors">
-                            <RadioGroupItem 
-                              value={option} 
-                              id={`${question.id}-${option}`}
-                              className="mt-0.5"
-                            />
-                            <Label 
-                              htmlFor={`${question.id}-${option}`}
-                              className="cursor-pointer flex-1 leading-relaxed"
-                            >
-                              {option}
-                            </Label>
-                          </div>
-                        ))}
+                          {option}
+                        </Label>
                       </div>
-                    </RadioGroup>
-                  )}
+                    ))}
+                  </div>
                 </div>
               );
             })}

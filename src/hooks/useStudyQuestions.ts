@@ -12,7 +12,7 @@ export interface Question {
   allowMultiple?: boolean; // Flag to indicate if multiple answers are allowed
 }
 
-export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demographic') => {
+export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demographic', includeCorrectAnswers: boolean = false) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -20,9 +20,10 @@ export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demo
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
+        // Always fetch all columns but only expose correct_answer when explicitly requested
         const { data, error } = await supabase
           .from('study_questions')
-          .select('*')
+          .select('question_id, question_text, options, question_meta, category, is_active, sort_order, correct_answer')
           .eq('question_type', questionType)
           .eq('is_active', true)
           .order('sort_order');
@@ -35,21 +36,23 @@ export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demo
           const meta = q.question_meta as Record<string, Json> | null;
           const questionTypeFromMeta = meta?.type as string | undefined;
           
-          // Parse correct_answer - can be single string or comma-separated for multiple
+          // Parse correct_answer - only expose if includeCorrectAnswers is true
           let correctAnswers: string[] | undefined;
-          if (q.correct_answer) {
-            // Check if it's a comma-separated list (for multiple correct answers)
-            correctAnswers = q.correct_answer.split('|||').map(a => a.trim()).filter(Boolean);
+          if (includeCorrectAnswers && q.correct_answer) {
+            correctAnswers = q.correct_answer.split('|||').map((a: string) => a.trim()).filter(Boolean);
           }
+          
+          // Check if question has multiple correct answers (for UI hint)
+          const hasMultipleCorrect = q.correct_answer ? q.correct_answer.includes('|||') : false;
           
           return {
             id: q.question_id,
             text: q.question_text,
             options: Array.isArray(q.options) ? (q.options as string[]) : [],
-            correctAnswers,
+            correctAnswers, // Only populated if includeCorrectAnswers is true
             category: q.category || undefined,
             type: questionTypeFromMeta || 'multiple-choice',
-            allowMultiple: correctAnswers && correctAnswers.length > 1,
+            allowMultiple: hasMultipleCorrect, // Hint for UI that multiple selections are possible
           };
         });
 
@@ -63,7 +66,7 @@ export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demo
     };
 
     fetchQuestions();
-  }, [questionType]);
+  }, [questionType, includeCorrectAnswers]);
 
   return { questions, isLoading, error };
 };

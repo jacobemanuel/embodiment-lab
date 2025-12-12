@@ -19,7 +19,7 @@ interface ResponseData {
 const AdminResponses = () => {
   const [preTestData, setPreTestData] = useState<Record<string, ResponseData[]>>({});
   const [postTestData, setPostTestData] = useState<Record<string, ResponseData[]>>({});
-  const [demographicsData, setDemographicsData] = useState<any>({});
+  const [demographicsData, setDemographicsData] = useState<Record<string, ResponseData[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -60,7 +60,7 @@ const AdminResponses = () => {
       // Build queries with date filter
       let preTestQuery = supabase.from('pre_test_responses').select('question_id, answer, session_id');
       let postTestQuery = supabase.from('post_test_responses').select('question_id, answer, session_id');
-      let demoQuery = supabase.from('demographics').select('*, session_id');
+      let demoQuery = supabase.from('demographic_responses').select('question_id, answer, session_id');
 
       if (sessionIds.length > 0) {
         preTestQuery = preTestQuery.in('session_id', sessionIds);
@@ -70,7 +70,7 @@ const AdminResponses = () => {
         // No matching sessions, return empty
         setPreTestData({});
         setPostTestData({});
-        setDemographicsData({ age_range: [], education: [], digital_experience: [] });
+        setDemographicsData({});
         setIsRefreshing(false);
         return;
       }
@@ -79,6 +79,7 @@ const AdminResponses = () => {
       const { data: postTest } = await postTestQuery;
       const { data: demographics } = await demoQuery;
 
+      // Aggregate pre-test responses
       const preTestAggregated: Record<string, ResponseData[]> = {};
       preTest?.forEach(r => {
         if (!preTestAggregated[r.question_id]) {
@@ -92,6 +93,7 @@ const AdminResponses = () => {
         }
       });
 
+      // Aggregate post-test responses
       const postTestAggregated: Record<string, ResponseData[]> = {};
       postTest?.forEach(r => {
         if (!postTestAggregated[r.question_id]) {
@@ -105,24 +107,18 @@ const AdminResponses = () => {
         }
       });
 
-      const demoAggregated: Record<string, { name: string; value: number }[]> = {
-        age_range: [],
-        education: [],
-        digital_experience: []
-      };
-
-      demographics?.forEach(d => {
-        ['age_range', 'education', 'digital_experience'].forEach(key => {
-          const value = d[key as keyof typeof d];
-          if (value) {
-            const existing = demoAggregated[key].find(x => x.name === value);
-            if (existing) {
-              existing.value++;
-            } else {
-              demoAggregated[key].push({ name: value as string, value: 1 });
-            }
-          }
-        });
+      // Aggregate demographic responses (now using the same pattern as pre/post test)
+      const demoAggregated: Record<string, ResponseData[]> = {};
+      demographics?.forEach(r => {
+        if (!demoAggregated[r.question_id]) {
+          demoAggregated[r.question_id] = [];
+        }
+        const existing = demoAggregated[r.question_id].find(x => x.answer === r.answer);
+        if (existing) {
+          existing.count++;
+        } else {
+          demoAggregated[r.question_id].push({ question_id: r.question_id, answer: r.answer, count: 1 });
+        }
       });
 
       setPreTestData(preTestAggregated);
@@ -164,7 +160,7 @@ const AdminResponses = () => {
       const { data: sessions } = await sessionQuery;
       const sessionIds = sessions?.map(s => s.id) || [];
 
-      let demographicsQuery = supabase.from('demographics').select('*');
+      let demographicsQuery = supabase.from('demographic_responses').select('*');
       let preTestQuery = supabase.from('pre_test_responses').select('*');
       let postTestQuery = supabase.from('post_test_responses').select('*');
       let scenariosQuery = supabase.from('scenarios').select('*');
@@ -190,7 +186,7 @@ const AdminResponses = () => {
 
       const exportData = {
         sessions,
-        demographics,
+        demographicResponses: demographics,
         preTestResponses: preTest,
         postTestResponses: postTest,
         scenarios,
@@ -254,79 +250,49 @@ const AdminResponses = () => {
         </TabsList>
 
         <TabsContent value="demographics" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white text-lg">Age</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {demographicsData.age_range?.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={demographicsData.age_range}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={60}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                      >
-                        {demographicsData.age_range.map((_: any, index: number) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <p className="text-slate-500 text-center py-8">No data</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white text-lg">Education</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {demographicsData.education?.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={demographicsData.education} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis type="number" stroke="#9ca3af" />
-                      <YAxis dataKey="name" type="category" stroke="#9ca3af" width={100} fontSize={10} />
-                      <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                      <Bar dataKey="value" fill="#3b82f6" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <p className="text-slate-500 text-center py-8">No data</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white text-lg">Digital Experience</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {demographicsData.digital_experience?.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={demographicsData.digital_experience}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="name" stroke="#9ca3af" fontSize={10} />
-                      <YAxis stroke="#9ca3af" />
-                      <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                      <Bar dataKey="value" fill="#10b981" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <p className="text-slate-500 text-center py-8">No data</p>
-                )}
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {Object.entries(demographicsData).map(([questionId, responses]) => {
+              const questionText = getQuestionText(questionId);
+              const chartData = responses.map(r => ({ name: r.answer, value: r.count }));
+              const totalResponses = responses.reduce((sum, r) => sum + r.count, 0);
+              
+              return (
+                <Card key={questionId} className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white text-sm">{questionText}</CardTitle>
+                    <CardDescription className="text-slate-400">{totalResponses} responses</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {chartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                          <Pie
+                            data={chartData}
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={60}
+                            fill="#8884d8"
+                            dataKey="value"
+                            label={({ name, percent }) => `${name.length > 15 ? name.slice(0, 15) + '...' : name} (${(percent * 100).toFixed(0)}%)`}
+                          >
+                            {chartData.map((_, index: number) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <p className="text-slate-500 text-center py-8">No data</p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
+          {Object.keys(demographicsData).length === 0 && (
+            <p className="text-slate-500 text-center py-8">No demographic data</p>
+          )}
         </TabsContent>
 
         <TabsContent value="pretest" className="space-y-6">

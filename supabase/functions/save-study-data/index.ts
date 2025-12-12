@@ -157,9 +157,16 @@ serve(async (req) => {
           );
         }
 
+        // Convert demographics object to array of question_id/answer pairs
+        const demographicData = Object.entries(validated.demographics).map(([questionId, answer]) => ({
+          session_id: session.id,
+          question_id: questionId,
+          answer: answer as string
+        }));
+
         const { error: insertError } = await supabase
-          .from('demographics')
-          .insert({ session_id: session.id, ...validated.demographics });
+          .from('demographic_responses')
+          .insert(demographicData);
 
         if (insertError) {
           console.error('Failed to save demographics:', insertError);

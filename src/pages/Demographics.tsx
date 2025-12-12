@@ -17,19 +17,12 @@ const Demographics = () => {
   const { toast } = useToast();
   const { questions: demographicQuestions, isLoading: questionsLoading, error } = useStudyQuestions('demographic');
   const [responses, setResponses] = useState<Record<string, string>>({});
-  const [preferNotToSayAge, setPreferNotToSayAge] = useState(false);
-  const [ageValue, setAgeValue] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Find specific question types
-  const ageQuestion = demographicQuestions.find(q => q.id.includes('age') || q.text.toLowerCase().includes('age'));
-  const otherQuestions = demographicQuestions.filter(q => q !== ageQuestion);
-
+  // Check if all questions are answered
   const allQuestionsAnswered = demographicQuestions.length > 0 && demographicQuestions.every(q => {
-    if (q === ageQuestion) {
-      return ageValue.trim() !== "" || preferNotToSayAge;
-    }
-    return responses[q.id];
+    const answer = responses[q.id];
+    return answer && answer.trim() !== "";
   });
 
   const handleContinue = async () => {
@@ -41,38 +34,14 @@ const Demographics = () => {
         // If no session exists, create one
         if (!sessionId) {
           const mode = sessionStorage.getItem('studyMode') as StudyMode || 'text';
-          
-          // Create session in database (server generates secure ID)
           const { createStudySession } = await import('@/lib/studyData');
           sessionId = await createStudySession(mode);
           sessionStorage.setItem('sessionId', sessionId);
         }
         
-        // Build responses object with proper column mapping
-        const demographicResponses: Record<string, string> = {};
-        
-        // Handle age question
-        if (ageQuestion) {
-          demographicResponses['age_range'] = preferNotToSayAge ? "Prefer not to say" : ageValue;
-        }
-        
-        // Handle other questions - map to database columns
-        otherQuestions.forEach(q => {
-          if (responses[q.id]) {
-            // Map question IDs to database column names
-            if (q.id.includes('education') || q.text.toLowerCase().includes('education')) {
-              demographicResponses['education'] = responses[q.id];
-            } else if (q.id.includes('digital') || q.id.includes('experience') || q.text.toLowerCase().includes('experience')) {
-              demographicResponses['digital_experience'] = responses[q.id];
-            } else {
-              // For any other questions, use the question id as key
-              demographicResponses[q.id] = responses[q.id];
-            }
-          }
-        });
-        
-        await saveDemographics(sessionId, demographicResponses);
-        sessionStorage.setItem('demographics', JSON.stringify(demographicResponses));
+        // Send responses using question IDs as keys
+        await saveDemographics(sessionId, responses);
+        sessionStorage.setItem('demographics', JSON.stringify(responses));
         navigate("/pre-test");
       } catch (error) {
         console.error('Error saving demographics:', error);
@@ -84,6 +53,12 @@ const Demographics = () => {
         setIsLoading(false);
       }
     }
+  };
+
+  // Check if a question should use text input (for age-type questions)
+  const isTextInputQuestion = (questionText: string) => {
+    const lowerText = questionText.toLowerCase();
+    return lowerText.includes('age') || lowerText.includes('wiek');
   };
 
   if (questionsLoading) {
@@ -124,63 +99,59 @@ const Demographics = () => {
           </div>
 
           <div className="space-y-8">
-            {/* Age Question - Special handling with text input */}
-            {ageQuestion && (
-              <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-                <h3 className="font-semibold">{ageQuestion.text}</h3>
-                <div className="space-y-3">
-                  <Input
-                    type="number"
-                    placeholder="Enter your age"
-                    value={ageValue}
-                    onChange={(e) => {
-                      setAgeValue(e.target.value);
-                      if (e.target.value) setPreferNotToSayAge(false);
-                    }}
-                    disabled={preferNotToSayAge}
-                    className="max-w-xs"
-                    min="1"
-                    max="150"
-                  />
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      id="prefer-not-age"
-                      checked={preferNotToSayAge}
-                      onCheckedChange={(checked) => {
-                        setPreferNotToSayAge(checked === true);
-                        if (checked) setAgeValue("");
-                      }}
-                    />
-                    <Label htmlFor="prefer-not-age" className="cursor-pointer">
-                      Prefer not to say
-                    </Label>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Other Questions - Radio buttons */}
-            {otherQuestions.map((question) => (
+            {demographicQuestions.map((question) => (
               <div key={question.id} className="bg-card border border-border rounded-2xl p-6 space-y-4">
                 <h3 className="font-semibold">{question.text}</h3>
-                <RadioGroup
-                  value={responses[question.id] || ""}
-                  onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
-                >
+                
+                {/* Text input for age-type questions, radio for others */}
+                {isTextInputQuestion(question.text) ? (
                   <div className="space-y-3">
-                    {question.options.map((option) => (
-                      <div key={option} className="flex items-center space-x-3">
-                        <RadioGroupItem value={option} id={`${question.id}-${option}`} />
-                        <Label 
-                          htmlFor={`${question.id}-${option}`}
-                          className="cursor-pointer flex-1 py-2"
-                        >
-                          {option}
-                        </Label>
-                      </div>
-                    ))}
+                    <Input
+                      type="number"
+                      placeholder="Enter your age"
+                      value={responses[question.id] || ""}
+                      onChange={(e) => setResponses(prev => ({ ...prev, [question.id]: e.target.value }))}
+                      className="max-w-xs"
+                      min="1"
+                      max="150"
+                    />
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id={`prefer-not-${question.id}`}
+                        checked={responses[question.id] === "Prefer not to say"}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setResponses(prev => ({ ...prev, [question.id]: "Prefer not to say" }));
+                          } else {
+                            setResponses(prev => ({ ...prev, [question.id]: "" }));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`prefer-not-${question.id}`} className="cursor-pointer">
+                        Prefer not to say
+                      </Label>
+                    </div>
                   </div>
-                </RadioGroup>
+                ) : (
+                  <RadioGroup
+                    value={responses[question.id] || ""}
+                    onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                  >
+                    <div className="space-y-3">
+                      {question.options.map((option) => (
+                        <div key={option} className="flex items-center space-x-3">
+                          <RadioGroupItem value={option} id={`${question.id}-${option}`} />
+                          <Label 
+                            htmlFor={`${question.id}-${option}`}
+                            className="cursor-pointer flex-1 py-2"
+                          >
+                            {option}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                )}
               </div>
             ))}
           </div>

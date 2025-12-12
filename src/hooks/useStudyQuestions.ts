@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 export interface Question {
   id: string;
@@ -7,18 +8,7 @@ export interface Question {
   options: string[];
   correctAnswer?: string;
   category?: string;
-}
-
-interface DatabaseQuestion {
-  id: string;
-  question_id: string;
-  question_text: string;
-  options: string[];
-  correct_answer: string | null;
-  category: string | null;
-  question_type: string;
-  is_active: boolean;
-  sort_order: number;
+  type?: string;
 }
 
 export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demographic') => {
@@ -39,13 +29,20 @@ export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demo
         if (error) throw error;
 
         // Transform database format to component format
-        const transformedQuestions: Question[] = (data || []).map((q) => ({
-          id: q.question_id,
-          text: q.question_text,
-          options: Array.isArray(q.options) ? (q.options as string[]) : [],
-          correctAnswer: q.correct_answer || undefined,
-          category: q.category || undefined,
-        }));
+        const transformedQuestions: Question[] = (data || []).map((q) => {
+          // Parse question_meta if it exists to get the type
+          const meta = q.question_meta as Record<string, Json> | null;
+          const questionTypeFromMeta = meta?.type as string | undefined;
+          
+          return {
+            id: q.question_id,
+            text: q.question_text,
+            options: Array.isArray(q.options) ? (q.options as string[]) : [],
+            correctAnswer: q.correct_answer || undefined,
+            category: q.category || undefined,
+            type: questionTypeFromMeta || 'multiple-choice',
+          };
+        });
 
         setQuestions(transformedQuestions);
       } catch (err) {

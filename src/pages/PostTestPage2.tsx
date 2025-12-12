@@ -229,7 +229,7 @@ const PostTestPage2 = () => {
           <div className="sticky bottom-6 glass-card rounded-2xl p-4 shadow-medium">
             <Button
               size="lg"
-              className="w-full gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02]"
+              className={`w-full transition-all duration-300 ${allQuestionsAnswered ? 'gradient-ai hover:shadow-ai-glow hover:scale-[1.02]' : 'bg-muted text-muted-foreground'}`}
               onClick={handleComplete}
               disabled={!allQuestionsAnswered || isLoading}
             >

@@ -43,39 +43,55 @@ export const TranscriptPanel = ({
 
       <ScrollArea className="flex-1 p-3" ref={scrollRef}>
         <div className="space-y-3">
-          {messages.filter(msg => msg.isFinal !== false).length === 0 ? (
+          {messages.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               Conversation transcript will appear here...
             </p>
           ) : (
-            messages.filter(msg => msg.isFinal !== false).map((msg) => (
-              <div
-                key={msg.id}
-                className={cn(
-                  "flex",
-                  msg.role === 'avatar' ? "justify-start" : "justify-end"
-                )}
-              >
+            <>
+              {/* Show only final messages */}
+              {messages.filter(msg => msg.isFinal !== false).map((msg) => (
                 <div
+                  key={msg.id}
                   className={cn(
-                    "max-w-[85%] text-sm rounded-2xl px-4 py-2 shadow-sm",
-                    msg.role === 'avatar' 
-                      ? "bg-primary/10 border border-primary/20 text-foreground rounded-bl-md" 
-                      : "bg-secondary border border-border text-foreground rounded-br-md"
+                    "flex",
+                    msg.role === 'avatar' ? "justify-start" : "justify-end"
                   )}
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={cn(
-                      "text-xs font-medium",
-                      msg.role === 'avatar' ? "text-primary" : "text-muted-foreground"
-                    )}>
-                      {msg.role === 'avatar' ? 'Tutor' : 'You'}
-                    </span>
+                  <div
+                    className={cn(
+                      "max-w-[85%] text-sm rounded-2xl px-4 py-2 shadow-sm",
+                      msg.role === 'avatar' 
+                        ? "bg-primary/10 border border-primary/20 text-foreground rounded-bl-md" 
+                        : "bg-secondary border border-border text-foreground rounded-br-md"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={cn(
+                        "text-xs font-medium",
+                        msg.role === 'avatar' ? "text-primary" : "text-muted-foreground"
+                      )}>
+                        {msg.role === 'avatar' ? 'Tutor' : 'You'}
+                      </span>
+                    </div>
+                    <p className="leading-relaxed">{msg.content}</p>
                   </div>
-                  <p className="leading-relaxed">{msg.content}</p>
                 </div>
-              </div>
-            ))
+              ))}
+              
+              {/* Show typing indicator if there's a non-final message */}
+              {messages.some(msg => msg.isFinal === false) && (
+                <div className="flex justify-start">
+                  <div className="bg-primary/10 border border-primary/20 text-foreground rounded-2xl rounded-bl-md px-4 py-2 shadow-sm">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </ScrollArea>

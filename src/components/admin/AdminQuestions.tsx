@@ -77,9 +77,15 @@ const AdminQuestions = () => {
     setEditedData({});
   };
 
-  const saveQuestion = async (questionId: string) => {
+  const saveQuestion = async (questionId: string, question: StudyQuestion) => {
     setIsSaving(true);
     try {
+      // Determine the question meta type based on category
+      let metaType = 'multiple-choice';
+      if (['trust', 'engagement', 'satisfaction'].includes(editedData.category || '')) {
+        metaType = 'likert';
+      }
+
       const { error } = await supabase
         .from('study_questions')
         .update({
@@ -87,6 +93,7 @@ const AdminQuestions = () => {
           options: editedData.options,
           correct_answer: editedData.correct_answer,
           category: editedData.category,
+          question_meta: { ...question.question_meta, type: metaType },
         })
         .eq('id', questionId);
 
@@ -136,12 +143,18 @@ const AdminQuestions = () => {
     });
   };
 
-  const addNewQuestion = async (questionType: string) => {
+  const addNewQuestion = async (questionType: string, category?: string, metaType?: string) => {
     const maxOrder = questions
       .filter(q => q.question_type === questionType)
       .reduce((max, q) => Math.max(max, q.sort_order), 0);
 
     const newQuestionId = `${questionType.replace('_', '-')}-${Date.now()}`;
+
+    // Set default options based on type
+    let defaultOptions = ['Option 1', 'Option 2'];
+    if (metaType === 'likert') {
+      defaultOptions = ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'];
+    }
 
     try {
       const { error } = await supabase
@@ -150,9 +163,11 @@ const AdminQuestions = () => {
           question_type: questionType,
           question_id: newQuestionId,
           question_text: 'New question',
-          options: ['Option 1', 'Option 2'],
+          options: defaultOptions,
           sort_order: maxOrder + 1,
           is_active: true,
+          category: category || null,
+          question_meta: metaType ? { type: metaType } : {},
         });
 
       if (error) throw error;
@@ -313,7 +328,7 @@ const AdminQuestions = () => {
             {isEditing ? (
               <>
                 <Button
-                  onClick={() => saveQuestion(question.id)}
+                  onClick={() => saveQuestion(question.id, question)}
                   disabled={isSaving}
                   className="bg-green-600 hover:bg-green-700"
                 >
@@ -427,26 +442,71 @@ const AdminQuestions = () => {
         </TabsContent>
 
         {/* Post-test Questions */}
-        <TabsContent value="posttest" className="space-y-4">
+        <TabsContent value="posttest" className="space-y-6">
+          {/* Page 1: Experience Assessment */}
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-white">Post-test Questions</CardTitle>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Badge variant="outline" className="bg-blue-900/50 border-blue-500 text-blue-300">Page 1</Badge>
+                  Experience Assessment
+                </CardTitle>
                 <CardDescription className="text-slate-400">
-                  Questions shown after completing the learning phase (Likert scales and knowledge checks)
+                  Likert scale questions about trust, engagement, and satisfaction (shown first)
+                </CardDescription>
+              </div>
+              <Select onValueChange={(category) => addNewQuestion('post_test', category, 'likert')}>
+                <SelectTrigger className="w-[180px] bg-blue-600 border-0 text-white hover:bg-blue-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  <span>Add Question</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="trust">Trust Category</SelectItem>
+                  <SelectItem value="engagement">Engagement Category</SelectItem>
+                  <SelectItem value="satisfaction">Satisfaction Category</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="space-y-2">
+                {postTestQuestions
+                  .filter(q => ['trust', 'engagement', 'satisfaction'].includes(q.category || ''))
+                  .map(renderQuestionEditor)}
+              </Accordion>
+              {postTestQuestions.filter(q => ['trust', 'engagement', 'satisfaction'].includes(q.category || '')).length === 0 && (
+                <p className="text-slate-500 text-center py-4">No experience questions. Add one above.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Page 2: Knowledge Assessment */}
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Badge variant="outline" className="bg-purple-900/50 border-purple-500 text-purple-300">Page 2</Badge>
+                  Knowledge Assessment
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Multiple choice knowledge check questions (shown after experience questions)
                 </CardDescription>
               </div>
               <Button 
-                onClick={() => addNewQuestion('post_test')}
-                className="bg-blue-600 hover:bg-blue-700"
+                onClick={() => addNewQuestion('post_test', 'knowledge', 'multiple-choice')}
+                className="bg-purple-600 hover:bg-purple-700"
               >
                 <Plus className="w-4 h-4 mr-2" /> Add Question
               </Button>
             </CardHeader>
             <CardContent>
               <Accordion type="single" collapsible className="space-y-2">
-                {postTestQuestions.map(renderQuestionEditor)}
+                {postTestQuestions
+                  .filter(q => q.category === 'knowledge')
+                  .map(renderQuestionEditor)}
               </Accordion>
+              {postTestQuestions.filter(q => q.category === 'knowledge').length === 0 && (
+                <p className="text-slate-500 text-center py-4">No knowledge questions. Add one above.</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

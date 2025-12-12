@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
@@ -7,7 +8,7 @@ import logo from "@/assets/logo-white.png";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { savePreTestResponses } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Info } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 
 const PreTest = () => {
@@ -24,6 +25,26 @@ const PreTest = () => {
 
   const allQuestionsAnswered = preTestQuestions.length > 0 && preTestQuestions.every(q => responses[q.id]);
   const progress = preTestQuestions.length > 0 ? Object.keys(responses).length / preTestQuestions.length * 100 : 0;
+
+  // Handle checkbox toggle for multiple-answer questions
+  const handleMultipleAnswerToggle = (questionId: string, option: string) => {
+    const currentAnswer = responses[questionId] || '';
+    const currentAnswers = currentAnswer ? currentAnswer.split('|||') : [];
+    
+    if (currentAnswers.includes(option)) {
+      const newAnswers = currentAnswers.filter(a => a !== option);
+      setResponses(prev => ({
+        ...prev,
+        [questionId]: newAnswers.join('|||')
+      }));
+    } else {
+      const newAnswers = [...currentAnswers, option];
+      setResponses(prev => ({
+        ...prev,
+        [questionId]: newAnswers.join('|||')
+      }));
+    }
+  };
 
   const handleContinue = async () => {
     if (allQuestionsAnswered) {
@@ -108,43 +129,82 @@ const PreTest = () => {
           />
 
           <div className="space-y-6 stagger-fade-in">
-            {preTestQuestions.map((question, index) => (
-              <div 
-                key={question.id} 
-                ref={el => questionRefs.current[index] = el}
-                className="glass-card rounded-2xl p-6 space-y-4 hover:shadow-ai-glow transition-all duration-300"
-              >
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-ai-primary to-ai-accent text-white flex items-center justify-center font-semibold text-sm">
-                    {index + 1}
-                  </span>
-                  <h3 className="font-semibold flex-1 pt-1">{question.text}</h3>
-                </div>
-                <RadioGroup
-                  value={responses[question.id] || ""}
-                  onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
-                  className="pl-11"
+            {preTestQuestions.map((question, index) => {
+              const isMultipleAnswer = question.allowMultiple;
+              const selectedAnswers = responses[question.id] ? responses[question.id].split('|||') : [];
+              
+              return (
+                <div 
+                  key={question.id} 
+                  ref={el => questionRefs.current[index] = el}
+                  className="glass-card rounded-2xl p-6 space-y-4 hover:shadow-ai-glow transition-all duration-300"
                 >
-                  <div className="space-y-3">
-                    {question.options.map((option) => (
-                      <div key={option} className="flex items-start space-x-3 group">
-                        <RadioGroupItem 
-                          value={option} 
-                          id={`${question.id}-${option}`}
-                          className="mt-0.5"
-                        />
-                        <Label 
-                          htmlFor={`${question.id}-${option}`}
-                          className="cursor-pointer flex-1 py-1 leading-relaxed group-hover:text-foreground transition-colors"
-                        >
-                          {option}
-                        </Label>
-                      </div>
-                    ))}
+                  <div className="flex gap-3">
+                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-ai-primary to-ai-accent text-white flex items-center justify-center font-semibold text-sm">
+                      {index + 1}
+                    </span>
+                    <div className="flex-1">
+                      <h3 className="font-semibold pt-1">{question.text}</h3>
+                      {isMultipleAnswer && (
+                        <p className="text-muted-foreground text-sm mt-1 flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          You may select more than one answer. There's no penalty for incorrect selections.
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </RadioGroup>
-              </div>
-            ))}
+                  
+                  {isMultipleAnswer ? (
+                    <div className="pl-11 space-y-3">
+                      {question.options.map((option) => (
+                        <div 
+                          key={option} 
+                          className="flex items-start space-x-3 group cursor-pointer"
+                          onClick={() => handleMultipleAnswerToggle(question.id, option)}
+                        >
+                          <Checkbox 
+                            checked={selectedAnswers.includes(option)}
+                            onCheckedChange={() => handleMultipleAnswerToggle(question.id, option)}
+                            id={`${question.id}-${option}`}
+                            className="mt-0.5"
+                          />
+                          <Label 
+                            htmlFor={`${question.id}-${option}`}
+                            className="cursor-pointer flex-1 py-1 leading-relaxed group-hover:text-foreground transition-colors"
+                          >
+                            {option}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <RadioGroup
+                      value={responses[question.id] || ""}
+                      onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                      className="pl-11"
+                    >
+                      <div className="space-y-3">
+                        {question.options.map((option) => (
+                          <div key={option} className="flex items-start space-x-3 group">
+                            <RadioGroupItem 
+                              value={option} 
+                              id={`${question.id}-${option}`}
+                              className="mt-0.5"
+                            />
+                            <Label 
+                              htmlFor={`${question.id}-${option}`}
+                              className="cursor-pointer flex-1 py-1 leading-relaxed group-hover:text-foreground transition-colors"
+                            >
+                              {option}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </RadioGroup>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="sticky bottom-6 glass-card rounded-2xl p-4 shadow-medium">

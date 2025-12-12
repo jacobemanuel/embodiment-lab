@@ -6,9 +6,10 @@ export interface Question {
   id: string;
   text: string;
   options: string[];
-  correctAnswer?: string;
+  correctAnswers?: string[]; // Changed to array for multiple correct answers
   category?: string;
   type?: string;
+  allowMultiple?: boolean; // Flag to indicate if multiple answers are allowed
 }
 
 export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demographic') => {
@@ -34,13 +35,21 @@ export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demo
           const meta = q.question_meta as Record<string, Json> | null;
           const questionTypeFromMeta = meta?.type as string | undefined;
           
+          // Parse correct_answer - can be single string or comma-separated for multiple
+          let correctAnswers: string[] | undefined;
+          if (q.correct_answer) {
+            // Check if it's a comma-separated list (for multiple correct answers)
+            correctAnswers = q.correct_answer.split('|||').map(a => a.trim()).filter(Boolean);
+          }
+          
           return {
             id: q.question_id,
             text: q.question_text,
             options: Array.isArray(q.options) ? (q.options as string[]) : [],
-            correctAnswer: q.correct_answer || undefined,
+            correctAnswers,
             category: q.category || undefined,
             type: questionTypeFromMeta || 'multiple-choice',
+            allowMultiple: correctAnswers && correctAnswers.length > 1,
           };
         });
 

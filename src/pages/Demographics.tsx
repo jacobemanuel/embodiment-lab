@@ -100,8 +100,18 @@ const Demographics = () => {
       <main className="flex-1 container mx-auto px-6 py-12 max-w-2xl">
         <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-semibold mb-2">Background Information</h1>
-            <p className="text-muted-foreground">Help us understand your background</p>
+            <h1 className="text-3xl font-semibold mb-2 bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">
+              Background Information
+            </h1>
+            <p className="text-muted-foreground mb-6">Help us understand your background</p>
+            
+            {/* Progress bar */}
+            <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-ai-primary to-ai-accent transition-all duration-300"
+                style={{ width: `${demographicQuestions.length > 0 ? (Object.keys(responses).filter(k => responses[k]?.trim()).length / demographicQuestions.length * 100) : 0}%` }}
+              />
+            </div>
           </div>
 
           <VerticalProgressBar
@@ -112,18 +122,23 @@ const Demographics = () => {
             onQuestionClick={scrollToQuestion}
           />
 
-          <div className="space-y-8">
+          <div className="space-y-6 stagger-fade-in">
             {demographicQuestions.map((question, index) => (
               <div 
                 key={question.id} 
                 ref={el => questionRefs.current[index] = el}
-                className="bg-card border border-border rounded-2xl p-6 space-y-4"
+                className="glass-card rounded-2xl p-6 space-y-4 hover:shadow-ai-glow transition-all duration-300"
               >
-                <h3 className="font-semibold">{question.text}</h3>
+                <div className="flex gap-3">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-ai-primary to-ai-accent text-white flex items-center justify-center font-semibold text-sm">
+                    {index + 1}
+                  </span>
+                  <h3 className="font-semibold pt-1">{question.text}</h3>
+                </div>
                 
                 {/* Text input for age-type questions, radio for others */}
                 {isTextInputQuestion(question.text) ? (
-                  <div className="space-y-3">
+                  <div className="pl-11 space-y-3">
                     <Input
                       type="number"
                       placeholder="Enter your age"
@@ -154,14 +169,15 @@ const Demographics = () => {
                   <RadioGroup
                     value={responses[question.id] || ""}
                     onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                    className="pl-11"
                   >
                     <div className="space-y-3">
                       {question.options.map((option) => (
-                        <div key={option} className="flex items-center space-x-3">
+                        <div key={option} className="flex items-center space-x-3 group">
                           <RadioGroupItem value={option} id={`${question.id}-${option}`} />
                           <Label 
                             htmlFor={`${question.id}-${option}`}
-                            className="cursor-pointer flex-1 py-2"
+                            className="cursor-pointer flex-1 leading-relaxed group-hover:text-foreground transition-colors"
                           >
                             {option}
                           </Label>
@@ -174,14 +190,21 @@ const Demographics = () => {
             ))}
           </div>
 
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={handleContinue}
-            disabled={!allQuestionsAnswered || isLoading}
-          >
-            {isLoading ? "Saving..." : "Continue to Pre-Test"}
-          </Button>
+          <div className="sticky bottom-6 glass-card rounded-2xl p-4 shadow-medium">
+            <Button
+              size="lg"
+              className="w-full gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02]"
+              onClick={handleContinue}
+              disabled={!allQuestionsAnswered || isLoading}
+            >
+              {isLoading 
+                ? "Saving..." 
+                : allQuestionsAnswered 
+                  ? "Continue to Pre-Test" 
+                  : `Answer all questions to continue (${Object.keys(responses).filter(k => responses[k]?.trim()).length}/${demographicQuestions.length})`
+              }
+            </Button>
+          </div>
         </div>
       </main>
     </div>

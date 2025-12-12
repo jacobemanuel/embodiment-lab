@@ -48,8 +48,24 @@ const PostTestPage2 = () => {
     if (allQuestionsAnswered) {
       setIsLoading(true);
       try {
-        const sessionId = sessionStorage.getItem('sessionId');
-        if (!sessionId) throw new Error('Session not found');
+        let sessionId = sessionStorage.getItem('sessionId');
+
+        // If session was lost (e.g. new tab / cleared storage), force a restart
+        if (!sessionId) {
+          console.error('Session not found when completing study');
+          toast({
+            title: "Session expired",
+            description: "We need to restart the study to save your results.",
+            variant: "destructive",
+          });
+          // Clean up any partial post-test data
+          sessionStorage.removeItem('postTestPage1');
+          sessionStorage.removeItem('postTestPage2');
+          sessionStorage.removeItem('postTest1');
+          setIsLoading(false);
+          navigate("/");
+          return;
+        }
         
         // Combine all responses from both pages
         const allResponses = {
@@ -60,9 +76,10 @@ const PostTestPage2 = () => {
         await savePostTestResponses(sessionId, allResponses);
         await completeStudySession(sessionId);
         
-        // Clear sessionStorage
+        // Clear sessionStorage for post-test data
         sessionStorage.removeItem('postTestPage1');
         sessionStorage.removeItem('postTestPage2');
+        sessionStorage.removeItem('postTest1');
         
         navigate("/completion");
       } catch (error) {

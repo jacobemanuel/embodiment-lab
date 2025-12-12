@@ -43,7 +43,7 @@ const PostTestPage1 = () => {
 
   const handleNext = () => {
     if (allQuestionsAnswered) {
-      sessionStorage.setItem('postTest1', JSON.stringify(responses));
+      sessionStorage.setItem('postTestPage1', JSON.stringify(responses));
       navigate('/post-test-2');
     }
   };

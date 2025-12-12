@@ -43,12 +43,12 @@ export const TranscriptPanel = ({
 
       <ScrollArea className="flex-1 p-3" ref={scrollRef}>
         <div className="space-y-3">
-          {messages.length === 0 ? (
+          {messages.filter(msg => msg.isFinal !== false).length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               Conversation transcript will appear here...
             </p>
           ) : (
-            messages.map((msg) => (
+            messages.filter(msg => msg.isFinal !== false).map((msg) => (
               <div
                 key={msg.id}
                 className={cn(
@@ -71,11 +71,6 @@ export const TranscriptPanel = ({
                     )}>
                       {msg.role === 'avatar' ? 'Tutor' : 'You'}
                     </span>
-                    {!msg.isFinal && (
-                      <span className="text-xs text-muted-foreground/50">
-                        ...
-                      </span>
-                    )}
                   </div>
                   <p className="leading-relaxed">{msg.content}</p>
                 </div>

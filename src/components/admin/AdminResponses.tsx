@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Download, Filter } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import DateRangeFilter from "./DateRangeFilter";
 import { startOfDay, endOfDay } from "date-fns";
@@ -16,6 +17,8 @@ interface ResponseData {
   count: number;
 }
 
+type ModeFilter = 'all' | 'text' | 'avatar' | 'both';
+
 const AdminResponses = () => {
   const [preTestData, setPreTestData] = useState<Record<string, ResponseData[]>>({});
   const [postTestData, setPostTestData] = useState<Record<string, ResponseData[]>>({});
@@ -26,6 +29,7 @@ const AdminResponses = () => {
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [questionTexts, setQuestionTexts] = useState<Record<string, string>>({});
+  const [modeFilter, setModeFilter] = useState<ModeFilter>('all');
 
   const fetchQuestionTexts = async () => {
     try {
@@ -46,8 +50,8 @@ const AdminResponses = () => {
   const fetchAllResponses = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      // First get session IDs that match the date filter
-      let sessionQuery = supabase.from('study_sessions').select('id');
+      // First get session IDs that match the date filter and mode filter
+      let sessionQuery = supabase.from('study_sessions').select('id, mode, modes_used');
       if (startDate) {
         sessionQuery = sessionQuery.gte('created_at', startOfDay(startDate).toISOString());
       }
@@ -55,7 +59,24 @@ const AdminResponses = () => {
         sessionQuery = sessionQuery.lte('created_at', endOfDay(endDate).toISOString());
       }
       const { data: sessions } = await sessionQuery;
-      const sessionIds = sessions?.map(s => s.id) || [];
+      
+      // Filter sessions by mode
+      let filteredSessions = sessions || [];
+      if (modeFilter !== 'all') {
+        filteredSessions = filteredSessions.filter(s => {
+          const modesUsed = s.modes_used && s.modes_used.length > 0 ? s.modes_used : [s.mode];
+          if (modeFilter === 'text') {
+            return modesUsed.length === 1 && modesUsed.includes('text');
+          } else if (modeFilter === 'avatar') {
+            return modesUsed.length === 1 && modesUsed.includes('avatar');
+          } else if (modeFilter === 'both') {
+            return modesUsed.includes('text') && modesUsed.includes('avatar');
+          }
+          return true;
+        });
+      }
+      
+      const sessionIds = filteredSessions.map(s => s.id);
 
       // Build queries with date filter
       let preTestQuery = supabase.from('pre_test_responses').select('question_id, answer, session_id');
@@ -66,7 +87,7 @@ const AdminResponses = () => {
         preTestQuery = preTestQuery.in('session_id', sessionIds);
         postTestQuery = postTestQuery.in('session_id', sessionIds);
         demoQuery = demoQuery.in('session_id', sessionIds);
-      } else if (startDate || endDate) {
+      } else if (startDate || endDate || modeFilter !== 'all') {
         // No matching sessions, return empty
         setPreTestData({});
         setPostTestData({});
@@ -130,7 +151,7 @@ const AdminResponses = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [startDate, endDate]);
+  }, [startDate, endDate, modeFilter]);
 
   useEffect(() => {
     fetchQuestionTexts();
@@ -227,17 +248,35 @@ const AdminResponses = () => {
 
   return (
     <div className="space-y-6">
-      {/* Date Range Filter */}
-      <DateRangeFilter
-        startDate={startDate}
-        endDate={endDate}
-        onStartDateChange={setStartDate}
-        onEndDateChange={setEndDate}
-        onRefresh={fetchAllResponses}
-        isRefreshing={isRefreshing}
-        autoRefreshEnabled={autoRefresh}
-        onAutoRefreshToggle={setAutoRefresh}
-      />
+      {/* Filters Row */}
+      <div className="flex flex-wrap gap-4 items-end">
+        <DateRangeFilter
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          onRefresh={fetchAllResponses}
+          isRefreshing={isRefreshing}
+          autoRefreshEnabled={autoRefresh}
+          onAutoRefreshToggle={setAutoRefresh}
+        />
+        
+        {/* Mode Filter */}
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-slate-400" />
+          <Select value={modeFilter} onValueChange={(v) => setModeFilter(v as ModeFilter)}>
+            <SelectTrigger className="w-[160px] bg-slate-800 border-slate-600">
+              <SelectValue placeholder="Filter by mode" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Modes</SelectItem>
+              <SelectItem value="text">Text Only</SelectItem>
+              <SelectItem value="avatar">Avatar Only</SelectItem>
+              <SelectItem value="both">Both Modes</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       <div className="flex justify-end">
         <Button onClick={exportAllData} variant="outline" className="border-slate-600">

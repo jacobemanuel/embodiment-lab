@@ -19,12 +19,24 @@ interface StudyQuestion {
   question_id: string;
   question_text: string;
   options: string[];
-  correct_answer: string | null;
+  correct_answer: string | null; // Stored as "|||" separated for multiple
   category: string | null;
   question_meta: Record<string, any>;
   sort_order: number;
   is_active: boolean;
 }
+
+// Helper to parse correct answers (supports multiple via ||| separator)
+const parseCorrectAnswers = (correct_answer: string | null): string[] => {
+  if (!correct_answer) return [];
+  return correct_answer.split('|||').map(a => a.trim()).filter(Boolean);
+};
+
+// Helper to serialize correct answers
+const serializeCorrectAnswers = (answers: string[]): string | null => {
+  if (answers.length === 0) return null;
+  return answers.join('|||');
+};
 
 const AdminQuestions = () => {
   const [questions, setQuestions] = useState<StudyQuestion[]>([]);
@@ -68,7 +80,7 @@ const AdminQuestions = () => {
     setEditedData({
       question_text: question.question_text,
       options: [...question.options],
-      correct_answer: question.correct_answer,
+      correct_answer: question.correct_answer, // Keep as string, will parse when needed
       category: question.category,
     });
   };
@@ -136,12 +148,17 @@ const AdminQuestions = () => {
 
   const removeOption = (index: number) => {
     if (!editedData.options) return;
+    const removedOption = editedData.options[index];
     const newOptions = editedData.options.filter((_, i) => i !== index);
+    
+    // Remove from correct answers if it was there
+    const currentCorrect = parseCorrectAnswers(editedData.correct_answer || null);
+    const newCorrect = currentCorrect.filter(a => a !== removedOption);
+    
     setEditedData({
       ...editedData,
       options: newOptions,
-      // Clear correct answer if it was removed
-      correct_answer: editedData.correct_answer === editedData.options[index] ? null : editedData.correct_answer,
+      correct_answer: serializeCorrectAnswers(newCorrect),
     });
   };
 
@@ -150,11 +167,34 @@ const AdminQuestions = () => {
     const newOptions = [...editedData.options];
     const oldValue = newOptions[index];
     newOptions[index] = value;
+    
+    // Update correct answers if the option text changed
+    const currentCorrect = parseCorrectAnswers(editedData.correct_answer || null);
+    const newCorrect = currentCorrect.map(a => a === oldValue ? value : a);
+    
     setEditedData({
       ...editedData,
       options: newOptions,
-      // Update correct answer if it was changed
-      correct_answer: editedData.correct_answer === oldValue ? value : editedData.correct_answer,
+      correct_answer: serializeCorrectAnswers(newCorrect),
+    });
+  };
+
+  // Toggle correct answer (supports multiple)
+  const toggleCorrectAnswer = (option: string) => {
+    const currentCorrect = parseCorrectAnswers(editedData.correct_answer || null);
+    let newCorrect: string[];
+    
+    if (currentCorrect.includes(option)) {
+      // Remove from correct answers
+      newCorrect = currentCorrect.filter(a => a !== option);
+    } else {
+      // Add to correct answers
+      newCorrect = [...currentCorrect, option];
+    }
+    
+    setEditedData({
+      ...editedData,
+      correct_answer: serializeCorrectAnswers(newCorrect),
     });
   };
 
@@ -321,40 +361,46 @@ const AdminQuestions = () => {
 
           <div>
             <Label className="text-slate-300">Answer Options</Label>
+            <p className="text-slate-500 text-xs mt-1 mb-2">
+              Click ✓ to mark correct answers. You can select multiple correct answers.
+            </p>
             <div className="space-y-2 mt-2">
-              {(isEditing ? data.options || [] : question.options).map((option, oIndex) => (
-                <div key={oIndex} className="flex items-center gap-2">
-                  <Input
-                    value={option}
-                    onChange={(e) => isEditing && updateOption(oIndex, e.target.value)}
-                    className={`bg-slate-900 border-slate-600 ${
-                      option === (isEditing ? data.correct_answer : question.correct_answer) ? 'border-green-500' : ''
-                    }`}
-                    disabled={!isEditing}
-                  />
-                  {question.correct_answer !== undefined && (
-                    <Button
-                      size="sm"
-                      variant={option === (isEditing ? data.correct_answer : question.correct_answer) ? "default" : "outline"}
-                      onClick={() => isEditing && setEditedData({ ...editedData, correct_answer: option })}
-                      className={option === (isEditing ? data.correct_answer : question.correct_answer) ? 'bg-green-600' : 'border-slate-600'}
+              {(isEditing ? data.options || [] : question.options).map((option, oIndex) => {
+                const correctAnswers = parseCorrectAnswers(isEditing ? data.correct_answer || null : question.correct_answer);
+                const isCorrect = correctAnswers.includes(option);
+                
+                return (
+                  <div key={oIndex} className="flex items-center gap-2">
+                    <Input
+                      value={option}
+                      onChange={(e) => isEditing && updateOption(oIndex, e.target.value)}
+                      className={`bg-slate-900 border-slate-600 ${isCorrect ? 'border-green-500' : ''}`}
                       disabled={!isEditing}
-                    >
-                      ✓
-                    </Button>
-                  )}
-                  {isEditing && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeOption(oIndex)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+                    />
+                    {question.correct_answer !== undefined && (
+                      <Button
+                        size="sm"
+                        variant={isCorrect ? "default" : "outline"}
+                        onClick={() => isEditing && toggleCorrectAnswer(option)}
+                        className={isCorrect ? 'bg-green-600' : 'border-slate-600'}
+                        disabled={!isEditing}
+                      >
+                        ✓
+                      </Button>
+                    )}
+                    {isEditing && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeOption(oIndex)}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
               {isEditing && (
                 <Button
                   size="sm"

@@ -55,6 +55,12 @@ const postTestSchema = z.object({
   })).max(200),
 });
 
+const updateModeSchema = z.object({
+  action: z.literal('update_mode'),
+  sessionId: z.string().min(10).max(100),
+  mode: modeSchema,
+});
+
 // Rate limiting
 const rateLimitMap = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW = 60000;
@@ -354,6 +360,59 @@ serve(async (req) => {
 
         return new Response(
           JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'update_mode': {
+        let validated;
+        try {
+          validated = updateModeSchema.parse(body);
+        } catch (error) {
+          console.error('Validation error:', error);
+          return new Response(
+            JSON.stringify({ error: "Invalid request data" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { data: session, error: sessionError } = await supabase
+          .from('study_sessions')
+          .select('id, modes_used')
+          .eq('session_id', validated.sessionId)
+          .single();
+
+        if (sessionError || !session) {
+          console.error('Session not found:', sessionError);
+          return new Response(
+            JSON.stringify({ error: "Session not found" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const currentModes = (session.modes_used as string[]) || [];
+        const updatedModes = currentModes.includes(validated.mode) 
+          ? currentModes 
+          : [...currentModes, validated.mode];
+
+        const { error: updateError } = await supabase
+          .from('study_sessions')
+          .update({ 
+            mode: validated.mode,
+            modes_used: updatedModes
+          })
+          .eq('id', session.id);
+
+        if (updateError) {
+          console.error('Failed to update mode:', updateError);
+          return new Response(
+            JSON.stringify({ error: "Unable to update mode" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, modesUsed: updatedModes }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

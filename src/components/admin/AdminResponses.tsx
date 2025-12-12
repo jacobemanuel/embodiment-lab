@@ -134,8 +134,12 @@ const AdminResponses = () => {
 
   useEffect(() => {
     fetchQuestionTexts();
+  }, []);
+
+  // Fetch responses whenever dates change
+  useEffect(() => {
     fetchAllResponses();
-  }, [fetchAllResponses]);
+  }, [startDate, endDate, fetchAllResponses]);
 
   // Auto-refresh every 30 seconds if enabled
   useEffect(() => {

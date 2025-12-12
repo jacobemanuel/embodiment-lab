@@ -97,7 +97,17 @@ const Welcome = () => {
               {/* CTA Button */}
               <div className="pt-2">
               <Button 
-                onClick={() => navigate("/consent")}
+                onClick={() => {
+                  // Start a completely fresh study session
+                  sessionStorage.removeItem('sessionId');
+                  sessionStorage.removeItem('studyMode');
+                  sessionStorage.removeItem('demographics');
+                  sessionStorage.removeItem('preTest');
+                  sessionStorage.removeItem('postTestPage1');
+                  sessionStorage.removeItem('postTestPage2');
+                  sessionStorage.removeItem('postTest1');
+                  navigate("/consent");
+                }}
                 size="lg"
                 className="w-full text-lg h-16 rounded-2xl gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02] font-semibold"
               >

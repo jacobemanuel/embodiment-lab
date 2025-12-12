@@ -28,22 +28,18 @@ const AdminResponses = () => {
 
   const fetchAllResponses = async () => {
     try {
-      // Fetch pre-test responses
       const { data: preTest } = await supabase
         .from('pre_test_responses')
         .select('question_id, answer');
 
-      // Fetch post-test responses  
       const { data: postTest } = await supabase
         .from('post_test_responses')
         .select('question_id, answer');
 
-      // Fetch demographics
       const { data: demographics } = await supabase
         .from('demographics')
         .select('*');
 
-      // Aggregate pre-test
       const preTestAggregated: Record<string, ResponseData[]> = {};
       preTest?.forEach(r => {
         if (!preTestAggregated[r.question_id]) {
@@ -57,7 +53,6 @@ const AdminResponses = () => {
         }
       });
 
-      // Aggregate post-test
       const postTestAggregated: Record<string, ResponseData[]> = {};
       postTest?.forEach(r => {
         if (!postTestAggregated[r.question_id]) {
@@ -71,7 +66,6 @@ const AdminResponses = () => {
         }
       });
 
-      // Aggregate demographics
       const demoAggregated: Record<string, { name: string; value: number }[]> = {
         age_range: [],
         education: [],
@@ -104,7 +98,6 @@ const AdminResponses = () => {
 
   const exportAllData = async () => {
     try {
-      // Fetch all data
       const { data: sessions } = await supabase.from('study_sessions').select('*');
       const { data: demographics } = await supabase.from('demographics').select('*');
       const { data: preTest } = await supabase.from('pre_test_responses').select('*');
@@ -156,23 +149,22 @@ const AdminResponses = () => {
       <div className="flex justify-end">
         <Button onClick={exportAllData} variant="outline" className="border-slate-600">
           <Download className="w-4 h-4 mr-2" />
-          Eksportuj wszystkie dane (JSON)
+          Export All Data (JSON)
         </Button>
       </div>
 
       <Tabs defaultValue="demographics" className="space-y-6">
         <TabsList className="bg-slate-800 border border-slate-700">
-          <TabsTrigger value="demographics">Demografia</TabsTrigger>
+          <TabsTrigger value="demographics">Demographics</TabsTrigger>
           <TabsTrigger value="pretest">Pre-test</TabsTrigger>
           <TabsTrigger value="posttest">Post-test</TabsTrigger>
         </TabsList>
 
         <TabsContent value="demographics" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Age Distribution */}
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>
-                <CardTitle className="text-white text-lg">Wiek</CardTitle>
+                <CardTitle className="text-white text-lg">Age</CardTitle>
               </CardHeader>
               <CardContent>
                 {demographicsData.age_range?.length > 0 ? (
@@ -195,15 +187,14 @@ const AdminResponses = () => {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-slate-500 text-center py-8">Brak danych</p>
+                  <p className="text-slate-500 text-center py-8">No data</p>
                 )}
               </CardContent>
             </Card>
 
-            {/* Education */}
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>
-                <CardTitle className="text-white text-lg">Wykształcenie</CardTitle>
+                <CardTitle className="text-white text-lg">Education</CardTitle>
               </CardHeader>
               <CardContent>
                 {demographicsData.education?.length > 0 ? (
@@ -217,15 +208,14 @@ const AdminResponses = () => {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-slate-500 text-center py-8">Brak danych</p>
+                  <p className="text-slate-500 text-center py-8">No data</p>
                 )}
               </CardContent>
             </Card>
 
-            {/* Digital Experience */}
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>
-                <CardTitle className="text-white text-lg">Doświadczenie cyfrowe</CardTitle>
+                <CardTitle className="text-white text-lg">Digital Experience</CardTitle>
               </CardHeader>
               <CardContent>
                 {demographicsData.digital_experience?.length > 0 ? (
@@ -239,7 +229,7 @@ const AdminResponses = () => {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-slate-500 text-center py-8">Brak danych</p>
+                  <p className="text-slate-500 text-center py-8">No data</p>
                 )}
               </CardContent>
             </Card>
@@ -254,7 +244,7 @@ const AdminResponses = () => {
                 <Card key={questionId} className="bg-slate-800 border-slate-700">
                   <CardHeader>
                     <CardTitle className="text-white text-sm">{questionText}</CardTitle>
-                    <CardDescription className="text-slate-400">{responses.reduce((sum, r) => sum + r.count, 0)} odpowiedzi</CardDescription>
+                    <CardDescription className="text-slate-400">{responses.reduce((sum, r) => sum + r.count, 0)} responses</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={150}>
@@ -279,7 +269,7 @@ const AdminResponses = () => {
             })}
           </div>
           {Object.keys(preTestData).length === 0 && (
-            <p className="text-slate-500 text-center py-8">Brak danych pre-testu</p>
+            <p className="text-slate-500 text-center py-8">No pre-test data</p>
           )}
         </TabsContent>
 
@@ -291,7 +281,7 @@ const AdminResponses = () => {
                 <Card key={questionId} className="bg-slate-800 border-slate-700">
                   <CardHeader>
                     <CardTitle className="text-white text-sm">{questionText}</CardTitle>
-                    <CardDescription className="text-slate-400">{responses.reduce((sum, r) => sum + r.count, 0)} odpowiedzi</CardDescription>
+                    <CardDescription className="text-slate-400">{responses.reduce((sum, r) => sum + r.count, 0)} responses</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={150}>
@@ -316,7 +306,7 @@ const AdminResponses = () => {
             })}
           </div>
           {Object.keys(postTestData).length === 0 && (
-            <p className="text-slate-500 text-center py-8">Brak danych post-testu</p>
+            <p className="text-slate-500 text-center py-8">No post-test data</p>
           )}
         </TabsContent>
       </Tabs>

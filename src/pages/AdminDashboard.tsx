@@ -33,7 +33,7 @@ const AdminDashboard = () => {
       if (rolesError || !roles || roles.length === 0) {
         await supabase.auth.signOut();
         navigate('/admin/login');
-        toast.error("Brak uprawnień do panelu administracyjnego");
+        toast.error("No access to admin panel");
         return;
       }
 
@@ -73,7 +73,7 @@ const AdminDashboard = () => {
           <div className="flex items-center gap-3">
             <BarChart3 className="w-8 h-8 text-primary" />
             <div>
-              <h1 className="text-xl font-bold text-white">Panel Badawczy</h1>
+              <h1 className="text-xl font-bold text-white">Research Panel</h1>
               <p className="text-sm text-slate-400">AI Image Generation Study</p>
             </div>
           </div>
@@ -86,7 +86,7 @@ const AdminDashboard = () => {
               className="border-slate-600 text-slate-300 hover:bg-slate-700"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Wyloguj
+              Log out
             </Button>
           </div>
         </div>
@@ -98,19 +98,19 @@ const AdminDashboard = () => {
           <TabsList className="bg-slate-800 border border-slate-700">
             <TabsTrigger value="overview" className="data-[state=active]:bg-primary">
               <BarChart3 className="w-4 h-4 mr-2" />
-              Przegląd
+              Overview
             </TabsTrigger>
             <TabsTrigger value="sessions" className="data-[state=active]:bg-primary">
               <Users className="w-4 h-4 mr-2" />
-              Sesje
+              Sessions
             </TabsTrigger>
             <TabsTrigger value="responses" className="data-[state=active]:bg-primary">
               <FileText className="w-4 h-4 mr-2" />
-              Odpowiedzi
+              Responses
             </TabsTrigger>
             <TabsTrigger value="questions" className="data-[state=active]:bg-primary">
               <Settings className="w-4 h-4 mr-2" />
-              Pytania
+              Questions
             </TabsTrigger>
           </TabsList>
 

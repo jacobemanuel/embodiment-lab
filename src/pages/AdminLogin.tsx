@@ -44,7 +44,7 @@ const AdminLogin = () => {
       });
 
       if (error) {
-        toast.error("Błąd logowania: " + error.message);
+        toast.error("Login error: " + error.message);
         return;
       }
 
@@ -57,15 +57,15 @@ const AdminLogin = () => {
 
         if (rolesError || !roles || roles.length === 0) {
           await supabase.auth.signOut();
-          toast.error("Brak uprawnień do panelu administracyjnego");
+          toast.error("No access to admin panel");
           return;
         }
 
-        toast.success("Zalogowano pomyślnie!");
+        toast.success("Logged in successfully!");
         navigate('/admin');
       }
     } catch (error) {
-      toast.error("Wystąpił błąd podczas logowania");
+      toast.error("An error occurred during login");
     } finally {
       setIsLoading(false);
     }
@@ -78,9 +78,9 @@ const AdminLogin = () => {
           <div className="mx-auto w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
             <Shield className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl text-white">Panel Badawczy</CardTitle>
+          <CardTitle className="text-2xl text-white">Research Panel</CardTitle>
           <CardDescription className="text-slate-400">
-            Dostęp tylko dla autoryzowanych członków zespołu
+            Access restricted to authorized team members only
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -120,7 +120,7 @@ const AdminLogin = () => {
               className="w-full bg-primary hover:bg-primary/90"
               disabled={isLoading}
             >
-              {isLoading ? "Logowanie..." : "Zaloguj się"}
+              {isLoading ? "Logging in..." : "Log in"}
             </Button>
           </form>
         </CardContent>

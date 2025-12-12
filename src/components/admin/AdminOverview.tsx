@@ -28,7 +28,6 @@ const AdminOverview = () => {
 
   const fetchStats = async () => {
     try {
-      // Fetch all study sessions
       const { data: sessions, error: sessionsError } = await supabase
         .from('study_sessions')
         .select('*')
@@ -36,21 +35,18 @@ const AdminOverview = () => {
 
       if (sessionsError) throw sessionsError;
 
-      // Fetch demographics
       const { data: demographics, error: demoError } = await supabase
         .from('demographics')
         .select('*');
 
       if (demoError) throw demoError;
 
-      // Calculate stats
       const totalSessions = sessions?.length || 0;
       const completedSessions = sessions?.filter(s => s.completed_at).length || 0;
       const textModeSessions = sessions?.filter(s => s.mode === 'text').length || 0;
       const avatarModeSessions = sessions?.filter(s => s.mode === 'avatar').length || 0;
       const completionRate = totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
 
-      // Calculate average session duration
       const completedWithDuration = sessions?.filter(s => s.completed_at && s.started_at) || [];
       let avgDuration = 0;
       if (completedWithDuration.length > 0) {
@@ -59,10 +55,9 @@ const AdminOverview = () => {
           const end = new Date(s.completed_at!).getTime();
           return sum + (end - start);
         }, 0);
-        avgDuration = Math.round(totalDuration / completedWithDuration.length / 1000 / 60); // in minutes
+        avgDuration = Math.round(totalDuration / completedWithDuration.length / 1000 / 60);
       }
 
-      // Sessions per day (last 14 days)
       const last14Days: { date: string; count: number }[] = [];
       for (let i = 13; i >= 0; i--) {
         const date = new Date();
@@ -72,7 +67,6 @@ const AdminOverview = () => {
         last14Days.push({ date: dateStr.slice(5), count });
       }
 
-      // Age breakdown
       const ageBreakdown: Record<string, number> = {};
       demographics?.forEach(d => {
         if (d.age_range) {
@@ -80,10 +74,9 @@ const AdminOverview = () => {
         }
       });
 
-      // Mode comparison for completed sessions
       const modeComparison = [
-        { name: 'Ukończone', text: sessions?.filter(s => s.mode === 'text' && s.completed_at).length || 0, avatar: sessions?.filter(s => s.mode === 'avatar' && s.completed_at).length || 0 },
-        { name: 'W trakcie', text: sessions?.filter(s => s.mode === 'text' && !s.completed_at).length || 0, avatar: sessions?.filter(s => s.mode === 'avatar' && !s.completed_at).length || 0 },
+        { name: 'Completed', text: sessions?.filter(s => s.mode === 'text' && s.completed_at).length || 0, avatar: sessions?.filter(s => s.mode === 'avatar' && s.completed_at).length || 0 },
+        { name: 'In Progress', text: sessions?.filter(s => s.mode === 'text' && !s.completed_at).length || 0, avatar: sessions?.filter(s => s.mode === 'avatar' && !s.completed_at).length || 0 },
       ];
 
       setStats({
@@ -113,7 +106,7 @@ const AdminOverview = () => {
   }
 
   if (!stats) {
-    return <div className="text-slate-400">Błąd wczytywania statystyk</div>;
+    return <div className="text-slate-400">Error loading statistics</div>;
   }
 
   return (
@@ -122,7 +115,7 @@ const AdminOverview = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Wszystkie sesje</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-400">Total Sessions</CardTitle>
             <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
@@ -135,7 +128,7 @@ const AdminOverview = () => {
 
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Ukończone</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-400">Completed</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -148,24 +141,24 @@ const AdminOverview = () => {
 
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Śr. czas sesji</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-400">Avg. Session Time</CardTitle>
             <Clock className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{stats.avgSessionDuration} min</div>
-            <p className="text-xs text-slate-500 mt-1">dla ukończonych sesji</p>
+            <p className="text-xs text-slate-500 mt-1">for completed sessions</p>
           </CardContent>
         </Card>
 
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Wskaźnik ukończenia</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-400">Completion Rate</CardTitle>
             <Percent className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{stats.completionRate.toFixed(1)}%</div>
             <p className="text-xs text-slate-500 mt-1">
-              {stats.totalSessions - stats.completedSessions} w trakcie
+              {stats.totalSessions - stats.completedSessions} in progress
             </p>
           </CardContent>
         </Card>
@@ -175,8 +168,8 @@ const AdminOverview = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
-            <CardTitle className="text-white">Sesje w czasie (14 dni)</CardTitle>
-            <CardDescription className="text-slate-400">Dzienne nowe sesje</CardDescription>
+            <CardTitle className="text-white">Sessions Over Time (14 days)</CardTitle>
+            <CardDescription className="text-slate-400">Daily new sessions</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -196,7 +189,7 @@ const AdminOverview = () => {
 
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
-            <CardTitle className="text-white">Porównanie trybów</CardTitle>
+            <CardTitle className="text-white">Mode Comparison</CardTitle>
             <CardDescription className="text-slate-400">Text Mode vs Avatar Mode</CardDescription>
           </CardHeader>
           <CardContent>
@@ -221,8 +214,8 @@ const AdminOverview = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
-            <CardTitle className="text-white">Rozkład wiekowy</CardTitle>
-            <CardDescription className="text-slate-400">Demografika uczestników</CardDescription>
+            <CardTitle className="text-white">Age Distribution</CardTitle>
+            <CardDescription className="text-slate-400">Participant demographics</CardDescription>
           </CardHeader>
           <CardContent>
             {stats.demographicBreakdown.length > 0 ? (
@@ -249,7 +242,7 @@ const AdminOverview = () => {
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-[250px] text-slate-500">
-                Brak danych demograficznych
+                No demographic data available
               </div>
             )}
           </CardContent>
@@ -257,28 +250,28 @@ const AdminOverview = () => {
 
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
-            <CardTitle className="text-white">Podsumowanie</CardTitle>
-            <CardDescription className="text-slate-400">Kluczowe wskaźniki badania</CardDescription>
+            <CardTitle className="text-white">Summary</CardTitle>
+            <CardDescription className="text-slate-400">Key study metrics</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center py-2 border-b border-slate-700">
-              <span className="text-slate-400">Całkowita liczba uczestników</span>
+              <span className="text-slate-400">Total participants</span>
               <span className="text-white font-semibold">{stats.totalSessions}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-700">
-              <span className="text-slate-400">Uczestnicy Text Mode</span>
+              <span className="text-slate-400">Text Mode participants</span>
               <span className="text-blue-400 font-semibold">{stats.textModeSessions}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-700">
-              <span className="text-slate-400">Uczestnicy Avatar Mode</span>
+              <span className="text-slate-400">Avatar Mode participants</span>
               <span className="text-green-400 font-semibold">{stats.avatarModeSessions}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-700">
-              <span className="text-slate-400">Wskaźnik ukończenia</span>
+              <span className="text-slate-400">Completion rate</span>
               <span className="text-purple-400 font-semibold">{stats.completionRate.toFixed(1)}%</span>
             </div>
             <div className="flex justify-between items-center py-2">
-              <span className="text-slate-400">Średni czas nauki</span>
+              <span className="text-slate-400">Average learning time</span>
               <span className="text-yellow-400 font-semibold">{stats.avgSessionDuration} min</span>
             </div>
           </CardContent>

@@ -12,8 +12,8 @@ interface SlideContext {
   systemPromptContext: string;
 }
 
-// KILL SWITCH - set to true to re-enable API
-const API_ENABLED = false;
+// KILL SWITCH - set to false to disable API
+const API_ENABLED = true;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StudyMode } from "@/types/study";
-import { createStudySession } from "@/lib/studyData";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Smile } from "lucide-react";
 import logo from "@/assets/logo-white.png";
@@ -16,23 +16,53 @@ const ModeAssignment = () => {
     setIsLoading(true);
 
     try {
-      // Reuse existing session if it was already created during Demographics
-      let sessionId = sessionStorage.getItem('sessionId');
+      const existingSessionId = sessionStorage.getItem('sessionId');
 
-      if (!sessionId) {
-        // Fallback: create a new session only if it doesn't exist yet
-        sessionId = await createStudySession(mode);
+      if (existingSessionId) {
+        // Update existing session: add this mode to modes_used array
+        const { data: session } = await supabase
+          .from('study_sessions')
+          .select('id, modes_used')
+          .eq('session_id', existingSessionId)
+          .maybeSingle();
+
+        if (session) {
+          const currentModes = (session.modes_used as string[]) || [];
+          if (!currentModes.includes(mode)) {
+            await supabase
+              .from('study_sessions')
+              .update({ 
+                mode: mode,
+                modes_used: [...currentModes, mode]
+              })
+              .eq('id', session.id);
+          } else {
+            // Just update current mode
+            await supabase
+              .from('study_sessions')
+              .update({ mode: mode })
+              .eq('id', session.id);
+          }
+        }
+
+        sessionStorage.setItem('studyMode', mode);
+        navigate(`/learning/${mode}`);
+      } else {
+        // No existing session - this shouldn't happen normally as session is created in Demographics
+        // But handle gracefully by creating one
+        const { createStudySession } = await import('@/lib/studyData');
+        const sessionId = await createStudySession(mode);
+        sessionStorage.setItem('studyMode', mode);
+        sessionStorage.setItem('sessionId', sessionId);
+        navigate(`/learning/${mode}`);
       }
-
-      sessionStorage.setItem('studyMode', mode);
-      sessionStorage.setItem('sessionId', sessionId);
-      navigate(`/learning/${mode}`);
     } catch (error) {
-      console.error('Error creating or reusing session:', error);
-      const fallbackSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.error('Error handling mode selection:', error);
+      // Fallback - just navigate
       sessionStorage.setItem('studyMode', mode);
-      sessionStorage.setItem('sessionId', fallbackSessionId);
       navigate(`/learning/${mode}`);
+    } finally {
+      setIsLoading(false);
     }
   };
   return (

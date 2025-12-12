@@ -409,6 +409,7 @@ export type Database = {
           created_at: string
           id: string
           mode: Database["public"]["Enums"]["study_mode"]
+          modes_used: string[] | null
           session_id: string
           started_at: string
         }
@@ -417,6 +418,7 @@ export type Database = {
           created_at?: string
           id?: string
           mode: Database["public"]["Enums"]["study_mode"]
+          modes_used?: string[] | null
           session_id: string
           started_at?: string
         }
@@ -425,6 +427,7 @@ export type Database = {
           created_at?: string
           id?: string
           mode?: Database["public"]["Enums"]["study_mode"]
+          modes_used?: string[] | null
           session_id?: string
           started_at?: string
         }

@@ -166,6 +166,53 @@ export type Database = {
           },
         ]
       }
+      question_change_requests: {
+        Row: {
+          change_type: string
+          id: string
+          proposed_changes: Json
+          question_id: string | null
+          requested_at: string
+          requested_by: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          change_type: string
+          id?: string
+          proposed_changes: Json
+          question_id?: string | null
+          requested_at?: string
+          requested_by: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          change_type?: string
+          id?: string
+          proposed_changes?: Json
+          question_id?: string | null
+          requested_at?: string
+          requested_by?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_change_requests_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "study_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scenarios: {
         Row: {
           completed_at: string
@@ -209,6 +256,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      study_questions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          category: string | null
+          correct_answer: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          options: Json
+          pending_changes: Json | null
+          question_id: string
+          question_meta: Json | null
+          question_text: string
+          question_type: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string | null
+          correct_answer?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          options?: Json
+          pending_changes?: Json | null
+          question_id: string
+          question_meta?: Json | null
+          question_text: string
+          question_type: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string | null
+          correct_answer?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          options?: Json
+          pending_changes?: Json | null
+          question_id?: string
+          question_meta?: Json | null
+          question_text?: string
+          question_type?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       study_sessions: {
         Row: {

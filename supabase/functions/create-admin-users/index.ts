@@ -40,18 +40,33 @@ serve(async (req) => {
       'manuelpeichl@yahoo.com'
     ];
 
-    const password = 'StudyAdmin2024!';
-    const results = [];
+    const OWNER_EMAIL = 'jakub.majewski@tum.de';
+    const OWNER_PASSWORD = 'MajonezWiniaryTUM98!';
+    const DEFAULT_ADMIN_PASSWORD = 'AIDAStudyAdmin2026!';
+    const results: Array<Record<string, unknown>> = [];
 
     for (const email of adminEmails) {
       console.log(`Processing admin: ${email}`);
+
+      const password = email.toLowerCase() === OWNER_EMAIL.toLowerCase()
+        ? OWNER_PASSWORD
+        : DEFAULT_ADMIN_PASSWORD;
       
       // Check if user already exists
       const { data: existingUsers } = await supabase.auth.admin.listUsers();
       const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
       
       if (existingUser) {
-        console.log(`User ${email} already exists, skipping creation`);
+        console.log(`User ${email} already exists, updating password and ensuring role`);
+
+        // Update password to the latest required value
+        const { error: passwordError } = await supabase.auth.admin.updateUserById(existingUser.id, {
+          password,
+        });
+        if (passwordError) {
+          console.error(`Error updating password for ${email}:`, passwordError);
+        }
+        
         results.push({ email, status: 'already_exists', userId: existingUser.id });
         
         // Make sure they have the researcher role

@@ -41,9 +41,12 @@ const PostTestPage2 = () => {
   }, [responses]);
 
   // Filter knowledge questions from post_test
+  // Filter knowledge questions from post_test
   const knowledgeQuestions = postTestQuestions.filter(q => q.category === 'knowledge');
-  const allQuestionsAnswered = knowledgeQuestions.length > 0 && knowledgeQuestions.every(q => responses[q.id]);
-  const progress = knowledgeQuestions.length > 0 ? Object.keys(responses).length / knowledgeQuestions.length * 100 : 0;
+  // Count questions that have at least one answer (not empty string)
+  const answeredQuestionsCount = knowledgeQuestions.filter(q => responses[q.id] && responses[q.id].trim() !== '').length;
+  const allQuestionsAnswered = knowledgeQuestions.length > 0 && answeredQuestionsCount === knowledgeQuestions.length;
+  const progress = knowledgeQuestions.length > 0 ? answeredQuestionsCount / knowledgeQuestions.length * 100 : 0;
 
   // Handle checkbox toggle for multiple-answer questions
   const handleMultipleAnswerToggle = (questionId: string, option: string) => {
@@ -145,7 +148,7 @@ const PostTestPage2 = () => {
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <img src={logo} alt="Majewski Studio" className="h-8" />
           <div className="text-sm text-muted-foreground">
-            Page 2 of 2 • {Object.keys(responses).length} of {knowledgeQuestions.length} answered
+            Page 2 of 2 • {answeredQuestionsCount} of {knowledgeQuestions.length} answered
           </div>
         </div>
       </header>
@@ -174,7 +177,7 @@ const PostTestPage2 = () => {
 
           <VerticalProgressBar
             totalQuestions={knowledgeQuestions.length}
-            answeredQuestions={Object.keys(responses).length}
+            answeredQuestions={answeredQuestionsCount}
             questionIds={knowledgeQuestions.map(q => q.id)}
             responses={responses}
             onQuestionClick={scrollToQuestion}
@@ -234,7 +237,7 @@ const PostTestPage2 = () => {
                 ? "Saving..." 
                 : allQuestionsAnswered 
                   ? "Complete Study 🎉" 
-                  : `Answer all questions to continue (${Object.keys(responses).length}/${knowledgeQuestions.length})`
+                  : `Answer all questions to continue (${answeredQuestionsCount}/${knowledgeQuestions.length})`
               }
             </Button>
           </div>

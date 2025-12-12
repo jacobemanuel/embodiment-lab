@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, CheckCircle, Clock, BarChart3, TrendingUp, Percent } from "lucide-react";
+import { Users, CheckCircle, Clock, Percent } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import DateRangeFilter from "./DateRangeFilter";
+import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from "date-fns";
 
 interface StudyStats {
   totalSessions: number;
@@ -21,25 +23,42 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 const AdminOverview = () => {
   const [stats, setStats] = useState<StudyStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
+    setIsRefreshing(true);
     try {
-      const { data: sessions, error: sessionsError } = await supabase
+      let query = supabase
         .from('study_sessions')
         .select('*')
         .order('created_at', { ascending: false });
 
+      if (startDate) {
+        query = query.gte('created_at', startOfDay(startDate).toISOString());
+      }
+      if (endDate) {
+        query = query.lte('created_at', endOfDay(endDate).toISOString());
+      }
+
+      const { data: sessions, error: sessionsError } = await query;
+
       if (sessionsError) throw sessionsError;
 
-      const { data: demographics, error: demoError } = await supabase
-        .from('demographics')
-        .select('*');
+      let demoQuery = supabase.from('demographics').select('*');
+      
+      const { data: demographics, error: demoError } = await demoQuery;
 
       if (demoError) throw demoError;
+
+      // Filter demographics by session date if dates are set
+      let filteredDemographics = demographics || [];
+      if (sessions && (startDate || endDate)) {
+        const sessionIds = new Set(sessions.map(s => s.id));
+        filteredDemographics = demographics?.filter(d => sessionIds.has(d.session_id)) || [];
+      }
 
       const totalSessions = sessions?.length || 0;
       const completedSessions = sessions?.filter(s => s.completed_at).length || 0;
@@ -58,25 +77,37 @@ const AdminOverview = () => {
         avgDuration = Math.round(totalDuration / completedWithDuration.length / 1000 / 60);
       }
 
-      const last14Days: { date: string; count: number }[] = [];
-      for (let i = 13; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        const count = sessions?.filter(s => s.created_at.startsWith(dateStr)).length || 0;
-        last14Days.push({ date: dateStr.slice(5), count });
-      }
+      // Calculate sessions per day
+      const sessionsByDay: Record<string, number> = {};
+      sessions?.forEach(s => {
+        const dateStr = s.created_at.split('T')[0];
+        sessionsByDay[dateStr] = (sessionsByDay[dateStr] || 0) + 1;
+      });
+
+      const sortedDates = Object.keys(sessionsByDay).sort();
+      const sessionsPerDay = sortedDates.map(date => ({
+        date: format(parseISO(date), 'MM-dd'),
+        count: sessionsByDay[date]
+      }));
 
       const ageBreakdown: Record<string, number> = {};
-      demographics?.forEach(d => {
+      filteredDemographics.forEach(d => {
         if (d.age_range) {
           ageBreakdown[d.age_range] = (ageBreakdown[d.age_range] || 0) + 1;
         }
       });
 
       const modeComparison = [
-        { name: 'Completed', text: sessions?.filter(s => s.mode === 'text' && s.completed_at).length || 0, avatar: sessions?.filter(s => s.mode === 'avatar' && s.completed_at).length || 0 },
-        { name: 'In Progress', text: sessions?.filter(s => s.mode === 'text' && !s.completed_at).length || 0, avatar: sessions?.filter(s => s.mode === 'avatar' && !s.completed_at).length || 0 },
+        { 
+          name: 'Completed', 
+          text: sessions?.filter(s => s.mode === 'text' && s.completed_at).length || 0, 
+          avatar: sessions?.filter(s => s.mode === 'avatar' && s.completed_at).length || 0 
+        },
+        { 
+          name: 'In Progress', 
+          text: sessions?.filter(s => s.mode === 'text' && !s.completed_at).length || 0, 
+          avatar: sessions?.filter(s => s.mode === 'avatar' && !s.completed_at).length || 0 
+        },
       ];
 
       setStats({
@@ -86,7 +117,7 @@ const AdminOverview = () => {
         avatarModeSessions,
         completionRate,
         avgSessionDuration: avgDuration,
-        sessionsPerDay: last14Days,
+        sessionsPerDay,
         demographicBreakdown: Object.entries(ageBreakdown).map(([name, value]) => ({ name, value })),
         modeComparison,
       });
@@ -94,8 +125,24 @@ const AdminOverview = () => {
       console.error('Error fetching stats:', error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
-  };
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  // Auto-refresh every 30 seconds if enabled
+  useEffect(() => {
+    if (!autoRefresh) return;
+    
+    const interval = setInterval(() => {
+      fetchStats();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, fetchStats]);
 
   if (isLoading) {
     return (
@@ -111,6 +158,18 @@ const AdminOverview = () => {
 
   return (
     <div className="space-y-6">
+      {/* Date Range Filter */}
+      <DateRangeFilter
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+        onRefresh={fetchStats}
+        isRefreshing={isRefreshing}
+        autoRefreshEnabled={autoRefresh}
+        onAutoRefreshToggle={setAutoRefresh}
+      />
+
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-slate-800 border-slate-700">
@@ -168,7 +227,7 @@ const AdminOverview = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
-            <CardTitle className="text-white">Sessions Over Time (14 days)</CardTitle>
+            <CardTitle className="text-white">Sessions Over Time</CardTitle>
             <CardDescription className="text-slate-400">Daily new sessions</CardDescription>
           </CardHeader>
           <CardContent>

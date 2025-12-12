@@ -38,7 +38,7 @@ const AdminQuestions = () => {
 
   const addPreTestOption = (qIndex: number) => {
     const updated = [...preTest];
-    updated[qIndex].options.push("Nowa opcja");
+    updated[qIndex].options.push("New option");
     setPreTest(updated);
     setHasChanges(true);
   };
@@ -80,7 +80,7 @@ ${demoCode}
 ${slidesCode}`;
 
     navigator.clipboard.writeText(fullCode);
-    toast.success("Kod skopiowany do schowka! Wklej go do odpowiednich plików.");
+    toast.success("Code copied to clipboard! Paste it into the appropriate files.");
   };
 
   return (
@@ -90,11 +90,11 @@ ${slidesCode}`;
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
             <div>
-              <p className="text-yellow-200 font-medium">Edycja pytań</p>
+              <p className="text-yellow-200 font-medium">Question Editing</p>
               <p className="text-yellow-300/70 text-sm mt-1">
-                Zmiany wprowadzone tutaj generują kod, który należy ręcznie wkleić do plików źródłowych 
-                (questions.ts, postTestQuestions.ts, slides.ts). Po zapisaniu zmian, użyj przycisku 
-                "Generuj kod" aby skopiować zaktualizowany kod.
+                Changes made here generate code that needs to be manually pasted into source files 
+                (questions.ts, postTestQuestions.ts, slides.ts). After saving changes, use the 
+                "Generate code" button to copy the updated code.
               </p>
             </div>
           </div>
@@ -105,7 +105,7 @@ ${slidesCode}`;
         <div className="flex justify-end">
           <Button onClick={generateExportCode} className="bg-green-600 hover:bg-green-700">
             <Save className="w-4 h-4 mr-2" />
-            Generuj kod do wdrożenia
+            Generate Deployment Code
           </Button>
         </div>
       )}
@@ -113,17 +113,17 @@ ${slidesCode}`;
       <Tabs defaultValue="pretest" className="space-y-6">
         <TabsList className="bg-slate-800 border border-slate-700">
           <TabsTrigger value="pretest">Pre-test ({preTest.length})</TabsTrigger>
-          <TabsTrigger value="demographics">Demografia ({demo.length})</TabsTrigger>
-          <TabsTrigger value="slides">Slajdy ({slideData.length})</TabsTrigger>
+          <TabsTrigger value="demographics">Demographics ({demo.length})</TabsTrigger>
+          <TabsTrigger value="slides">Slides ({slideData.length})</TabsTrigger>
         </TabsList>
 
         {/* Pre-test Questions */}
         <TabsContent value="pretest" className="space-y-4">
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">Pytania Pre-test</CardTitle>
+              <CardTitle className="text-white">Pre-test Questions</CardTitle>
               <CardDescription className="text-slate-400">
-                Edytuj pytania testowe wyświetlane przed nauką
+                Edit test questions shown before the learning phase
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -142,7 +142,7 @@ ${slidesCode}`;
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-4">
                       <div>
-                        <Label className="text-slate-300">Treść pytania</Label>
+                        <Label className="text-slate-300">Question Text</Label>
                         <Textarea
                           value={question.text}
                           onChange={(e) => updatePreTestQuestion(qIndex, 'text', e.target.value)}
@@ -151,7 +151,7 @@ ${slidesCode}`;
                       </div>
 
                       <div>
-                        <Label className="text-slate-300">Opcje odpowiedzi</Label>
+                        <Label className="text-slate-300">Answer Options</Label>
                         <div className="space-y-2 mt-2">
                           {question.options.map((option, oIndex) => (
                             <div key={oIndex} className="flex items-center gap-2">
@@ -184,7 +184,7 @@ ${slidesCode}`;
                             onClick={() => addPreTestOption(qIndex)}
                             className="border-slate-600"
                           >
-                            <Plus className="w-4 h-4 mr-1" /> Dodaj opcję
+                            <Plus className="w-4 h-4 mr-1" /> Add Option
                           </Button>
                         </div>
                       </div>
@@ -200,9 +200,9 @@ ${slidesCode}`;
         <TabsContent value="demographics" className="space-y-4">
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">Pytania demograficzne</CardTitle>
+              <CardTitle className="text-white">Demographic Questions</CardTitle>
               <CardDescription className="text-slate-400">
-                Edytuj pytania o dane demograficzne uczestników
+                Edit questions about participant demographics
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -221,7 +221,7 @@ ${slidesCode}`;
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-4">
                       <div>
-                        <Label className="text-slate-300">Opcje</Label>
+                        <Label className="text-slate-300">Options</Label>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {question.options.map((option, oIndex) => (
                             <Badge key={oIndex} variant="secondary" className="text-sm">
@@ -242,9 +242,9 @@ ${slidesCode}`;
         <TabsContent value="slides" className="space-y-4">
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">Slajdy edukacyjne</CardTitle>
+              <CardTitle className="text-white">Educational Slides</CardTitle>
               <CardDescription className="text-slate-400">
-                Edytuj treść slajdów wyświetlanych podczas nauki
+                Edit slide content shown during the learning phase
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -263,7 +263,7 @@ ${slidesCode}`;
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-4">
                       <div>
-                        <Label className="text-slate-300">Tytuł slajdu</Label>
+                        <Label className="text-slate-300">Slide Title</Label>
                         <Input
                           value={slide.title}
                           onChange={(e) => updateSlide(sIndex, 'title', e.target.value)}
@@ -272,7 +272,7 @@ ${slidesCode}`;
                       </div>
 
                       <div>
-                        <Label className="text-slate-300">Treść</Label>
+                        <Label className="text-slate-300">Content</Label>
                         <Textarea
                           value={slide.content}
                           onChange={(e) => updateSlide(sIndex, 'content', e.target.value)}
@@ -281,7 +281,7 @@ ${slidesCode}`;
                       </div>
 
                       <div>
-                        <Label className="text-slate-300">Kluczowe punkty</Label>
+                        <Label className="text-slate-300">Key Points</Label>
                         <div className="space-y-2 mt-2">
                           {slide.keyPoints.map((point, pIndex) => (
                             <Input
@@ -295,7 +295,7 @@ ${slidesCode}`;
                       </div>
 
                       <div>
-                        <Label className="text-slate-300">Kontekst dla AI</Label>
+                        <Label className="text-slate-300">AI Context</Label>
                         <Textarea
                           value={slide.systemPromptContext}
                           onChange={(e) => updateSlide(sIndex, 'systemPromptContext', e.target.value)}

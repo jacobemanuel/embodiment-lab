@@ -93,7 +93,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
 
     if (error) {
       console.error('Error getting Anam session:', error);
-      throw new Error('Failed to get Anam session token');
+      throw new Error('Service temporarily unavailable');
     }
 
     console.log('Got session token:', data.sessionToken ? 'YES' : 'NO');
@@ -165,7 +165,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       console.error('Error initializing Anam client:', error);
       setState(prev => ({ 
         ...prev, 
-        error: error instanceof Error ? error.message : 'Failed to connect to avatar'
+        error: 'Service temporarily unavailable'
       }));
     }
   }, [getSessionToken, addTranscriptMessage, videoElementId]);
@@ -186,7 +186,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       console.error('Error sending message:', error);
       setState(prev => ({ 
         ...prev, 
-        error: error instanceof Error ? error.message : 'Failed to send message'
+        error: 'Service temporarily unavailable'
       }));
     }
   }, [state.isConnected, addTranscriptMessage]);

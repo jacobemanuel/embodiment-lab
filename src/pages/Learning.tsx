@@ -6,7 +6,7 @@ import { SlideViewer } from "@/components/SlideViewer";
 import { ImagePlayground } from "@/components/ImagePlayground";
 import logo from "@/assets/logo-white.png";
 import { Button } from "@/components/ui/button";
-import { LogOut, Sparkles, ChevronLeft, ChevronRight, MessageSquare, Video, Loader2 } from "lucide-react";
+import { LogOut, Sparkles, ChevronLeft, ChevronRight, MessageSquare, Smile, Loader2 } from "lucide-react";
 import { TextModeChat } from "@/components/modes/TextModeChat";
 import { AvatarModePanel } from "@/components/modes/AvatarModePanel";
 
@@ -75,7 +75,7 @@ const Learning = () => {
               {isTextMode ? (
                 <><MessageSquare className="w-4 h-4 text-primary" /><span className="text-sm font-medium">Text Mode</span></>
               ) : (
-                <><Video className="w-4 h-4 text-primary" /><span className="text-sm font-medium">Avatar Mode</span></>
+                <><Smile className="w-4 h-4 text-primary" /><span className="text-sm font-medium">Avatar Mode</span></>
               )}
             </div>
             <Button variant="outline" size="sm" onClick={() => navigate('/mode-assignment')} className="gap-2">

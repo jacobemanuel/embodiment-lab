@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, BarChart3, FileText, Settings, Users, Clock, Download } from "lucide-react";
+import { LogOut, BarChart3, FileText, Settings, Users, Presentation, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminSessions from "@/components/admin/AdminSessions";
 import AdminResponses from "@/components/admin/AdminResponses";
 import AdminQuestions from "@/components/admin/AdminQuestions";
+import AdminSlides from "@/components/admin/AdminSlides";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -65,6 +67,22 @@ const AdminDashboard = () => {
     );
   }
 
+  const TabWithHelp = ({ value, icon: Icon, label, help }: { value: string; icon: any; label: string; help: string }) => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <TabsTrigger value={value} className="data-[state=active]:bg-primary">
+            <Icon className="w-4 h-4 mr-2" />
+            {label}
+          </TabsTrigger>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs bg-slate-700 text-slate-100 border-slate-600">
+          <p className="text-sm">{help}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+
   return (
     <div className="min-h-screen bg-slate-900">
       {/* Header */}
@@ -95,23 +113,37 @@ const AdminDashboard = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto p-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="bg-slate-800 border border-slate-700">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-primary">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="sessions" className="data-[state=active]:bg-primary">
-              <Users className="w-4 h-4 mr-2" />
-              Sessions
-            </TabsTrigger>
-            <TabsTrigger value="responses" className="data-[state=active]:bg-primary">
-              <FileText className="w-4 h-4 mr-2" />
-              Responses
-            </TabsTrigger>
-            <TabsTrigger value="questions" className="data-[state=active]:bg-primary">
-              <Settings className="w-4 h-4 mr-2" />
-              Questions
-            </TabsTrigger>
+          <TabsList className="bg-slate-800 border border-slate-700 flex-wrap h-auto gap-1 p-1">
+            <TabWithHelp 
+              value="overview" 
+              icon={BarChart3} 
+              label="Overview" 
+              help="Dashboard with key statistics: total sessions, completion rates, and trends over time."
+            />
+            <TabWithHelp 
+              value="sessions" 
+              icon={Users} 
+              label="Sessions" 
+              help="View all participant sessions. See who completed the study, their mode, and duration."
+            />
+            <TabWithHelp 
+              value="responses" 
+              icon={FileText} 
+              label="Responses" 
+              help="View and export all participant responses to pre-test, post-test, and demographic questions."
+            />
+            <TabWithHelp 
+              value="slides" 
+              icon={Presentation} 
+              label="Slides" 
+              help="Edit learning content. The 'AI Context' field tells the AI tutor what each slide is about."
+            />
+            <TabWithHelp 
+              value="questions" 
+              icon={Settings} 
+              label="Questions" 
+              help="Edit pre-test, post-test, and demographic survey questions. Changes go live immediately."
+            />
           </TabsList>
 
           <TabsContent value="overview">
@@ -124,6 +156,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="responses">
             <AdminResponses />
+          </TabsContent>
+
+          <TabsContent value="slides">
+            <AdminSlides />
           </TabsContent>
 
           <TabsContent value="questions">

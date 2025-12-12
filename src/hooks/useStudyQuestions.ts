@@ -54,6 +54,7 @@ export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demo
           setQuestions(transformedQuestions);
         } else {
           // Participant view - fetch from public view (no correct_answer exposed)
+          // Note: The view already filters by is_active = true
           const { data, error } = await supabase
             .from('study_questions_public' as any)
             .select('question_id, question_text, options, question_meta, category, allow_multiple')

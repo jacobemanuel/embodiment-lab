@@ -22,6 +22,7 @@ interface Session {
 
 interface SessionDetails {
   demographics: any;
+  demographicResponses: any[];
   preTest: any[];
   postTest: any[];
   scenarios: any[];
@@ -91,7 +92,14 @@ const AdminSessions = () => {
     setSelectedSession(session);
 
     try {
-      const { data: demographics } = await supabase
+      // Fetch new demographic_responses (flexible schema)
+      const { data: demographicResponses } = await supabase
+        .from('demographic_responses')
+        .select('*')
+        .eq('session_id', session.id);
+
+      // Also fetch old demographics table for backwards compatibility
+      const { data: oldDemographics } = await supabase
         .from('demographics')
         .select('*')
         .eq('session_id', session.id)
@@ -128,7 +136,8 @@ const AdminSessions = () => {
       }
 
       setSessionDetails({
-        demographics,
+        demographics: oldDemographics,
+        demographicResponses: demographicResponses || [],
         preTest: preTest || [],
         postTest: postTest || [],
         scenarios: scenarios || [],
@@ -366,8 +375,19 @@ const AdminSessions = () => {
             <div className="space-y-6">
               {/* Demographics */}
               <div>
-                <h3 className="text-lg font-semibold text-white mb-2">Demographics</h3>
-                {sessionDetails.demographics ? (
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Demographics ({sessionDetails.demographicResponses.length > 0 ? sessionDetails.demographicResponses.length : (sessionDetails.demographics ? 3 : 0)} responses)
+                </h3>
+                {sessionDetails.demographicResponses.length > 0 ? (
+                  <div className="bg-slate-900 p-4 rounded max-h-40 overflow-y-auto">
+                    {sessionDetails.demographicResponses.map((r, i) => (
+                      <div key={i} className="text-sm mb-2 pb-2 border-b border-slate-700 last:border-0">
+                        <span className="text-slate-400">{r.question_id}:</span>
+                        <span className="text-white ml-2">{r.answer}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : sessionDetails.demographics ? (
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div className="bg-slate-900 p-3 rounded">
                       <span className="text-slate-400">Age:</span>

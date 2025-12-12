@@ -14,21 +14,27 @@ const ModeAssignment = () => {
   const handleModeSelect = async (mode: StudyMode) => {
     setSelectedMode(mode);
     setIsLoading(true);
-    
+
     try {
-      const sessionId = await createStudySession(mode);
+      // Reuse existing session if it was already created during Demographics
+      let sessionId = sessionStorage.getItem('sessionId');
+
+      if (!sessionId) {
+        // Fallback: create a new session only if it doesn't exist yet
+        sessionId = await createStudySession(mode);
+      }
+
       sessionStorage.setItem('studyMode', mode);
       sessionStorage.setItem('sessionId', sessionId);
       navigate(`/learning/${mode}`);
     } catch (error) {
-      console.error('Error creating session:', error);
+      console.error('Error creating or reusing session:', error);
       const fallbackSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       sessionStorage.setItem('studyMode', mode);
       sessionStorage.setItem('sessionId', fallbackSessionId);
       navigate(`/learning/${mode}`);
     }
   };
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border p-4">

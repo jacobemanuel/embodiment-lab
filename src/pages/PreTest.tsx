@@ -23,8 +23,10 @@ const PreTest = () => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  const allQuestionsAnswered = preTestQuestions.length > 0 && preTestQuestions.every(q => responses[q.id]);
-  const progress = preTestQuestions.length > 0 ? Object.keys(responses).length / preTestQuestions.length * 100 : 0;
+  // Count questions that have at least one answer (not empty string)
+  const answeredQuestionsCount = preTestQuestions.filter(q => responses[q.id] && responses[q.id].trim() !== '').length;
+  const allQuestionsAnswered = preTestQuestions.length > 0 && answeredQuestionsCount === preTestQuestions.length;
+  const progress = preTestQuestions.length > 0 ? answeredQuestionsCount / preTestQuestions.length * 100 : 0;
 
   // Handle checkbox toggle for multiple-answer questions
   const handleMultipleAnswerToggle = (questionId: string, option: string) => {
@@ -96,7 +98,7 @@ const PreTest = () => {
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <img src={logo} alt="TUM Logo" className="h-8" />
           <div className="text-sm text-muted-foreground">
-            {Object.keys(responses).length} of {preTestQuestions.length} answered
+            {answeredQuestionsCount} of {preTestQuestions.length} answered
           </div>
         </div>
       </header>
@@ -125,7 +127,7 @@ const PreTest = () => {
 
           <VerticalProgressBar
             totalQuestions={preTestQuestions.length}
-            answeredQuestions={Object.keys(responses).length}
+            answeredQuestions={answeredQuestionsCount}
             questionIds={preTestQuestions.map(q => q.id)}
             responses={responses}
             onQuestionClick={scrollToQuestion}
@@ -186,7 +188,7 @@ const PreTest = () => {
                 ? "Saving..." 
                 : allQuestionsAnswered 
                   ? "Continue to Learning Scenarios" 
-                  : `Answer all questions to continue (${Object.keys(responses).length}/${preTestQuestions.length})`
+                  : `Answer all questions to continue (${answeredQuestionsCount}/${preTestQuestions.length})`
               }
             </Button>
           </div>

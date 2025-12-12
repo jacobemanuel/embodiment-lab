@@ -115,7 +115,11 @@ serve(async (req) => {
         const sessionId = crypto.randomUUID();
         const { error } = await supabase
           .from('study_sessions')
-          .insert({ session_id: sessionId, mode: validated.mode });
+          .insert({ 
+            session_id: sessionId, 
+            mode: validated.mode,
+            modes_used: [validated.mode]
+          });
 
         if (error) {
           console.error('Failed to create session:', error);

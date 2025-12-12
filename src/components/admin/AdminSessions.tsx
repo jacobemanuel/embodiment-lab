@@ -15,6 +15,7 @@ interface Session {
   id: string;
   session_id: string;
   mode: 'text' | 'avatar' | 'voice';
+  modes_used: string[] | null;
   started_at: string;
   completed_at: string | null;
   created_at: string;
@@ -155,7 +156,7 @@ const AdminSessions = () => {
     const matchesMode = modeFilter === "all" || session.mode === modeFilter;
     const matchesStatus = statusFilter === "all" || 
       (statusFilter === "completed" && session.completed_at) ||
-      (statusFilter === "in-progress" && !session.completed_at);
+      (statusFilter === "incomplete" && !session.completed_at);
     return matchesSearch && matchesMode && matchesStatus;
   });
 
@@ -256,7 +257,7 @@ const AdminSessions = () => {
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="incomplete">Incomplete</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -292,9 +293,16 @@ const AdminSessions = () => {
                         {session.session_id.slice(0, 8)}...
                       </TableCell>
                       <TableCell>
-                        <Badge variant={session.mode === 'text' ? 'default' : 'secondary'}>
-                          {session.mode === 'text' ? 'Text' : 'Avatar'}
-                        </Badge>
+                        <div className="flex flex-wrap gap-1">
+                          {(session.modes_used && session.modes_used.length > 0 
+                            ? session.modes_used 
+                            : [session.mode]
+                          ).map((m) => (
+                            <Badge key={m} variant={m === 'text' ? 'default' : 'secondary'}>
+                              {m === 'text' ? 'Text' : 'Avatar'}
+                            </Badge>
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell className="text-slate-300">
                         {format(new Date(session.started_at), 'dd MMM yyyy HH:mm')}
@@ -309,8 +317,8 @@ const AdminSessions = () => {
                       </TableCell>
                       <TableCell>
                         <Badge variant={session.completed_at ? 'default' : 'outline'} 
-                               className={session.completed_at ? 'bg-green-600' : 'border-yellow-500 text-yellow-500'}>
-                          {session.completed_at ? 'Completed' : 'In Progress'}
+                               className={session.completed_at ? 'bg-green-600' : 'border-orange-500 text-orange-500'}>
+                          {session.completed_at ? 'Completed' : 'Incomplete'}
                         </Badge>
                       </TableCell>
                       <TableCell>

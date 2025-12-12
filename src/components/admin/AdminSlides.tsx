@@ -13,6 +13,7 @@ import {
   Save, Edit2, XCircle, CheckCircle, RefreshCw, Plus, Trash2, 
   HelpCircle, Eye, EyeOff, GripVertical, Brain, BookOpen 
 } from "lucide-react";
+import { logAdminAction, computeChanges } from "@/lib/auditLog";
 
 interface StudySlide {
   id: string;
@@ -79,6 +80,9 @@ const AdminSlides = () => {
   const saveSlide = async (slideId: string) => {
     setIsSaving(true);
     try {
+      // Find original slide for change tracking
+      const originalSlide = slides.find(s => s.id === slideId);
+      
       const { error } = await supabase
         .from('study_slides')
         .update({
@@ -91,6 +95,22 @@ const AdminSlides = () => {
         .eq('id', slideId);
 
       if (error) throw error;
+
+      // Log the change
+      if (originalSlide) {
+        const changes = computeChanges(
+          originalSlide,
+          editedData as Record<string, any>,
+          ['title', 'content', 'image_url', 'key_points', 'system_prompt_context']
+        );
+        await logAdminAction({
+          actionType: 'update',
+          entityType: 'slide',
+          entityId: originalSlide.slide_id,
+          entityName: editedData.title || originalSlide.title,
+          changes,
+        });
+      }
 
       toast.success('Slide saved! Changes are now live on the platform.');
       setEditingSlide(null);
@@ -112,6 +132,15 @@ const AdminSlides = () => {
         .eq('id', slide.id);
 
       if (error) throw error;
+
+      // Log the change
+      await logAdminAction({
+        actionType: 'update',
+        entityType: 'slide',
+        entityId: slide.slide_id,
+        entityName: slide.title,
+        changes: { is_active: { old: slide.is_active, new: !slide.is_active } },
+      });
 
       toast.success(slide.is_active ? 'Slide hidden from users' : 'Slide visible to users');
       fetchSlides();
@@ -166,6 +195,14 @@ const AdminSlides = () => {
 
       if (error) throw error;
 
+      // Log the action
+      await logAdminAction({
+        actionType: 'create',
+        entityType: 'slide',
+        entityId: newSlideId,
+        entityName: 'New Slide',
+      });
+
       toast.success('New slide added');
       fetchSlides();
     } catch (error) {
@@ -177,6 +214,8 @@ const AdminSlides = () => {
   const deleteSlide = async (slideId: string) => {
     if (!confirm('Are you sure you want to delete this slide? This cannot be undone.')) return;
 
+    const slideToDelete = slides.find(s => s.id === slideId);
+
     try {
       const { error } = await supabase
         .from('study_slides')
@@ -184,6 +223,16 @@ const AdminSlides = () => {
         .eq('id', slideId);
 
       if (error) throw error;
+
+      // Log the action
+      if (slideToDelete) {
+        await logAdminAction({
+          actionType: 'delete',
+          entityType: 'slide',
+          entityId: slideToDelete.slide_id,
+          entityName: slideToDelete.title,
+        });
+      }
 
       toast.success('Slide deleted');
       fetchSlides();

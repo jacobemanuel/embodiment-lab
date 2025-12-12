@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Trash2, Save, CheckCircle, XCircle, RefreshCw, Edit2 } from "lucide-react";
+import { logAdminAction, computeChanges } from "@/lib/auditLog";
 
 interface StudyQuestion {
   id: string;
@@ -99,6 +100,20 @@ const AdminQuestions = () => {
 
       if (error) throw error;
 
+      // Log the change
+      const changes = computeChanges(
+        question,
+        editedData as Record<string, any>,
+        ['question_text', 'options', 'correct_answer', 'category']
+      );
+      await logAdminAction({
+        actionType: 'update',
+        entityType: 'question',
+        entityId: question.question_id,
+        entityName: editedData.question_text || question.question_text,
+        changes,
+      });
+
       toast.success('Question saved successfully! Changes are now live.');
       setEditingQuestion(null);
       setEditedData({});
@@ -172,6 +187,14 @@ const AdminQuestions = () => {
 
       if (error) throw error;
 
+      // Log the action
+      await logAdminAction({
+        actionType: 'create',
+        entityType: 'question',
+        entityId: newQuestionId,
+        entityName: 'New question',
+      });
+
       toast.success('New question added');
       fetchQuestions();
     } catch (error) {
@@ -183,6 +206,8 @@ const AdminQuestions = () => {
   const deleteQuestion = async (questionId: string) => {
     if (!confirm('Are you sure you want to delete this question?')) return;
 
+    const questionToDelete = questions.find(q => q.id === questionId);
+
     try {
       const { error } = await supabase
         .from('study_questions')
@@ -190,6 +215,16 @@ const AdminQuestions = () => {
         .eq('id', questionId);
 
       if (error) throw error;
+
+      // Log the action
+      if (questionToDelete) {
+        await logAdminAction({
+          actionType: 'delete',
+          entityType: 'question',
+          entityId: questionToDelete.question_id,
+          entityName: questionToDelete.question_text,
+        });
+      }
 
       toast.success('Question deleted');
       fetchQuestions();
@@ -207,6 +242,15 @@ const AdminQuestions = () => {
         .eq('id', question.id);
 
       if (error) throw error;
+
+      // Log the change
+      await logAdminAction({
+        actionType: 'update',
+        entityType: 'question',
+        entityId: question.question_id,
+        entityName: question.question_text,
+        changes: { is_active: { old: question.is_active, new: !question.is_active } },
+      });
 
       toast.success(question.is_active ? 'Question disabled' : 'Question enabled');
       fetchQuestions();

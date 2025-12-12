@@ -4,14 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, BarChart3, FileText, Settings, Users, Presentation, HelpCircle } from "lucide-react";
+import { LogOut, BarChart3, FileText, Settings, Users, Presentation, HelpCircle, Clock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminSessions from "@/components/admin/AdminSessions";
 import AdminResponses from "@/components/admin/AdminResponses";
 import AdminQuestions from "@/components/admin/AdminQuestions";
 import AdminSlides from "@/components/admin/AdminSlides";
+import AdminAuditLog from "@/components/admin/AdminAuditLog";
 import ApiToggle from "@/components/admin/ApiToggle";
+
+const OWNER_EMAIL = "jakub.majewski@tum.de";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -148,6 +151,14 @@ const AdminDashboard = () => {
               label="Questions" 
               help="Edit pre-test, post-test, and demographic survey questions. Changes go live immediately."
             />
+            {userEmail === OWNER_EMAIL && (
+              <TabWithHelp 
+                value="audit" 
+                icon={Clock} 
+                label="Activity Log" 
+                help="View all changes made by admins. Track who changed what and when."
+              />
+            )}
           </TabsList>
 
           <TabsContent value="overview">
@@ -169,6 +180,12 @@ const AdminDashboard = () => {
           <TabsContent value="questions">
             <AdminQuestions />
           </TabsContent>
+
+          {userEmail === OWNER_EMAIL && (
+            <TabsContent value="audit">
+              <AdminAuditLog />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>

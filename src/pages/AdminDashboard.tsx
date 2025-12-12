@@ -11,6 +11,7 @@ import AdminSessions from "@/components/admin/AdminSessions";
 import AdminResponses from "@/components/admin/AdminResponses";
 import AdminQuestions from "@/components/admin/AdminQuestions";
 import AdminSlides from "@/components/admin/AdminSlides";
+import ApiToggle from "@/components/admin/ApiToggle";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -111,7 +112,10 @@ const AdminDashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-6">
+      <main className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Owner-only API Toggle */}
+        <ApiToggle userEmail={userEmail} />
+        
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="bg-slate-800 border border-slate-700 flex-wrap h-auto gap-1 p-1">
             <TabWithHelp 

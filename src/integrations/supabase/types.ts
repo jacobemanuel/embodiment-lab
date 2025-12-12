@@ -300,6 +300,13 @@ export type Database = {
             referencedRelation: "study_questions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "question_change_requests_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "study_questions_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       scenarios: {
@@ -498,7 +505,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      study_questions_public: {
+        Row: {
+          allow_multiple: boolean | null
+          category: string | null
+          id: string | null
+          is_active: boolean | null
+          options: Json | null
+          question_id: string | null
+          question_meta: Json | null
+          question_text: string | null
+          question_type: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          allow_multiple?: never
+          category?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          options?: Json | null
+          question_id?: string | null
+          question_meta?: Json | null
+          question_text?: string | null
+          question_type?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          allow_multiple?: never
+          category?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          options?: Json | null
+          question_id?: string | null
+          question_meta?: Json | null
+          question_text?: string | null
+          question_type?: string | null
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {

@@ -272,8 +272,13 @@ const AdminSessions = () => {
                     ? Math.round((new Date(session.completed_at).getTime() - new Date(session.started_at).getTime()) / 1000 / 60)
                     : null;
 
+                  const isCompleted = !!session.completed_at;
+
                   return (
-                    <TableRow key={session.id} className="border-slate-700 hover:bg-slate-700/50">
+                    <TableRow
+                      key={session.id}
+                      className={`border-slate-700 hover:bg-slate-700/50 ${isCompleted ? '' : 'opacity-50'}`}
+                    >
                       <TableCell className="font-mono text-sm text-slate-300">
                         {session.session_id.slice(0, 8)}...
                       </TableCell>

@@ -209,6 +209,7 @@ const AdminSlides = () => {
   const renderSlideEditor = (slide: StudySlide) => {
     const isEditing = editingSlide === slide.id;
     const data = isEditing ? editedData : slide;
+    const slideNumber = slides.findIndex((s) => s.id === slide.id) + 1;
 
     return (
       <AccordionItem 
@@ -220,7 +221,7 @@ const AdminSlides = () => {
           <div className="flex items-center gap-3 flex-1">
             <GripVertical className="w-4 h-4 text-slate-500" />
             <Badge variant="outline" className="text-xs font-mono">
-              #{slide.sort_order + 1}
+              #{slideNumber}
             </Badge>
             <span className={`text-left flex-1 ${!slide.is_active ? 'text-orange-400' : ''}`}>
               {slide.title}

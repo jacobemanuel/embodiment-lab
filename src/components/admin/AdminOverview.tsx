@@ -11,11 +11,12 @@ interface StudyStats {
   completedSessions: number;
   textModeSessions: number;
   avatarModeSessions: number;
+  bothModesSessions: number;
   completionRate: number;
   avgSessionDuration: number;
   sessionsPerDay: { date: string; count: number }[];
   demographicBreakdown: { name: string; value: number }[];
-  modeComparison: { name: string; text: number; avatar: number }[];
+  modeComparison: { name: string; completed: number; incomplete: number }[];
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -62,8 +63,17 @@ const AdminOverview = () => {
 
       const totalSessions = sessions?.length || 0;
       const completedSessions = sessions?.filter(s => s.completed_at).length || 0;
-      const textModeSessions = sessions?.filter(s => s.mode === 'text').length || 0;
-      const avatarModeSessions = sessions?.filter(s => s.mode === 'avatar').length || 0;
+      
+      // Use modes_used for accurate counting (covers users who used both modes)
+      const textModeSessions = sessions?.filter(s => 
+        (s.modes_used && s.modes_used.includes('text')) || (!s.modes_used && s.mode === 'text')
+      ).length || 0;
+      const avatarModeSessions = sessions?.filter(s => 
+        (s.modes_used && s.modes_used.includes('avatar')) || (!s.modes_used && s.mode === 'avatar')
+      ).length || 0;
+      const bothModesSessions = sessions?.filter(s => 
+        s.modes_used && s.modes_used.includes('text') && s.modes_used.includes('avatar')
+      ).length || 0;
       const completionRate = totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
 
       const completedWithDuration = sessions?.filter(s => s.completed_at && s.started_at) || [];
@@ -99,14 +109,31 @@ const AdminOverview = () => {
 
       const modeComparison = [
         { 
-          name: 'Completed', 
-          text: sessions?.filter(s => s.mode === 'text' && s.completed_at).length || 0, 
-          avatar: sessions?.filter(s => s.mode === 'avatar' && s.completed_at).length || 0 
+          name: 'Text Only', 
+          completed: sessions?.filter(s => 
+            s.modes_used?.length === 1 && s.modes_used.includes('text') && s.completed_at
+          ).length || 0, 
+          incomplete: sessions?.filter(s => 
+            s.modes_used?.length === 1 && s.modes_used.includes('text') && !s.completed_at
+          ).length || 0 
         },
         { 
-          name: 'In Progress', 
-          text: sessions?.filter(s => s.mode === 'text' && !s.completed_at).length || 0, 
-          avatar: sessions?.filter(s => s.mode === 'avatar' && !s.completed_at).length || 0 
+          name: 'Avatar Only', 
+          completed: sessions?.filter(s => 
+            s.modes_used?.length === 1 && s.modes_used.includes('avatar') && s.completed_at
+          ).length || 0, 
+          incomplete: sessions?.filter(s => 
+            s.modes_used?.length === 1 && s.modes_used.includes('avatar') && !s.completed_at
+          ).length || 0 
+        },
+        { 
+          name: 'Both Modes', 
+          completed: sessions?.filter(s => 
+            s.modes_used?.includes('text') && s.modes_used?.includes('avatar') && s.completed_at
+          ).length || 0, 
+          incomplete: sessions?.filter(s => 
+            s.modes_used?.includes('text') && s.modes_used?.includes('avatar') && !s.completed_at
+          ).length || 0 
         },
       ];
 
@@ -115,6 +142,7 @@ const AdminOverview = () => {
         completedSessions,
         textModeSessions,
         avatarModeSessions,
+        bothModesSessions,
         completionRate,
         avgSessionDuration: avgDuration,
         sessionsPerDay,
@@ -180,7 +208,7 @@ const AdminOverview = () => {
           <CardContent>
             <div className="text-2xl font-bold text-white">{stats.totalSessions}</div>
             <p className="text-xs text-slate-500 mt-1">
-              Text: {stats.textModeSessions} | Avatar: {stats.avatarModeSessions}
+              Text: {stats.textModeSessions} | Avatar: {stats.avatarModeSessions} | Both: {stats.bothModesSessions}
             </p>
           </CardContent>
         </Card>
@@ -248,8 +276,8 @@ const AdminOverview = () => {
 
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
-            <CardTitle className="text-white">Mode Comparison</CardTitle>
-            <CardDescription className="text-slate-400">Text Mode vs Avatar Mode</CardDescription>
+            <CardTitle className="text-white">Mode Usage Breakdown</CardTitle>
+            <CardDescription className="text-slate-400">Sessions by mode combination (Text Only / Avatar Only / Both)</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -261,8 +289,8 @@ const AdminOverview = () => {
                   contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
                   labelStyle={{ color: '#fff' }}
                 />
-                <Bar dataKey="text" name="Text Mode" fill="#3b82f6" />
-                <Bar dataKey="avatar" name="Avatar Mode" fill="#10b981" />
+                <Bar dataKey="completed" name="Completed" fill="#10b981" />
+                <Bar dataKey="incomplete" name="Incomplete" fill="#f59e0b" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -318,12 +346,16 @@ const AdminOverview = () => {
               <span className="text-white font-semibold">{stats.totalSessions}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-700">
-              <span className="text-slate-400">Text Mode participants</span>
-              <span className="text-blue-400 font-semibold">{stats.textModeSessions}</span>
+              <span className="text-slate-400">Text Mode only</span>
+              <span className="text-blue-400 font-semibold">{stats.textModeSessions - stats.bothModesSessions}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-700">
-              <span className="text-slate-400">Avatar Mode participants</span>
-              <span className="text-green-400 font-semibold">{stats.avatarModeSessions}</span>
+              <span className="text-slate-400">Avatar Mode only</span>
+              <span className="text-green-400 font-semibold">{stats.avatarModeSessions - stats.bothModesSessions}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-700">
+              <span className="text-slate-400">Used both modes</span>
+              <span className="text-cyan-400 font-semibold">{stats.bothModesSessions}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-700">
               <span className="text-slate-400">Completion rate</span>

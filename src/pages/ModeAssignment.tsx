@@ -19,37 +19,23 @@ const ModeAssignment = () => {
       const existingSessionId = sessionStorage.getItem('sessionId');
 
       if (existingSessionId) {
-        // Update existing session: add this mode to modes_used array
-        const { data: session } = await supabase
-          .from('study_sessions')
-          .select('id, modes_used')
-          .eq('session_id', existingSessionId)
-          .maybeSingle();
-
-        if (session) {
-          const currentModes = (session.modes_used as string[]) || [];
-          if (!currentModes.includes(mode)) {
-            await supabase
-              .from('study_sessions')
-              .update({ 
-                mode: mode,
-                modes_used: [...currentModes, mode]
-              })
-              .eq('id', session.id);
-          } else {
-            // Just update current mode
-            await supabase
-              .from('study_sessions')
-              .update({ mode: mode })
-              .eq('id', session.id);
+        // Update existing session via edge function (bypasses RLS)
+        const { data, error } = await supabase.functions.invoke('save-study-data', {
+          body: {
+            action: 'update_mode',
+            sessionId: existingSessionId,
+            mode
           }
+        });
+
+        if (error) {
+          console.error('Error updating mode:', error);
         }
 
         sessionStorage.setItem('studyMode', mode);
         navigate(`/learning/${mode}`);
       } else {
-        // No existing session - this shouldn't happen normally as session is created in Demographics
-        // But handle gracefully by creating one
+        // No existing session - create one
         const { createStudySession } = await import('@/lib/studyData');
         const sessionId = await createStudySession(mode);
         sessionStorage.setItem('studyMode', mode);
@@ -58,7 +44,6 @@ const ModeAssignment = () => {
       }
     } catch (error) {
       console.error('Error handling mode selection:', error);
-      // Fallback - just navigate
       sessionStorage.setItem('studyMode', mode);
       navigate(`/learning/${mode}`);
     } finally {

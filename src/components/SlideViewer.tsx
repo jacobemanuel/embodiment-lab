@@ -1,9 +1,10 @@
-import { Slide, slides } from "@/data/slides";
+import { Slide } from "@/hooks/useStudySlides";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SlideViewerProps {
+  slides: Slide[];
   currentSlide: Slide;
   onSlideChange: (slide: Slide) => void;
   className?: string;
@@ -11,6 +12,7 @@ interface SlideViewerProps {
 }
 
 export const SlideViewer = ({ 
+  slides,
   currentSlide, 
   onSlideChange, 
   className,

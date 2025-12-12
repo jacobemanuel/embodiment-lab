@@ -1,21 +1,29 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { StudyMode } from "@/types/study";
-import { slides, Slide } from "@/data/slides";
+import { useStudySlides, Slide } from "@/hooks/useStudySlides";
 import { SlideViewer } from "@/components/SlideViewer";
 import { ImagePlayground } from "@/components/ImagePlayground";
 import logo from "@/assets/logo-white.png";
 import { Button } from "@/components/ui/button";
-import { LogOut, Sparkles, ChevronLeft, ChevronRight, MessageSquare, Video } from "lucide-react";
+import { LogOut, Sparkles, ChevronLeft, ChevronRight, MessageSquare, Video, Loader2 } from "lucide-react";
 import { TextModeChat } from "@/components/modes/TextModeChat";
 import { AvatarModePanel } from "@/components/modes/AvatarModePanel";
 
 const Learning = () => {
   const { mode } = useParams<{ mode: StudyMode }>();
   const navigate = useNavigate();
-  const [currentSlide, setCurrentSlide] = useState<Slide>(slides[0]);
+  const { slides, isLoading, error } = useStudySlides();
+  const [currentSlide, setCurrentSlide] = useState<Slide | null>(null);
   const [isPlaygroundVisible, setIsPlaygroundVisible] = useState(false);
   const [shouldPulseButton, setShouldPulseButton] = useState(false);
+
+  // Set initial slide when slides are loaded
+  useEffect(() => {
+    if (slides.length > 0 && !currentSlide) {
+      setCurrentSlide(slides[0]);
+    }
+  }, [slides, currentSlide]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -28,11 +36,33 @@ const Learning = () => {
     setCurrentSlide(slide);
   };
 
-  const handleModeSwitch = (newMode: StudyMode) => {
-    navigate(`/learning/${newMode}`, { replace: true });
-  };
-
   const isTextMode = mode === 'text';
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading learning content...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || slides.length === 0) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <p className="text-destructive mb-4">Failed to load learning content</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentSlide) {
+    return null;
+  }
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -65,6 +95,7 @@ const Learning = () => {
         {/* Slide Viewer - Center */}
         <div className={`${isPlaygroundVisible ? 'md:w-1/2' : 'md:w-2/3'} w-full transition-all duration-300 border-r border-border`}>
           <SlideViewer 
+            slides={slides}
             currentSlide={currentSlide} 
             onSlideChange={handleSlideChange}
           />

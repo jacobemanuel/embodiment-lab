@@ -4,14 +4,15 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import logo from "@/assets/logo-white.png";
-import { postTestQuestions } from "@/data/postTestQuestions";
+import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { savePostTestResponses, completeStudySession } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 
 const PostTestPage2 = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { questions: postTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('post_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,9 +34,10 @@ const PostTestPage2 = () => {
     }
   }, [responses]);
 
+  // Filter knowledge questions from post_test
   const knowledgeQuestions = postTestQuestions.filter(q => q.category === 'knowledge');
-  const allQuestionsAnswered = knowledgeQuestions.every(q => responses[q.id]);
-  const progress = Object.keys(responses).length / knowledgeQuestions.length * 100;
+  const allQuestionsAnswered = knowledgeQuestions.length > 0 && knowledgeQuestions.every(q => responses[q.id]);
+  const progress = knowledgeQuestions.length > 0 ? Object.keys(responses).length / knowledgeQuestions.length * 100 : 0;
 
   const handleComplete = async () => {
     if (allQuestionsAnswered) {
@@ -69,6 +71,28 @@ const PostTestPage2 = () => {
       }
     }
   };
+
+  if (questionsLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || knowledgeQuestions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive mb-4">Failed to load questions</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

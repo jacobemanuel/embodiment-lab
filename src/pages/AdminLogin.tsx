@@ -75,13 +75,13 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
-      {/* Background image */}
+      {/* Background image with blur to hide low resolution */}
       <div 
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat scale-110 blur-sm"
         style={{ backgroundImage: `url(${adminBg})` }}
       />
-      {/* Dark overlay */}
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+      {/* Gradient overlay for style */}
+      <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/70" />
       
       {/* TUM Logo */}
       <div className="fixed top-6 left-6 z-20">

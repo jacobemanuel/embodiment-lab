@@ -66,7 +66,9 @@ const DateRangeFilter = ({
             <Calendar
               mode="single"
               selected={startDate}
-              onSelect={onStartDateChange}
+              onSelect={(date) => {
+                onStartDateChange(date);
+              }}
               initialFocus
             />
           </PopoverContent>
@@ -92,7 +94,9 @@ const DateRangeFilter = ({
             <Calendar
               mode="single"
               selected={endDate}
-              onSelect={onEndDateChange}
+              onSelect={(date) => {
+                onEndDateChange(date);
+              }}
               initialFocus
             />
           </PopoverContent>

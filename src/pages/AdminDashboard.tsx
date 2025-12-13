@@ -96,94 +96,98 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-slate-900">
       {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header className="bg-slate-800 border-b border-slate-700 px-4 md:px-6 py-3 md:py-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-primary" />
+            <BarChart3 className="w-7 h-7 md:w-8 md:h-8 text-primary" />
             <div>
-              <h1 className="text-xl font-bold text-white">Research Panel</h1>
-              <p className="text-sm text-slate-400">AI Image Generation Study</p>
+              <h1 className="text-lg md:text-xl font-bold text-white">Research Panel</h1>
+              <p className="text-xs md:text-sm text-slate-400 hidden sm:block">AI Image Generation Study</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <PermissionBadge userEmail={userEmail} />
-            <span className="text-sm text-slate-400">{userEmail}</span>
+          <div className="flex items-center gap-2 md:gap-4 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="flex items-center gap-2">
+              <PermissionBadge userEmail={userEmail} />
+              <span className="text-xs md:text-sm text-slate-400 truncate max-w-[120px] md:max-w-none">{userEmail}</span>
+            </div>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={handleLogout}
               className="border-slate-600 text-slate-300 hover:bg-slate-700"
             >
-              <LogOut className="w-4 h-4 mr-2" />
-              Log out
+              <LogOut className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Log out</span>
             </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-6 space-y-6">
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="bg-slate-800 border border-slate-700 flex-wrap h-auto gap-1.5 p-1.5 rounded-xl">
-            <TabWithHelp 
-              value="overview" 
-              icon={BarChart3} 
-              label="Overview" 
-              help="Dashboard with key statistics: total sessions, completion rates, and trends over time."
-            />
-            <TabWithHelp 
-              value="sessions" 
-              icon={Users} 
-              label="Sessions" 
-              help="View all participant sessions. See who completed the study, their mode, and duration."
-            />
-            <TabWithHelp 
-              value="responses" 
-              icon={FileText} 
-              label="Responses" 
-              help="View and export all participant responses to pre-test, post-test, and demographic questions."
-            />
-            {permissions.canViewSlides && (
+      <main className="max-w-7xl mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
+        <Tabs defaultValue="overview" className="space-y-4 md:space-y-6">
+          <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
+            <TabsList className="bg-slate-800 border border-slate-700 flex-nowrap md:flex-wrap h-auto gap-1 md:gap-1.5 p-1 md:p-1.5 rounded-xl min-w-max md:min-w-0">
               <TabWithHelp 
-                value="slides" 
-                icon={Presentation} 
-                label="Slides" 
-                help="Edit learning content. The 'AI Context' field tells the AI tutor what each slide is about."
+                value="overview" 
+                icon={BarChart3} 
+                label="Overview" 
+                help="Dashboard with key statistics: total sessions, completion rates, and trends over time."
               />
-            )}
-            {permissions.canViewQuestions && (
               <TabWithHelp 
-                value="questions" 
-                icon={Settings} 
-                label="Questions" 
-                help="Edit pre-test, post-test, and demographic survey questions. Changes go live immediately."
+                value="sessions" 
+                icon={Users} 
+                label="Sessions" 
+                help="View all participant sessions. See who completed the study, their mode, and duration."
               />
-            )}
-            {permissions.canViewApiSettings && (
               <TabWithHelp 
-                value="settings" 
-                icon={Cog} 
-                label="API Settings" 
-                help="Control API toggles (OpenAI, Anam) and manage API keys for the study."
+                value="responses" 
+                icon={FileText} 
+                label="Responses" 
+                help="View and export all participant responses to pre-test, post-test, and demographic questions."
               />
-            )}
-            {permissions.canViewPermissionsTab && (
-              <TabWithHelp 
-                value="permissions" 
-                icon={Shield} 
-                label="My Access" 
-                help="View your permissions and what you can do in the admin panel."
-              />
-            )}
-            {permissions.canViewAuditLog && (
-              <TabWithHelp 
-                value="audit" 
-                icon={Clock} 
-                label="Activity Log" 
-                help="View all changes made by admins. Track who changed what and when."
-              />
-            )}
-          </TabsList>
+              {permissions.canViewSlides && (
+                <TabWithHelp 
+                  value="slides" 
+                  icon={Presentation} 
+                  label="Slides" 
+                  help="Edit learning content. The 'AI Context' field tells the AI tutor what each slide is about."
+                />
+              )}
+              {permissions.canViewQuestions && (
+                <TabWithHelp 
+                  value="questions" 
+                  icon={Settings} 
+                  label="Questions" 
+                  help="Edit pre-test, post-test, and demographic survey questions. Changes go live immediately."
+                />
+              )}
+              {permissions.canViewApiSettings && (
+                <TabWithHelp 
+                  value="settings" 
+                  icon={Cog} 
+                  label="API Settings" 
+                  help="Control API toggles (OpenAI, Anam) and manage API keys for the study."
+                />
+              )}
+              {permissions.canViewPermissionsTab && (
+                <TabWithHelp 
+                  value="permissions" 
+                  icon={Shield} 
+                  label="My Access" 
+                  help="View your permissions and what you can do in the admin panel."
+                />
+              )}
+              {permissions.canViewAuditLog && (
+                <TabWithHelp 
+                  value="audit" 
+                  icon={Clock} 
+                  label="Activity Log" 
+                  help="View all changes made by admins. Track who changed what and when."
+                />
+              )}
+            </TabsList>
+          </div>
 
           <TabsContent value="overview">
             <AdminOverview userEmail={userEmail} />
@@ -230,13 +234,13 @@ const AdminDashboard = () => {
       </main>
 
       {/* Footer */}
-      <footer className="mt-12 border-t border-slate-700 bg-slate-800/50">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col items-center text-center gap-3">
-            <h2 className="text-lg font-semibold text-slate-200">
+      <footer className="mt-8 md:mt-12 border-t border-slate-700 bg-slate-800/50">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+          <div className="flex flex-col items-center text-center gap-2 md:gap-3">
+            <h2 className="text-base md:text-lg font-semibold text-slate-200">
               P6: AI Study Buddy
             </h2>
-            <p className="text-sm text-slate-400 max-w-2xl">
+            <p className="text-xs md:text-sm text-slate-400 max-w-2xl px-4">
               Exploring Trust and Engagement toward Embodied AI Agents for AI Literacy
             </p>
             <p className="text-xs text-slate-500">
@@ -244,7 +248,7 @@ const AdminDashboard = () => {
             </p>
           </div>
           
-          <div className="mt-6 pt-4 border-t border-slate-700/50 flex flex-col md:flex-row items-center justify-center gap-4 text-xs text-slate-500">
+          <div className="mt-4 md:mt-6 pt-4 border-t border-slate-700/50 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 text-xs text-slate-500">
             <span>Technical University of Munich</span>
             <span className="hidden md:inline">•</span>
             <div className="flex items-center gap-2">

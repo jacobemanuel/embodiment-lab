@@ -62,7 +62,10 @@ serve(async (req) => {
     // Mark session as completed
     const { error: updateError } = await supabase
       .from('study_sessions')
-      .update({ completed_at: new Date().toISOString() })
+      .update({ 
+        completed_at: new Date().toISOString(),
+        status: 'completed'
+      })
       .eq('session_id', sessionId);
 
     if (updateError) {

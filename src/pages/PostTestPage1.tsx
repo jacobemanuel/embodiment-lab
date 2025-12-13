@@ -50,10 +50,10 @@ const PostTestPage1 = () => {
     }
   }, [responses]);
 
-  // Filter for likert questions with trust, engagement, satisfaction categories
+  // Filter for likert questions with all perception-related categories (exclude knowledge and open_feedback)
   const likertQuestions = postTestQuestions.filter(q => 
     q.type === 'likert' && 
-    ['trust', 'engagement', 'satisfaction'].includes(q.category || '')
+    ['trust', 'engagement', 'satisfaction', 'expectations', 'avatar-qualities', 'realism'].includes(q.category || '')
   );
   
   const allQuestionsAnswered = likertQuestions.length > 0 && likertQuestions.every(q => responses[q.id]);
@@ -89,6 +89,9 @@ const PostTestPage1 = () => {
   }
 
   // Group questions by category
+  const expectationsQuestions = postTestQuestions.filter(q => q.category === 'expectations' && q.type === 'likert');
+  const avatarQualitiesQuestions = postTestQuestions.filter(q => q.category === 'avatar-qualities' && q.type === 'likert');
+  const realismQuestions = postTestQuestions.filter(q => q.category === 'realism' && q.type === 'likert');
   const trustQuestions = postTestQuestions.filter(q => q.category === 'trust' && q.type === 'likert');
   const engagementQuestions = postTestQuestions.filter(q => q.category === 'engagement' && q.type === 'likert');
   const satisfactionQuestions = postTestQuestions.filter(q => q.category === 'satisfaction' && q.type === 'likert');
@@ -133,6 +136,69 @@ const PostTestPage1 = () => {
           />
 
           <div className="space-y-8 stagger-fade-in">
+            {/* Expectations Section */}
+            {expectationsQuestions.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">Expectations</h2>
+                {expectationsQuestions.map((question, idx) => (
+                  <div 
+                    key={question.id} 
+                    ref={el => questionRefs.current[idx] = el}
+                    className="glass-card rounded-2xl p-6 space-y-5 hover:shadow-ai-glow transition-all duration-300"
+                  >
+                    <h3 className="font-medium text-lg">{question.text}</h3>
+                    <LikertScale
+                      id={question.id}
+                      value={responses[question.id] || ""}
+                      onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Avatar Qualities Section */}
+            {avatarQualitiesQuestions.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">Avatar Experience</h2>
+                {avatarQualitiesQuestions.map((question, idx) => (
+                  <div 
+                    key={question.id} 
+                    ref={el => questionRefs.current[expectationsQuestions.length + idx] = el}
+                    className="glass-card rounded-2xl p-6 space-y-5 hover:shadow-ai-glow transition-all duration-300"
+                  >
+                    <h3 className="font-medium text-lg">{question.text}</h3>
+                    <LikertScale
+                      id={question.id}
+                      value={responses[question.id] || ""}
+                      onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Realism Section */}
+            {realismQuestions.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">Realism & Naturalness</h2>
+                {realismQuestions.map((question, idx) => (
+                  <div 
+                    key={question.id} 
+                    ref={el => questionRefs.current[expectationsQuestions.length + avatarQualitiesQuestions.length + idx] = el}
+                    className="glass-card rounded-2xl p-6 space-y-5 hover:shadow-ai-glow transition-all duration-300"
+                  >
+                    <h3 className="font-medium text-lg">{question.text}</h3>
+                    <LikertScale
+                      id={question.id}
+                      value={responses[question.id] || ""}
+                      onChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Trust Section */}
             {trustQuestions.length > 0 && (
               <div className="space-y-4">
@@ -140,7 +206,7 @@ const PostTestPage1 = () => {
                 {trustQuestions.map((question, idx) => (
                   <div 
                     key={question.id} 
-                    ref={el => questionRefs.current[idx] = el}
+                    ref={el => questionRefs.current[expectationsQuestions.length + avatarQualitiesQuestions.length + realismQuestions.length + idx] = el}
                     className="glass-card rounded-2xl p-6 space-y-5 hover:shadow-ai-glow transition-all duration-300"
                   >
                     <h3 className="font-medium text-lg">{question.text}</h3>
@@ -161,7 +227,7 @@ const PostTestPage1 = () => {
                 {engagementQuestions.map((question, idx) => (
                   <div 
                     key={question.id} 
-                    ref={el => questionRefs.current[trustQuestions.length + idx] = el}
+                    ref={el => questionRefs.current[expectationsQuestions.length + avatarQualitiesQuestions.length + realismQuestions.length + trustQuestions.length + idx] = el}
                     className="glass-card rounded-2xl p-6 space-y-5 hover:shadow-ai-glow transition-all duration-300"
                   >
                     <h3 className="font-medium text-lg">{question.text}</h3>
@@ -182,7 +248,7 @@ const PostTestPage1 = () => {
                 {satisfactionQuestions.map((question, idx) => (
                   <div 
                     key={question.id} 
-                    ref={el => questionRefs.current[trustQuestions.length + engagementQuestions.length + idx] = el}
+                    ref={el => questionRefs.current[expectationsQuestions.length + avatarQualitiesQuestions.length + realismQuestions.length + trustQuestions.length + engagementQuestions.length + idx] = el}
                     className="glass-card rounded-2xl p-6 space-y-5 hover:shadow-ai-glow transition-all duration-300"
                   >
                     <h3 className="font-medium text-lg">{question.text}</h3>

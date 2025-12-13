@@ -223,17 +223,33 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
   }, [state.isConnected]);
 
-  // System event handler - NO client.talk() calls! Just store locally
-  // client.talk() always makes Alex speak, there's no silent option
+  // System event sender - sends SILENT context updates to avatar
   const sendSystemEvent = useCallback(async (eventType: string, data: Record<string, any> = {}) => {
-    console.log('System event (stored locally, not sent to avatar):', eventType, data);
-  }, []);
+    if (!clientRef.current || !state.isConnected) return;
+
+    // Format as a silent context update that the avatar should NOT respond to
+    const eventMessage = `[SILENT_CONTEXT_UPDATE:${eventType}] ${JSON.stringify(data)} [DO_NOT_SPEAK]`;
+    console.log('Sending silent context update:', eventMessage);
+
+    try {
+      await clientRef.current.talk(eventMessage);
+    } catch (error) {
+      console.error('Error sending context update:', error);
+    }
+  }, [state.isConnected]);
 
   const notifySlideChange = useCallback(async (slide: Slide) => {
     console.log('Slide changed to:', slide.title);
-    // Just update the ref - don't try to tell Alex via talk()
-    currentSlideRef.current = slide;
-  }, []);
+
+    // Send a hidden system event so Alex always knows which slide
+    // the learner is currently viewing.
+    await sendSystemEvent('SLIDE_CHANGE', {
+      id: slide.id,
+      title: slide.title,
+      keyPoints: slide.keyPoints,
+      systemPromptContext: slide.systemPromptContext,
+    });
+  }, [sendSystemEvent]);
 
   // Camera toggle notification with spam detection
   const notifyCameraToggle = useCallback(async (isOn: boolean) => {

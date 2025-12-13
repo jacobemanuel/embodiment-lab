@@ -105,13 +105,8 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       console.log('Creating Anam client with token...');
       const client = createClient(sessionToken);
 
-      // Start with microphone HARD-muted so Alex cannot hear the user
-      try {
-        const audioState = (client as any).muteInputAudio?.();
-        console.log('Initial Anam input audio state (after mute):', audioState);
-      } catch (err) {
-        console.warn('Unable to mute Anam input audio on init:', err);
-      }
+      // Do NOT change mic state before the stream starts – we'll control it
+      // explicitly via the push-to-talk button once streaming is active.
 
       // Set up event listeners
       client.addListener(AnamEvent.CONNECTION_ESTABLISHED, () => {

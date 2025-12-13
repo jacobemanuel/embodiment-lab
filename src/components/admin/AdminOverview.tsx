@@ -2331,39 +2331,74 @@ const AdminOverview = () => {
               <div>
                 <h4 className="text-sm font-medium text-slate-300 mb-3">Avatar Time vs Knowledge Gain</h4>
                 {stats.correlations.avatarTimeVsGain.filter(d => d.x > 0).length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis 
-                        type="number" 
-                        dataKey="x" 
-                        name="Avatar Time" 
-                        stroke="#9ca3af" 
-                        fontSize={11}
-                        label={{ value: 'Avatar Time (min)', position: 'bottom', offset: 0, style: { fill: '#9ca3af', fontSize: 10 } }}
-                      />
-                      <YAxis 
-                        type="number" 
-                        dataKey="y" 
-                        name="Knowledge Gain" 
-                        stroke="#9ca3af" 
-                        fontSize={11}
-                        label={{ value: 'Gain %', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: 10 } }}
-                      />
-                      <ZAxis range={[50, 50]} />
-                      <ChartTooltip 
-                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                        formatter={(value: number, name: string) => [
-                          name === 'x' ? `${value.toFixed(1)} min` : `${value.toFixed(1)}%`,
-                          name === 'x' ? 'Avatar Time' : 'Knowledge Gain'
-                        ]}
-                      />
-                      <Scatter 
-                        data={stats.correlations.avatarTimeVsGain.filter(d => d.x > 0)} 
-                        fill="#8b5cf6"
-                      />
-                    </ScatterChart>
-                  </ResponsiveContainer>
+                  (() => {
+                    const data = stats.correlations.avatarTimeVsGain.filter(d => d.x > 0);
+                    // Calculate trend line
+                    let trendLine: { x: number; y: number }[] = [];
+                    if (data.length >= 2) {
+                      const n = data.length;
+                      const xVals = data.map(d => d.x);
+                      const yVals = data.map(d => d.y);
+                      const sumX = xVals.reduce((a, b) => a + b, 0);
+                      const sumY = yVals.reduce((a, b) => a + b, 0);
+                      const sumXY = data.reduce((a, d) => a + d.x * d.y, 0);
+                      const sumX2 = xVals.reduce((a, b) => a + b * b, 0);
+                      const denomSlope = n * sumX2 - sumX * sumX;
+                      if (denomSlope !== 0) {
+                        const slope = (n * sumXY - sumX * sumY) / denomSlope;
+                        const intercept = (sumY - slope * sumX) / n;
+                        const minX = Math.min(...xVals);
+                        const maxX = Math.max(...xVals);
+                        trendLine = [
+                          { x: minX, y: slope * minX + intercept },
+                          { x: maxX, y: slope * maxX + intercept }
+                        ];
+                      }
+                    }
+                    return (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                          <XAxis 
+                            type="number" 
+                            dataKey="x" 
+                            name="Avatar Time" 
+                            stroke="#9ca3af" 
+                            fontSize={11}
+                            label={{ value: 'Avatar Time (min)', position: 'bottom', offset: 0, style: { fill: '#9ca3af', fontSize: 10 } }}
+                          />
+                          <YAxis 
+                            type="number" 
+                            dataKey="y" 
+                            name="Knowledge Gain" 
+                            stroke="#9ca3af" 
+                            fontSize={11}
+                            label={{ value: 'Gain %', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: 10 } }}
+                          />
+                          <ZAxis range={[50, 50]} />
+                          <ChartTooltip 
+                            contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                            formatter={(value: number, name: string) => [
+                              name === 'x' ? `${value.toFixed(1)} min` : `${value.toFixed(1)}%`,
+                              name === 'x' ? 'Avatar Time' : 'Knowledge Gain'
+                            ]}
+                          />
+                          <Scatter 
+                            data={data} 
+                            fill="#8b5cf6"
+                          />
+                          {trendLine.length === 2 && (
+                            <Scatter 
+                              data={trendLine} 
+                              fill="none"
+                              line={{ stroke: '#ef4444', strokeWidth: 2 }}
+                              shape={() => null}
+                            />
+                          )}
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    );
+                  })()
                 ) : (
                   <div className="h-[220px] flex items-center justify-center text-slate-500 text-sm">
                     No avatar interaction data
@@ -2402,39 +2437,74 @@ const AdminOverview = () => {
               <div>
                 <h4 className="text-sm font-medium text-slate-300 mb-3">Session Duration vs Knowledge Gain</h4>
                 {stats.correlations.sessionTimeVsGain.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis 
-                        type="number" 
-                        dataKey="x" 
-                        name="Session Duration" 
-                        stroke="#9ca3af" 
-                        fontSize={11}
-                        label={{ value: 'Session (min)', position: 'bottom', offset: 0, style: { fill: '#9ca3af', fontSize: 10 } }}
-                      />
-                      <YAxis 
-                        type="number" 
-                        dataKey="y" 
-                        name="Knowledge Gain" 
-                        stroke="#9ca3af" 
-                        fontSize={11}
-                        label={{ value: 'Gain %', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: 10 } }}
-                      />
-                      <ZAxis range={[50, 50]} />
-                      <ChartTooltip 
-                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                        formatter={(value: number, name: string) => [
-                          name === 'x' ? `${value.toFixed(1)} min` : `${value.toFixed(1)}%`,
-                          name === 'x' ? 'Session Duration' : 'Knowledge Gain'
-                        ]}
-                      />
-                      <Scatter 
-                        data={stats.correlations.sessionTimeVsGain} 
-                        fill="#3b82f6"
-                      />
-                    </ScatterChart>
-                  </ResponsiveContainer>
+                  (() => {
+                    const data = stats.correlations.sessionTimeVsGain;
+                    // Calculate trend line
+                    let trendLine: { x: number; y: number }[] = [];
+                    if (data.length >= 2) {
+                      const n = data.length;
+                      const xVals = data.map(d => d.x);
+                      const yVals = data.map(d => d.y);
+                      const sumX = xVals.reduce((a, b) => a + b, 0);
+                      const sumY = yVals.reduce((a, b) => a + b, 0);
+                      const sumXY = data.reduce((a, d) => a + d.x * d.y, 0);
+                      const sumX2 = xVals.reduce((a, b) => a + b * b, 0);
+                      const denomSlope = n * sumX2 - sumX * sumX;
+                      if (denomSlope !== 0) {
+                        const slope = (n * sumXY - sumX * sumY) / denomSlope;
+                        const intercept = (sumY - slope * sumX) / n;
+                        const minX = Math.min(...xVals);
+                        const maxX = Math.max(...xVals);
+                        trendLine = [
+                          { x: minX, y: slope * minX + intercept },
+                          { x: maxX, y: slope * maxX + intercept }
+                        ];
+                      }
+                    }
+                    return (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                          <XAxis 
+                            type="number" 
+                            dataKey="x" 
+                            name="Session Duration" 
+                            stroke="#9ca3af" 
+                            fontSize={11}
+                            label={{ value: 'Session (min)', position: 'bottom', offset: 0, style: { fill: '#9ca3af', fontSize: 10 } }}
+                          />
+                          <YAxis 
+                            type="number" 
+                            dataKey="y" 
+                            name="Knowledge Gain" 
+                            stroke="#9ca3af" 
+                            fontSize={11}
+                            label={{ value: 'Gain %', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: 10 } }}
+                          />
+                          <ZAxis range={[50, 50]} />
+                          <ChartTooltip 
+                            contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                            formatter={(value: number, name: string) => [
+                              name === 'x' ? `${value.toFixed(1)} min` : `${value.toFixed(1)}%`,
+                              name === 'x' ? 'Session Duration' : 'Knowledge Gain'
+                            ]}
+                          />
+                          <Scatter 
+                            data={data} 
+                            fill="#3b82f6"
+                          />
+                          {trendLine.length === 2 && (
+                            <Scatter 
+                              data={trendLine} 
+                              fill="none"
+                              line={{ stroke: '#ef4444', strokeWidth: 2 }}
+                              shape={() => null}
+                            />
+                          )}
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    );
+                  })()
                 ) : (
                   <div className="h-[220px] flex items-center justify-center text-slate-500 text-sm">
                     No session duration data

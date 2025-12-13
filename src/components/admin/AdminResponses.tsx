@@ -31,7 +31,14 @@ interface QuestionData {
 type ModeFilter = 'all' | 'text' | 'avatar' | 'both';
 type StatusFilter = 'all' | 'completed' | 'incomplete';
 
-const AdminResponses = () => {
+import { getPermissions } from "@/lib/permissions";
+
+interface AdminResponsesProps {
+  userEmail?: string;
+}
+
+const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
+  const permissions = getPermissions(userEmail);
   const [preTestData, setPreTestData] = useState<Record<string, ResponseData[]>>({});
   const [postTestData, setPostTestData] = useState<Record<string, ResponseData[]>>({});
   const [demographicsData, setDemographicsData] = useState<Record<string, ResponseData[]>>({});
@@ -49,9 +56,11 @@ const AdminResponses = () => {
 
   const fetchQuestionData = async () => {
     try {
+      // Only fetch ACTIVE questions - hidden/disabled questions should not appear in stats
       const { data } = await supabase
         .from('study_questions')
-        .select('question_id, question_text, correct_answer, question_type, category');
+        .select('question_id, question_text, correct_answer, question_type, category, is_active')
+        .eq('is_active', true);
       
       const questions: Record<string, QuestionData> = {};
       data?.forEach(q => {
@@ -537,20 +546,22 @@ const AdminResponses = () => {
             <Badge variant="outline" className="text-amber-400 border-amber-700">
               <XCircle className="w-3 h-3 mr-1" /> {sessionCount.incomplete} incomplete
             </Badge>
-            <div className="ml-auto flex gap-2">
-              <Button onClick={exportAllData} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
-                <Download className="w-3 h-3" />
-                Full JSON (Raw)
-              </Button>
-              <Button onClick={exportPostTestKnowledgeCSV} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
-                <FileSpreadsheet className="w-3 h-3" />
-                Knowledge CSV
-              </Button>
-              <Button onClick={exportPostTestPerceptionCSV} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
-                <FileSpreadsheet className="w-3 h-3" />
-                Perception CSV
-              </Button>
-            </div>
+            {permissions.canExportData && (
+              <div className="ml-auto flex gap-2">
+                <Button onClick={exportAllData} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
+                  <Download className="w-3 h-3" />
+                  Full JSON (Raw)
+                </Button>
+                <Button onClick={exportPostTestKnowledgeCSV} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
+                  <FileSpreadsheet className="w-3 h-3" />
+                  Knowledge CSV
+                </Button>
+                <Button onClick={exportPostTestPerceptionCSV} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
+                  <FileSpreadsheet className="w-3 h-3" />
+                  Perception CSV
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -582,9 +593,11 @@ const AdminResponses = () => {
         <TabsContent value="demographics" className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-sm text-slate-400">Demographic responses ({rawResponses.demo.length} total)</h3>
-            <Button onClick={exportDemographicsCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-              <FileSpreadsheet className="w-3 h-3" /> Export CSV
-            </Button>
+            {permissions.canExportData && (
+              <Button onClick={exportDemographicsCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <FileSpreadsheet className="w-3 h-3" /> Export CSV
+              </Button>
+            )}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {Object.entries(demographicsData).map(([questionId, responses]) => {
@@ -634,9 +647,11 @@ const AdminResponses = () => {
         <TabsContent value="pretest" className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-sm text-slate-400">Pre-test responses ({rawResponses.pre.length} total)</h3>
-            <Button onClick={exportPreTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-              <FileSpreadsheet className="w-3 h-3" /> Export CSV
-            </Button>
+            {permissions.canExportData && (
+              <Button onClick={exportPreTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <FileSpreadsheet className="w-3 h-3" /> Export CSV
+              </Button>
+            )}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {Object.entries(preTestData).map(([questionId, responses]) => {
@@ -665,9 +680,11 @@ const AdminResponses = () => {
               <Brain className="w-4 h-4 text-purple-400" />
               <h3 className="text-sm text-slate-400">Knowledge Check Questions ({knowledgeQuestions.reduce((sum, [, r]) => sum + r.reduce((s, x) => s + x.count, 0), 0)} responses)</h3>
             </div>
-            <Button onClick={exportPostTestKnowledgeCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-              <FileSpreadsheet className="w-3 h-3" /> Export CSV
-            </Button>
+            {permissions.canExportData && (
+              <Button onClick={exportPostTestKnowledgeCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <FileSpreadsheet className="w-3 h-3" /> Export CSV
+              </Button>
+            )}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {knowledgeQuestions.map(([questionId, responses]) => {
@@ -763,9 +780,11 @@ const AdminResponses = () => {
         <TabsContent value="openfeedback" className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-sm text-slate-400">Open feedback ({openFeedbackData.length} total)</h3>
-            <Button onClick={exportOpenFeedbackCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-              <FileSpreadsheet className="w-3 h-3" /> Export CSV
-            </Button>
+            {permissions.canExportData && (
+              <Button onClick={exportOpenFeedbackCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <FileSpreadsheet className="w-3 h-3" /> Export CSV
+              </Button>
+            )}
           </div>
           {['open_liked', 'open_frustrating', 'open_improvement'].map(questionId => {
             const questionText = getQuestionText(questionId);

@@ -186,15 +186,15 @@ const AdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview">
-            <AdminOverview />
+            <AdminOverview userEmail={userEmail} />
           </TabsContent>
 
           <TabsContent value="sessions">
-            <AdminSessions />
+            <AdminSessions userEmail={userEmail} />
           </TabsContent>
 
           <TabsContent value="responses">
-            <AdminResponses />
+            <AdminResponses userEmail={userEmail} />
           </TabsContent>
 
           {permissions.canViewSlides && (

@@ -147,20 +147,30 @@ const sortByOrder = (data: { name: string; value: number }[], order: string[]) =
   });
 };
 
-// Helper component for section CSV export
-const ExportButton = ({ onClick, label, size = "sm" }: { onClick: () => void; label: string; size?: "sm" | "xs" }) => (
-  <Button 
-    variant="ghost" 
-    size={size === "xs" ? "sm" : size}
-    onClick={onClick} 
-    className={`gap-1 text-slate-400 hover:text-white ${size === "xs" ? "h-6 px-2 text-xs" : ""}`}
-  >
-    <Download className={size === "xs" ? "w-3 h-3" : "w-4 h-4"} />
-    {label}
-  </Button>
-);
+// Helper component for section CSV export - accepts canExport to hide for viewers
+const ExportButton = ({ onClick, label, size = "sm", canExport = true }: { onClick: () => void; label: string; size?: "sm" | "xs"; canExport?: boolean }) => {
+  if (!canExport) return null;
+  return (
+    <Button 
+      variant="ghost" 
+      size={size === "xs" ? "sm" : size}
+      onClick={onClick} 
+      className={`gap-1 text-slate-400 hover:text-white ${size === "xs" ? "h-6 px-2 text-xs" : ""}`}
+    >
+      <Download className={size === "xs" ? "w-3 h-3" : "w-4 h-4"} />
+      {label}
+    </Button>
+  );
+};
 
-const AdminOverview = () => {
+import { getPermissions } from "@/lib/permissions";
+
+interface AdminOverviewProps {
+  userEmail?: string;
+}
+
+const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
+  const permissions = getPermissions(userEmail);
   const [stats, setStats] = useState<StudyStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -2095,7 +2105,7 @@ const AdminOverview = () => {
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <ExportButton onClick={exportKnowledgeGainCSV} label="CSV" />
+            <ExportButton onClick={exportKnowledgeGainCSV} label="CSV" canExport={permissions.canExportData} />
           </div>
           <CardDescription className="text-slate-400">
             Based on {stats.knowledgeGain.length} of {stats.rawSessions.length} sessions with complete scored data
@@ -2319,7 +2329,7 @@ const AdminOverview = () => {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <ExportButton onClick={exportCorrelationCSV} label="CSV" size="xs" />
+              <ExportButton onClick={exportCorrelationCSV} label="CSV" size="xs" canExport={permissions.canExportData} />
             </div>
             <CardDescription className="text-slate-400">
               Engagement metrics vs knowledge gain with trend lines
@@ -2684,7 +2694,7 @@ const AdminOverview = () => {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <ExportButton onClick={exportQuestionPerformanceCSV} label="CSV" size="xs" />
+              <ExportButton onClick={exportQuestionPerformanceCSV} label="CSV" size="xs" canExport={permissions.canExportData} />
             </div>
           </CardHeader>
           <CardContent>
@@ -2733,7 +2743,7 @@ const AdminOverview = () => {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <ExportButton onClick={exportQuestionPerformanceCSV} label="CSV" size="xs" />
+              <ExportButton onClick={exportQuestionPerformanceCSV} label="CSV" size="xs" canExport={permissions.canExportData} />
             </div>
           </CardHeader>
           <CardContent>
@@ -2786,8 +2796,8 @@ const AdminOverview = () => {
                 </TooltipProvider>
               </div>
               <div className="flex gap-2">
-                <ExportButton onClick={exportLikertCSV} label="CSV" size="xs" />
-                <ExportButton onClick={exportLikertByModeCSV} label="By Mode" size="xs" />
+                <ExportButton onClick={exportLikertCSV} label="CSV" size="xs" canExport={permissions.canExportData} />
+                <ExportButton onClick={exportLikertByModeCSV} label="By Mode" size="xs" canExport={permissions.canExportData} />
               </div>
             </div>
             <CardDescription className="text-slate-400">
@@ -2954,7 +2964,7 @@ const AdminOverview = () => {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-white">Demographic Distribution</CardTitle>
-            <ExportButton onClick={exportDemographicsCSV} label="CSV" />
+            <ExportButton onClick={exportDemographicsCSV} label="CSV" canExport={permissions.canExportData} />
           </div>
           <CardDescription className="text-slate-400">Participant background data</CardDescription>
         </CardHeader>
@@ -3076,7 +3086,8 @@ const AdminOverview = () => {
               </div>
               <ExportButton 
                 onClick={() => downloadCSV(stats.avatarTimeBySlide.map(s => ({ Slide: s.slide, AvgTimeSeconds: s.avgTime, TotalTimeSeconds: s.totalTime, SessionCount: s.count })), 'avatar_time_by_slide')} 
-                label="CSV" 
+                label="CSV"
+                canExport={permissions.canExportData}
               />
             </div>
           </CardHeader>
@@ -3126,7 +3137,8 @@ const AdminOverview = () => {
               </div>
               <ExportButton 
                 onClick={() => downloadCSV(stats.sessionsPerDay.map(s => ({ Date: s.date, SessionCount: s.count })), 'sessions_per_day')} 
-                label="CSV" 
+                label="CSV"
+                canExport={permissions.canExportData}
               />
             </div>
           </CardHeader>

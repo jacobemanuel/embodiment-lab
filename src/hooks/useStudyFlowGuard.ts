@@ -58,52 +58,58 @@ export function useStudyFlowGuard(
   const { showToast = true } = options;
 
   useEffect(() => {
-    // If study was completed, just redirect to home gracefully (no cheating message)
-    const studyCompleted = sessionStorage.getItem('studyCompleted');
-    if (studyCompleted === 'true' && currentStep !== 'completion') {
-      navigate('/', { replace: true });
-      return;
-    }
-    
-    const requirements = STEP_REQUIREMENTS[currentStep];
-    const missingRequirements: string[] = [];
-
-    for (const req of requirements) {
-      const value = sessionStorage.getItem(req);
-      if (!value) {
-        missingRequirements.push(req);
+    // Small delay to ensure sessionStorage has been updated from previous page
+    // This fixes the race condition when navigating from Consent to Demographics
+    const timeoutId = setTimeout(() => {
+      // If study was completed, just redirect to home gracefully (no cheating message)
+      const studyCompleted = sessionStorage.getItem('studyCompleted');
+      if (studyCompleted === 'true' && currentStep !== 'completion') {
+        navigate('/', { replace: true });
+        return;
       }
-    }
-
-    if (missingRequirements.length > 0) {
-      // Find the earliest step that's missing
-      let redirectStep: StudyStep = 'consent';
       
-      if (!sessionStorage.getItem('sessionId')) {
-        redirectStep = 'consent';
-      } else if (!sessionStorage.getItem('demographics')) {
-        redirectStep = 'demographics';
-      } else if (!sessionStorage.getItem('preTest')) {
-        redirectStep = 'pretest';
-      } else if (!sessionStorage.getItem('studyMode')) {
-        redirectStep = 'mode-assignment';
-      } else if (!sessionStorage.getItem('postTestPage1')) {
-        redirectStep = 'posttest1';
-      } else if (!sessionStorage.getItem('postTestPage2')) {
-        redirectStep = 'posttest2';
-      } else if (!sessionStorage.getItem('postTestPage3')) {
-        redirectStep = 'posttest3';
+      const requirements = STEP_REQUIREMENTS[currentStep];
+      const missingRequirements: string[] = [];
+
+      for (const req of requirements) {
+        const value = sessionStorage.getItem(req);
+        if (!value) {
+          missingRequirements.push(req);
+        }
       }
 
-      if (showToast) {
-        toast.warning('Please complete the previous steps first.', {
-          description: 'You cannot skip ahead in the study.',
-          duration: 4000,
-        });
-      }
+      if (missingRequirements.length > 0) {
+        // Find the earliest step that's missing
+        let redirectStep: StudyStep = 'consent';
+        
+        if (!sessionStorage.getItem('sessionId')) {
+          redirectStep = 'consent';
+        } else if (!sessionStorage.getItem('demographics')) {
+          redirectStep = 'demographics';
+        } else if (!sessionStorage.getItem('preTest')) {
+          redirectStep = 'pretest';
+        } else if (!sessionStorage.getItem('studyMode')) {
+          redirectStep = 'mode-assignment';
+        } else if (!sessionStorage.getItem('postTestPage1')) {
+          redirectStep = 'posttest1';
+        } else if (!sessionStorage.getItem('postTestPage2')) {
+          redirectStep = 'posttest2';
+        } else if (!sessionStorage.getItem('postTestPage3')) {
+          redirectStep = 'posttest3';
+        }
 
-      navigate(STEP_REDIRECT[redirectStep], { replace: true });
-    }
+        if (showToast) {
+          toast.warning('Please complete the previous steps first.', {
+            description: 'You cannot skip ahead in the study.',
+            duration: 4000,
+          });
+        }
+
+        navigate(STEP_REDIRECT[redirectStep], { replace: true });
+      }
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
   }, [currentStep, navigate, showToast]);
 
   /**

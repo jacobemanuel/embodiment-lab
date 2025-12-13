@@ -210,7 +210,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
 
       {/* User Camera Section - aligned right with overlay controls */}
       {isConnected && (
-        <div className="border-b border-border bg-muted/40 relative" style={{ height: '140px' }}>
+        <div className="border-b border-border bg-card/80 relative" style={{ height: '150px' }}>
           <div className="absolute inset-0 flex items-center justify-between px-4 gap-4">
             {/* Left side: controls and labels */}
             <div className="flex flex-col gap-2">
@@ -229,7 +229,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
             </div>
 
             {/* Right side: user camera preview */}
-            <div className="relative h-24 w-32 sm:h-28 sm:w-40 rounded-lg overflow-hidden bg-background/60 border border-border/40 flex items-center justify-center">
+            <div className="relative h-28 w-40 sm:h-32 sm:w-48 rounded-xl overflow-hidden bg-muted border border-border/50 flex items-center justify-center shadow-md">
               <video
                 ref={userVideoRef}
                 autoPlay

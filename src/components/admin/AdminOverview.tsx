@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, CheckCircle, Clock, Download, Timer, BarChart3, TrendingUp, ArrowUp, ArrowDown, FileSpreadsheet } from "lucide-react";
+import { Users, CheckCircle, Clock, Download, Timer, BarChart3, TrendingUp, ArrowUp, ArrowDown, FileSpreadsheet, AlertTriangle, Filter } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, ScatterChart, Scatter, ZAxis } from "recharts";
 import DateRangeFilter from "./DateRangeFilter";
 import { format, parseISO, startOfDay, endOfDay } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 interface AvatarTimeData {
   session_id: string;
@@ -34,6 +36,7 @@ interface QuestionAnalysis {
   questionType: string;
   correctRate: number;
   totalResponses: number;
+  hasCorrectAnswer: boolean;
 }
 
 interface CorrelationData {
@@ -77,9 +80,12 @@ interface StudyStats {
   rawDemographics: any[];
   rawPreTest: any[];
   rawPostTest: any[];
+  missingCorrectAnswers: { preTest: number; postTest: number };
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+
+type StatusFilter = 'completed' | 'all' | 'incomplete';
 
 const AdminOverview = () => {
   const [stats, setStats] = useState<StudyStats | null>(null);
@@ -88,6 +94,7 @@ const AdminOverview = () => {
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('completed');
 
   const fetchStats = useCallback(async () => {
     setIsRefreshing(true);
@@ -108,14 +115,20 @@ const AdminOverview = () => {
       const { data: allSessions, error: sessionsError } = await sessionQuery;
       if (sessionsError) throw sessionsError;
 
-      // Filter for completed sessions
+      // Filter sessions based on status filter
       const completedSessions = allSessions?.filter(s => s.completed_at) || [];
       const incompleteSessions = allSessions?.filter(s => !s.completed_at) || [];
       
-      const sessionIds = completedSessions.map(s => s.id);
-      const allSessionIds = allSessions?.map(s => s.id) || [];
+      let sessionsToAnalyze = completedSessions;
+      if (statusFilter === 'all') {
+        sessionsToAnalyze = allSessions || [];
+      } else if (statusFilter === 'incomplete') {
+        sessionsToAnalyze = incompleteSessions;
+      }
+      
+      const sessionIds = sessionsToAnalyze.map(s => s.id);
 
-      // Fetch all related data for completed sessions
+      // Fetch all related data for sessions
       let demographicResponses: any[] = [];
       let preTestResponses: any[] = [];
       let postTestResponses: any[] = [];
@@ -142,31 +155,35 @@ const AdminOverview = () => {
         .eq('is_active', true);
 
       const questionMap = new Map(questionsData?.map(q => [q.question_id, q]) || []);
+      
+      // Count missing correct answers
+      const preTestQuestions = questionsData?.filter(q => q.question_type === 'pre_test') || [];
+      const postTestKnowledgeQuestions = questionsData?.filter(q => q.question_id.startsWith('knowledge-')) || [];
+      const missingPreTest = preTestQuestions.filter(q => !q.correct_answer).length;
+      const missingPostTest = postTestKnowledgeQuestions.filter(q => !q.correct_answer).length;
 
       // Calculate mode distribution
-      const textModeCompleted = completedSessions.filter(s => 
-        (s.modes_used?.length === 1 && s.modes_used.includes('text')) ||
-        (!s.modes_used?.length && s.mode === 'text')
-      ).length;
+      const getSessionMode = (s: any): 'text' | 'avatar' | 'both' => {
+        const modesUsed = s.modes_used && s.modes_used.length > 0 ? s.modes_used : [s.mode];
+        if (modesUsed.includes('text') && modesUsed.includes('avatar')) return 'both';
+        if (modesUsed.includes('avatar')) return 'avatar';
+        return 'text';
+      };
       
-      const avatarModeCompleted = completedSessions.filter(s => 
-        (s.modes_used?.length === 1 && s.modes_used.includes('avatar')) ||
-        (!s.modes_used?.length && s.mode === 'avatar')
-      ).length;
-      
-      const bothModesCompleted = completedSessions.filter(s => 
-        s.modes_used?.includes('text') && s.modes_used?.includes('avatar')
-      ).length;
+      const textModeCompleted = sessionsToAnalyze.filter(s => getSessionMode(s) === 'text').length;
+      const avatarModeCompleted = sessionsToAnalyze.filter(s => getSessionMode(s) === 'avatar').length;
+      const bothModesCompleted = sessionsToAnalyze.filter(s => getSessionMode(s) === 'both').length;
 
       // Average session duration
       let avgDuration = 0;
-      if (completedSessions.length > 0) {
-        const totalDuration = completedSessions.reduce((sum, s) => {
+      const sessionsWithDuration = sessionsToAnalyze.filter(s => s.completed_at);
+      if (sessionsWithDuration.length > 0) {
+        const totalDuration = sessionsWithDuration.reduce((sum, s) => {
           const start = new Date(s.started_at).getTime();
           const end = new Date(s.completed_at!).getTime();
           return sum + (end - start);
         }, 0);
-        avgDuration = Math.round(totalDuration / completedSessions.length / 1000 / 60);
+        avgDuration = Math.round(totalDuration / sessionsWithDuration.length / 1000 / 60);
       }
 
       // Avatar time calculation - group by session
@@ -203,8 +220,8 @@ const AdminOverview = () => {
 
       // Sessions per day
       const sessionsByDay: Record<string, number> = {};
-      completedSessions.forEach(s => {
-        const dateStr = s.completed_at?.split('T')[0] || s.created_at.split('T')[0];
+      sessionsToAnalyze.forEach(s => {
+        const dateStr = (s.completed_at || s.created_at).split('T')[0];
         sessionsByDay[dateStr] = (sessionsByDay[dateStr] || 0) + 1;
       });
       const sessionsPerDay = Object.keys(sessionsByDay).sort().map(date => ({
@@ -304,7 +321,7 @@ const AdminOverview = () => {
 
       // Build knowledge gain array
       const knowledgeGain: KnowledgeGainData[] = [];
-      completedSessions.forEach(s => {
+      sessionsToAnalyze.forEach(s => {
         const preScores = sessionPreScores[s.id];
         const postScores = sessionPostScores[s.id];
         
@@ -312,13 +329,7 @@ const AdminOverview = () => {
           const preScore = (preScores.correct / preScores.total) * 100;
           const postScore = (postScores.correct / postScores.total) * 100;
           
-          let mode: 'text' | 'avatar' | 'both' = 'text';
-          if (s.modes_used?.includes('text') && s.modes_used?.includes('avatar')) {
-            mode = 'both';
-          } else if ((s.modes_used?.length === 1 && s.modes_used.includes('avatar')) || (!s.modes_used?.length && s.mode === 'avatar')) {
-            mode = 'avatar';
-          }
-          
+          const mode = getSessionMode(s);
           const avatarTime = avatarTimeBySession[s.id] || 0;
           
           knowledgeGain.push({
@@ -353,39 +364,53 @@ const AdminOverview = () => {
         arr.length > 0 ? Math.round(arr.reduce((sum, k) => sum + (k[key] as number), 0) / arr.length) : 0;
 
       // Pre-test question analysis
-      const preTestQuestionStats: Record<string, { correct: number; total: number; text: string }> = {};
+      const preTestQuestionStats: Record<string, { correct: number; total: number; text: string; hasCorrectAnswer: boolean }> = {};
       preTestResponses.forEach(r => {
         const question = questionMap.get(r.question_id);
-        if (question?.correct_answer) {
+        if (question) {
           if (!preTestQuestionStats[r.question_id]) {
-            preTestQuestionStats[r.question_id] = { correct: 0, total: 0, text: question.question_text };
+            preTestQuestionStats[r.question_id] = { 
+              correct: 0, 
+              total: 0, 
+              text: question.question_text,
+              hasCorrectAnswer: !!question.correct_answer
+            };
           }
           preTestQuestionStats[r.question_id].total++;
           
-          const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
-          const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
-          const isCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca)) && 
-                           userAnswers.every((ua: string) => correctAnswers.includes(ua));
-          if (isCorrect) preTestQuestionStats[r.question_id].correct++;
-        }
-      });
-
-      // Post-test question analysis (knowledge questions only)
-      const postTestQuestionStats: Record<string, { correct: number; total: number; text: string }> = {};
-      postTestResponses.forEach(r => {
-        if (r.question_id.startsWith('knowledge-')) {
-          const question = questionMap.get(r.question_id);
-          if (question?.correct_answer) {
-            if (!postTestQuestionStats[r.question_id]) {
-              postTestQuestionStats[r.question_id] = { correct: 0, total: 0, text: question.question_text };
-            }
-            postTestQuestionStats[r.question_id].total++;
-            
+          if (question.correct_answer) {
             const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
             const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
             const isCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca)) && 
                              userAnswers.every((ua: string) => correctAnswers.includes(ua));
-            if (isCorrect) postTestQuestionStats[r.question_id].correct++;
+            if (isCorrect) preTestQuestionStats[r.question_id].correct++;
+          }
+        }
+      });
+
+      // Post-test question analysis (knowledge questions only)
+      const postTestQuestionStats: Record<string, { correct: number; total: number; text: string; hasCorrectAnswer: boolean }> = {};
+      postTestResponses.forEach(r => {
+        if (r.question_id.startsWith('knowledge-')) {
+          const question = questionMap.get(r.question_id);
+          if (question) {
+            if (!postTestQuestionStats[r.question_id]) {
+              postTestQuestionStats[r.question_id] = { 
+                correct: 0, 
+                total: 0, 
+                text: question.question_text,
+                hasCorrectAnswer: !!question.correct_answer
+              };
+            }
+            postTestQuestionStats[r.question_id].total++;
+            
+            if (question.correct_answer) {
+              const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
+              const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
+              const isCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca)) && 
+                               userAnswers.every((ua: string) => correctAnswers.includes(ua));
+              if (isCorrect) postTestQuestionStats[r.question_id].correct++;
+            }
           }
         }
       });
@@ -394,16 +419,18 @@ const AdminOverview = () => {
         questionId: qId,
         questionText: stats.text.length > 60 ? stats.text.substring(0, 60) + '...' : stats.text,
         questionType: 'pre_test',
-        correctRate: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+        correctRate: stats.hasCorrectAnswer && stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
         totalResponses: stats.total,
+        hasCorrectAnswer: stats.hasCorrectAnswer,
       }));
 
       const postTestQuestionAnalysis = Object.entries(postTestQuestionStats).map(([qId, stats]) => ({
         questionId: qId,
         questionText: stats.text.length > 60 ? stats.text.substring(0, 60) + '...' : stats.text,
         questionType: 'post_test',
-        correctRate: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+        correctRate: stats.hasCorrectAnswer && stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
         totalResponses: stats.total,
+        hasCorrectAnswer: stats.hasCorrectAnswer,
       }));
 
       // Correlation data
@@ -413,7 +440,7 @@ const AdminOverview = () => {
           y: k.gain,
           mode: k.mode,
         })),
-        sessionTimeVsGain: completedSessions.map(s => {
+        sessionTimeVsGain: sessionsToAnalyze.map(s => {
           const gain = knowledgeGain.find(k => k.sessionId === s.session_id);
           const duration = s.completed_at ? (new Date(s.completed_at).getTime() - new Date(s.started_at).getTime()) / 1000 / 60 : 0;
           return {
@@ -460,10 +487,11 @@ const AdminOverview = () => {
         preTestQuestionAnalysis,
         postTestQuestionAnalysis,
         correlations,
-        rawSessions: completedSessions,
+        rawSessions: sessionsToAnalyze,
         rawDemographics: demographicResponses,
         rawPreTest: preTestResponses,
         rawPostTest: postTestResponses,
+        missingCorrectAnswers: { preTest: missingPreTest, postTest: missingPostTest },
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -471,7 +499,7 @@ const AdminOverview = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [startDate, endDate]);
+  }, [startDate, endDate, statusFilter]);
 
   useEffect(() => {
     fetchStats();
@@ -483,155 +511,124 @@ const AdminOverview = () => {
     return () => clearInterval(interval);
   }, [autoRefresh, fetchStats]);
 
-  // Comprehensive CSV export
+  // Export CSV with each session as a row
   const exportComprehensiveCSV = async () => {
     if (!stats) return;
 
-    // Fetch ALL data for export including question texts
+    // Fetch ALL question data
     const { data: questions } = await supabase
       .from('study_questions')
       .select('question_id, question_text, correct_answer, question_type')
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .order('sort_order');
     
     const questionTextMap: Record<string, string> = {};
+    const correctAnswerMap: Record<string, string> = {};
     questions?.forEach(q => {
       questionTextMap[q.question_id] = q.question_text;
+      correctAnswerMap[q.question_id] = q.correct_answer || '';
     });
 
-    // Create comprehensive CSV with multiple sheets worth of data
+    // Get unique question IDs for each type
+    const demoQuestionIds = [...new Set(stats.rawDemographics.map(r => r.question_id))].sort();
+    const preTestQuestionIds = [...new Set(stats.rawPreTest.map(r => r.question_id))].sort();
+    const postTestQuestionIds = [...new Set(stats.rawPostTest.map(r => r.question_id))].sort();
+
+    // Build CSV with sessions as rows
     let csv = '';
     
-    // Sheet 1: Summary Statistics
-    csv += '=== SUMMARY STATISTICS ===\n';
-    csv += 'Metric,Value\n';
-    csv += `Total Completed Sessions,${stats.totalCompleted}\n`;
-    csv += `Total Incomplete Sessions,${stats.totalIncomplete}\n`;
-    csv += `Text Mode Only,${stats.textModeCompleted}\n`;
-    csv += `Avatar Mode Only,${stats.avatarModeCompleted}\n`;
-    csv += `Both Modes,${stats.bothModesCompleted}\n`;
-    csv += `Average Session Duration (min),${stats.avgSessionDuration}\n`;
-    csv += `Average Avatar Interaction Time (sec),${stats.avgAvatarTime}\n`;
-    csv += `Average Pre-Test Score (%),${stats.avgPreScore}\n`;
-    csv += `Average Post-Test Score (%),${stats.avgPostScore}\n`;
-    csv += `Average Knowledge Gain (%),${stats.avgGain}\n`;
-    csv += `Text Mode Pre-Test (%),${stats.textModePreScore}\n`;
-    csv += `Text Mode Post-Test (%),${stats.textModePostScore}\n`;
-    csv += `Text Mode Gain (%),${stats.textModeGain}\n`;
-    csv += `Avatar Mode Pre-Test (%),${stats.avatarModePreScore}\n`;
-    csv += `Avatar Mode Post-Test (%),${stats.avatarModePostScore}\n`;
-    csv += `Avatar Mode Gain (%),${stats.avatarModeGain}\n`;
-    csv += `Both Modes Pre-Test (%),${stats.bothModesPreScore}\n`;
-    csv += `Both Modes Post-Test (%),${stats.bothModesPostScore}\n`;
-    csv += `Both Modes Gain (%),${stats.bothModesGain}\n`;
-    csv += '\n';
+    // Header row
+    const headers = [
+      'Session ID',
+      'Mode',
+      'Modes Used',
+      'Status',
+      'Started At',
+      'Completed At',
+      'Duration (min)',
+      'Pre-Test Score (%)',
+      'Post-Test Score (%)',
+      'Knowledge Gain (%)',
+      'Avatar Time (sec)',
+      ...demoQuestionIds.map(qId => `DEMO: ${questionTextMap[qId] || qId}`),
+      ...preTestQuestionIds.map(qId => `PRE: ${questionTextMap[qId] || qId}`),
+      ...preTestQuestionIds.map(qId => `PRE_CORRECT: ${qId}`),
+      ...postTestQuestionIds.map(qId => `POST: ${questionTextMap[qId] || qId}`),
+      ...postTestQuestionIds.map(qId => `POST_CORRECT: ${qId}`),
+    ];
+    csv += headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',') + '\n';
 
-    // Sheet 2: Session Details
-    csv += '=== SESSION DETAILS ===\n';
-    csv += 'Session ID,Mode,Modes Used,Started At,Completed At,Duration (min),Pre-Test Score (%),Post-Test Score (%),Knowledge Gain (%),Avatar Time (sec)\n';
-    stats.rawSessions.forEach(s => {
-      const kg = stats.knowledgeGain.find(k => k.sessionId === s.session_id);
-      const duration = s.completed_at ? Math.round((new Date(s.completed_at).getTime() - new Date(s.started_at).getTime()) / 1000 / 60) : 0;
-      csv += `${s.session_id},${s.mode},"${(s.modes_used || []).join(', ')}",${s.started_at},${s.completed_at || ''},${duration},${kg?.preScore || ''},${kg?.postScore || ''},${kg?.gain || ''},${kg?.avatarTime || 0}\n`;
-    });
-    csv += '\n';
+    // Data rows - one per session
+    stats.rawSessions.forEach(session => {
+      const kg = stats.knowledgeGain.find(k => k.sessionId === session.session_id);
+      const duration = session.completed_at 
+        ? Math.round((new Date(session.completed_at).getTime() - new Date(session.started_at).getTime()) / 1000 / 60) 
+        : 0;
+      
+      const demoResponses = stats.rawDemographics.filter(r => r.session_id === session.id);
+      const preTestResponses = stats.rawPreTest.filter(r => r.session_id === session.id);
+      const postTestResponses = stats.rawPostTest.filter(r => r.session_id === session.id);
+      
+      const avatarTime = stats.avatarTimeData
+        .filter(t => t.session_id === session.id)
+        .reduce((sum, t) => sum + (t.duration_seconds || 0), 0);
 
-    // Sheet 3: Demographic Responses
-    csv += '=== DEMOGRAPHIC RESPONSES ===\n';
-    csv += 'Session ID,Question ID,Question Text,Answer\n';
-    stats.rawDemographics.forEach(r => {
-      const qText = questionTextMap[r.question_id] || r.question_id;
-      csv += `${r.session_id},${r.question_id},"${qText.replace(/"/g, '""')}","${r.answer.replace(/"/g, '""')}"\n`;
-    });
-    csv += '\n';
-
-    // Sheet 4: Pre-Test Responses
-    csv += '=== PRE-TEST RESPONSES ===\n';
-    csv += 'Session ID,Question ID,Question Text,Answer,Is Correct\n';
-    const { data: preQuestions } = await supabase
-      .from('study_questions')
-      .select('question_id, question_text, correct_answer')
-      .eq('question_type', 'pre_test')
-      .eq('is_active', true);
-    const preCorrectMap: Record<string, string> = {};
-    preQuestions?.forEach(q => {
-      preCorrectMap[q.question_id] = q.correct_answer || '';
-    });
-    
-    stats.rawPreTest.forEach(r => {
-      const qText = questionTextMap[r.question_id] || r.question_id;
-      const correct = preCorrectMap[r.question_id];
-      let isCorrect = 'N/A';
-      if (correct) {
-        const correctAnswers = correct.split('|||').map((a: string) => a.trim().toLowerCase());
-        const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
-        isCorrect = (correctAnswers.every((ca: string) => userAnswers.includes(ca)) && 
-                    userAnswers.every((ua: string) => correctAnswers.includes(ua))) ? 'Yes' : 'No';
-      }
-      csv += `${r.session_id},${r.question_id},"${qText.replace(/"/g, '""')}","${r.answer.replace(/"/g, '""')}",${isCorrect}\n`;
-    });
-    csv += '\n';
-
-    // Sheet 5: Post-Test Responses
-    csv += '=== POST-TEST RESPONSES ===\n';
-    csv += 'Session ID,Question ID,Question Text,Answer,Is Correct\n';
-    const { data: postQuestions } = await supabase
-      .from('study_questions')
-      .select('question_id, question_text, correct_answer')
-      .eq('question_type', 'post_test')
-      .eq('is_active', true);
-    const postCorrectMap: Record<string, string> = {};
-    postQuestions?.forEach(q => {
-      postCorrectMap[q.question_id] = q.correct_answer || '';
-    });
-    
-    stats.rawPostTest.forEach(r => {
-      const qText = questionTextMap[r.question_id] || r.question_id;
-      const correct = postCorrectMap[r.question_id];
-      let isCorrect = 'N/A';
-      if (correct) {
-        const correctAnswers = correct.split('|||').map((a: string) => a.trim().toLowerCase());
-        const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
-        isCorrect = (correctAnswers.every((ca: string) => userAnswers.includes(ca)) && 
-                    userAnswers.every((ua: string) => correctAnswers.includes(ua))) ? 'Yes' : 'No';
-      }
-      csv += `${r.session_id},${r.question_id},"${qText.replace(/"/g, '""')}","${r.answer.replace(/"/g, '""')}",${isCorrect}\n`;
-    });
-    csv += '\n';
-
-    // Sheet 6: Avatar Time Tracking
-    csv += '=== AVATAR TIME TRACKING ===\n';
-    csv += 'Session ID,Slide ID,Slide Title,Duration (sec),Started At\n';
-    stats.avatarTimeData.forEach(t => {
-      csv += `${t.session_id},${t.slide_id},"${t.slide_title}",${t.duration_seconds},${t.started_at}\n`;
-    });
-    csv += '\n';
-
-    // Sheet 7: Question-Level Analysis
-    csv += '=== QUESTION ANALYSIS ===\n';
-    csv += 'Question Type,Question ID,Question Text,Correct Rate (%),Total Responses\n';
-    stats.preTestQuestionAnalysis.forEach(q => {
-      csv += `Pre-Test,${q.questionId},"${q.questionText.replace(/"/g, '""')}",${q.correctRate},${q.totalResponses}\n`;
-    });
-    stats.postTestQuestionAnalysis.forEach(q => {
-      csv += `Post-Test,${q.questionId},"${q.questionText.replace(/"/g, '""')}",${q.correctRate},${q.totalResponses}\n`;
-    });
-    csv += '\n';
-
-    // Sheet 8: Correlations
-    csv += '=== CORRELATION DATA ===\n';
-    csv += 'Type,X Value,Y Value (Knowledge Gain %),Mode\n';
-    stats.correlations.avatarTimeVsGain.forEach(c => {
-      csv += `Avatar Time (min),${c.x},${c.y},${c.mode}\n`;
-    });
-    stats.correlations.sessionTimeVsGain.forEach(c => {
-      csv += `Session Time (min),${c.x},${c.y},${c.mode}\n`;
+      const row = [
+        session.session_id,
+        session.mode,
+        (session.modes_used || []).join('; '),
+        session.completed_at ? 'Completed' : 'Incomplete',
+        session.started_at,
+        session.completed_at || '',
+        duration,
+        kg?.preScore || '',
+        kg?.postScore || '',
+        kg?.gain || '',
+        avatarTime,
+        ...demoQuestionIds.map(qId => {
+          const resp = demoResponses.find(r => r.question_id === qId);
+          return resp?.answer || '';
+        }),
+        ...preTestQuestionIds.map(qId => {
+          const resp = preTestResponses.find(r => r.question_id === qId);
+          return resp?.answer || '';
+        }),
+        ...preTestQuestionIds.map(qId => {
+          const resp = preTestResponses.find(r => r.question_id === qId);
+          if (!resp) return '';
+          const correct = correctAnswerMap[qId];
+          if (!correct) return 'N/A';
+          const correctAnswers = correct.split('|||').map(a => a.trim().toLowerCase());
+          const userAnswers = resp.answer.split('|||').map((a: string) => a.trim().toLowerCase());
+          const isCorrect = correctAnswers.every(ca => userAnswers.includes(ca)) && 
+                           userAnswers.every(ua => correctAnswers.includes(ua));
+          return isCorrect ? 'Yes' : 'No';
+        }),
+        ...postTestQuestionIds.map(qId => {
+          const resp = postTestResponses.find(r => r.question_id === qId);
+          return resp?.answer || '';
+        }),
+        ...postTestQuestionIds.map(qId => {
+          const resp = postTestResponses.find(r => r.question_id === qId);
+          if (!resp) return '';
+          const correct = correctAnswerMap[qId];
+          if (!correct) return 'N/A';
+          const correctAnswers = correct.split('|||').map(a => a.trim().toLowerCase());
+          const userAnswers = resp.answer.split('|||').map((a: string) => a.trim().toLowerCase());
+          const isCorrect = correctAnswers.every(ca => userAnswers.includes(ca)) && 
+                           userAnswers.every(ua => correctAnswers.includes(ua));
+          return isCorrect ? 'Yes' : 'No';
+        }),
+      ];
+      
+      csv += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\n';
     });
 
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `comprehensive_study_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `study_data_${statusFilter}_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -647,6 +644,7 @@ const AdminOverview = () => {
 
     const exportData = {
       exportedAt: new Date().toISOString(),
+      filter: statusFilter,
       dateRange: {
         start: startDate?.toISOString() || 'all',
         end: endDate?.toISOString() || 'all',
@@ -654,6 +652,7 @@ const AdminOverview = () => {
       summary: {
         totalCompleted: stats.totalCompleted,
         totalIncomplete: stats.totalIncomplete,
+        sessionsAnalyzed: stats.rawSessions.length,
         textModeCompleted: stats.textModeCompleted,
         avatarModeCompleted: stats.avatarModeCompleted,
         bothModesCompleted: stats.bothModesCompleted,
@@ -691,15 +690,13 @@ const AdminOverview = () => {
       sessions: stats.rawSessions.map(s => ({
         ...s,
         knowledgeGain: stats.knowledgeGain.find(k => k.sessionId === s.session_id),
+        avatarTime: stats.avatarTimeData.filter(t => t.session_id === s.id),
+        demographicResponses: stats.rawDemographics.filter(r => r.session_id === s.id),
+        preTestResponses: stats.rawPreTest.filter(r => r.session_id === s.id),
+        postTestResponses: stats.rawPostTest.filter(r => r.session_id === s.id),
       })),
-      responses: {
-        demographics: stats.rawDemographics,
-        preTest: stats.rawPreTest,
-        postTest: stats.rawPostTest,
-      },
       avatarTracking: {
         bySlide: stats.avatarTimeBySlide,
-        rawData: stats.avatarTimeData,
       },
       questionAnalysis: {
         preTest: stats.preTestQuestionAnalysis,
@@ -713,7 +710,7 @@ const AdminOverview = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `comprehensive_study_export_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `study_data_${statusFilter}_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -743,46 +740,94 @@ const AdminOverview = () => {
 
   return (
     <div className="space-y-6">
-      {/* Date Range Filter */}
-      <DateRangeFilter
-        startDate={startDate}
-        endDate={endDate}
-        onStartDateChange={setStartDate}
-        onEndDateChange={setEndDate}
-        onRefresh={fetchStats}
-        isRefreshing={isRefreshing}
-        autoRefreshEnabled={autoRefresh}
-        onAutoRefreshToggle={setAutoRefresh}
-      />
+      {/* Filters Section */}
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardContent className="pt-4">
+          <div className="flex flex-wrap gap-4 items-end">
+            <DateRangeFilter
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+              onRefresh={fetchStats}
+              isRefreshing={isRefreshing}
+              autoRefreshEnabled={autoRefresh}
+              onAutoRefreshToggle={setAutoRefresh}
+            />
+            
+            {/* Status Filter */}
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-slate-400" />
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+                <SelectTrigger className="w-[160px] bg-slate-900 border-slate-600">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="completed">Completed Only</SelectItem>
+                  <SelectItem value="incomplete">Incomplete Only</SelectItem>
+                  <SelectItem value="all">All Sessions</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Export Actions */}
-      <div className="flex flex-wrap gap-3 p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
-        <span className="text-sm text-slate-400 self-center mr-2">Export Full Data:</span>
-        <Button variant="outline" size="sm" onClick={exportComprehensiveCSV} className="gap-2">
-          <FileSpreadsheet className="w-4 h-4" />
-          Comprehensive CSV
-        </Button>
-        <Button variant="outline" size="sm" onClick={exportComprehensiveJSON} className="gap-2">
-          <Download className="w-4 h-4" />
-          Comprehensive JSON
-        </Button>
-      </div>
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardContent className="pt-4">
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="text-sm text-slate-400 mr-2">Export Data:</span>
+            <Button variant="outline" size="sm" onClick={exportComprehensiveCSV} className="gap-2 border-slate-600">
+              <FileSpreadsheet className="w-4 h-4" />
+              CSV (Sessions as Rows)
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportComprehensiveJSON} className="gap-2 border-slate-600">
+              <Download className="w-4 h-4" />
+              Full JSON
+            </Button>
+            <Badge variant="secondary" className="ml-2">
+              {stats.rawSessions.length} sessions
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Warnings */}
+      {(stats.missingCorrectAnswers.preTest > 0 || stats.missingCorrectAnswers.postTest > 0) && (
+        <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-4 text-sm text-amber-200 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <strong>Missing Correct Answers:</strong> Knowledge gain analysis requires correct answers to be set.
+            {stats.missingCorrectAnswers.preTest > 0 && (
+              <span className="block">• {stats.missingCorrectAnswers.preTest} pre-test questions missing correct answers</span>
+            )}
+            {stats.missingCorrectAnswers.postTest > 0 && (
+              <span className="block">• {stats.missingCorrectAnswers.postTest} post-test knowledge questions missing correct answers</span>
+            )}
+            <span className="block mt-1 text-amber-300">Go to Questions tab to set correct answers.</span>
+          </div>
+        </div>
+      )}
 
       {/* Info banner */}
       <div className="bg-blue-900/30 border border-blue-700/50 rounded-lg p-3 text-sm text-blue-200">
-        📊 Statistics show <strong>completed sessions only</strong> ({stats.totalCompleted} completed, {stats.totalIncomplete} incomplete)
+        📊 Showing <strong>{statusFilter === 'completed' ? 'completed sessions only' : statusFilter === 'incomplete' ? 'incomplete sessions only' : 'all sessions'}</strong> 
+        {' '}({stats.totalCompleted} completed, {stats.totalIncomplete} incomplete) • Analyzing {stats.rawSessions.length} sessions
       </div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Completed Sessions</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-400">Sessions Analyzed</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.totalCompleted}</div>
-            <p className="text-xs text-slate-500 mt-1">fully completed studies</p>
+            <div className="text-2xl font-bold text-white">{stats.rawSessions.length}</div>
+            <p className="text-xs text-slate-500 mt-1">
+              {statusFilter === 'completed' ? 'completed studies' : statusFilter === 'incomplete' ? 'incomplete studies' : 'total studies'}
+            </p>
           </CardContent>
         </Card>
 
@@ -793,11 +838,19 @@ const AdminOverview = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white flex items-center gap-2">
-              {stats.avgGain >= 0 ? '+' : ''}{stats.avgGain}%
-              {stats.avgGain > 0 && <ArrowUp className="h-5 w-5 text-green-500" />}
-              {stats.avgGain < 0 && <ArrowDown className="h-5 w-5 text-red-500" />}
+              {stats.knowledgeGain.length > 0 ? (
+                <>
+                  {stats.avgGain >= 0 ? '+' : ''}{stats.avgGain}%
+                  {stats.avgGain > 0 && <ArrowUp className="h-5 w-5 text-green-500" />}
+                  {stats.avgGain < 0 && <ArrowDown className="h-5 w-5 text-red-500" />}
+                </>
+              ) : (
+                <span className="text-slate-500">N/A</span>
+              )}
             </div>
-            <p className="text-xs text-slate-500 mt-1">post vs pre-test</p>
+            <p className="text-xs text-slate-500 mt-1">
+              {stats.knowledgeGain.length > 0 ? `based on ${stats.knowledgeGain.length} scored sessions` : 'no scored data yet'}
+            </p>
           </CardContent>
         </Card>
 
@@ -835,7 +888,7 @@ const AdminOverview = () => {
             Knowledge Gain Analysis
           </CardTitle>
           <CardDescription className="text-slate-400">
-            Pre-test vs Post-test comparison (based on {stats.knowledgeGain.length} sessions with complete data)
+            Pre-test vs Post-test comparison (based on {stats.knowledgeGain.length} sessions with scored data)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -989,8 +1042,10 @@ const AdminOverview = () => {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-[200px] text-slate-500">
-              No knowledge gain data available yet (requires scored pre/post test questions)
+            <div className="flex flex-col items-center justify-center h-[200px] text-slate-500">
+              <AlertTriangle className="w-8 h-8 mb-2 text-amber-500" />
+              <p>No knowledge gain data available</p>
+              <p className="text-xs mt-1">Requires both pre-test and post-test questions to have correct answers set</p>
             </div>
           )}
         </CardContent>
@@ -1012,9 +1067,13 @@ const AdminOverview = () => {
                       <div className="truncate text-slate-300" title={q.questionText}>{q.questionText}</div>
                     </div>
                     <div className="w-16 text-right">
-                      <span className={q.correctRate >= 50 ? 'text-green-400' : 'text-red-400'}>
-                        {q.correctRate}%
-                      </span>
+                      {q.hasCorrectAnswer ? (
+                        <span className={q.correctRate >= 50 ? 'text-green-400' : 'text-red-400'}>
+                          {q.correctRate}%
+                        </span>
+                      ) : (
+                        <span className="text-amber-400 text-xs">No answer set</span>
+                      )}
                     </div>
                     <div className="w-12 text-right text-slate-500 text-xs">
                       n={q.totalResponses}
@@ -1042,9 +1101,13 @@ const AdminOverview = () => {
                       <div className="truncate text-slate-300" title={q.questionText}>{q.questionText}</div>
                     </div>
                     <div className="w-16 text-right">
-                      <span className={q.correctRate >= 50 ? 'text-green-400' : 'text-red-400'}>
-                        {q.correctRate}%
-                      </span>
+                      {q.hasCorrectAnswer ? (
+                        <span className={q.correctRate >= 50 ? 'text-green-400' : 'text-red-400'}>
+                          {q.correctRate}%
+                        </span>
+                      ) : (
+                        <span className="text-amber-400 text-xs">No answer set</span>
+                      )}
                     </div>
                     <div className="w-12 text-right text-slate-500 text-xs">
                       n={q.totalResponses}
@@ -1064,7 +1127,7 @@ const AdminOverview = () => {
         <CardHeader>
           <CardTitle className="text-white">Avatar Interaction Time</CardTitle>
           <CardDescription className="text-slate-400">
-            Time spent with avatar per slide ({stats.avatarTimeData.length} records from {Object.keys(stats.avatarTimeBySlide).length > 0 ? 'multiple' : '0'} sessions)
+            Time spent with avatar per slide ({stats.avatarTimeData.length} records from {Object.keys(stats.avatarTimeBySlide).length > 0 ? stats.avatarTimeBySlide.length : '0'} slides)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1158,8 +1221,8 @@ const AdminOverview = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
-            <CardTitle className="text-white">Completed Sessions Over Time</CardTitle>
-            <CardDescription className="text-slate-400">Daily completed studies</CardDescription>
+            <CardTitle className="text-white">Sessions Over Time</CardTitle>
+            <CardDescription className="text-slate-400">Daily {statusFilter === 'completed' ? 'completed' : ''} studies</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -1177,7 +1240,7 @@ const AdminOverview = () => {
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
             <CardTitle className="text-white">Mode Distribution</CardTitle>
-            <CardDescription className="text-slate-400">Completed sessions by learning mode</CardDescription>
+            <CardDescription className="text-slate-400">{statusFilter === 'completed' ? 'Completed' : 'All'} sessions by learning mode</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -1186,7 +1249,7 @@ const AdminOverview = () => {
                 <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
                 <YAxis stroke="#9ca3af" fontSize={12} />
                 <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                <Bar dataKey="count" name="Completed" fill="#3b82f6" />
+                <Bar dataKey="count" name="Sessions" fill="#3b82f6" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -1290,26 +1353,26 @@ const AdminOverview = () => {
       <Card className="bg-slate-800 border-slate-700">
         <CardHeader>
           <CardTitle className="text-white">Summary Statistics</CardTitle>
-          <CardDescription className="text-slate-400">Key metrics for completed participants</CardDescription>
+          <CardDescription className="text-slate-400">Key metrics for {statusFilter} participants</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400">Total Completed</div>
-              <div className="text-xl font-bold text-white">{stats.totalCompleted}</div>
+              <div className="text-xs text-slate-400">Sessions Analyzed</div>
+              <div className="text-xl font-bold text-white">{stats.rawSessions.length}</div>
             </div>
             <div className="bg-slate-700/50 rounded-lg p-3 text-center">
               <div className="text-xs text-slate-400">Avg Pre-Test</div>
-              <div className="text-xl font-bold text-red-400">{stats.avgPreScore}%</div>
+              <div className="text-xl font-bold text-red-400">{stats.avgPreScore || 'N/A'}%</div>
             </div>
             <div className="bg-slate-700/50 rounded-lg p-3 text-center">
               <div className="text-xs text-slate-400">Avg Post-Test</div>
-              <div className="text-xl font-bold text-green-400">{stats.avgPostScore}%</div>
+              <div className="text-xl font-bold text-green-400">{stats.avgPostScore || 'N/A'}%</div>
             </div>
             <div className="bg-slate-700/50 rounded-lg p-3 text-center">
               <div className="text-xs text-slate-400">Avg Gain</div>
               <div className={`text-xl font-bold ${stats.avgGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {stats.avgGain >= 0 ? '+' : ''}{stats.avgGain}%
+                {stats.knowledgeGain.length > 0 ? `${stats.avgGain >= 0 ? '+' : ''}${stats.avgGain}%` : 'N/A'}
               </div>
             </div>
             <div className="bg-slate-700/50 rounded-lg p-3 text-center">

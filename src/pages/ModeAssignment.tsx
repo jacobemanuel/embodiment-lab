@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Smile } from "lucide-react";
 import logo from "@/assets/logo-white.png";
+import { toast } from "sonner";
 
 const ModeAssignment = () => {
   const navigate = useNavigate();
@@ -23,18 +24,41 @@ const ModeAssignment = () => {
   }, [navigate]);
 
   const handleModeSelect = async (mode: StudyMode) => {
+    // SECURITY: Check if trying to switch modes mid-session
+    const existingMode = sessionStorage.getItem('studyMode') as StudyMode | null;
+    const existingSessionId = sessionStorage.getItem('sessionId');
+    
+    if (existingMode && existingSessionId && existingMode !== mode) {
+      // Mode switching attempt detected - reset entire session
+      sessionStorage.removeItem('sessionId');
+      sessionStorage.removeItem('studyMode');
+      sessionStorage.removeItem('demographics');
+      sessionStorage.removeItem('preTest');
+      sessionStorage.removeItem('postTestPage1');
+      sessionStorage.removeItem('postTestPage2');
+      sessionStorage.removeItem('postTestPage3');
+      
+      toast.error('Mode switching is not allowed during an active session.', {
+        description: 'Your session has been reset. Please start from the beginning.',
+        duration: 6000,
+      });
+      
+      navigate('/', { replace: true });
+      return;
+    }
+
     setSelectedMode(mode);
     setIsLoading(true);
 
     try {
-      const existingSessionId = sessionStorage.getItem('sessionId');
+      const currentSessionId = sessionStorage.getItem('sessionId');
 
-      if (existingSessionId) {
+      if (currentSessionId) {
         // Update existing session via edge function (bypasses RLS)
         const { data, error } = await supabase.functions.invoke('save-study-data', {
           body: {
             action: 'update_mode',
-            sessionId: existingSessionId,
+            sessionId: currentSessionId,
             mode
           }
         });

@@ -5,8 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import logo from "@/assets/logo-white.png";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronLeft } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
+import ConsentSidebar from "@/components/ConsentSidebar";
 
 const PostTestPage2 = () => {
   const navigate = useNavigate();
@@ -97,11 +98,23 @@ const PostTestPage2 = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <ConsentSidebar />
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <img src={logo} alt="Majewski Studio" className="h-8" />
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/post-test')}
+              className="gap-1 text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <img src={logo} alt="Majewski Studio" className="h-8" />
+          </div>
           <div className="text-sm text-muted-foreground">
-            Page 2 of 2 • {answeredQuestionsCount} of {knowledgeQuestions.length} answered
+            Page 2 of 3 • {answeredQuestionsCount} of {knowledgeQuestions.length} answered
           </div>
         </div>
       </header>

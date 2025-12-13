@@ -12,6 +12,7 @@ import { StudyMode } from "@/types/study";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { Loader2 } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
+import ConsentSidebar from "@/components/ConsentSidebar";
 
 const Demographics = () => {
   const navigate = useNavigate();
@@ -91,6 +92,7 @@ const Demographics = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <ConsentSidebar />
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4">
           <img src={logo} alt="Majewski Studio" className="h-8" />

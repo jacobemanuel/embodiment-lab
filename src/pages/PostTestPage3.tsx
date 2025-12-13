@@ -8,8 +8,9 @@ import logo from "@/assets/logo-white.png";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { savePostTestResponses, completeStudySession } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MessageSquare, SkipForward } from "lucide-react";
+import { Loader2, MessageSquare, SkipForward, ChevronLeft } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
+import ConsentSidebar from "@/components/ConsentSidebar";
 
 const MAX_CHARS = 200;
 const SKIP_VALUE = '__SKIPPED__';
@@ -160,11 +161,23 @@ const PostTestPage3 = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <ConsentSidebar />
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <img src={logo} alt="Majewski Studio" className="h-8" />
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/post-test-2')}
+              className="gap-1 text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <img src={logo} alt="Majewski Studio" className="h-8" />
+          </div>
           <div className="text-sm text-muted-foreground">
-            Final Page • {answeredQuestionsCount} of {openFeedbackQuestions.length} answered
+            Page 3 of 3 • {answeredQuestionsCount} of {openFeedbackQuestions.length} answered
           </div>
         </div>
       </header>

@@ -34,8 +34,8 @@ const Welcome = () => {
                   AI Image Generation Study
                 </h1>
               </div>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed text-justify">
-                Explore how AI avatars can enhance learning through an interactive experience. Learn AI image generation fundamentals while contributing to research on trust and engagement in AI-powered education.
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Learn AI image generation while helping research on AI-powered education.
               </p>
             </div>
 

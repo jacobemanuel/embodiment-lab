@@ -1,10 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const avatarTimeSchema = z.object({
+  sessionId: z.string().min(10).max(100),
+  slideId: z.string().min(1).max(100),
+  slideTitle: z.string().max(500).optional(),
+  startedAt: z.string().datetime().optional(),
+  endedAt: z.string().datetime().optional(),
+  durationSeconds: z.number().min(0).max(7200).optional() // Max 2 hours per slide
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,14 +23,19 @@ serve(async (req) => {
   }
 
   try {
-    const { sessionId, slideId, slideTitle, startedAt, endedAt, durationSeconds } = await req.json();
-
-    if (!sessionId || !slideId) {
+    // Parse and validate input
+    const rawData = await req.json();
+    const validationResult = avatarTimeSchema.safeParse(rawData);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error.errors);
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: sessionId and slideId' }),
+        JSON.stringify({ error: 'Invalid request data', details: validationResult.error.errors }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const { sessionId, slideId, slideTitle, startedAt, endedAt, durationSeconds } = validationResult.data;
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;

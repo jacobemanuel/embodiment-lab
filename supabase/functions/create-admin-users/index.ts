@@ -77,7 +77,7 @@ serve(async (req) => {
       if (email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
         password = OWNER_PASSWORD;
       } else if (email.toLowerCase() === MENTOR_EMAIL.toLowerCase()) {
-        password = 'mentor2025'; // Simple password for mentor
+        password = 'mentorTUMHAII2026'; // Mentor password
       } else {
         password = DEFAULT_ADMIN_PASSWORD;
       }

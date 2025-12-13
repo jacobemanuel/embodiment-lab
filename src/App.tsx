@@ -14,6 +14,7 @@ import Scenario from "./pages/Scenario";
 import ScenarioFeedback from "./pages/ScenarioFeedback";
 import PostTestPage1 from "./pages/PostTestPage1";
 import PostTestPage2 from "./pages/PostTestPage2";
+import PostTestPage3 from "./pages/PostTestPage3";
 import Completion from "./pages/Completion";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/scenario/:mode/:scenarioId/feedback" element={<ScenarioFeedback />} />
             <Route path="/post-test" element={<PostTestPage1 />} />
             <Route path="/post-test-2" element={<PostTestPage2 />} />
+            <Route path="/post-test-3" element={<PostTestPage3 />} />
             <Route path="/completion" element={<Completion />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />

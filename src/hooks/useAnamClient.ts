@@ -138,16 +138,12 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         const contentChunk = event.content || '';
         const trimmed = contentChunk.trim();
 
-        // AGGRESSIVE filtering - hide any system/context messages from transcript
-        if (trimmed.startsWith('[Context') || 
-            trimmed.startsWith('[context') ||
-            trimmed.startsWith('[CONTEXT') ||
-            trimmed.startsWith('[SYSTEM') ||
-            trimmed.startsWith('[System') ||
-            trimmed.startsWith('[SILENT') ||
-            trimmed.includes('Context update') ||
-            trimmed.includes('DO_NOT_SPEAK')) {
-          console.log('Filtering system message from transcript:', trimmed.substring(0, 30));
+        // Ignore system-event payloads and silent acknowledgments
+        if (trimmed.startsWith('[SYSTEM_EVENT') || 
+            trimmed.startsWith('[SILENT_CONTEXT_UPDATE') ||
+            trimmed.includes('[ACKNOWLEDGED]') ||
+            trimmed.includes('[DO_NOT_SPEAK]')) {
+          console.log('Skipping context update from transcript');
           return;
         }
 

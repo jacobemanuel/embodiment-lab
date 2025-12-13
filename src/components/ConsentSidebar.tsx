@@ -33,7 +33,7 @@ const ConsentSidebar = () => {
           <div className="p-6 space-y-6">
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Purpose of the Study</h2>
-              <p className="text-muted-foreground text-sm leading-relaxed">
+              <p className="text-muted-foreground text-sm leading-relaxed text-justify">
                 This research investigates how embodied AI agents, such as virtual avatars powered by large language models, can enhance learners' trust, engagement, and comprehension in AI literacy education. You will learn about AI image generation as a practical example of AI capabilities, comparing text-based and avatar-based learning formats.
               </p>
             </section>
@@ -62,7 +62,7 @@ const ConsentSidebar = () => {
 
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Data Collection & Privacy</h2>
-              <p className="text-muted-foreground text-sm leading-relaxed">
+              <p className="text-muted-foreground text-sm leading-relaxed text-justify">
                 We will collect your responses, confidence ratings, and dialogue interactions. All data is:
               </p>
               <ul className="space-y-2 text-muted-foreground text-sm ml-4">
@@ -76,17 +76,17 @@ const ConsentSidebar = () => {
 
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Risks & Benefits</h2>
-              <p className="text-muted-foreground text-sm leading-relaxed">
+              <p className="text-muted-foreground text-sm leading-relaxed text-justify">
                 <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the approximately 10-minute session.
               </p>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                <strong className="text-foreground">Benefits:</strong> You will learn fundamental concepts of AI image generation, including prompt engineering, style control, and creative techniques. You'll contribute to research on AI-powered educational systems.
+              <p className="text-muted-foreground text-sm leading-relaxed text-justify">
+                <strong className="text-foreground">Benefits:</strong> You will learn fundamental concepts of AI image generation, including prompt engineering and creative techniques. Your participation contributes to research on trustworthy AI-powered educational systems.
               </p>
             </section>
 
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Voluntary Participation</h2>
-              <p className="text-muted-foreground text-sm leading-relaxed">
+              <p className="text-muted-foreground text-sm leading-relaxed text-justify">
                 Your participation is completely voluntary. You may withdraw at any time without penalty by simply closing your browser. Partial data will not be used.
               </p>
             </section>

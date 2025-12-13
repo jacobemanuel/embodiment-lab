@@ -80,7 +80,7 @@ const Completion = () => {
 
           <div className="space-y-4">
             <h1 className="text-4xl font-semibold">Thank You!</h1>
-            <p className="text-xl text-muted-foreground max-w-lg mx-auto">
+            <p className="text-xl text-muted-foreground max-w-lg mx-auto text-justify">
               You've completed the AI image generation study. Your responses have been recorded and will help improve AI-powered educational systems.
             </p>
           </div>
@@ -88,7 +88,7 @@ const Completion = () => {
           <div className="bg-card border border-border rounded-2xl p-8 space-y-6">
             <div className="space-y-3">
               <h2 className="text-2xl font-semibold">What You Learned</h2>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed text-justify">
                 You explored the fundamentals of AI image generation, including prompt engineering, negative prompts, 
                 style control parameters (CFG scale, seed), aspect ratios, and advanced techniques like img2img and inpainting. 
                 You also practiced generating images in real-time using the AI playground. These concepts form the foundation 
@@ -98,7 +98,7 @@ const Completion = () => {
 
             <div className="bg-secondary/50 rounded-xl p-6 space-y-3">
               <h3 className="font-semibold">Your Data is Secure</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed text-justify">
                 All your responses have been anonymized and encrypted. No personally identifiable information 
                 was collected. Your session ID is the only identifier, and it cannot be linked back to you.
               </p>

@@ -135,7 +135,7 @@ const ModeAssignment = () => {
                   <MessageSquare className="w-8 h-8 text-primary" />
                 </div>
                 <h2 className="text-2xl font-semibold">Text Mode</h2>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground text-justify">
                   Learn through interactive chat. Read slides and discuss with an AI tutor at your own pace.
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-1">
@@ -166,7 +166,7 @@ const ModeAssignment = () => {
                   <Smile className="w-8 h-8 text-primary-foreground" />
                 </div>
                 <h2 className="text-2xl font-semibold">Avatar Mode</h2>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground text-justify">
                   Learn with an AI avatar tutor who speaks to you and responds to your voice.
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-1">

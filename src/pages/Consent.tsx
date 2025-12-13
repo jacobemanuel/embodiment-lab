@@ -38,7 +38,7 @@ const Consent = () => {
                 </div>
                 <h2 className="text-xl font-semibold">Purpose of the Study</h2>
               </div>
-              <p className="text-muted-foreground leading-relaxed pl-11">
+              <p className="text-muted-foreground leading-relaxed pl-11 text-justify">
                 This research investigates how embodied AI agents, such as virtual avatars powered by large language models, can enhance learners' trust, engagement, and comprehension in AI literacy education. You will learn about AI image generation as a practical example of AI capabilities, comparing text-based and avatar-based learning formats. Results will inform the design of trustworthy, engaging AI companions for education.
               </p>
             </section>
@@ -77,7 +77,7 @@ const Consent = () => {
                 </div>
                 <h2 className="text-xl font-semibold">Data Collection & Privacy</h2>
               </div>
-              <p className="text-muted-foreground leading-relaxed pl-11">
+              <p className="text-muted-foreground leading-relaxed pl-11 text-justify">
                 We will collect your responses, confidence ratings, and dialogue interactions. All data is:
               </p>
               <ul className="space-y-1.5 text-muted-foreground pl-11 ml-4">
@@ -112,10 +112,10 @@ const Consent = () => {
                 <h2 className="text-xl font-semibold">Risks & Benefits</h2>
               </div>
               <div className="pl-11 space-y-2">
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed text-justify">
                   <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the approximately 10-minute session.
                 </p>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed text-justify">
                   <strong className="text-foreground">Benefits:</strong> You will learn fundamental concepts of AI image generation, including prompt engineering and creative techniques. Your participation contributes to research on trustworthy AI-powered educational systems and helps inform the design of engaging AI learning companions.
                 </p>
               </div>
@@ -128,7 +128,7 @@ const Consent = () => {
                 </div>
                 <h2 className="text-xl font-semibold">Voluntary Participation</h2>
               </div>
-              <p className="text-muted-foreground leading-relaxed pl-11">
+              <p className="text-muted-foreground leading-relaxed pl-11 text-justify">
                 Your participation is completely voluntary. You may withdraw at any time without penalty by simply closing your browser. Partial data will not be used.
               </p>
             </section>

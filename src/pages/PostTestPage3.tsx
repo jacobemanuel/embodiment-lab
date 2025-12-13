@@ -196,7 +196,7 @@ const PostTestPage3 = () => {
                 Your Feedback
               </h1>
             </div>
-            <p className="text-muted-foreground mb-6">
+            <p className="text-muted-foreground mb-6 text-justify">
               Almost done! Share your thoughts about your learning experience. You can skip any question if you prefer.
             </p>
             

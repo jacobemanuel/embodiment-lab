@@ -111,7 +111,7 @@ const PostTestPage1 = () => {
             <h1 className="text-3xl font-semibold mb-2 bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">
               Experience Assessment
             </h1>
-            <p className="text-muted-foreground mb-6">
+            <p className="text-muted-foreground mb-6 text-justify">
               Please rate your experience with the learning system.
             </p>
             

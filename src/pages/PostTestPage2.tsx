@@ -142,7 +142,7 @@ const PostTestPage2 = () => {
             <h1 className="text-3xl font-semibold mb-2 bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">
               Knowledge Check!
             </h1>
-            <p className="text-muted-foreground mb-2">
+            <p className="text-muted-foreground mb-2 text-justify">
               Time to test what you've learned about AI image generation. Don't worry - there's no grade!
             </p>
             <p className="text-muted-foreground/60 text-sm mb-6">

@@ -59,9 +59,23 @@ interface CorrelationData {
 }
 
 interface StatisticalTest {
-  textVsAvatar: { tStatistic: number; pValue: number; significant: boolean; textN: number; avatarN: number; textMean: number; avatarMean: number; textStd: number; avatarStd: number };
-  textVsBoth: { tStatistic: number; pValue: number; significant: boolean; textN: number; bothN: number; textMean: number; bothMean: number };
-  avatarVsBoth: { tStatistic: number; pValue: number; significant: boolean; avatarN: number; bothN: number; avatarMean: number; bothMean: number };
+  textVsAvatar: { 
+    tStatistic: number; 
+    pValue: number; 
+    significant: boolean; 
+    textN: number; 
+    avatarN: number; 
+    textMean: number; 
+    avatarMean: number; 
+    textStd: number; 
+    avatarStd: number;
+    cohensD: number;
+    effectSize: 'negligible' | 'small' | 'medium' | 'large';
+    ci95Lower: number;
+    ci95Upper: number;
+  };
+  textVsBoth: { tStatistic: number; pValue: number; significant: boolean; textN: number; bothN: number; textMean: number; bothMean: number; cohensD: number; effectSize: 'negligible' | 'small' | 'medium' | 'large'; };
+  avatarVsBoth: { tStatistic: number; pValue: number; significant: boolean; avatarN: number; bothN: number; avatarMean: number; bothMean: number; cohensD: number; effectSize: 'negligible' | 'small' | 'medium' | 'large'; };
 }
 
 interface StudyStats {
@@ -470,6 +484,56 @@ const AdminOverview = () => {
         return Math.round(Math.sqrt(variance) * 100) / 100;
       };
 
+      // Cohen's d effect size calculation
+      const calcCohensD = (group1: number[], group2: number[]): { d: number; effectSize: 'negligible' | 'small' | 'medium' | 'large' } => {
+        if (group1.length < 2 || group2.length < 2) return { d: 0, effectSize: 'negligible' };
+        
+        const mean1 = group1.reduce((a, b) => a + b, 0) / group1.length;
+        const mean2 = group2.reduce((a, b) => a + b, 0) / group2.length;
+        
+        const var1 = group1.reduce((sum, x) => sum + Math.pow(x - mean1, 2), 0) / (group1.length - 1);
+        const var2 = group2.reduce((sum, x) => sum + Math.pow(x - mean2, 2), 0) / (group2.length - 1);
+        
+        // Pooled standard deviation
+        const pooledSD = Math.sqrt(((group1.length - 1) * var1 + (group2.length - 1) * var2) / (group1.length + group2.length - 2));
+        
+        if (pooledSD === 0) return { d: 0, effectSize: 'negligible' };
+        
+        const d = Math.abs(mean1 - mean2) / pooledSD;
+        const roundedD = Math.round(d * 100) / 100;
+        
+        // Interpret effect size (Cohen's conventions)
+        let effectSize: 'negligible' | 'small' | 'medium' | 'large';
+        if (d < 0.2) effectSize = 'negligible';
+        else if (d < 0.5) effectSize = 'small';
+        else if (d < 0.8) effectSize = 'medium';
+        else effectSize = 'large';
+        
+        return { d: roundedD, effectSize };
+      };
+
+      // 95% Confidence Interval for mean difference
+      const calc95CI = (group1: number[], group2: number[]): { lower: number; upper: number } => {
+        if (group1.length < 2 || group2.length < 2) return { lower: 0, upper: 0 };
+        
+        const mean1 = group1.reduce((a, b) => a + b, 0) / group1.length;
+        const mean2 = group2.reduce((a, b) => a + b, 0) / group2.length;
+        const meanDiff = mean1 - mean2;
+        
+        const var1 = group1.reduce((sum, x) => sum + Math.pow(x - mean1, 2), 0) / (group1.length - 1);
+        const var2 = group2.reduce((sum, x) => sum + Math.pow(x - mean2, 2), 0) / (group2.length - 1);
+        
+        const se = Math.sqrt(var1 / group1.length + var2 / group2.length);
+        
+        // Using 1.96 for 95% CI (normal approximation)
+        const margin = 1.96 * se;
+        
+        return {
+          lower: Math.round((meanDiff - margin) * 100) / 100,
+          upper: Math.round((meanDiff + margin) * 100) / 100,
+        };
+      };
+
       // Perform statistical tests
       const textGains = textModeData.map(k => k.gain);
       const avatarGains = avatarModeData.map(k => k.gain);
@@ -478,6 +542,12 @@ const AdminOverview = () => {
       const textVsAvatarTest = welchTTest(textGains, avatarGains);
       const textVsBothTest = welchTTest(textGains, bothGains);
       const avatarVsBothTest = welchTTest(avatarGains, bothGains);
+      
+      const textVsAvatarCohenD = calcCohensD(textGains, avatarGains);
+      const textVsBothCohenD = calcCohensD(textGains, bothGains);
+      const avatarVsBothCohenD = calcCohensD(avatarGains, bothGains);
+      
+      const textVsAvatarCI = calc95CI(textGains, avatarGains);
       
       const statisticalTests: StatisticalTest | null = (textGains.length >= 2 || avatarGains.length >= 2) ? {
         textVsAvatar: {
@@ -488,6 +558,10 @@ const AdminOverview = () => {
           avatarMean: calcAvg(avatarModeData, 'gain'),
           textStd: calcStd(textGains),
           avatarStd: calcStd(avatarGains),
+          cohensD: textVsAvatarCohenD.d,
+          effectSize: textVsAvatarCohenD.effectSize,
+          ci95Lower: textVsAvatarCI.lower,
+          ci95Upper: textVsAvatarCI.upper,
         },
         textVsBoth: {
           ...textVsBothTest,
@@ -495,6 +569,8 @@ const AdminOverview = () => {
           bothN: bothGains.length,
           textMean: calcAvg(textModeData, 'gain'),
           bothMean: calcAvg(bothModesData, 'gain'),
+          cohensD: textVsBothCohenD.d,
+          effectSize: textVsBothCohenD.effectSize,
         },
         avatarVsBoth: {
           ...avatarVsBothTest,
@@ -502,6 +578,8 @@ const AdminOverview = () => {
           bothN: bothGains.length,
           avatarMean: calcAvg(avatarModeData, 'gain'),
           bothMean: calcAvg(bothModesData, 'gain'),
+          cohensD: avatarVsBothCohenD.d,
+          effectSize: avatarVsBothCohenD.effectSize,
         },
       } : null;
 
@@ -1120,12 +1198,23 @@ const AdminOverview = () => {
         textVsAvatar: {
           comparison: 'Text Mode vs Avatar Mode',
           textMean: stats.statisticalTests.textVsAvatar.textMean,
+          textStdDev: stats.statisticalTests.textVsAvatar.textStd,
           avatarMean: stats.statisticalTests.textVsAvatar.avatarMean,
+          avatarStdDev: stats.statisticalTests.textVsAvatar.avatarStd,
           tStatistic: stats.statisticalTests.textVsAvatar.tStatistic,
           pValue: stats.statisticalTests.textVsAvatar.pValue,
           significant: stats.statisticalTests.textVsAvatar.significant,
+          cohensD: stats.statisticalTests.textVsAvatar.cohensD,
+          effectSize: stats.statisticalTests.textVsAvatar.effectSize,
+          confidenceInterval95: {
+            lower: stats.statisticalTests.textVsAvatar.ci95Lower,
+            upper: stats.statisticalTests.textVsAvatar.ci95Upper,
+          },
           textN: stats.statisticalTests.textVsAvatar.textN,
           avatarN: stats.statisticalTests.textVsAvatar.avatarN,
+          interpretation: stats.statisticalTests.textVsAvatar.significant 
+            ? `Statistically significant difference with ${stats.statisticalTests.textVsAvatar.effectSize} effect size (Cohen's d = ${stats.statisticalTests.textVsAvatar.cohensD})`
+            : 'No statistically significant difference between learning modes',
         },
       } : null,
       perceptionAnalysis: {
@@ -1546,35 +1635,59 @@ const AdminOverview = () => {
               {stats.statisticalTests && (
                 <div className="border-t border-slate-700 pt-4">
                   <div className="flex items-center gap-2 mb-4">
-                    <h4 className="text-sm font-medium text-slate-300">Statistical Significance (Welch's t-test)</h4>
+                    <h4 className="text-sm font-medium text-slate-300">Statistical Analysis (Welch's t-test + Effect Size)</h4>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Info className="w-4 h-4 text-slate-500 cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-sm">
-                          <p className="text-xs">Welch's t-test compares knowledge gain between learning modes. A p-value &lt; 0.05 indicates statistically significant difference. Requires at least 2 participants per group for valid calculation.</p>
+                          <p className="text-xs">
+                            <strong>p-value:</strong> &lt;0.05 = significant difference.<br/>
+                            <strong>Cohen's d:</strong> Effect magnitude (0.2=small, 0.5=medium, 0.8=large).<br/>
+                            <strong>95% CI:</strong> Range within which true mean difference likely falls.
+                          </p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Text vs Avatar */}
-                    <div className={`rounded-lg p-4 border ${stats.statisticalTests.textVsAvatar.significant ? 'bg-green-900/20 border-green-700/50' : 'bg-slate-700/30 border-slate-600'}`}>
-                      <div className="text-sm font-medium text-slate-200 mb-2">Text vs Avatar</div>
-                      <div className="space-y-1 text-xs">
+                  {/* Main comparison: Text vs Avatar */}
+                  <div className={`rounded-lg p-4 border mb-4 ${stats.statisticalTests.textVsAvatar.significant ? 'bg-green-900/20 border-green-700/50' : 'bg-slate-700/30 border-slate-600'}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-sm font-medium text-slate-200">Text Mode vs Avatar Mode</div>
+                      <div className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        stats.statisticalTests.textVsAvatar.effectSize === 'large' ? 'bg-purple-500/30 text-purple-300' :
+                        stats.statisticalTests.textVsAvatar.effectSize === 'medium' ? 'bg-blue-500/30 text-blue-300' :
+                        stats.statisticalTests.textVsAvatar.effectSize === 'small' ? 'bg-yellow-500/30 text-yellow-300' :
+                        'bg-slate-600/50 text-slate-400'
+                      }`}>
+                        {stats.statisticalTests.textVsAvatar.effectSize} effect
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Left: Descriptive stats */}
+                      <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Text Mean:</span>
-                          <span className="text-blue-400">{stats.statisticalTests.textVsAvatar.textMean}% ± {stats.statisticalTests.textVsAvatar.textStd}%</span>
+                          <span className="text-slate-400">Text Mean (SD):</span>
+                          <span className="text-blue-400">{stats.statisticalTests.textVsAvatar.textMean}% (±{stats.statisticalTests.textVsAvatar.textStd})</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Avatar Mean:</span>
-                          <span className="text-purple-400">{stats.statisticalTests.textVsAvatar.avatarMean}% ± {stats.statisticalTests.textVsAvatar.avatarStd}%</span>
+                          <span className="text-slate-400">Avatar Mean (SD):</span>
+                          <span className="text-purple-400">{stats.statisticalTests.textVsAvatar.avatarMean}% (±{stats.statisticalTests.textVsAvatar.avatarStd})</span>
                         </div>
-                        <div className="flex justify-between pt-1 border-t border-slate-600 mt-1">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Sample sizes:</span>
+                          <span className="text-slate-300">n₁={stats.statisticalTests.textVsAvatar.textN}, n₂={stats.statisticalTests.textVsAvatar.avatarN}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Right: Inferential stats */}
+                      <div className="space-y-2 text-xs border-l border-slate-600 pl-4">
+                        <div className="flex justify-between">
                           <span className="text-slate-400">t-statistic:</span>
-                          <span className="text-white">{stats.statisticalTests.textVsAvatar.tStatistic}</span>
+                          <span className="text-white font-medium">{stats.statisticalTests.textVsAvatar.tStatistic}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-slate-400">p-value:</span>
@@ -1583,82 +1696,72 @@ const AdminOverview = () => {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Sample sizes:</span>
-                          <span className="text-slate-300">n₁={stats.statisticalTests.textVsAvatar.textN}, n₂={stats.statisticalTests.textVsAvatar.avatarN}</span>
+                          <span className="text-slate-400">Cohen's d:</span>
+                          <span className="text-white font-medium">{stats.statisticalTests.textVsAvatar.cohensD}</span>
                         </div>
-                      </div>
-                      <div className={`mt-2 text-xs text-center py-1 rounded ${stats.statisticalTests.textVsAvatar.significant ? 'bg-green-500/20 text-green-400' : 'bg-slate-600/50 text-slate-400'}`}>
-                        {stats.statisticalTests.textVsAvatar.significant ? '✓ Significant (p < 0.05)' : 'Not significant'}
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">95% CI:</span>
+                          <span className="text-cyan-400">[{stats.statisticalTests.textVsAvatar.ci95Lower}, {stats.statisticalTests.textVsAvatar.ci95Upper}]</span>
+                        </div>
                       </div>
                     </div>
-
+                    
+                    <div className={`mt-3 text-xs text-center py-1.5 rounded ${stats.statisticalTests.textVsAvatar.significant ? 'bg-green-500/20 text-green-400' : 'bg-slate-600/50 text-slate-400'}`}>
+                      {stats.statisticalTests.textVsAvatar.significant 
+                        ? `✓ Significant (p < 0.05) with ${stats.statisticalTests.textVsAvatar.effectSize} effect size` 
+                        : 'Not statistically significant'}
+                    </div>
+                  </div>
+                  
+                  {/* Secondary comparisons (grayed out as Both Modes requires review) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-60">
                     {/* Text vs Both */}
-                    <div className={`rounded-lg p-4 border ${stats.statisticalTests.textVsBoth.significant ? 'bg-green-900/20 border-green-700/50' : 'bg-slate-700/30 border-slate-600'}`}>
-                      <div className="text-sm font-medium text-slate-200 mb-2">Text vs Both Modes</div>
+                    <div className="rounded-lg p-3 border bg-slate-700/30 border-slate-600">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs font-medium text-slate-300">Text vs Both Modes</div>
+                        <AlertTriangle className="w-3 h-3 text-amber-400" />
+                      </div>
                       <div className="space-y-1 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Text Mean:</span>
-                          <span className="text-blue-400">{stats.statisticalTests.textVsBoth.textMean}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Both Mean:</span>
-                          <span className="text-cyan-400">{stats.statisticalTests.textVsBoth.bothMean}%</span>
-                        </div>
-                        <div className="flex justify-between pt-1 border-t border-slate-600 mt-1">
-                          <span className="text-slate-400">t-statistic:</span>
-                          <span className="text-white">{stats.statisticalTests.textVsBoth.tStatistic}</span>
-                        </div>
-                        <div className="flex justify-between">
                           <span className="text-slate-400">p-value:</span>
-                          <span className={stats.statisticalTests.textVsBoth.significant ? 'text-green-400 font-medium' : 'text-slate-300'}>
-                            {stats.statisticalTests.textVsBoth.pValue < 0.001 ? '<0.001' : stats.statisticalTests.textVsBoth.pValue}
-                          </span>
+                          <span className="text-slate-300">{stats.statisticalTests.textVsBoth.pValue < 0.001 ? '<0.001' : stats.statisticalTests.textVsBoth.pValue}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Sample sizes:</span>
-                          <span className="text-slate-300">n₁={stats.statisticalTests.textVsBoth.textN}, n₂={stats.statisticalTests.textVsBoth.bothN}</span>
+                          <span className="text-slate-400">Cohen's d:</span>
+                          <span className="text-slate-300">{stats.statisticalTests.textVsBoth.cohensD} ({stats.statisticalTests.textVsBoth.effectSize})</span>
                         </div>
-                      </div>
-                      <div className={`mt-2 text-xs text-center py-1 rounded ${stats.statisticalTests.textVsBoth.significant ? 'bg-green-500/20 text-green-400' : 'bg-slate-600/50 text-slate-400'}`}>
-                        {stats.statisticalTests.textVsBoth.significant ? '✓ Significant (p < 0.05)' : 'Not significant'}
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Sample:</span>
+                          <span className="text-slate-400">n={stats.statisticalTests.textVsBoth.textN} vs n={stats.statisticalTests.textVsBoth.bothN}</span>
+                        </div>
                       </div>
                     </div>
 
                     {/* Avatar vs Both */}
-                    <div className={`rounded-lg p-4 border ${stats.statisticalTests.avatarVsBoth.significant ? 'bg-green-900/20 border-green-700/50' : 'bg-slate-700/30 border-slate-600'}`}>
-                      <div className="text-sm font-medium text-slate-200 mb-2">Avatar vs Both Modes</div>
+                    <div className="rounded-lg p-3 border bg-slate-700/30 border-slate-600">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs font-medium text-slate-300">Avatar vs Both Modes</div>
+                        <AlertTriangle className="w-3 h-3 text-amber-400" />
+                      </div>
                       <div className="space-y-1 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Avatar Mean:</span>
-                          <span className="text-purple-400">{stats.statisticalTests.avatarVsBoth.avatarMean}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Both Mean:</span>
-                          <span className="text-cyan-400">{stats.statisticalTests.avatarVsBoth.bothMean}%</span>
-                        </div>
-                        <div className="flex justify-between pt-1 border-t border-slate-600 mt-1">
-                          <span className="text-slate-400">t-statistic:</span>
-                          <span className="text-white">{stats.statisticalTests.avatarVsBoth.tStatistic}</span>
-                        </div>
-                        <div className="flex justify-between">
                           <span className="text-slate-400">p-value:</span>
-                          <span className={stats.statisticalTests.avatarVsBoth.significant ? 'text-green-400 font-medium' : 'text-slate-300'}>
-                            {stats.statisticalTests.avatarVsBoth.pValue < 0.001 ? '<0.001' : stats.statisticalTests.avatarVsBoth.pValue}
-                          </span>
+                          <span className="text-slate-300">{stats.statisticalTests.avatarVsBoth.pValue < 0.001 ? '<0.001' : stats.statisticalTests.avatarVsBoth.pValue}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Sample sizes:</span>
-                          <span className="text-slate-300">n₁={stats.statisticalTests.avatarVsBoth.avatarN}, n₂={stats.statisticalTests.avatarVsBoth.bothN}</span>
+                          <span className="text-slate-400">Cohen's d:</span>
+                          <span className="text-slate-300">{stats.statisticalTests.avatarVsBoth.cohensD} ({stats.statisticalTests.avatarVsBoth.effectSize})</span>
                         </div>
-                      </div>
-                      <div className={`mt-2 text-xs text-center py-1 rounded ${stats.statisticalTests.avatarVsBoth.significant ? 'bg-green-500/20 text-green-400' : 'bg-slate-600/50 text-slate-400'}`}>
-                        {stats.statisticalTests.avatarVsBoth.significant ? '✓ Significant (p < 0.05)' : 'Not significant'}
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Sample:</span>
+                          <span className="text-slate-400">n={stats.statisticalTests.avatarVsBoth.avatarN} vs n={stats.statisticalTests.avatarVsBoth.bothN}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                  
                 </div>
               )}
+
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-[150px] text-slate-500">

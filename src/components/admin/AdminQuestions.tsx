@@ -335,7 +335,7 @@ const AdminQuestions = () => {
             />
           </div>
 
-          {question.category && (
+          {question.category && question.question_type !== 'open_feedback' && (
             <div>
               <Label className="text-slate-300">Category</Label>
               <Select
@@ -359,60 +359,68 @@ const AdminQuestions = () => {
             </div>
           )}
 
-          <div>
-            <Label className="text-slate-300">Answer Options</Label>
-            <p className="text-slate-500 text-xs mt-1 mb-2">
-              Click ✓ to mark correct answers. You can select multiple correct answers.
-            </p>
-            <div className="space-y-2 mt-2">
-              {(isEditing ? data.options || [] : question.options).map((option, oIndex) => {
-                const correctAnswers = parseCorrectAnswers(isEditing ? data.correct_answer || null : question.correct_answer);
-                const isCorrect = correctAnswers.includes(option);
-                
-                return (
-                  <div key={oIndex} className="flex items-center gap-2">
-                    <Input
-                      value={option}
-                      onChange={(e) => isEditing && updateOption(oIndex, e.target.value)}
-                      className={`bg-slate-900 border-slate-600 ${isCorrect ? 'border-green-500' : ''}`}
-                      disabled={!isEditing}
-                    />
-                    {question.correct_answer !== undefined && (
-                      <Button
-                        size="sm"
-                        variant={isCorrect ? "default" : "outline"}
-                        onClick={() => isEditing && toggleCorrectAnswer(option)}
-                        className={isCorrect ? 'bg-green-600' : 'border-slate-600'}
+          {question.question_type !== 'open_feedback' && (
+            <div>
+              <Label className="text-slate-300">Answer Options</Label>
+              <p className="text-slate-500 text-xs mt-1 mb-2">
+                Click ✓ to mark correct answers. You can select multiple correct answers.
+              </p>
+              <div className="space-y-2 mt-2">
+                {(isEditing ? data.options || [] : question.options).map((option, oIndex) => {
+                  const correctAnswers = parseCorrectAnswers(isEditing ? data.correct_answer || null : question.correct_answer);
+                  const isCorrect = correctAnswers.includes(option);
+                  
+                  return (
+                    <div key={oIndex} className="flex items-center gap-2">
+                      <Input
+                        value={option}
+                        onChange={(e) => isEditing && updateOption(oIndex, e.target.value)}
+                        className={`bg-slate-900 border-slate-600 ${isCorrect ? 'border-green-500' : ''}`}
                         disabled={!isEditing}
-                      >
-                        ✓
-                      </Button>
-                    )}
-                    {isEditing && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => removeOption(oIndex)}
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                );
-              })}
-              {isEditing && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={addOption}
-                  className="border-slate-600"
-                >
-                  <Plus className="w-4 h-4 mr-1" /> Add Option
-                </Button>
-              )}
+                      />
+                      {question.correct_answer !== undefined && (
+                        <Button
+                          size="sm"
+                          variant={isCorrect ? "default" : "outline"}
+                          onClick={() => isEditing && toggleCorrectAnswer(option)}
+                          className={isCorrect ? 'bg-green-600' : 'border-slate-600'}
+                          disabled={!isEditing}
+                        >
+                          ✓
+                        </Button>
+                      )}
+                      {isEditing && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeOption(oIndex)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+                {isEditing && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={addOption}
+                    className="border-slate-600"
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Add Option
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+          
+          {question.question_type === 'open_feedback' && (
+            <div className="text-slate-400 text-sm bg-slate-800/50 p-3 rounded">
+              <p>📝 Open-ended question - participants provide free-text responses (max 200 characters)</p>
+            </div>
+          )}
 
           <div className="flex items-center gap-2 pt-4 border-t border-slate-700">
             {isEditing ? (

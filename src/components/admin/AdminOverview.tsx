@@ -210,7 +210,16 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       // IMPORTANT: Filter out reset/invalid sessions AND ignored sessions from statistics by default
       // Reset sessions are those where users tried to switch modes or other invalid actions
       // Ignored sessions are those manually marked as invalid by admins
-      const validSessions = allSessions?.filter(s => s.status !== 'reset' && s.validation_status !== 'ignored') || [];
+      // CRITICAL: Suspicious sessions (suspicion_score > 0) must be explicitly ACCEPTED to be included
+      const validSessions = allSessions?.filter(s => {
+        // Exclude reset sessions
+        if (s.status === 'reset') return false;
+        // Exclude ignored sessions
+        if (s.validation_status === 'ignored') return false;
+        // For suspicious sessions (flagged), only include if explicitly accepted
+        if ((s.suspicion_score || 0) > 0 && s.validation_status !== 'accepted') return false;
+        return true;
+      }) || [];
       const resetSessions = allSessions?.filter(s => s.status === 'reset') || [];
       const ignoredSessions = allSessions?.filter(s => s.validation_status === 'ignored') || [];
 

@@ -2,16 +2,29 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { FileText, List, Database, Scale, Hand } from "lucide-react";
+import { FileText, List, Database, Scale, Hand, Loader2 } from "lucide-react";
 import logo from "@/assets/logo-white.png";
+import { createStudySession } from "@/lib/studyData";
+import { toast } from "sonner";
 
 const Consent = () => {
   const navigate = useNavigate();
   const [agreed, setAgreed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (agreed) {
-      navigate("/demographics");
+      setIsLoading(true);
+      try {
+        // Create session when user consents (before navigating to demographics)
+        const sessionId = await createStudySession('text'); // Default mode, will be updated later
+        sessionStorage.setItem('sessionId', sessionId);
+        navigate("/demographics");
+      } catch (error) {
+        console.error('Error creating session:', error);
+        toast.error('Failed to start study session. Please try again.');
+        setIsLoading(false);
+      }
     }
   };
 
@@ -163,9 +176,16 @@ const Consent = () => {
                 size="lg"
                 className="flex-1"
                 onClick={handleContinue}
-                disabled={!agreed}
+                disabled={!agreed || isLoading}
               >
-                I Consent - Continue
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  "I Consent - Continue"
+                )}
               </Button>
             </div>
           </div>

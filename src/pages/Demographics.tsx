@@ -64,14 +64,10 @@ const Demographics = () => {
       const botResult = analyzeTimingData();
       
       try {
-        let sessionId = sessionStorage.getItem('sessionId');
+        const sessionId = sessionStorage.getItem('sessionId');
         
-        // If no session exists, create one
         if (!sessionId) {
-          const mode = sessionStorage.getItem('studyMode') as StudyMode || 'text';
-          const { createStudySession } = await import('@/lib/studyData');
-          sessionId = await createStudySession(mode);
-          sessionStorage.setItem('sessionId', sessionId);
+          throw new Error('No session ID found');
         }
         
         // Report suspicious activity if detected

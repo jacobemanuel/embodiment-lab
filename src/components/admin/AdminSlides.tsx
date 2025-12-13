@@ -299,13 +299,33 @@ const AdminSlides = () => {
 
           {/* Content */}
           <div>
-            <div className="flex items-center">
-              <Label className="text-slate-300">
-                <BookOpen className="w-4 h-4 inline mr-1" />
-                Slide Content
-              </Label>
-              <HelpTooltip content="The main educational content shown to users. Use clear, concise language suitable for beginners." />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Label className="text-slate-300">
+                  <BookOpen className="w-4 h-4 inline mr-1" />
+                  Slide Content
+                </Label>
+                <HelpTooltip content="The main educational content shown to users. Use Markdown formatting for better presentation." />
+              </div>
             </div>
+            
+            {/* Markdown formatting tips */}
+            {isEditing && (
+              <div className="mt-2 mb-2 p-3 bg-slate-900/50 rounded-lg border border-slate-700 text-xs text-slate-400">
+                <p className="font-medium text-slate-300 mb-1">Formatting Tips:</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                  <span><code className="text-blue-400">## Title</code> → Section header</span>
+                  <span><code className="text-blue-400">- item</code> → Bullet point</span>
+                  <span><code className="text-blue-400">1. item</code> → Numbered list</span>
+                  <span><code className="text-blue-400">**bold**</code> → Bold text</span>
+                  <span><code className="text-blue-400">`code`</code> → Inline code</span>
+                  <span><code className="text-blue-400">A {'->'} B</code> → Flow diagram</span>
+                  <span><code className="text-blue-400">| Col1 | Col2 |</code> → Table</span>
+                  <span><code className="text-blue-400">"quote"</code> → Highlighted</span>
+                </div>
+              </div>
+            )}
+            
             <Textarea
               value={isEditing ? data.content : slide.content}
               onChange={(e) => isEditing && setEditedData({ ...editedData, content: e.target.value })}

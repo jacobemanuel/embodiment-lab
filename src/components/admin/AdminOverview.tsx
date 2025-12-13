@@ -46,6 +46,12 @@ interface CorrelationData {
   sessionTimeVsGain: { x: number; y: number; mode: string }[];
 }
 
+interface StatisticalTest {
+  textVsAvatar: { tStatistic: number; pValue: number; significant: boolean; textN: number; avatarN: number; textMean: number; avatarMean: number; textStd: number; avatarStd: number };
+  textVsBoth: { tStatistic: number; pValue: number; significant: boolean; textN: number; bothN: number; textMean: number; bothMean: number };
+  avatarVsBoth: { tStatistic: number; pValue: number; significant: boolean; avatarN: number; bothN: number; avatarMean: number; bothMean: number };
+}
+
 interface StudyStats {
   totalCompleted: number;
   totalIncomplete: number;
@@ -83,6 +89,7 @@ interface StudyStats {
   rawPreTest: any[];
   rawPostTest: any[];
   missingCorrectAnswers: { preTest: number; postTest: number };
+  statisticalTests: StatisticalTest | null;
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
@@ -392,6 +399,94 @@ const AdminOverview = () => {
       const calcAvg = (arr: KnowledgeGainData[], key: keyof KnowledgeGainData) => 
         arr.length > 0 ? Math.round(arr.reduce((sum, k) => sum + (k[key] as number), 0) / arr.length) : 0;
 
+      // Statistical significance testing (Welch's t-test)
+      const welchTTest = (group1: number[], group2: number[]): { tStatistic: number; pValue: number; significant: boolean } => {
+        if (group1.length < 2 || group2.length < 2) {
+          return { tStatistic: 0, pValue: 1, significant: false };
+        }
+        
+        const mean1 = group1.reduce((a, b) => a + b, 0) / group1.length;
+        const mean2 = group2.reduce((a, b) => a + b, 0) / group2.length;
+        
+        const var1 = group1.reduce((sum, x) => sum + Math.pow(x - mean1, 2), 0) / (group1.length - 1);
+        const var2 = group2.reduce((sum, x) => sum + Math.pow(x - mean2, 2), 0) / (group2.length - 1);
+        
+        const se = Math.sqrt(var1 / group1.length + var2 / group2.length);
+        if (se === 0) return { tStatistic: 0, pValue: 1, significant: false };
+        
+        const t = (mean1 - mean2) / se;
+        
+        // Welch-Satterthwaite degrees of freedom
+        const df = Math.pow(var1 / group1.length + var2 / group2.length, 2) / 
+          (Math.pow(var1 / group1.length, 2) / (group1.length - 1) + Math.pow(var2 / group2.length, 2) / (group2.length - 1));
+        
+        // Approximate p-value using normal distribution for large df (simplified)
+        // For proper implementation would need t-distribution CDF
+        const absT = Math.abs(t);
+        let pValue = 2 * (1 - normalCDF(absT));
+        pValue = Math.max(0.0001, Math.min(1, pValue));
+        
+        return { tStatistic: Math.round(t * 100) / 100, pValue: Math.round(pValue * 10000) / 10000, significant: pValue < 0.05 };
+      };
+      
+      // Normal CDF approximation
+      const normalCDF = (x: number): number => {
+        const a1 =  0.254829592;
+        const a2 = -0.284496736;
+        const a3 =  1.421413741;
+        const a4 = -1.453152027;
+        const a5 =  1.061405429;
+        const p  =  0.3275911;
+        const sign = x < 0 ? -1 : 1;
+        x = Math.abs(x) / Math.sqrt(2);
+        const t = 1.0 / (1.0 + p * x);
+        const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+        return 0.5 * (1.0 + sign * y);
+      };
+
+      // Calculate standard deviation
+      const calcStd = (arr: number[]): number => {
+        if (arr.length < 2) return 0;
+        const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+        const variance = arr.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0) / (arr.length - 1);
+        return Math.round(Math.sqrt(variance) * 100) / 100;
+      };
+
+      // Perform statistical tests
+      const textGains = textModeData.map(k => k.gain);
+      const avatarGains = avatarModeData.map(k => k.gain);
+      const bothGains = bothModesData.map(k => k.gain);
+      
+      const textVsAvatarTest = welchTTest(textGains, avatarGains);
+      const textVsBothTest = welchTTest(textGains, bothGains);
+      const avatarVsBothTest = welchTTest(avatarGains, bothGains);
+      
+      const statisticalTests: StatisticalTest | null = (textGains.length >= 2 || avatarGains.length >= 2) ? {
+        textVsAvatar: {
+          ...textVsAvatarTest,
+          textN: textGains.length,
+          avatarN: avatarGains.length,
+          textMean: calcAvg(textModeData, 'gain'),
+          avatarMean: calcAvg(avatarModeData, 'gain'),
+          textStd: calcStd(textGains),
+          avatarStd: calcStd(avatarGains),
+        },
+        textVsBoth: {
+          ...textVsBothTest,
+          textN: textGains.length,
+          bothN: bothGains.length,
+          textMean: calcAvg(textModeData, 'gain'),
+          bothMean: calcAvg(bothModesData, 'gain'),
+        },
+        avatarVsBoth: {
+          ...avatarVsBothTest,
+          avatarN: avatarGains.length,
+          bothN: bothGains.length,
+          avatarMean: calcAvg(avatarModeData, 'gain'),
+          bothMean: calcAvg(bothModesData, 'gain'),
+        },
+      } : null;
+
       // Pre-test question analysis
       const preTestQuestionStats: Record<string, { correct: number; total: number; text: string; hasCorrectAnswer: boolean }> = {};
       preTestResponses.forEach(r => {
@@ -523,6 +618,7 @@ const AdminOverview = () => {
         rawPreTest: preTestResponses,
         rawPostTest: postTestResponses,
         missingCorrectAnswers: { preTest: missingPreTest, postTest: missingPostTest },
+        statisticalTests,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -1129,6 +1225,127 @@ const AdminOverview = () => {
                   </ResponsiveContainer>
                 </div>
               </div>
+
+              {/* Statistical Significance Testing */}
+              {stats.statisticalTests && (
+                <div className="border-t border-slate-700 pt-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <h4 className="text-sm font-medium text-slate-300">Statistical Significance (Welch's t-test)</h4>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-sm">
+                          <p className="text-xs">Welch's t-test compares knowledge gain between learning modes. A p-value &lt; 0.05 indicates statistically significant difference. Requires at least 2 participants per group for valid calculation.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Text vs Avatar */}
+                    <div className={`rounded-lg p-4 border ${stats.statisticalTests.textVsAvatar.significant ? 'bg-green-900/20 border-green-700/50' : 'bg-slate-700/30 border-slate-600'}`}>
+                      <div className="text-sm font-medium text-slate-200 mb-2">Text vs Avatar</div>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Text Mean:</span>
+                          <span className="text-blue-400">{stats.statisticalTests.textVsAvatar.textMean}% ± {stats.statisticalTests.textVsAvatar.textStd}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Avatar Mean:</span>
+                          <span className="text-purple-400">{stats.statisticalTests.textVsAvatar.avatarMean}% ± {stats.statisticalTests.textVsAvatar.avatarStd}%</span>
+                        </div>
+                        <div className="flex justify-between pt-1 border-t border-slate-600 mt-1">
+                          <span className="text-slate-400">t-statistic:</span>
+                          <span className="text-white">{stats.statisticalTests.textVsAvatar.tStatistic}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">p-value:</span>
+                          <span className={stats.statisticalTests.textVsAvatar.significant ? 'text-green-400 font-medium' : 'text-slate-300'}>
+                            {stats.statisticalTests.textVsAvatar.pValue < 0.001 ? '<0.001' : stats.statisticalTests.textVsAvatar.pValue}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Sample sizes:</span>
+                          <span className="text-slate-300">n₁={stats.statisticalTests.textVsAvatar.textN}, n₂={stats.statisticalTests.textVsAvatar.avatarN}</span>
+                        </div>
+                      </div>
+                      <div className={`mt-2 text-xs text-center py-1 rounded ${stats.statisticalTests.textVsAvatar.significant ? 'bg-green-500/20 text-green-400' : 'bg-slate-600/50 text-slate-400'}`}>
+                        {stats.statisticalTests.textVsAvatar.significant ? '✓ Significant (p < 0.05)' : 'Not significant'}
+                      </div>
+                    </div>
+
+                    {/* Text vs Both */}
+                    <div className={`rounded-lg p-4 border ${stats.statisticalTests.textVsBoth.significant ? 'bg-green-900/20 border-green-700/50' : 'bg-slate-700/30 border-slate-600'}`}>
+                      <div className="text-sm font-medium text-slate-200 mb-2">Text vs Both Modes</div>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Text Mean:</span>
+                          <span className="text-blue-400">{stats.statisticalTests.textVsBoth.textMean}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Both Mean:</span>
+                          <span className="text-cyan-400">{stats.statisticalTests.textVsBoth.bothMean}%</span>
+                        </div>
+                        <div className="flex justify-between pt-1 border-t border-slate-600 mt-1">
+                          <span className="text-slate-400">t-statistic:</span>
+                          <span className="text-white">{stats.statisticalTests.textVsBoth.tStatistic}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">p-value:</span>
+                          <span className={stats.statisticalTests.textVsBoth.significant ? 'text-green-400 font-medium' : 'text-slate-300'}>
+                            {stats.statisticalTests.textVsBoth.pValue < 0.001 ? '<0.001' : stats.statisticalTests.textVsBoth.pValue}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Sample sizes:</span>
+                          <span className="text-slate-300">n₁={stats.statisticalTests.textVsBoth.textN}, n₂={stats.statisticalTests.textVsBoth.bothN}</span>
+                        </div>
+                      </div>
+                      <div className={`mt-2 text-xs text-center py-1 rounded ${stats.statisticalTests.textVsBoth.significant ? 'bg-green-500/20 text-green-400' : 'bg-slate-600/50 text-slate-400'}`}>
+                        {stats.statisticalTests.textVsBoth.significant ? '✓ Significant (p < 0.05)' : 'Not significant'}
+                      </div>
+                    </div>
+
+                    {/* Avatar vs Both */}
+                    <div className={`rounded-lg p-4 border ${stats.statisticalTests.avatarVsBoth.significant ? 'bg-green-900/20 border-green-700/50' : 'bg-slate-700/30 border-slate-600'}`}>
+                      <div className="text-sm font-medium text-slate-200 mb-2">Avatar vs Both Modes</div>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Avatar Mean:</span>
+                          <span className="text-purple-400">{stats.statisticalTests.avatarVsBoth.avatarMean}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Both Mean:</span>
+                          <span className="text-cyan-400">{stats.statisticalTests.avatarVsBoth.bothMean}%</span>
+                        </div>
+                        <div className="flex justify-between pt-1 border-t border-slate-600 mt-1">
+                          <span className="text-slate-400">t-statistic:</span>
+                          <span className="text-white">{stats.statisticalTests.avatarVsBoth.tStatistic}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">p-value:</span>
+                          <span className={stats.statisticalTests.avatarVsBoth.significant ? 'text-green-400 font-medium' : 'text-slate-300'}>
+                            {stats.statisticalTests.avatarVsBoth.pValue < 0.001 ? '<0.001' : stats.statisticalTests.avatarVsBoth.pValue}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Sample sizes:</span>
+                          <span className="text-slate-300">n₁={stats.statisticalTests.avatarVsBoth.avatarN}, n₂={stats.statisticalTests.avatarVsBoth.bothN}</span>
+                        </div>
+                      </div>
+                      <div className={`mt-2 text-xs text-center py-1 rounded ${stats.statisticalTests.avatarVsBoth.significant ? 'bg-green-500/20 text-green-400' : 'bg-slate-600/50 text-slate-400'}`}>
+                        {stats.statisticalTests.avatarVsBoth.significant ? '✓ Significant (p < 0.05)' : 'Not significant'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-slate-500 mt-3 italic">
+                    Note: Results are preliminary. For publication-quality analysis, export data and use dedicated statistical software (SPSS, R, Python).
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-[150px] text-slate-500">

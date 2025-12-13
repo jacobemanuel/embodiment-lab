@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Filter, MessageSquare } from "lucide-react";
+import { Download, Filter, MessageSquare, FileSpreadsheet, CheckCircle, XCircle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import DateRangeFilter from "./DateRangeFilter";
-import { startOfDay, endOfDay } from "date-fns";
+import { startOfDay, endOfDay, format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
@@ -18,12 +19,15 @@ interface ResponseData {
 }
 
 type ModeFilter = 'all' | 'text' | 'avatar' | 'both';
+type StatusFilter = 'all' | 'completed' | 'incomplete';
 
 const AdminResponses = () => {
   const [preTestData, setPreTestData] = useState<Record<string, ResponseData[]>>({});
   const [postTestData, setPostTestData] = useState<Record<string, ResponseData[]>>({});
   const [demographicsData, setDemographicsData] = useState<Record<string, ResponseData[]>>({});
   const [openFeedbackData, setOpenFeedbackData] = useState<Array<{session_id: string; question_id: string; answer: string; created_at: string}>>([]);
+  const [rawResponses, setRawResponses] = useState<{pre: any[], post: any[], demo: any[]}>({ pre: [], post: [], demo: [] });
+  const [sessionCount, setSessionCount] = useState({ total: 0, completed: 0, incomplete: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -31,6 +35,7 @@ const AdminResponses = () => {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [questionTexts, setQuestionTexts] = useState<Record<string, string>>({});
   const [modeFilter, setModeFilter] = useState<ModeFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('completed');
 
   const fetchQuestionTexts = async () => {
     try {
@@ -51,8 +56,8 @@ const AdminResponses = () => {
   const fetchAllResponses = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      // First get session IDs that match the date filter and mode filter
-      let sessionQuery = supabase.from('study_sessions').select('id, mode, modes_used');
+      // First get session IDs that match the date filter, mode filter, and status filter
+      let sessionQuery = supabase.from('study_sessions').select('id, mode, modes_used, completed_at');
       if (startDate) {
         sessionQuery = sessionQuery.gte('created_at', startOfDay(startDate).toISOString());
       }
@@ -61,8 +66,20 @@ const AdminResponses = () => {
       }
       const { data: sessions } = await sessionQuery;
       
-      // Filter sessions by mode
+      // Count sessions by status
+      const completedCount = sessions?.filter(s => s.completed_at).length || 0;
+      const incompleteCount = sessions?.filter(s => !s.completed_at).length || 0;
+      setSessionCount({ total: sessions?.length || 0, completed: completedCount, incomplete: incompleteCount });
+      
+      // Filter sessions by status
       let filteredSessions = sessions || [];
+      if (statusFilter === 'completed') {
+        filteredSessions = filteredSessions.filter(s => s.completed_at);
+      } else if (statusFilter === 'incomplete') {
+        filteredSessions = filteredSessions.filter(s => !s.completed_at);
+      }
+      
+      // Filter sessions by mode
       if (modeFilter !== 'all') {
         filteredSessions = filteredSessions.filter(s => {
           const modesUsed = s.modes_used && s.modes_used.length > 0 ? s.modes_used : [s.mode];
@@ -88,12 +105,13 @@ const AdminResponses = () => {
         preTestQuery = preTestQuery.in('session_id', sessionIds);
         postTestQuery = postTestQuery.in('session_id', sessionIds);
         demoQuery = demoQuery.in('session_id', sessionIds);
-      } else if (startDate || endDate || modeFilter !== 'all') {
+      } else if (startDate || endDate || modeFilter !== 'all' || statusFilter !== 'all') {
         // No matching sessions, return empty
         setPreTestData({});
         setPostTestData({});
         setDemographicsData({});
         setOpenFeedbackData([]);
+        setRawResponses({ pre: [], post: [], demo: [] });
         setIsRefreshing(false);
         return;
       }
@@ -101,6 +119,9 @@ const AdminResponses = () => {
       const { data: preTest } = await preTestQuery;
       const { data: postTest } = await postTestQuery;
       const { data: demographics } = await demoQuery;
+
+      // Store raw responses for CSV export
+      setRawResponses({ pre: preTest || [], post: postTest || [], demo: demographics || [] });
 
       // Aggregate pre-test responses
       const preTestAggregated: Record<string, ResponseData[]> = {};
@@ -130,7 +151,7 @@ const AdminResponses = () => {
         }
       });
 
-      // Aggregate demographic responses (now using the same pattern as pre/post test)
+      // Aggregate demographic responses
       const demoAggregated: Record<string, ResponseData[]> = {};
       demographics?.forEach(r => {
         if (!demoAggregated[r.question_id]) {
@@ -164,27 +185,80 @@ const AdminResponses = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [startDate, endDate, modeFilter]);
+  }, [startDate, endDate, modeFilter, statusFilter]);
 
   useEffect(() => {
     fetchQuestionTexts();
   }, []);
 
-  // Fetch responses whenever dates change
   useEffect(() => {
     fetchAllResponses();
   }, [startDate, endDate, fetchAllResponses]);
 
-  // Auto-refresh every 30 seconds if enabled
   useEffect(() => {
     if (!autoRefresh) return;
-    
     const interval = setInterval(() => {
       fetchAllResponses();
     }, 30000);
-
     return () => clearInterval(interval);
   }, [autoRefresh, fetchAllResponses]);
+
+  // CSV Export helpers
+  const downloadCSV = (data: any[], filename: string) => {
+    if (!data.length) return;
+    const headers = Object.keys(data[0]);
+    const csv = [
+      headers.map(h => `"${h}"`).join(','),
+      ...data.map(row => headers.map(h => `"${String(row[h] ?? '').replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportDemographicsCSV = () => {
+    const data = rawResponses.demo.map(r => ({
+      SessionID: r.session_id,
+      QuestionID: r.question_id,
+      Question: questionTexts[r.question_id] || r.question_id,
+      Answer: r.answer
+    }));
+    downloadCSV(data, 'demographics_responses');
+  };
+
+  const exportPreTestCSV = () => {
+    const data = rawResponses.pre.map(r => ({
+      SessionID: r.session_id,
+      QuestionID: r.question_id,
+      Question: questionTexts[r.question_id] || r.question_id,
+      Answer: r.answer
+    }));
+    downloadCSV(data, 'pretest_responses');
+  };
+
+  const exportPostTestCSV = () => {
+    const data = rawResponses.post.map(r => ({
+      SessionID: r.session_id,
+      QuestionID: r.question_id,
+      Question: questionTexts[r.question_id] || r.question_id,
+      Answer: r.answer
+    }));
+    downloadCSV(data, 'posttest_responses');
+  };
+
+  const exportOpenFeedbackCSV = () => {
+    const data = openFeedbackData.map(r => ({
+      SessionID: r.session_id,
+      QuestionID: r.question_id,
+      Question: questionTexts[r.question_id] || r.question_id,
+      Answer: r.answer
+    }));
+    downloadCSV(data, 'open_feedback');
+  };
 
   const exportAllData = async () => {
     try {
@@ -195,6 +269,13 @@ const AdminResponses = () => {
       if (endDate) {
         sessionQuery = sessionQuery.lte('created_at', endOfDay(endDate).toISOString());
       }
+      // Apply status filter
+      if (statusFilter === 'completed') {
+        sessionQuery = sessionQuery.not('completed_at', 'is', null);
+      } else if (statusFilter === 'incomplete') {
+        sessionQuery = sessionQuery.is('completed_at', null);
+      }
+      
       const { data: sessions } = await sessionQuery;
       const sessionIds = sessions?.map(s => s.id) || [];
 
@@ -229,9 +310,13 @@ const AdminResponses = () => {
         postTestResponses: postTest,
         scenarios,
         dialogueTurns: dialogues,
-        dateRange: {
-          start: startDate?.toISOString() || 'all',
-          end: endDate?.toISOString() || 'all'
+        filters: {
+          dateRange: {
+            start: startDate?.toISOString() || 'all',
+            end: endDate?.toISOString() || 'all'
+          },
+          status: statusFilter,
+          mode: modeFilter
         },
         exportedAt: new Date().toISOString()
       };
@@ -240,7 +325,7 @@ const AdminResponses = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `study_export_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `study_export_${statusFilter}_${format(new Date(), 'yyyy-MM-dd')}.json`;
       a.click();
     } catch (error) {
       console.error('Export error:', error);
@@ -261,42 +346,70 @@ const AdminResponses = () => {
 
   return (
     <div className="space-y-6">
-      {/* Filters Row */}
-      <div className="flex flex-wrap gap-4 items-end">
-        <DateRangeFilter
-          startDate={startDate}
-          endDate={endDate}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-          onRefresh={fetchAllResponses}
-          isRefreshing={isRefreshing}
-          autoRefreshEnabled={autoRefresh}
-          onAutoRefreshToggle={setAutoRefresh}
-        />
-        
-        {/* Mode Filter */}
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-400" />
-          <Select value={modeFilter} onValueChange={(v) => setModeFilter(v as ModeFilter)}>
-            <SelectTrigger className="w-[160px] bg-slate-800 border-slate-600">
-              <SelectValue placeholder="Filter by mode" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Modes</SelectItem>
-              <SelectItem value="text">Text Only</SelectItem>
-              <SelectItem value="avatar">Avatar Only</SelectItem>
-              <SelectItem value="both">Both Modes</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      {/* Filters Card */}
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardContent className="pt-4 space-y-4">
+          <div className="flex flex-wrap gap-4 items-end">
+            <DateRangeFilter
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+              onRefresh={fetchAllResponses}
+              isRefreshing={isRefreshing}
+              autoRefreshEnabled={autoRefresh}
+              onAutoRefreshToggle={setAutoRefresh}
+            />
+            
+            {/* Status Filter */}
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-slate-400" />
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+                <SelectTrigger className="w-[160px] bg-slate-900 border-slate-600">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="completed">Completed Only</SelectItem>
+                  <SelectItem value="incomplete">Incomplete Only</SelectItem>
+                  <SelectItem value="all">All Sessions</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Mode Filter */}
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-slate-400" />
+              <Select value={modeFilter} onValueChange={(v) => setModeFilter(v as ModeFilter)}>
+                <SelectTrigger className="w-[160px] bg-slate-900 border-slate-600">
+                  <SelectValue placeholder="Filter by mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Modes</SelectItem>
+                  <SelectItem value="text">Text Only</SelectItem>
+                  <SelectItem value="avatar">Avatar Only</SelectItem>
+                  <SelectItem value="both">Both Modes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-      <div className="flex justify-end">
-        <Button onClick={exportAllData} variant="outline" className="border-slate-600">
-          <Download className="w-4 h-4 mr-2" />
-          Export All Data (JSON)
-        </Button>
-      </div>
+          {/* Session counts & Export buttons */}
+          <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-slate-700">
+            <Badge variant="outline" className="text-green-400 border-green-700">
+              <CheckCircle className="w-3 h-3 mr-1" /> {sessionCount.completed} completed
+            </Badge>
+            <Badge variant="outline" className="text-amber-400 border-amber-700">
+              <XCircle className="w-3 h-3 mr-1" /> {sessionCount.incomplete} incomplete
+            </Badge>
+            <div className="ml-auto flex gap-2">
+              <Button onClick={exportAllData} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
+                <Download className="w-3 h-3" />
+                Full JSON
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="demographics" className="space-y-6">
         <TabsList className="bg-slate-800 border border-slate-700">
@@ -310,6 +423,12 @@ const AdminResponses = () => {
         </TabsList>
 
         <TabsContent value="demographics" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm text-slate-400">Demographic responses ({rawResponses.demo.length} total)</h3>
+            <Button onClick={exportDemographicsCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+              <FileSpreadsheet className="w-3 h-3" /> Export CSV
+            </Button>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {Object.entries(demographicsData).map(([questionId, responses]) => {
               const questionText = getQuestionText(questionId);
@@ -356,6 +475,12 @@ const AdminResponses = () => {
         </TabsContent>
 
         <TabsContent value="pretest" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm text-slate-400">Pre-test responses ({rawResponses.pre.length} total)</h3>
+            <Button onClick={exportPreTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+              <FileSpreadsheet className="w-3 h-3" /> Export CSV
+            </Button>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {Object.entries(preTestData).map(([questionId, responses]) => {
               const questionText = getQuestionText(questionId);
@@ -393,6 +518,12 @@ const AdminResponses = () => {
         </TabsContent>
 
         <TabsContent value="posttest" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm text-slate-400">Post-test responses ({rawResponses.post.length} total)</h3>
+            <Button onClick={exportPostTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+              <FileSpreadsheet className="w-3 h-3" /> Export CSV
+            </Button>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {Object.entries(postTestData).map(([questionId, responses]) => {
               const questionText = getQuestionText(questionId);
@@ -430,7 +561,12 @@ const AdminResponses = () => {
         </TabsContent>
 
         <TabsContent value="openfeedback" className="space-y-6">
-          {/* Group responses by question */}
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm text-slate-400">Open feedback ({openFeedbackData.length} total)</h3>
+            <Button onClick={exportOpenFeedbackCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+              <FileSpreadsheet className="w-3 h-3" /> Export CSV
+            </Button>
+          </div>
           {['open_liked', 'open_frustrating', 'open_improvement'].map(questionId => {
             const questionText = getQuestionText(questionId);
             const questionResponses = openFeedbackData.filter(r => r.question_id === questionId);

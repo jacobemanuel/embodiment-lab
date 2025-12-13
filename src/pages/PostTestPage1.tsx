@@ -8,12 +8,24 @@ import { Loader2 } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
+import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection";
 
 const PostTestPage1 = () => {
   const navigate = useNavigate();
   
   // Guard: Ensure user completed learning phase
   useStudyFlowGuard('posttest1');
+  
+  // Bot detection
+  const { recordQuestionStart, recordQuestionAnswer, analyzeTimingData } = useBotDetection({
+    pageType: 'posttest',
+    onSuspiciousActivity: async (result) => {
+      const sessionId = sessionStorage.getItem('sessionId');
+      if (sessionId) {
+        await logSuspiciousActivity(sessionId, result, 'posttest1');
+      }
+    }
+  });
   
   const { questions: postTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('post_test');
   const [responses, setResponses] = useState<Record<string, string>>({});

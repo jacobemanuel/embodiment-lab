@@ -189,17 +189,25 @@ export async function logSuspiciousActivity(
   pageType: string
 ) {
   try {
-    // Log to console for now - could be sent to server
-    console.warn('Suspicious activity detected:', {
+    // Import supabase client dynamically to avoid circular dependencies
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    await supabase.functions.invoke('save-study-data', {
+      body: {
+        action: 'report_suspicious',
+        sessionId,
+        flags: result.flags,
+        score: result.score,
+        pageType,
+      }
+    });
+    
+    console.log('Suspicious activity reported to server:', {
       sessionId,
       pageType,
       suspicionLevel: result.suspicionLevel,
       score: result.score,
-      flags: result.flags,
-      timestamp: new Date().toISOString(),
     });
-    
-    // Could be enhanced to store in database for admin review
   } catch (error) {
     console.error('Failed to log suspicious activity:', error);
   }

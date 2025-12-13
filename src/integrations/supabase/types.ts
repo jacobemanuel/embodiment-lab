@@ -463,6 +463,8 @@ export type Database = {
           session_id: string
           started_at: string
           status: string
+          suspicion_score: number | null
+          suspicious_flags: Json | null
         }
         Insert: {
           browser_fingerprint?: string | null
@@ -475,6 +477,8 @@ export type Database = {
           session_id: string
           started_at?: string
           status?: string
+          suspicion_score?: number | null
+          suspicious_flags?: Json | null
         }
         Update: {
           browser_fingerprint?: string | null
@@ -487,6 +491,8 @@ export type Database = {
           session_id?: string
           started_at?: string
           status?: string
+          suspicion_score?: number | null
+          suspicious_flags?: Json | null
         }
         Relationships: []
       }

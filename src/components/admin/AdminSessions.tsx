@@ -27,6 +27,9 @@ interface Session {
   started_at: string;
   completed_at: string | null;
   created_at: string;
+  status?: string;
+  suspicion_score?: number;
+  suspicious_flags?: unknown;
 }
 
 interface SessionDetails {
@@ -162,9 +165,29 @@ interface SessionDetails {
   const filteredSessions = sessions.filter(session => {
     const matchesSearch = session.session_id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesMode = modeFilter === "all" || session.mode === modeFilter;
-    const matchesStatus = statusFilter === "all" || 
-      (statusFilter === "completed" && session.completed_at) ||
-      (statusFilter === "incomplete" && !session.completed_at);
+    
+    // Enhanced status filter
+    let matchesStatus = false;
+    switch (statusFilter) {
+      case 'all':
+        matchesStatus = true;
+        break;
+      case 'completed':
+        matchesStatus = !!session.completed_at && session.status !== 'reset';
+        break;
+      case 'incomplete':
+        matchesStatus = !session.completed_at && session.status !== 'reset';
+        break;
+      case 'reset':
+        matchesStatus = session.status === 'reset';
+        break;
+      case 'suspicious':
+        matchesStatus = (session.suspicion_score || 0) >= 40;
+        break;
+      default:
+        matchesStatus = true;
+    }
+    
     return matchesSearch && matchesMode && matchesStatus;
   });
 
@@ -175,18 +198,22 @@ interface SessionDetails {
   );
 
   const exportToCSV = () => {
-    const headers = ['Session ID', 'Mode', 'Started', 'Completed', 'Duration (min)', 'Status'];
+    const headers = ['Session ID', 'Mode', 'Started', 'Completed', 'Duration (min)', 'Status', 'Suspicion Score', 'Flags'];
     const rows = filteredSessions.map(s => {
       const duration = s.completed_at 
         ? Math.round((new Date(s.completed_at).getTime() - new Date(s.started_at).getTime()) / 1000 / 60)
         : '';
+      const flags = Array.isArray(s.suspicious_flags) ? s.suspicious_flags.join('; ') : '';
+      const status = s.status === 'reset' ? 'Reset' : (s.completed_at ? 'Completed' : 'Incomplete');
       return [
         s.session_id,
         s.mode,
         s.started_at,
         s.completed_at || '',
         duration,
-        s.completed_at ? 'Completed' : 'In Progress'
+        status,
+        s.suspicion_score || 0,
+        flags
       ];
     });
 
@@ -268,6 +295,8 @@ interface SessionDetails {
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="incomplete">Incomplete</SelectItem>
+                <SelectItem value="reset">Reset/Invalid</SelectItem>
+                <SelectItem value="suspicious">Suspicious</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -283,6 +312,7 @@ interface SessionDetails {
                   <TableHead className="text-slate-400">Completed</TableHead>
                   <TableHead className="text-slate-400">Duration</TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
+                  <TableHead className="text-slate-400">Flags</TableHead>
                   <TableHead className="text-slate-400">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -293,11 +323,24 @@ interface SessionDetails {
                     : null;
 
                   const isCompleted = !!session.completed_at;
+                  const isReset = session.status === 'reset';
+                  const isSuspicious = (session.suspicion_score || 0) >= 40;
+                  const suspiciousFlags = Array.isArray(session.suspicious_flags) ? session.suspicious_flags : [];
+
+                  // Determine status display
+                  let statusBadge;
+                  if (isReset) {
+                    statusBadge = <Badge variant="destructive">Reset</Badge>;
+                  } else if (isCompleted) {
+                    statusBadge = <Badge className="bg-green-600">Completed</Badge>;
+                  } else {
+                    statusBadge = <Badge variant="outline" className="border-orange-500 text-orange-500">Incomplete</Badge>;
+                  }
 
                   return (
                     <TableRow
                       key={session.id}
-                      className={`border-slate-700 hover:bg-slate-700/50 ${isCompleted ? '' : 'opacity-50'}`}
+                      className={`border-slate-700 hover:bg-slate-700/50 ${isReset ? 'opacity-40' : isCompleted ? '' : 'opacity-50'}`}
                     >
                       <TableCell className="font-mono text-sm text-slate-300">
                         {session.session_id.slice(0, 8)}...
@@ -326,10 +369,24 @@ interface SessionDetails {
                         {duration ? `${duration} min` : '-'}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={session.completed_at ? 'default' : 'outline'} 
-                               className={session.completed_at ? 'bg-green-600' : 'border-orange-500 text-orange-500'}>
-                          {session.completed_at ? 'Completed' : 'Incomplete'}
-                        </Badge>
+                        {statusBadge}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {isSuspicious && (
+                            <Badge variant="destructive" className="text-xs">
+                              ⚠️ Score: {session.suspicion_score}
+                            </Badge>
+                          )}
+                          {suspiciousFlags.length > 0 && (
+                            <span className="text-xs text-yellow-500" title={suspiciousFlags.join(', ')}>
+                              {suspiciousFlags.length} flag{suspiciousFlags.length > 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {!isSuspicious && suspiciousFlags.length === 0 && (
+                            <span className="text-xs text-slate-500">-</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Button 

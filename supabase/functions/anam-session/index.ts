@@ -13,28 +13,49 @@ interface SlideContext {
   systemPromptContext: string;
 }
 
-// Check if API is enabled from database
-async function isApiEnabled(): Promise<boolean> {
+interface ApiConfig {
+  isEnabled: boolean;
+  anamApiKey: string | null;
+}
+
+// Check if API is enabled from database and get API key
+async function getApiConfig(): Promise<ApiConfig> {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
+    // Fetch master switch, anam-specific switch, and custom API key
     const { data, error } = await supabase
       .from('app_settings')
-      .select('value')
-      .eq('key', 'api_enabled')
-      .single();
+      .select('key, value')
+      .in('key', ['api_enabled', 'anam_api_enabled', 'anam_api_key']);
     
     if (error) {
       console.error('Error checking API status:', error);
-      return false;
+      return { isEnabled: false, anamApiKey: null };
     }
     
-    return data?.value?.enabled ?? false;
+    const settings: Record<string, any> = {};
+    for (const row of data || []) {
+      settings[row.key] = row.value;
+    }
+    
+    // API is enabled if BOTH master switch AND anam switch are enabled
+    const masterEnabled = settings.api_enabled?.enabled ?? false;
+    const anamEnabled = settings.anam_api_enabled?.enabled ?? true; // Default to true for backwards compat
+    const isEnabled = masterEnabled && anamEnabled;
+    
+    // Get custom API key from database (if set)
+    const dbApiKey = settings.anam_api_key?.key || null;
+    
+    return { 
+      isEnabled, 
+      anamApiKey: dbApiKey && dbApiKey.trim() ? dbApiKey : null 
+    };
   } catch (e) {
-    console.error('Error in isApiEnabled:', e);
-    return false;
+    console.error('Error in getApiConfig:', e);
+    return { isEnabled: false, anamApiKey: null };
   }
 }
 
@@ -43,9 +64,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Check if API is enabled
-  const apiEnabled = await isApiEnabled();
-  if (!apiEnabled) {
+  // Check if API is enabled and get API key config
+  const apiConfig = await getApiConfig();
+  if (!apiConfig.isEnabled) {
     return new Response(
       JSON.stringify({ error: "Service temporarily unavailable. Please try again later." }),
       { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -55,12 +76,15 @@ serve(async (req) => {
   try {
     const { slideContext } = await req.json() as { slideContext?: SlideContext };
     
-    const ANAM_API_KEY = Deno.env.get('ANAM_API_KEY');
+    // Priority: Database API key > Environment variable
+    const ANAM_API_KEY = apiConfig.anamApiKey || Deno.env.get('ANAM_API_KEY');
 
     if (!ANAM_API_KEY) {
-      console.error('ANAM_API_KEY is not configured');
+      console.error('ANAM_API_KEY is not configured (neither in database nor env)');
       throw new Error('ANAM_API_KEY is not configured');
     }
+    
+    console.log('Using API key from:', apiConfig.anamApiKey ? 'database' : 'environment');
 
     console.log('Creating Anam session with slide context:', slideContext?.id);
 

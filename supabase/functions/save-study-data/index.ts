@@ -390,10 +390,9 @@ serve(async (req) => {
           );
         }
 
-        const currentModes = (session.modes_used as string[]) || [];
-        const updatedModes = currentModes.includes(validated.mode) 
-          ? currentModes 
-          : [...currentModes, validated.mode];
+        // Replace modes_used with ONLY the selected mode (not append)
+        // This ensures we track only what mode the user actually chose
+        const updatedModes = [validated.mode];
 
         const { error: updateError } = await supabase
           .from('study_sessions')

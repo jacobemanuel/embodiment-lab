@@ -253,7 +253,14 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     currentSlideRef.current = slide;
     
     // If connected, reconnect to get fresh system prompt with new slide context
-    if (clientRef.current && state.isConnected && !isReconnectingRef.current) {
+    // Always allow reconnection even if previous one failed
+    if (clientRef.current && state.isConnected) {
+      // Prevent concurrent reconnection attempts
+      if (isReconnectingRef.current) {
+        console.log('Already reconnecting, skipping duplicate request');
+        return;
+      }
+      
       console.log('Reconnecting Anam session for slide context update...');
       isReconnectingRef.current = true;
       

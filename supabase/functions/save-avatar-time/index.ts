@@ -27,10 +27,25 @@ serve(async (req) => {
 
     console.log('Saving avatar time tracking:', { sessionId, slideId, slideTitle, durationSeconds });
 
+    // First, find the UUID id from the session_id string
+    const { data: session, error: sessionError } = await supabase
+      .from('study_sessions')
+      .select('id')
+      .eq('session_id', sessionId)
+      .single();
+
+    if (sessionError || !session) {
+      console.error('Session not found:', sessionError);
+      return new Response(
+        JSON.stringify({ error: 'Session not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { data, error } = await supabase
       .from('avatar_time_tracking')
       .insert({
-        session_id: sessionId,
+        session_id: session.id, // Use the UUID id, not the string session_id
         slide_id: slideId,
         slide_title: slideTitle || slideId,
         started_at: startedAt,

@@ -155,7 +155,7 @@ const PreTest = () => {
             <h1 className="text-3xl font-semibold mb-2 bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">
               Pre-Test Assessment
             </h1>
-            <p className="text-muted-foreground mb-2">
+            <p className="text-muted-foreground mb-2 text-justify">
               Please answer these questions about AI image generation based on your current knowledge. Don't worry if you're not sure—this helps us measure learning gains.
             </p>
             <p className="text-muted-foreground/60 text-sm mb-6">

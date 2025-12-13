@@ -49,8 +49,8 @@ export const TranscriptPanel = ({
             </p>
           ) : (
             <>
-              {/* Render all messages so user speech is always visible */}
-              {messages.map((msg) => (
+              {/* Only show FINAL messages - no word-by-word streaming */}
+              {messages.filter(msg => msg.isFinal !== false).map((msg) => (
                 <div
                   key={msg.id}
                   className={cn(
@@ -73,23 +73,23 @@ export const TranscriptPanel = ({
                       )}>
                         {msg.role === 'avatar' ? 'Tutor' : 'You'}
                       </span>
-                      {msg.isFinal === false && (
-                        <span className="text-[10px] text-muted-foreground">listening...</span>
-                      )}
                     </div>
                     <p className="leading-relaxed">{msg.content}</p>
                   </div>
                 </div>
               ))}
               
-              {/* Typing indicator if any non-final message is in progress */}
-              {messages.some(msg => msg.isFinal === false) && (
+              {/* Show typing indicator while avatar is speaking */}
+              {messages.some(msg => msg.role === 'avatar' && msg.isFinal === false) && (
                 <div className="flex justify-start">
                   <div className="bg-primary/10 border border-primary/20 text-foreground rounded-2xl rounded-bl-md px-4 py-2 shadow-sm">
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-primary">Tutor</span>
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
                     </div>
                   </div>
                 </div>

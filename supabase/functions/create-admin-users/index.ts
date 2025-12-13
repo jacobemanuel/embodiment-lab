@@ -14,8 +14,31 @@ serve(async (req) => {
   try {
     const { secret } = await req.json();
     
-    // Simple secret check to prevent unauthorized calls
-    if (secret !== 'create-study-admins-2024') {
+    // Get secrets from environment variables (not hardcoded)
+    const ADMIN_CREATION_SECRET = Deno.env.get('ADMIN_CREATION_SECRET');
+    const OWNER_PASSWORD = Deno.env.get('OWNER_PASSWORD');
+    const DEFAULT_ADMIN_PASSWORD = Deno.env.get('DEFAULT_ADMIN_PASSWORD');
+    
+    // Validate required secrets are configured
+    if (!ADMIN_CREATION_SECRET) {
+      console.error('ADMIN_CREATION_SECRET not configured');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (!OWNER_PASSWORD || !DEFAULT_ADMIN_PASSWORD) {
+      console.error('Password secrets not configured');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error - passwords not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Validate secret from environment variable
+    if (secret !== ADMIN_CREATION_SECRET) {
+      console.warn('Unauthorized admin creation attempt');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -32,6 +55,7 @@ serve(async (req) => {
       }
     });
 
+    // Admin emails - these are not sensitive (just email addresses)
     const adminEmails = [
       'zeynep.gurlek7@gmail.com',
       'jakub.majewski@tum.de',
@@ -41,8 +65,6 @@ serve(async (req) => {
     ];
 
     const OWNER_EMAIL = 'jakub.majewski@tum.de';
-    const OWNER_PASSWORD = 'MajonezWiniaryTUM98!';
-    const DEFAULT_ADMIN_PASSWORD = 'AIDAStudyAdmin2026!';
     const results: Array<Record<string, unknown>> = [];
 
     for (const email of adminEmails) {

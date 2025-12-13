@@ -2,6 +2,7 @@ import { Slide } from "@/hooks/useStudySlides";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DOMPurify from "dompurify";
 
 interface SlideViewerProps {
   slides: Slide[];
@@ -388,9 +389,15 @@ function formatFlowText(text: string) {
 }
 
 function formatText(text: string) {
-  return text
+  const formatted = text
     .replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/`(.+?)`/g, '<code class="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-sm font-mono">$1</code>')
     .replace(/"([^"]+)"/g, '<span class="text-primary/90">"$1"</span>');
+  
+  // Sanitize HTML to prevent XSS attacks
+  return DOMPurify.sanitize(formatted, {
+    ALLOWED_TAGS: ['strong', 'em', 'code', 'span'],
+    ALLOWED_ATTR: ['class']
+  });
 }

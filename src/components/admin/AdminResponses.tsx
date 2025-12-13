@@ -4,18 +4,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Filter, MessageSquare, FileSpreadsheet, CheckCircle, XCircle } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Download, Filter, MessageSquare, FileSpreadsheet, CheckCircle, XCircle, Award, Brain, ThumbsUp } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, ReferenceLine } from "recharts";
 import DateRangeFilter from "./DateRangeFilter";
 import { startOfDay, endOfDay, format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+const CORRECT_COLOR = '#22c55e';
+const INCORRECT_COLOR = '#64748b';
 
 interface ResponseData {
   question_id: string;
   answer: string;
   count: number;
+}
+
+interface QuestionData {
+  question_id: string;
+  question_text: string;
+  correct_answer: string | null;
+  question_type: string;
+  category: string | null;
 }
 
 type ModeFilter = 'all' | 'text' | 'avatar' | 'both';
@@ -33,23 +43,29 @@ const AdminResponses = () => {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [autoRefresh, setAutoRefresh] = useState(false);
-  const [questionTexts, setQuestionTexts] = useState<Record<string, string>>({});
+  const [questionData, setQuestionData] = useState<Record<string, QuestionData>>({});
   const [modeFilter, setModeFilter] = useState<ModeFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('completed');
 
-  const fetchQuestionTexts = async () => {
+  const fetchQuestionData = async () => {
     try {
       const { data } = await supabase
         .from('study_questions')
-        .select('question_id, question_text');
+        .select('question_id, question_text, correct_answer, question_type, category');
       
-      const texts: Record<string, string> = {};
+      const questions: Record<string, QuestionData> = {};
       data?.forEach(q => {
-        texts[q.question_id] = q.question_text;
+        questions[q.question_id] = {
+          question_id: q.question_id,
+          question_text: q.question_text,
+          correct_answer: q.correct_answer,
+          question_type: q.question_type,
+          category: q.category
+        };
       });
-      setQuestionTexts(texts);
+      setQuestionData(questions);
     } catch (error) {
-      console.error('Error fetching question texts:', error);
+      console.error('Error fetching question data:', error);
     }
   };
 
@@ -57,7 +73,7 @@ const AdminResponses = () => {
     setIsRefreshing(true);
     try {
       // First get session IDs that match the date filter, mode filter, and status filter
-      let sessionQuery = supabase.from('study_sessions').select('id, mode, modes_used, completed_at');
+      let sessionQuery = supabase.from('study_sessions').select('id, mode, modes_used, completed_at, created_at');
       if (startDate) {
         sessionQuery = sessionQuery.gte('created_at', startOfDay(startDate).toISOString());
       }
@@ -113,6 +129,7 @@ const AdminResponses = () => {
         setOpenFeedbackData([]);
         setRawResponses({ pre: [], post: [], demo: [] });
         setIsRefreshing(false);
+        setIsLoading(false);
         return;
       }
 
@@ -188,12 +205,12 @@ const AdminResponses = () => {
   }, [startDate, endDate, modeFilter, statusFilter]);
 
   useEffect(() => {
-    fetchQuestionTexts();
+    fetchQuestionData();
   }, []);
 
   useEffect(() => {
     fetchAllResponses();
-  }, [startDate, endDate, fetchAllResponses]);
+  }, [fetchAllResponses]);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -224,7 +241,7 @@ const AdminResponses = () => {
     const data = rawResponses.demo.map(r => ({
       SessionID: r.session_id,
       QuestionID: r.question_id,
-      Question: questionTexts[r.question_id] || r.question_id,
+      Question: questionData[r.question_id]?.question_text || r.question_id,
       Answer: r.answer
     }));
     downloadCSV(data, 'demographics_responses');
@@ -234,8 +251,10 @@ const AdminResponses = () => {
     const data = rawResponses.pre.map(r => ({
       SessionID: r.session_id,
       QuestionID: r.question_id,
-      Question: questionTexts[r.question_id] || r.question_id,
-      Answer: r.answer
+      Question: questionData[r.question_id]?.question_text || r.question_id,
+      Answer: r.answer,
+      CorrectAnswer: questionData[r.question_id]?.correct_answer || '',
+      IsCorrect: isAnswerCorrect(r.question_id, r.answer) ? 'Yes' : 'No'
     }));
     downloadCSV(data, 'pretest_responses');
   };
@@ -244,8 +263,10 @@ const AdminResponses = () => {
     const data = rawResponses.post.map(r => ({
       SessionID: r.session_id,
       QuestionID: r.question_id,
-      Question: questionTexts[r.question_id] || r.question_id,
-      Answer: r.answer
+      Question: questionData[r.question_id]?.question_text || r.question_id,
+      Answer: r.answer,
+      CorrectAnswer: questionData[r.question_id]?.correct_answer || '',
+      IsCorrect: isAnswerCorrect(r.question_id, r.answer) ? 'Yes' : 'No'
     }));
     downloadCSV(data, 'posttest_responses');
   };
@@ -254,7 +275,7 @@ const AdminResponses = () => {
     const data = openFeedbackData.map(r => ({
       SessionID: r.session_id,
       QuestionID: r.question_id,
-      Question: questionTexts[r.question_id] || r.question_id,
+      Question: questionData[r.question_id]?.question_text || r.question_id,
       Answer: r.answer
     }));
     downloadCSV(data, 'open_feedback');
@@ -333,8 +354,43 @@ const AdminResponses = () => {
   };
 
   const getQuestionText = (questionId: string): string => {
-    return questionTexts[questionId] || questionId;
+    return questionData[questionId]?.question_text || questionId;
   };
+
+  const isAnswerCorrect = (questionId: string, answer: string): boolean => {
+    const question = questionData[questionId];
+    if (!question?.correct_answer) return false;
+    
+    const correctAnswers = question.correct_answer.split('|||').map(a => a.trim().toLowerCase());
+    return correctAnswers.includes(answer.trim().toLowerCase());
+  };
+
+  const getCorrectPercentage = (questionId: string, responses: ResponseData[]): number => {
+    const question = questionData[questionId];
+    if (!question?.correct_answer) return 0;
+    
+    const total = responses.reduce((sum, r) => sum + r.count, 0);
+    if (total === 0) return 0;
+    
+    const correctCount = responses.reduce((sum, r) => {
+      if (isAnswerCorrect(questionId, r.answer)) {
+        return sum + r.count;
+      }
+      return sum;
+    }, 0);
+    
+    return Math.round((correctCount / total) * 100);
+  };
+
+  // Separate post-test questions by category
+  const knowledgeQuestions = Object.entries(postTestData).filter(([qId]) => 
+    questionData[qId]?.category === 'knowledge' || qId.startsWith('knowledge-')
+  );
+  
+  const perceptionQuestions = Object.entries(postTestData).filter(([qId]) => {
+    const category = questionData[qId]?.category;
+    return category && ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'].includes(category);
+  });
 
   if (isLoading) {
     return (
@@ -343,6 +399,64 @@ const AdminResponses = () => {
       </div>
     );
   }
+
+  const renderBarChartWithCorrectAnswer = (questionId: string, responses: ResponseData[], barColor: string) => {
+    const correctAnswer = questionData[questionId]?.correct_answer;
+    const correctAnswers = correctAnswer?.split('|||').map(a => a.trim().toLowerCase()) || [];
+    const correctPct = getCorrectPercentage(questionId, responses);
+    
+    const chartData = responses.map(r => ({
+      answer: r.answer,
+      count: r.count,
+      isCorrect: correctAnswers.includes(r.answer.trim().toLowerCase())
+    }));
+
+    return (
+      <div className="space-y-2">
+        {correctAnswer && (
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1 text-green-400">
+              <CheckCircle className="w-3 h-3" />
+              <span>Correct: {correctPct}%</span>
+            </div>
+            <Badge variant="outline" className="text-green-400 border-green-600 text-[10px]">
+              {correctAnswer.length > 40 ? correctAnswer.slice(0, 40) + '...' : correctAnswer}
+            </Badge>
+          </div>
+        )}
+        <ResponsiveContainer width="100%" height={Math.max(150, responses.length * 35)}>
+          <BarChart data={chartData} layout="vertical">
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <XAxis type="number" stroke="#9ca3af" />
+            <YAxis 
+              dataKey="answer" 
+              type="category" 
+              stroke="#9ca3af" 
+              width={150}
+              fontSize={10}
+              tickFormatter={(value) => value.length > 25 ? value.slice(0, 25) + '...' : value}
+            />
+            <Tooltip 
+              contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+              formatter={(value, name, props) => [
+                `${value} responses${props.payload.isCorrect ? ' ✓ Correct' : ''}`,
+                'Count'
+              ]}
+            />
+            <Bar 
+              dataKey="count" 
+              fill={barColor}
+              shape={(props: any) => {
+                const { x, y, width, height, payload } = props;
+                const fill = payload.isCorrect ? CORRECT_COLOR : INCORRECT_COLOR;
+                return <rect x={x} y={y} width={width} height={height} fill={fill} rx={2} />;
+              }}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -415,7 +529,14 @@ const AdminResponses = () => {
         <TabsList className="bg-slate-800 border border-slate-700">
           <TabsTrigger value="demographics">Demographics</TabsTrigger>
           <TabsTrigger value="pretest">Pre-test</TabsTrigger>
-          <TabsTrigger value="posttest">Post-test</TabsTrigger>
+          <TabsTrigger value="posttest-knowledge" className="flex items-center gap-1">
+            <Brain className="w-3 h-3" />
+            Post-test (Knowledge)
+          </TabsTrigger>
+          <TabsTrigger value="posttest-perception" className="flex items-center gap-1">
+            <ThumbsUp className="w-3 h-3" />
+            Post-test (Perception)
+          </TabsTrigger>
           <TabsTrigger value="openfeedback" className="flex items-center gap-1">
             <MessageSquare className="w-3 h-3" />
             Open Feedback
@@ -491,22 +612,7 @@ const AdminResponses = () => {
                     <CardDescription className="text-slate-400">{responses.reduce((sum, r) => sum + r.count, 0)} responses</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={150}>
-                      <BarChart data={responses} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis type="number" stroke="#9ca3af" />
-                        <YAxis 
-                          dataKey="answer" 
-                          type="category" 
-                          stroke="#9ca3af" 
-                          width={150}
-                          fontSize={10}
-                          tickFormatter={(value) => value.length > 25 ? value.slice(0, 25) + '...' : value}
-                        />
-                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                        <Bar dataKey="count" fill="#3b82f6" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {renderBarChartWithCorrectAnswer(questionId, responses, '#3b82f6')}
                   </CardContent>
                 </Card>
               );
@@ -517,46 +623,104 @@ const AdminResponses = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="posttest" className="space-y-6">
+        <TabsContent value="posttest-knowledge" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-sm text-slate-400">Post-test responses ({rawResponses.post.length} total)</h3>
+            <div className="flex items-center gap-2">
+              <Brain className="w-4 h-4 text-purple-400" />
+              <h3 className="text-sm text-slate-400">Knowledge Check Questions ({knowledgeQuestions.reduce((sum, [, r]) => sum + r.reduce((s, x) => s + x.count, 0), 0)} responses)</h3>
+            </div>
             <Button onClick={exportPostTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
               <FileSpreadsheet className="w-3 h-3" /> Export CSV
             </Button>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {Object.entries(postTestData).map(([questionId, responses]) => {
+            {knowledgeQuestions.map(([questionId, responses]) => {
               const questionText = getQuestionText(questionId);
               return (
                 <Card key={questionId} className="bg-slate-800 border-slate-700">
                   <CardHeader>
-                    <CardTitle className="text-white text-sm">{questionText}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Award className="w-4 h-4 text-purple-400" />
+                      <CardTitle className="text-white text-sm">{questionText}</CardTitle>
+                    </div>
                     <CardDescription className="text-slate-400">{responses.reduce((sum, r) => sum + r.count, 0)} responses</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={150}>
-                      <BarChart data={responses} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis type="number" stroke="#9ca3af" />
-                        <YAxis 
-                          dataKey="answer" 
-                          type="category" 
-                          stroke="#9ca3af" 
-                          width={150}
-                          fontSize={10}
-                          tickFormatter={(value) => value.length > 25 ? value.slice(0, 25) + '...' : value}
-                        />
-                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                        <Bar dataKey="count" fill="#10b981" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {renderBarChartWithCorrectAnswer(questionId, responses, '#10b981')}
                   </CardContent>
                 </Card>
               );
             })}
           </div>
-          {Object.keys(postTestData).length === 0 && (
-            <p className="text-slate-500 text-center py-8">No post-test data</p>
+          {knowledgeQuestions.length === 0 && (
+            <p className="text-slate-500 text-center py-8">No knowledge check questions</p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="posttest-perception" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <ThumbsUp className="w-4 h-4 text-blue-400" />
+              <h3 className="text-sm text-slate-400">Perception & Experience Questions ({perceptionQuestions.reduce((sum, [, r]) => sum + r.reduce((s, x) => s + x.count, 0), 0)} responses)</h3>
+            </div>
+            <Button onClick={exportPostTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+              <FileSpreadsheet className="w-3 h-3" /> Export CSV
+            </Button>
+          </div>
+          
+          {/* Group by category */}
+          {['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'].map(category => {
+            const categoryQuestions = perceptionQuestions.filter(([qId]) => 
+              questionData[qId]?.category === category
+            );
+            
+            if (categoryQuestions.length === 0) return null;
+            
+            const categoryLabel = category.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            
+            return (
+              <div key={category} className="space-y-4">
+                <h4 className="text-sm font-medium text-slate-300 border-b border-slate-700 pb-2 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  {categoryLabel}
+                </h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {categoryQuestions.map(([questionId, responses]) => {
+                    const questionText = getQuestionText(questionId);
+                    return (
+                      <Card key={questionId} className="bg-slate-800 border-slate-700">
+                        <CardHeader>
+                          <CardTitle className="text-white text-sm">{questionText}</CardTitle>
+                          <CardDescription className="text-slate-400">{responses.reduce((sum, r) => sum + r.count, 0)} responses</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <ResponsiveContainer width="100%" height={Math.max(150, responses.length * 35)}>
+                            <BarChart data={responses} layout="vertical">
+                              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                              <XAxis type="number" stroke="#9ca3af" />
+                              <YAxis 
+                                dataKey="answer" 
+                                type="category" 
+                                stroke="#9ca3af" 
+                                width={150}
+                                fontSize={10}
+                                tickFormatter={(value) => value.length > 25 ? value.slice(0, 25) + '...' : value}
+                              />
+                              <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                              <Bar dataKey="count" fill="#3b82f6" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          
+          {perceptionQuestions.length === 0 && (
+            <p className="text-slate-500 text-center py-8">No perception questions</p>
           )}
         </TabsContent>
 

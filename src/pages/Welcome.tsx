@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Clock, Sparkles, MousePointerClick, ShieldCheck } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 
 const Welcome = () => {
@@ -52,7 +53,9 @@ const Welcome = () => {
               {/* Features grid */}
               <div className="grid gap-4 stagger-fade-in">
                 <div className="flex gap-4 p-4 rounded-xl bg-ai-primary/5 border border-ai-primary/10 hover:bg-ai-primary/10 transition-all hover:scale-[1.02]">
-                  <span className="text-2xl">⏱️</span>
+                  <div className="w-10 h-10 rounded-lg bg-ai-primary/10 flex items-center justify-center shrink-0">
+                    <Clock className="w-5 h-5 text-ai-primary" />
+                  </div>
                   <div>
                     <strong className="text-foreground">~10 minutes</strong>
                     <p className="text-sm text-muted-foreground">Complete at your own pace</p>
@@ -60,7 +63,9 @@ const Welcome = () => {
                 </div>
                 
                 <div className="flex gap-4 p-4 rounded-xl bg-ai-accent/5 border border-ai-accent/10 hover:bg-ai-accent/10 transition-all hover:scale-[1.02]">
-                  <span className="text-2xl">✨</span>
+                  <div className="w-10 h-10 rounded-lg bg-ai-accent/10 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5 text-ai-accent" />
+                  </div>
                   <div>
                     <strong className="text-foreground">AI Image Playground</strong>
                     <p className="text-sm text-muted-foreground">Generate images while you learn</p>
@@ -68,7 +73,9 @@ const Welcome = () => {
                 </div>
                 
                 <div className="flex gap-4 p-4 rounded-xl bg-ai-primary/5 border border-ai-primary/10 hover:bg-ai-primary/10 transition-all hover:scale-[1.02]">
-                  <span className="text-2xl">🎯</span>
+                  <div className="w-10 h-10 rounded-lg bg-ai-primary/10 flex items-center justify-center shrink-0">
+                    <MousePointerClick className="w-5 h-5 text-ai-primary" />
+                  </div>
                   <div>
                     <strong className="text-foreground">Interactive Format</strong>
                     <p className="text-sm text-muted-foreground">Pre-test, learning slides, and post-test</p>
@@ -76,7 +83,9 @@ const Welcome = () => {
                 </div>
                 
                 <div className="flex gap-4 p-4 rounded-xl bg-ai-accent/5 border border-ai-accent/10 hover:bg-ai-accent/10 transition-all hover:scale-[1.02]">
-                  <span className="text-2xl">🔒</span>
+                  <div className="w-10 h-10 rounded-lg bg-ai-accent/10 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-5 h-5 text-ai-accent" />
+                  </div>
                   <div>
                     <strong className="text-foreground">Completely Anonymous</strong>
                     <p className="text-sm text-muted-foreground">Your privacy is our priority</p>

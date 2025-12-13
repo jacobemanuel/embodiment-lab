@@ -459,20 +459,38 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
               </>
             ) : (
               <>
-                <Button
-                  onClick={() => startEditing(question)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Edit2 className="w-4 h-4 mr-2" />
-                  Edit Question
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => toggleQuestionActive(question)}
-                  className={question.is_active ? 'border-yellow-600 text-yellow-400' : 'border-green-600 text-green-400'}
-                >
-                  {question.is_active ? 'Disable' : 'Enable'}
-                </Button>
+                {permissions.canEditQuestions ? (
+                  <Button
+                    onClick={() => startEditing(question)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Edit Question
+                  </Button>
+                ) : (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" disabled className="border-slate-600 opacity-50">
+                          <Lock className="w-4 h-4 mr-2" />
+                          View Only
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600">
+                        <p className="text-sm">You have read-only access</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                {permissions.canDisableQuestions && (
+                  <Button
+                    variant="outline"
+                    onClick={() => toggleQuestionActive(question)}
+                    className={question.is_active ? 'border-yellow-600 text-yellow-400' : 'border-green-600 text-green-400'}
+                  >
+                    {question.is_active ? 'Disable' : 'Enable'}
+                  </Button>
+                )}
                 {permissions.canDeleteQuestions ? (
                   <Button
                     variant="ghost"
@@ -551,12 +569,14 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                   Test questions shown before the learning phase
                 </CardDescription>
               </div>
-              <Button 
-                onClick={() => addNewQuestion('pre_test')}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-2" /> Add Question
-              </Button>
+              {permissions.canCreateQuestions && (
+                <Button 
+                  onClick={() => addNewQuestion('pre_test')}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Add Question
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               <Accordion type="single" collapsible className="space-y-2">
@@ -580,20 +600,22 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                   Likert scale questions about trust, engagement, and satisfaction (shown first)
                 </CardDescription>
               </div>
-              <Select onValueChange={(category) => addNewQuestion('post_test', category, 'likert')}>
-                <SelectTrigger className="w-[180px] bg-blue-600 border-0 text-white hover:bg-blue-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  <span>Add Question</span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="expectations">Expectations</SelectItem>
-                  <SelectItem value="avatar-qualities">Avatar Qualities</SelectItem>
-                  <SelectItem value="realism">Realism</SelectItem>
-                  <SelectItem value="trust">Trust Category</SelectItem>
-                  <SelectItem value="engagement">Engagement Category</SelectItem>
-                  <SelectItem value="satisfaction">Satisfaction Category</SelectItem>
-                </SelectContent>
-              </Select>
+              {permissions.canCreateQuestions && (
+                <Select onValueChange={(category) => addNewQuestion('post_test', category, 'likert')}>
+                  <SelectTrigger className="w-[180px] bg-blue-600 border-0 text-white hover:bg-blue-700">
+                    <Plus className="w-4 h-4 mr-2" />
+                    <span>Add Question</span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="expectations">Expectations</SelectItem>
+                    <SelectItem value="avatar-qualities">Avatar Qualities</SelectItem>
+                    <SelectItem value="realism">Realism</SelectItem>
+                    <SelectItem value="trust">Trust Category</SelectItem>
+                    <SelectItem value="engagement">Engagement Category</SelectItem>
+                    <SelectItem value="satisfaction">Satisfaction Category</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </CardHeader>
             <CardContent>
               <Accordion type="single" collapsible className="space-y-2">
@@ -619,12 +641,14 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                   Multiple choice knowledge check questions (shown after experience questions)
                 </CardDescription>
               </div>
-              <Button 
-                onClick={() => addNewQuestion('post_test', 'knowledge', 'multiple-choice')}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                <Plus className="w-4 h-4 mr-2" /> Add Question
-              </Button>
+              {permissions.canCreateQuestions && (
+                <Button 
+                  onClick={() => addNewQuestion('post_test', 'knowledge', 'multiple-choice')}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Add Question
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               <Accordion type="single" collapsible className="space-y-2">
@@ -650,12 +674,14 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                   Open-ended questions for qualitative feedback (optional for participants)
                 </CardDescription>
               </div>
-              <Button 
-                onClick={() => addNewQuestion('post_test', 'open_feedback', 'open-text')}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Plus className="w-4 h-4 mr-2" /> Add Question
-              </Button>
+              {permissions.canCreateQuestions && (
+                <Button 
+                  onClick={() => addNewQuestion('post_test', 'open_feedback', 'open-text')}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Add Question
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               <Accordion type="single" collapsible className="space-y-2">
@@ -680,12 +706,14 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                   Questions about participant demographics
                 </CardDescription>
               </div>
-              <Button 
-                onClick={() => addNewQuestion('demographic')}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-2" /> Add Question
-              </Button>
+              {permissions.canCreateQuestions && (
+                <Button 
+                  onClick={() => addNewQuestion('demographic')}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Add Question
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               <Accordion type="single" collapsible className="space-y-2">

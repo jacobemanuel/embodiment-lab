@@ -6,6 +6,7 @@ import { Slide } from "@/data/slides";
 import { useAnamClient } from "@/hooks/useAnamClient";
 import { TranscriptPanel, TranscriptMessage } from "@/components/TranscriptPanel";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AvatarModePanelProps {
   currentSlide: Slide;
@@ -23,6 +24,13 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   const userStreamRef = useRef<MediaStream | null>(null);
   const prevSlideRef = useRef<string>(currentSlide.id);
   const hasAutoStartedCameraRef = useRef(false);
+  const slideStartTimeRef = useRef<Date>(new Date());
+  const sessionIdRef = useRef<string | null>(null);
+
+  // Get session ID from sessionStorage
+  useEffect(() => {
+    sessionIdRef.current = sessionStorage.getItem('sessionId');
+  }, []);
 
   const {
     isConnected,
@@ -47,22 +55,61 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
     initializeClient();
   }, [initializeClient]);
 
-  // Notify slide changes
+  // Save time tracking when slide changes
+  const saveSlideTime = async (slideId: string, slideTitle: string, startTime: Date) => {
+    if (!sessionIdRef.current) return;
+    
+    const endTime = new Date();
+    const durationSeconds = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
+    
+    // Only save if duration > 2 seconds (filter out quick navigation)
+    if (durationSeconds < 2) return;
+    
+    try {
+      await supabase.functions.invoke('save-avatar-time', {
+        body: {
+          sessionId: sessionIdRef.current,
+          slideId,
+          slideTitle,
+          startedAt: startTime.toISOString(),
+          endedAt: endTime.toISOString(),
+          durationSeconds,
+        }
+      });
+      console.log(`Avatar time saved: ${slideTitle} - ${durationSeconds}s`);
+    } catch (err) {
+      console.error('Failed to save avatar time:', err);
+    }
+  };
+
+  // Notify slide changes and track time
   useEffect(() => {
     if (prevSlideRef.current !== currentSlide.id && isConnected) {
+      // Save time for previous slide before switching
+      const prevSlideId = prevSlideRef.current;
+      const prevSlideTitle = prevSlideId; // We'll use ID as fallback
+      saveSlideTime(prevSlideId, prevSlideTitle, slideStartTimeRef.current);
+      
+      // Reset timer for new slide
+      slideStartTimeRef.current = new Date();
       prevSlideRef.current = currentSlide.id;
       notifySlideChange(currentSlide);
     }
   }, [currentSlide, isConnected, notifySlideChange]);
 
-  // Cleanup camera on unmount
+  // Cleanup camera on unmount AND save final slide time
   useEffect(() => {
     return () => {
+      // Save time for current slide when leaving avatar mode
+      if (sessionIdRef.current && currentSlide) {
+        saveSlideTime(currentSlide.id, currentSlide.title, slideStartTimeRef.current);
+      }
+      
       if (userStreamRef.current) {
         userStreamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [currentSlide]);
 
   // Auto-start user camera once avatar is connected (to match mockup UX)
   // Also re-attach stream to video element when reconnecting after slide change

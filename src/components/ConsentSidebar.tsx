@@ -13,12 +13,11 @@ const ConsentSidebar = () => {
         <Button
           variant="ghost"
           size="sm"
-          className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-card/80 backdrop-blur border border-border rounded-l-lg rounded-r-none px-2 py-8 hover:bg-card shadow-lg"
+          className="fixed right-4 bottom-4 z-40 bg-card/80 backdrop-blur border border-border rounded-lg px-3 py-2 hover:bg-card shadow-lg"
         >
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground [writing-mode:vertical-lr] rotate-180">Consent</span>
-            <ChevronRight className="w-3 h-3 text-muted-foreground rotate-180" />
+            <span className="text-xs text-muted-foreground">Consent</span>
           </div>
         </Button>
       </SheetTrigger>

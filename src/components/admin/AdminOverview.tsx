@@ -125,6 +125,11 @@ interface StudyStats {
     avatar: LikertAnalysis[];
     both: LikertAnalysis[];
   };
+  // Suspicious session stats
+  suspiciousCount: number;
+  avgSuspicionScore: number;
+  suspiciousFlags: { flag: string; count: number }[];
+  resetCount: number;
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
@@ -763,6 +768,25 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         both: analyzeLikertForSessions(bothSessionIds),
       };
 
+      // Calculate suspicious session statistics from ALL sessions (not filtered)
+      const suspiciousSessions = (allSessions || []).filter(s => (s.suspicion_score || 0) > 0);
+      const suspiciousCount = suspiciousSessions.length;
+      const avgSuspicionScore = suspiciousCount > 0 
+        ? Math.round(suspiciousSessions.reduce((sum, s) => sum + (s.suspicion_score || 0), 0) / suspiciousCount)
+        : 0;
+      
+      // Count flag occurrences
+      const flagCounts: Record<string, number> = {};
+      (allSessions || []).forEach(s => {
+        const flags = (s.suspicious_flags as string[]) || [];
+        flags.forEach(flag => {
+          flagCounts[flag] = (flagCounts[flag] || 0) + 1;
+        });
+      });
+      const suspiciousFlags = Object.entries(flagCounts)
+        .map(([flag, count]) => ({ flag, count }))
+        .sort((a, b) => b.count - a.count);
+
       setStats({
         totalCompleted: completedSessions.length,
         totalIncomplete: incompleteSessions.length,
@@ -807,6 +831,11 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         statisticalTests,
         likertAnalysis,
         likertByMode,
+        // Suspicious session stats
+        suspiciousCount,
+        avgSuspicionScore,
+        suspiciousFlags,
+        resetCount: resetSessions.length,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -2091,6 +2120,54 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Data Quality & Suspicious Activity */}
+      {(stats.suspiciousCount > 0 || stats.resetCount > 0) && (
+        <Card className="bg-gradient-to-r from-amber-900/30 to-red-900/30 border-amber-700/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-white text-lg flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-400" />
+              Data Quality Alerts
+            </CardTitle>
+            <CardDescription className="text-slate-400">
+              Sessions flagged for potential data quality issues
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                <div className="text-xs text-slate-400 mb-1">Suspicious</div>
+                <div className="text-2xl font-bold text-amber-400">{stats.suspiciousCount}</div>
+                <div className="text-[10px] text-slate-500 mt-1">sessions flagged</div>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                <div className="text-xs text-slate-400 mb-1">Avg Score</div>
+                <div className="text-2xl font-bold text-orange-400">{stats.avgSuspicionScore}</div>
+                <div className="text-[10px] text-slate-500 mt-1">suspicion level</div>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                <div className="text-xs text-slate-400 mb-1">Reset</div>
+                <div className="text-2xl font-bold text-red-400">{stats.resetCount}</div>
+                <div className="text-[10px] text-slate-500 mt-1">invalidated</div>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-3">
+                <div className="text-xs text-slate-400 mb-2">Top Flags</div>
+                <div className="space-y-1 text-xs max-h-16 overflow-y-auto">
+                  {stats.suspiciousFlags.slice(0, 3).map(f => (
+                    <div key={f.flag} className="flex justify-between">
+                      <span className="text-amber-400 truncate mr-2">{f.flag.replace(/_/g, ' ')}</span>
+                      <span className="text-slate-300">{f.count}</span>
+                    </div>
+                  ))}
+                  {stats.suspiciousFlags.length === 0 && (
+                    <div className="text-slate-500">No flags</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Knowledge Gain Analysis */}
       <Card className="bg-slate-800 border-slate-700">

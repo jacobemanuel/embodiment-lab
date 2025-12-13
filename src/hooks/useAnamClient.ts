@@ -139,16 +139,18 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         const contentChunk = event.content || '';
         const trimmed = contentChunk.trim();
 
-        // AGGRESSIVE filter: skip any content that looks like JSON, system messages, or slide context
+        // AGGRESSIVE filter: skip any content that looks like JSON, system messages, or toggle noise
         const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[{');
         const containsJsonKeys = /"(id|title|keyPoints|systemPromptContext|state|toggleCount)"/.test(trimmed);
         const isSystemMessage = trimmed.startsWith('[SYSTEM_EVENT') || 
                                 trimmed.startsWith('[SILENT_CONTEXT_UPDATE') ||
                                 trimmed.includes('[ACKNOWLEDGED]') ||
                                 trimmed.includes('[DO_NOT_SPEAK]');
+        // Filter out toggle state noise like "on", "off", "camera on", "mic off" etc.
+        const isToggleNoise = /^(on|off|camera\s*(on|off)|mic\s*(on|off)|microphone\s*(on|off))$/i.test(trimmed);
         
-        if (isSystemMessage || looksLikeJson || containsJsonKeys) {
-          console.log('Filtering from transcript (JSON/system):', trimmed.substring(0, 60));
+        if (isSystemMessage || looksLikeJson || containsJsonKeys || isToggleNoise) {
+          console.log('Filtering from transcript:', trimmed.substring(0, 60));
           return;
         }
 
@@ -288,15 +290,16 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
           const contentChunk = event.content || '';
           const trimmed = contentChunk.trim();
 
-          // AGGRESSIVE filter for JSON/system messages
+          // AGGRESSIVE filter for JSON/system messages/toggle noise
           const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[{');
           const containsJsonKeys = /"(id|title|keyPoints|systemPromptContext|state|toggleCount)"/.test(trimmed);
           const isSystemMessage = trimmed.startsWith('[SYSTEM_EVENT') || 
                                   trimmed.startsWith('[SILENT_CONTEXT_UPDATE') ||
                                   trimmed.includes('[ACKNOWLEDGED]') ||
                                   trimmed.includes('[DO_NOT_SPEAK]');
+          const isToggleNoise = /^(on|off|camera\s*(on|off)|mic\s*(on|off)|microphone\s*(on|off))$/i.test(trimmed);
           
-          if (isSystemMessage || looksLikeJson || containsJsonKeys) {
+          if (isSystemMessage || looksLikeJson || containsJsonKeys || isToggleNoise) {
             return;
           }
 

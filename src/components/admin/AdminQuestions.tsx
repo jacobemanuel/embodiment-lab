@@ -551,6 +551,9 @@ const AdminQuestions = () => {
                   <span>Add Question</span>
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="expectations">Expectations</SelectItem>
+                  <SelectItem value="avatar-qualities">Avatar Qualities</SelectItem>
+                  <SelectItem value="realism">Realism</SelectItem>
                   <SelectItem value="trust">Trust Category</SelectItem>
                   <SelectItem value="engagement">Engagement Category</SelectItem>
                   <SelectItem value="satisfaction">Satisfaction Category</SelectItem>
@@ -560,10 +563,10 @@ const AdminQuestions = () => {
             <CardContent>
               <Accordion type="single" collapsible className="space-y-2">
                 {postTestQuestions
-                  .filter(q => ['trust', 'engagement', 'satisfaction'].includes(q.category || ''))
+                  .filter(q => ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'].includes(q.category || ''))
                   .map(renderQuestionEditor)}
               </Accordion>
-              {postTestQuestions.filter(q => ['trust', 'engagement', 'satisfaction'].includes(q.category || '')).length === 0 && (
+              {postTestQuestions.filter(q => ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'].includes(q.category || '')).length === 0 && (
                 <p className="text-slate-500 text-center py-4">No experience questions. Add one above.</p>
               )}
             </CardContent>
@@ -596,6 +599,37 @@ const AdminQuestions = () => {
               </Accordion>
               {postTestQuestions.filter(q => q.category === 'knowledge').length === 0 && (
                 <p className="text-slate-500 text-center py-4">No knowledge questions. Add one above.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Page 3: Open Feedback */}
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Badge variant="outline" className="bg-green-900/50 border-green-500 text-green-300">Page 3</Badge>
+                  Open Feedback
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Open-ended questions for qualitative feedback (optional for participants)
+                </CardDescription>
+              </div>
+              <Button 
+                onClick={() => addNewQuestion('post_test', 'open_feedback', 'open-text')}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Plus className="w-4 h-4 mr-2" /> Add Question
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="space-y-2">
+                {postTestQuestions
+                  .filter(q => q.category === 'open_feedback')
+                  .map(renderQuestionEditor)}
+              </Accordion>
+              {postTestQuestions.filter(q => q.category === 'open_feedback').length === 0 && (
+                <p className="text-slate-500 text-center py-4">No open feedback questions. Add one above.</p>
               )}
             </CardContent>
           </Card>

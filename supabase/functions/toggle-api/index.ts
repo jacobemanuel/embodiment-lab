@@ -169,14 +169,9 @@ serve(async (req) => {
       );
     }
 
-    // ACTION: update_key - update Anam API key (owner only)
+    // ACTION: update_key - update Anam API key (all admins can update)
     if (action === 'update_key') {
-      if (!isOwner) {
-        return new Response(
-          JSON.stringify({ error: 'Only owner can update API keys' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+      // All authenticated admins can update the key
 
       if (!newApiKey || typeof newApiKey !== 'string') {
         return new Response(

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, BarChart3, FileText, Settings, Users, Presentation, Clock, Cog } from "lucide-react";
+import { LogOut, BarChart3, FileText, Settings, Users, Presentation, Clock, Cog, Shield, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminSessions from "@/components/admin/AdminSessions";
@@ -13,8 +13,9 @@ import AdminQuestions from "@/components/admin/AdminQuestions";
 import AdminSlides from "@/components/admin/AdminSlides";
 import AdminAuditLog from "@/components/admin/AdminAuditLog";
 import ApiToggle from "@/components/admin/ApiToggle";
-
-const OWNER_EMAIL = "jakub.majewski@tum.de";
+import PermissionsInfo from "@/components/admin/PermissionsInfo";
+import { PermissionBadge } from "@/components/admin/PermissionGuard";
+import { getPermissions, OWNER_EMAIL } from "@/lib/permissions";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -71,6 +72,8 @@ const AdminDashboard = () => {
     );
   }
 
+  const permissions = getPermissions(userEmail);
+
   const TabWithHelp = ({ value, icon: Icon, label, help }: { value: string; icon: any; label: string; help: string }) => (
     <TooltipProvider>
       <Tooltip>
@@ -103,6 +106,7 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <PermissionBadge userEmail={userEmail} />
             <span className="text-sm text-slate-400">{userEmail}</span>
             <Button 
               variant="outline" 
@@ -157,7 +161,13 @@ const AdminDashboard = () => {
               label="API Settings" 
               help="Control API toggles (OpenAI, Anam) and manage API keys for the study."
             />
-            {userEmail === OWNER_EMAIL && (
+            <TabWithHelp 
+              value="permissions" 
+              icon={Shield} 
+              label="My Access" 
+              help="View your permissions and what you can do in the admin panel."
+            />
+            {permissions.canViewAuditLog && (
               <TabWithHelp 
                 value="audit" 
                 icon={Clock} 
@@ -180,18 +190,22 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="slides">
-            <AdminSlides />
+            <AdminSlides userEmail={userEmail} />
           </TabsContent>
 
           <TabsContent value="questions">
-            <AdminQuestions />
+            <AdminQuestions userEmail={userEmail} />
           </TabsContent>
 
           <TabsContent value="settings">
             <ApiToggle userEmail={userEmail} />
           </TabsContent>
 
-          {userEmail === OWNER_EMAIL && (
+          <TabsContent value="permissions">
+            <PermissionsInfo userEmail={userEmail} />
+          </TabsContent>
+
+          {permissions.canViewAuditLog && (
             <TabsContent value="audit">
               <AdminAuditLog />
             </TabsContent>

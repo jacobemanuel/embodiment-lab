@@ -9,9 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, CheckCircle, XCircle, RefreshCw, Edit2 } from "lucide-react";
+import { Plus, Trash2, Save, CheckCircle, XCircle, RefreshCw, Edit2, Lock } from "lucide-react";
 import { logAdminAction, computeChanges } from "@/lib/auditLog";
+import { getPermissions } from "@/lib/permissions";
 
 interface StudyQuestion {
   id: string;
@@ -38,7 +40,12 @@ const serializeCorrectAnswers = (answers: string[]): string | null => {
   return answers.join('|||');
 };
 
-const AdminQuestions = () => {
+interface AdminQuestionsProps {
+  userEmail: string;
+}
+
+const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
+  const permissions = getPermissions(userEmail);
   const [questions, setQuestions] = useState<StudyQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -244,6 +251,10 @@ const AdminQuestions = () => {
   };
 
   const deleteQuestion = async (questionId: string) => {
+    if (!permissions.canDeleteQuestions) {
+      toast.error('You do not have permission to delete questions. You can disable them instead.');
+      return;
+    }
     if (!confirm('Are you sure you want to delete this question?')) return;
 
     const questionToDelete = questions.find(q => q.id === questionId);
@@ -462,14 +473,30 @@ const AdminQuestions = () => {
                 >
                   {question.is_active ? 'Disable' : 'Enable'}
                 </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => deleteQuestion(question.id)}
-                  className="text-red-400 hover:text-red-300 ml-auto"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
+                {permissions.canDeleteQuestions ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => deleteQuestion(question.id)}
+                    className="text-red-400 hover:text-red-300 ml-auto"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
+                ) : (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="ml-auto flex items-center gap-1 text-slate-500 cursor-not-allowed opacity-50 px-3">
+                          <Lock className="w-4 h-4" />
+                          <span className="text-xs">Delete (Owner only)</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600 max-w-xs">
+                        <p className="text-sm">Deleting questions is restricted to the owner. You can disable them instead.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </>
             )}
           </div>

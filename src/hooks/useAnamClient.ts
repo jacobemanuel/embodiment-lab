@@ -97,13 +97,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       console.log('Creating Anam client with token...');
       const client = createClient(sessionToken);
 
-      // Start with microphone muted by default (push-to-talk UX)
-      try {
-        client.muteInputAudio();
-        console.log('Anam input audio muted by default');
-      } catch (e) {
-        console.warn('Could not mute Anam input audio on init:', e);
-      }
+      // Anam manages microphone input state internally – we do NOT mute here
 
       // Set up event listeners
       client.addListener(AnamEvent.CONNECTION_ESTABLISHED, () => {

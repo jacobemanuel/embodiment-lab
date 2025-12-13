@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.toggle-api]
 verify_jwt = false
+
+[functions.save-avatar-time]
+verify_jwt = false

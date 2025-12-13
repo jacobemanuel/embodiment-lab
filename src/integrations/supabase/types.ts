@@ -89,6 +89,47 @@ export type Database = {
         }
         Relationships: []
       }
+      avatar_time_tracking: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          session_id: string
+          slide_id: string
+          slide_title: string
+          started_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          session_id: string
+          slide_id: string
+          slide_title: string
+          started_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          session_id?: string
+          slide_id?: string
+          slide_title?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avatar_time_tracking_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "study_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demographic_responses: {
         Row: {
           answer: string

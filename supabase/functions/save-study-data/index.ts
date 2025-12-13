@@ -72,6 +72,14 @@ const updateActivitySchema = z.object({
   sessionId: z.string().min(10).max(100),
 });
 
+const reportSuspiciousSchema = z.object({
+  action: z.literal('report_suspicious'),
+  sessionId: z.string().min(10).max(100),
+  flags: z.array(z.string()).max(20),
+  score: z.number().min(0).max(100),
+  pageType: z.string().max(50),
+});
+
 // Rate limiting
 const rateLimitMap = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW = 60000;
@@ -484,6 +492,62 @@ serve(async (req) => {
         if (updateError) {
           console.error('Failed to update activity:', updateError);
         }
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'report_suspicious': {
+        let validated;
+        try {
+          validated = reportSuspiciousSchema.parse(body);
+        } catch (error) {
+          return new Response(
+            JSON.stringify({ error: "Invalid request data" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Get current session data to merge flags
+        const { data: session, error: sessionError } = await supabase
+          .from('study_sessions')
+          .select('suspicious_flags, suspicion_score')
+          .eq('session_id', validated.sessionId)
+          .single();
+
+        if (sessionError || !session) {
+          console.error('Session not found for suspicious report:', sessionError);
+          return new Response(
+            JSON.stringify({ error: "Session not found" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Merge new flags with existing ones
+        const existingFlags = (session.suspicious_flags as string[]) || [];
+        const mergedFlags = [...new Set([...existingFlags, ...validated.flags])];
+        const newScore = Math.max(session.suspicion_score || 0, validated.score);
+
+        const { error: updateError } = await supabase
+          .from('study_sessions')
+          .update({ 
+            suspicious_flags: mergedFlags,
+            suspicion_score: newScore,
+            last_activity_at: new Date().toISOString()
+          })
+          .eq('session_id', validated.sessionId);
+
+        if (updateError) {
+          console.error('Failed to update suspicious flags:', updateError);
+          return new Response(
+            JSON.stringify({ error: "Failed to report suspicious activity" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        console.log(`Suspicious activity reported for session ${validated.sessionId}: score=${validated.score}, flags=${validated.flags.join(', ')}`);
 
         return new Response(
           JSON.stringify({ success: true }),

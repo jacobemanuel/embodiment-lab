@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import logo from "@/assets/logo-white.png";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { savePreTestResponses } from "@/lib/studyData";
@@ -11,6 +11,7 @@ import { Loader2, ChevronLeft } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
+import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection";
 
 const PreTest = () => {
   const navigate = useNavigate();
@@ -19,10 +20,28 @@ const PreTest = () => {
   // Guard: Ensure user completed demographics first
   useStudyFlowGuard('pretest');
   
+  // Bot detection
+  const { recordQuestionStart, recordQuestionAnswer, analyzeTimingData } = useBotDetection({
+    pageType: 'pretest',
+    onSuspiciousActivity: async (result) => {
+      const sessionId = sessionStorage.getItem('sessionId');
+      if (sessionId) {
+        await logSuspiciousActivity(sessionId, result, 'pretest');
+      }
+    }
+  });
+  
   const { questions: preTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('pre_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Track when questions are viewed
+  useEffect(() => {
+    preTestQuestions.forEach(q => {
+      recordQuestionStart(q.id);
+    });
+  }, [preTestQuestions, recordQuestionStart]);
 
   const scrollToQuestion = (index: number) => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -35,6 +54,7 @@ const PreTest = () => {
 
   // Handle checkbox toggle for multiple-answer questions
   const handleMultipleAnswerToggle = (questionId: string, option: string) => {
+    recordQuestionAnswer(questionId);
     const currentAnswer = responses[questionId] || '';
     const currentAnswers = currentAnswer ? currentAnswer.split('|||') : [];
     
@@ -56,9 +76,18 @@ const PreTest = () => {
   const handleContinue = async () => {
     if (allQuestionsAnswered) {
       setIsLoading(true);
+      
+      // Analyze timing for bot detection
+      const botResult = analyzeTimingData();
+      
       try {
         const sessionId = sessionStorage.getItem('sessionId');
         if (!sessionId) throw new Error('Session not found');
+        
+        // Report suspicious activity if detected
+        if (botResult.suspicionLevel !== 'none') {
+          await logSuspiciousActivity(sessionId, botResult, 'pretest');
+        }
         
         await savePreTestResponses(sessionId, responses);
         sessionStorage.setItem('preTest', JSON.stringify(responses));

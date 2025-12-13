@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import logo from "@/assets/logo-white.png";
 import { saveDemographics } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
+import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection";
 
 const Demographics = () => {
   const navigate = useNavigate();
@@ -22,10 +23,28 @@ const Demographics = () => {
   // Guard: Ensure user has a valid session (from consent)
   useStudyFlowGuard('demographics');
   
+  // Bot detection
+  const { recordQuestionStart, recordQuestionAnswer, analyzeTimingData } = useBotDetection({
+    pageType: 'demographics',
+    onSuspiciousActivity: async (result) => {
+      const sessionId = sessionStorage.getItem('sessionId');
+      if (sessionId) {
+        await logSuspiciousActivity(sessionId, result, 'demographics');
+      }
+    }
+  });
+  
   const { questions: demographicQuestions, isLoading: questionsLoading, error } = useStudyQuestions('demographic');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Track when questions are viewed
+  useEffect(() => {
+    demographicQuestions.forEach(q => {
+      recordQuestionStart(q.id);
+    });
+  }, [demographicQuestions, recordQuestionStart]);
 
   const scrollToQuestion = (index: number) => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -40,6 +59,10 @@ const Demographics = () => {
   const handleContinue = async () => {
     if (allQuestionsAnswered) {
       setIsLoading(true);
+      
+      // Analyze timing data for bot detection before proceeding
+      const botResult = analyzeTimingData();
+      
       try {
         let sessionId = sessionStorage.getItem('sessionId');
         
@@ -49,6 +72,11 @@ const Demographics = () => {
           const { createStudySession } = await import('@/lib/studyData');
           sessionId = await createStudySession(mode);
           sessionStorage.setItem('sessionId', sessionId);
+        }
+        
+        // Report suspicious activity if detected
+        if (botResult.suspicionLevel !== 'none' && sessionId) {
+          await logSuspiciousActivity(sessionId, botResult, 'demographics');
         }
         
         // Send responses using question IDs as keys

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { FileText, List, Database, Scale, Hand } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 
 const Consent = () => {
@@ -16,86 +17,129 @@ const Consent = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <img src={logo} alt="TUM Logo" className="h-8" />
         </div>
       </header>
 
       <main className="flex-1 container mx-auto px-6 py-12 max-w-3xl">
-        <div className="space-y-8">
-          <div>
-            <h1 className="text-3xl font-semibold mb-2">Informed Consent</h1>
+        <div className="space-y-8 animate-fade-in">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold">Informed Consent</h1>
             <p className="text-muted-foreground">Please read carefully before participating</p>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-8 space-y-6">
+          <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-8 space-y-8">
             <section className="space-y-3">
-              <h2 className="text-xl font-semibold">Purpose of the Study</h2>
-              <p className="text-muted-foreground leading-relaxed">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-primary" />
+                </div>
+                <h2 className="text-xl font-semibold">Purpose of the Study</h2>
+              </div>
+              <p className="text-muted-foreground leading-relaxed pl-11">
                 This research examines how different presentation formats (text-based vs. avatar-based) affect learning about AI image generation fundamentals. You will complete a brief pre-test, learn through interactive slides about AI-powered image creation, practice with a real-time image playground, and complete a post-test assessment.
               </p>
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-xl font-semibold">Procedures</h2>
-              <ul className="space-y-2 text-muted-foreground">
-                <li className="flex gap-2">
-                  <span>1.</span>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <List className="w-4 h-4 text-primary" />
+                </div>
+                <h2 className="text-xl font-semibold">Procedures</h2>
+              </div>
+              <ul className="space-y-2 text-muted-foreground pl-11">
+                <li className="flex gap-3">
+                  <span className="text-primary font-medium">1.</span>
                   <span>Complete demographic questions and a brief pre-test about AI image generation</span>
                 </li>
-                <li className="flex gap-2">
-                  <span>2.</span>
+                <li className="flex gap-3">
+                  <span className="text-primary font-medium">2.</span>
                   <span>Learn AI image generation basics through interactive slides (~10 minutes)</span>
                 </li>
-                <li className="flex gap-2">
-                  <span>3.</span>
+                <li className="flex gap-3">
+                  <span className="text-primary font-medium">3.</span>
                   <span>Practice with the AI Image Playground to generate your own images</span>
                 </li>
-                <li className="flex gap-2">
-                  <span>4.</span>
+                <li className="flex gap-3">
+                  <span className="text-primary font-medium">4.</span>
                   <span>Complete a post-test evaluating trust, engagement, satisfaction, and knowledge</span>
                 </li>
               </ul>
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-xl font-semibold">Data Collection & Privacy</h2>
-              <p className="text-muted-foreground leading-relaxed">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Database className="w-4 h-4 text-primary" />
+                </div>
+                <h2 className="text-xl font-semibold">Data Collection & Privacy</h2>
+              </div>
+              <p className="text-muted-foreground leading-relaxed pl-11">
                 We will collect your responses, confidence ratings, and dialogue interactions. All data is:
               </p>
-              <ul className="space-y-2 text-muted-foreground ml-4">
-                <li>• Completely anonymous (no names or emails linked to responses)</li>
-                <li>• Assigned a random session ID only</li>
-                <li>• Stored securely and encrypted</li>
-                <li>• Used solely for research purposes</li>
-                <li>• Compliant with GDPR and privacy regulations</li>
+              <ul className="space-y-1.5 text-muted-foreground pl-11 ml-4">
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                  Completely anonymous (no names or emails linked to responses)
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                  Assigned a random session ID only
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                  Stored securely and encrypted
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                  Used solely for research purposes
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                  Compliant with GDPR and privacy regulations
+                </li>
               </ul>
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-xl font-semibold">Risks & Benefits</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the approximately 10-minute session.
-              </p>
-              <p className="text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Benefits:</strong> You will learn fundamental concepts of AI image generation, including prompt engineering, style control, and creative techniques. You'll contribute to research on AI-powered educational systems.
-              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Scale className="w-4 h-4 text-primary" />
+                </div>
+                <h2 className="text-xl font-semibold">Risks & Benefits</h2>
+              </div>
+              <div className="pl-11 space-y-2">
+                <p className="text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the approximately 10-minute session.
+                </p>
+                <p className="text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Benefits:</strong> You will learn fundamental concepts of AI image generation, including prompt engineering, style control, and creative techniques. You'll contribute to research on AI-powered educational systems.
+                </p>
+              </div>
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-xl font-semibold">Voluntary Participation</h2>
-              <p className="text-muted-foreground leading-relaxed">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Hand className="w-4 h-4 text-primary" />
+                </div>
+                <h2 className="text-xl font-semibold">Voluntary Participation</h2>
+              </div>
+              <p className="text-muted-foreground leading-relaxed pl-11">
                 Your participation is completely voluntary. You may withdraw at any time without penalty by simply closing your browser. Partial data will not be used.
               </p>
             </section>
 
             <div className="pt-6 border-t border-border">
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/10">
                 <Checkbox 
                   id="consent" 
                   checked={agreed}
                   onCheckedChange={(checked) => setAgreed(checked === true)}
+                  className="mt-0.5"
                 />
                 <label 
                   htmlFor="consent"
@@ -106,7 +150,7 @@ const Consent = () => {
               </div>
             </div>
 
-            <div className="flex gap-4 pt-4">
+            <div className="flex gap-4 pt-2">
               <Button
                 variant="outline"
                 size="lg"

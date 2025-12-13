@@ -202,18 +202,17 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
               )}
             </Button>
             <p className="text-xs text-center mt-1 text-muted-foreground">
-              {isListening ? "Listening..." : "Muted"}
+              {isListening ? "Alex can hear you now" : "Alex can't hear you"}
             </p>
           </div>
         )}
       </div>
 
-      {/* User Camera Section - aligned right with overlay controls */}
       {isConnected && (
-        <div className="border-b border-border bg-card/80 relative" style={{ height: '150px' }}>
-          <div className="absolute inset-0 flex items-center justify-between px-4 gap-4">
+        <div className="border-b border-border bg-card/80" style={{ height: '150px' }}>
+          <div className="flex h-full items-center justify-between px-4 gap-6 pr-20">
             {/* Left side: controls and labels */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
               <Button
                 size="sm"
                 variant={isCameraOn ? "default" : "secondary"}
@@ -223,8 +222,11 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
                 {isCameraOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
                 {isCameraOn ? "Camera On" : "Enable Camera"}
               </Button>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isCameraOn ? "Alex can see you" : "Alex cannot see you"}
+              </p>
               {cameraError && (
-                <p className="text-xs text-destructive mt-1 max-w-xs">{cameraError}</p>
+                <p className="text-[11px] text-destructive max-w-xs mt-1">{cameraError}</p>
               )}
             </div>
 
@@ -236,7 +238,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
                 playsInline
                 muted
                 className={cn(
-                  "w-full h-full object-contain",
+                  "w-full h-full object-cover",
                   !isCameraOn && "hidden"
                 )}
                 style={{ transform: 'scaleX(-1)' }}
@@ -251,12 +253,6 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
               {isCameraOn && (
                 <div className="absolute bottom-1 left-1 bg-background/80 text-foreground text-[10px] px-1.5 py-0.5 rounded">
                   You
-                </div>
-              )}
-
-              {isCameraOn && (
-                <div className="absolute bottom-1 right-1 bg-background/90 text-foreground text-[10px] px-1.5 py-0.5 rounded shadow">
-                  Alex can see you
                 </div>
               )}
             </div>

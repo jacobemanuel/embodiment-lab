@@ -1132,6 +1132,109 @@ const AdminOverview = () => {
     downloadCSV(data, 'likert_by_mode');
   };
 
+  // Draw a simple bar chart in PDF
+  const drawBarChart = (doc: jsPDF, data: { name: string; value: number }[], startX: number, startY: number, width: number, height: number, title: string, colors: string[]) => {
+    if (data.length === 0) return startY;
+    
+    const maxValue = Math.max(...data.map(d => d.value), 1);
+    const barHeight = Math.min(12, (height - 20) / data.length);
+    const barGap = 3;
+    const labelWidth = 70;
+    const barAreaWidth = width - labelWidth - 30;
+    
+    // Title
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0);
+    doc.text(title, startX, startY);
+    startY += 8;
+    
+    // Draw bars
+    data.forEach((item, index) => {
+      const y = startY + index * (barHeight + barGap);
+      const barWidth = (item.value / maxValue) * barAreaWidth;
+      
+      // Label
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(60);
+      const label = item.name.length > 15 ? item.name.substring(0, 14) + '...' : item.name;
+      doc.text(label, startX, y + barHeight / 2 + 1);
+      
+      // Bar background
+      doc.setFillColor(230, 230, 230);
+      doc.rect(startX + labelWidth, y, barAreaWidth, barHeight, 'F');
+      
+      // Bar fill
+      const colorIndex = index % colors.length;
+      const color = colors[colorIndex];
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      doc.setFillColor(r, g, b);
+      doc.rect(startX + labelWidth, y, barWidth, barHeight, 'F');
+      
+      // Value
+      doc.setFontSize(8);
+      doc.setTextColor(0);
+      doc.text(item.value.toString(), startX + labelWidth + barWidth + 3, y + barHeight / 2 + 1);
+    });
+    
+    return startY + data.length * (barHeight + barGap) + 5;
+  };
+
+  // Draw a comparison bar chart (pre vs post)
+  const drawComparisonChart = (doc: jsPDF, startX: number, startY: number, width: number, title: string, data: { label: string; value1: number; value2: number }[], legend: { label1: string; label2: string }) => {
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0);
+    doc.text(title, startX, startY);
+    startY += 8;
+    
+    const maxValue = Math.max(...data.flatMap(d => [d.value1, d.value2]), 100);
+    const barHeight = 10;
+    const barGap = 2;
+    const groupGap = 8;
+    const labelWidth = 50;
+    const barAreaWidth = width - labelWidth - 40;
+    
+    // Legend
+    doc.setFontSize(7);
+    doc.setFillColor(239, 68, 68);
+    doc.rect(startX + width - 80, startY - 6, 8, 4, 'F');
+    doc.text(legend.label1, startX + width - 70, startY - 3);
+    doc.setFillColor(16, 185, 129);
+    doc.rect(startX + width - 40, startY - 6, 8, 4, 'F');
+    doc.text(legend.label2, startX + width - 30, startY - 3);
+    startY += 5;
+    
+    data.forEach((item, index) => {
+      const baseY = startY + index * (2 * barHeight + barGap + groupGap);
+      
+      // Label
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(60);
+      doc.text(item.label, startX, baseY + barHeight);
+      
+      // Bar 1 (pre)
+      const barWidth1 = (item.value1 / maxValue) * barAreaWidth;
+      doc.setFillColor(239, 68, 68);
+      doc.rect(startX + labelWidth, baseY, barWidth1, barHeight, 'F');
+      doc.setTextColor(0);
+      doc.text(`${item.value1}%`, startX + labelWidth + barWidth1 + 3, baseY + barHeight / 2 + 1);
+      
+      // Bar 2 (post)
+      const barWidth2 = (item.value2 / maxValue) * barAreaWidth;
+      doc.setFillColor(16, 185, 129);
+      doc.rect(startX + labelWidth, baseY + barHeight + barGap, barWidth2, barHeight, 'F');
+      doc.setTextColor(0);
+      doc.text(`${item.value2}%`, startX + labelWidth + barWidth2 + 3, baseY + barHeight + barGap + barHeight / 2 + 1);
+    });
+    
+    return startY + data.length * (2 * barHeight + barGap + groupGap) + 5;
+  };
+
   // Publication-ready PDF report export
   const exportPublicationReport = async () => {
     if (!stats) return;
@@ -1154,7 +1257,7 @@ const AdminOverview = () => {
     yPos += 8;
     doc.setFontSize(14);
     doc.setFont('helvetica', 'normal');
-    doc.text('Summary Report', 105, yPos, { align: 'center' });
+    doc.text('Comprehensive Research Report', 105, yPos, { align: 'center' });
     yPos += 10;
     
     // Metadata
@@ -1187,12 +1290,36 @@ const AdminOverview = () => {
       headStyles: { fillColor: [59, 130, 246] },
       margin: { left: 14, right: 14 },
     });
-    yPos = (doc as any).lastAutoTable.finalY + 15;
+    yPos = (doc as any).lastAutoTable.finalY + 10;
 
-    // Learning Outcomes
+    // Demographic Charts - Side by side
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('2. Learning Outcomes', 14, yPos);
+    doc.text('2. Demographic Distribution', 14, yPos);
+    yPos += 8;
+    
+    // Age Distribution (left)
+    const ageData = stats.demographicBreakdown.map(d => ({ name: d.name, value: d.value }));
+    yPos = drawBarChart(doc, ageData, 14, yPos, 85, 60, 'Age Groups', ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#1d4ed8', '#1e40af']);
+    
+    // Education Distribution (right side of same row - draw on a new row for simplicity)
+    const educationData = stats.educationBreakdown.map(d => ({ name: d.name, value: d.value }));
+    yPos = drawBarChart(doc, educationData, 14, yPos + 5, 85, 60, 'Education Level', ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5']);
+    
+    // Digital Experience
+    const experienceData = stats.experienceBreakdown.map(d => ({ name: d.name, value: d.value }));
+    yPos = drawBarChart(doc, experienceData, 14, yPos + 5, 85, 60, 'Digital Experience', ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe']);
+
+    // Check page break
+    if (yPos > 230) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Learning Outcomes with Chart
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('3. Learning Outcomes', 14, yPos);
     yPos += 8;
 
     autoTable(doc, {
@@ -1207,13 +1334,26 @@ const AdminOverview = () => {
       headStyles: { fillColor: [16, 185, 129] },
       margin: { left: 14, right: 14 },
     });
-    yPos = (doc as any).lastAutoTable.finalY + 15;
+    yPos = (doc as any).lastAutoTable.finalY + 10;
+
+    // Pre vs Post Comparison Chart
+    const comparisonData = [
+      { label: 'Text Mode', value1: stats.textModePreScore, value2: stats.textModePostScore },
+      { label: 'Avatar Mode', value1: stats.avatarModePreScore, value2: stats.avatarModePostScore },
+    ];
+    yPos = drawComparisonChart(doc, 14, yPos, 180, 'Pre-Test vs Post-Test Comparison', comparisonData, { label1: 'Pre-Test', label2: 'Post-Test' });
+
+    // Check page break
+    if (yPos > 200) {
+      doc.addPage();
+      yPos = 20;
+    }
 
     // Statistical Analysis
     if (stats.statisticalTests) {
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('3. Statistical Analysis (Text vs Avatar)', 14, yPos);
+      doc.text('4. Statistical Analysis (Text vs Avatar)', 14, yPos);
       yPos += 8;
 
       const significant = stats.statisticalTests.textVsAvatar.significant;
@@ -1224,7 +1364,7 @@ const AdminOverview = () => {
           ['t-statistic', stats.statisticalTests.textVsAvatar.tStatistic.toString(), ''],
           ['p-value', stats.statisticalTests.textVsAvatar.pValue < 0.001 ? '<0.001' : stats.statisticalTests.textVsAvatar.pValue.toString(), significant ? 'Significant (p < 0.05)' : 'Not significant'],
           ["Cohen's d", stats.statisticalTests.textVsAvatar.cohensD.toString(), `${stats.statisticalTests.textVsAvatar.effectSize} effect size`],
-          ['95% CI', `[${stats.statisticalTests.textVsAvatar.ci95Lower}, ${stats.statisticalTests.textVsAvatar.ci95Upper}]`, ''],
+          ['95% CI', `[${stats.statisticalTests.textVsAvatar.ci95Lower}, ${stats.statisticalTests.textVsAvatar.ci95Upper}]`, 'Mean difference confidence interval'],
           ['Text Mean (SD)', `${stats.statisticalTests.textVsAvatar.textMean}% (±${stats.statisticalTests.textVsAvatar.textStd})`, `n=${stats.statisticalTests.textVsAvatar.textN}`],
           ['Avatar Mean (SD)', `${stats.statisticalTests.textVsAvatar.avatarMean}% (±${stats.statisticalTests.textVsAvatar.avatarStd})`, `n=${stats.statisticalTests.textVsAvatar.avatarN}`],
         ],
@@ -1232,44 +1372,97 @@ const AdminOverview = () => {
         headStyles: { fillColor: [139, 92, 246] },
         margin: { left: 14, right: 14 },
       });
-      yPos = (doc as any).lastAutoTable.finalY + 15;
+      yPos = (doc as any).lastAutoTable.finalY + 10;
     }
+
+    // Check page break
+    if (yPos > 200) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Mode Comparison Chart
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('5. Mode Distribution', 14, yPos);
+    yPos += 8;
+    
+    const modeData = [
+      { name: 'Text Mode', value: stats.textModeCompleted },
+      { name: 'Avatar Mode', value: stats.avatarModeCompleted },
+    ];
+    yPos = drawBarChart(doc, modeData, 14, yPos, 100, 40, '', ['#3b82f6', '#8b5cf6']);
 
     // Perception Analysis
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('4. Perception Analysis (Likert 1-5)', 14, yPos);
+    doc.text('6. Perception Analysis (Likert 1-5)', 14, yPos);
     yPos += 8;
 
     const trustAvg = stats.likertAnalysis.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'trust').length, 1);
     const engagementAvg = stats.likertAnalysis.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'engagement').length, 1);
     const satisfactionAvg = stats.likertAnalysis.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'satisfaction').length, 1);
 
+    const textTrust = stats.likertByMode.text.filter(l => l.category === 'trust');
+    const textEngagement = stats.likertByMode.text.filter(l => l.category === 'engagement');
+    const textSatisfaction = stats.likertByMode.text.filter(l => l.category === 'satisfaction');
+    const avatarTrust = stats.likertByMode.avatar.filter(l => l.category === 'trust');
+    const avatarEngagement = stats.likertByMode.avatar.filter(l => l.category === 'engagement');
+    const avatarSatisfaction = stats.likertByMode.avatar.filter(l => l.category === 'satisfaction');
+
     autoTable(doc, {
       startY: yPos,
       head: [['Category', 'Overall Mean', 'Text Mode', 'Avatar Mode']],
       body: [
         ['Trust', trustAvg.toFixed(2), 
-          (stats.likertByMode.text.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.text.filter(l => l.category === 'trust').length, 1)).toFixed(2),
-          (stats.likertByMode.avatar.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.avatar.filter(l => l.category === 'trust').length, 1)).toFixed(2)
+          (textTrust.reduce((sum, l) => sum + l.mean, 0) / Math.max(textTrust.length, 1)).toFixed(2),
+          (avatarTrust.reduce((sum, l) => sum + l.mean, 0) / Math.max(avatarTrust.length, 1)).toFixed(2)
         ],
         ['Engagement', engagementAvg.toFixed(2),
-          (stats.likertByMode.text.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.text.filter(l => l.category === 'engagement').length, 1)).toFixed(2),
-          (stats.likertByMode.avatar.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.avatar.filter(l => l.category === 'engagement').length, 1)).toFixed(2)
+          (textEngagement.reduce((sum, l) => sum + l.mean, 0) / Math.max(textEngagement.length, 1)).toFixed(2),
+          (avatarEngagement.reduce((sum, l) => sum + l.mean, 0) / Math.max(avatarEngagement.length, 1)).toFixed(2)
         ],
         ['Satisfaction', satisfactionAvg.toFixed(2),
-          (stats.likertByMode.text.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.text.filter(l => l.category === 'satisfaction').length, 1)).toFixed(2),
-          (stats.likertByMode.avatar.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.avatar.filter(l => l.category === 'satisfaction').length, 1)).toFixed(2)
+          (textSatisfaction.reduce((sum, l) => sum + l.mean, 0) / Math.max(textSatisfaction.length, 1)).toFixed(2),
+          (avatarSatisfaction.reduce((sum, l) => sum + l.mean, 0) / Math.max(avatarSatisfaction.length, 1)).toFixed(2)
         ],
       ],
       theme: 'striped',
       headStyles: { fillColor: [236, 72, 153] },
       margin: { left: 14, right: 14 },
     });
-    yPos = (doc as any).lastAutoTable.finalY + 15;
+    yPos = (doc as any).lastAutoTable.finalY + 10;
 
-    // Check if we need a new page
-    if (yPos > 250) {
+    // Perception Chart
+    const perceptionData = [
+      { name: 'Trust', value: Math.round(trustAvg * 20) },
+      { name: 'Engagement', value: Math.round(engagementAvg * 20) },
+      { name: 'Satisfaction', value: Math.round(satisfactionAvg * 20) },
+    ];
+    yPos = drawBarChart(doc, perceptionData, 14, yPos, 100, 50, 'Perception Scores (% of max)', ['#ec4899', '#f472b6', '#f9a8d4']);
+
+    // Check page break
+    if (yPos > 180) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Avatar Time by Slide
+    if (stats.avatarTimeBySlide.length > 0) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('7. Avatar Interaction Time by Slide', 14, yPos);
+      yPos += 8;
+
+      const slideTimeData = stats.avatarTimeBySlide.slice(0, 7).map(s => ({
+        name: s.slide.length > 20 ? s.slide.substring(0, 18) + '...' : s.slide,
+        value: Math.round(s.avgTime / 60),
+      }));
+      yPos = drawBarChart(doc, slideTimeData, 14, yPos, 180, 70, 'Average Time per Slide (minutes)', ['#06b6d4', '#22d3ee', '#67e8f9', '#a5f3fc', '#cffafe', '#0891b2', '#0e7490']);
+    }
+
+    // Check page break
+    if (yPos > 180) {
       doc.addPage();
       yPos = 20;
     }
@@ -1277,7 +1470,7 @@ const AdminOverview = () => {
     // Question Performance
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('5. Question Performance', 14, yPos);
+    doc.text('8. Question Performance', 14, yPos);
     yPos += 8;
 
     const questionData = [
@@ -1297,12 +1490,58 @@ const AdminOverview = () => {
           1: { cellWidth: 80 },
         },
       });
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+    }
+
+    // Question Performance Chart
+    const preTestPerformance = stats.preTestQuestionAnalysis.slice(0, 5).map((q, i) => ({
+      name: `Pre Q${i + 1}`,
+      value: q.correctRate,
+    }));
+    const postTestPerformance = stats.postTestQuestionAnalysis.slice(0, 5).map((q, i) => ({
+      name: `Post Q${i + 1}`,
+      value: q.correctRate,
+    }));
+    
+    if (preTestPerformance.length > 0 || postTestPerformance.length > 0) {
+      // Check page break
+      if (yPos > 200) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      yPos = drawBarChart(doc, [...preTestPerformance, ...postTestPerformance], 14, yPos, 180, 80, 'Question Correct Rate (%)', ['#ef4444', '#f87171', '#fca5a5', '#fecaca', '#fee2e2', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5']);
+    }
+
+    // Sessions per Day Chart
+    if (stats.sessionsPerDay.length > 0) {
+      // Check page break
+      if (yPos > 200) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('9. Data Collection Timeline', 14, yPos);
+      yPos += 8;
+      
+      const timelineData = stats.sessionsPerDay.slice(-14).map(s => ({
+        name: s.date,
+        value: s.count,
+      }));
+      yPos = drawBarChart(doc, timelineData, 14, yPos, 180, 80, 'Sessions per Day (last 14 days)', ['#3b82f6']);
     }
 
     // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text('Generated by AI Image Generation Learning Study Dashboard', 105, 285, { align: 'center' });
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+      doc.text('AI Image Generation Learning Study - Research Report', 14, 290);
+    }
 
     // Save PDF
     doc.save(`publication_report_${format(new Date(), 'yyyy-MM-dd')}.pdf`);

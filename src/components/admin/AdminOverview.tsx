@@ -1779,6 +1779,129 @@ const AdminOverview = () => {
       yPos = drawBarChart(doc, timelineData, 14, yPos, 180, 80, 'Sessions per Day (last 14 days)', ['#3b82f6']);
     }
 
+    // Engagement Metrics Correlation Comparison Summary
+    if (stats.correlations.avatarTimeVsGain.length >= 2 || stats.correlations.sessionTimeVsGain.length >= 2) {
+      // Check page break
+      if (yPos > 180) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('11. Engagement Metrics Comparison Summary', 14, yPos);
+      yPos += 8;
+      
+      // Calculate correlations
+      const calcCorrelation = (data: { x: number; y: number }[]) => {
+        if (data.length < 2) return { r: 0, r2: 0, slope: 0, intercept: 0 };
+        const n = data.length;
+        const xValues = data.map(d => d.x);
+        const yValues = data.map(d => d.y);
+        const sumX = xValues.reduce((a, b) => a + b, 0);
+        const sumY = yValues.reduce((a, b) => a + b, 0);
+        const sumXY = data.reduce((a, d) => a + d.x * d.y, 0);
+        const sumX2 = xValues.reduce((a, b) => a + b * b, 0);
+        const sumY2 = yValues.reduce((a, b) => a + b * b, 0);
+        
+        const numerator = n * sumXY - sumX * sumY;
+        const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+        const r = denominator !== 0 ? numerator / denominator : 0;
+        
+        const denomSlope = n * sumX2 - sumX * sumX;
+        const slope = denomSlope !== 0 ? (n * sumXY - sumX * sumY) / denomSlope : 0;
+        const intercept = (sumY - slope * sumX) / n;
+        
+        return { r, r2: r * r, slope, intercept };
+      };
+      
+      const avatarTimeData = stats.correlations.avatarTimeVsGain.filter(d => d.x > 0);
+      const avatarCorr = calcCorrelation(avatarTimeData);
+      const sessionCorr = calcCorrelation(stats.correlations.sessionTimeVsGain);
+      
+      const getInterpretation = (r: number) => {
+        const absR = Math.abs(r);
+        if (absR >= 0.7) return 'Strong';
+        if (absR >= 0.4) return 'Moderate';
+        if (absR >= 0.2) return 'Weak';
+        return 'Negligible';
+      };
+      
+      const getDirection = (r: number) => r > 0 ? 'Positive' : r < 0 ? 'Negative' : 'None';
+      
+      // Determine which metric has stronger correlation
+      const avatarStrength = Math.abs(avatarCorr.r);
+      const sessionStrength = Math.abs(sessionCorr.r);
+      const strongerMetric = avatarStrength > sessionStrength ? 'Avatar Interaction Time' : 
+                             sessionStrength > avatarStrength ? 'Session Duration' : 'Equal';
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Metric', 'Pearson r', 'R²', 'Direction', 'Strength', 'Sample Size']],
+        body: [
+          [
+            'Avatar Interaction Time',
+            avatarCorr.r.toFixed(3),
+            (avatarCorr.r2 * 100).toFixed(1) + '%',
+            getDirection(avatarCorr.r),
+            getInterpretation(avatarCorr.r),
+            avatarTimeData.length.toString()
+          ],
+          [
+            'Session Duration',
+            sessionCorr.r.toFixed(3),
+            (sessionCorr.r2 * 100).toFixed(1) + '%',
+            getDirection(sessionCorr.r),
+            getInterpretation(sessionCorr.r),
+            stats.correlations.sessionTimeVsGain.length.toString()
+          ],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [6, 182, 212] },
+        margin: { left: 14, right: 14 },
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 8;
+      
+      // Summary interpretation
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0);
+      doc.text('Key Finding:', 14, yPos);
+      yPos += 5;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      if (strongerMetric === 'Equal') {
+        doc.text('Both engagement metrics show equal correlation strength with learning outcomes.', 14, yPos);
+      } else {
+        const variance = strongerMetric === 'Avatar Interaction Time' 
+          ? (avatarCorr.r2 * 100).toFixed(1) 
+          : (sessionCorr.r2 * 100).toFixed(1);
+        doc.text(`${strongerMetric} shows the stronger correlation with knowledge gain (R² = ${variance}%),`, 14, yPos);
+        yPos += 5;
+        doc.text(`explaining ${variance}% of the variance in learning outcomes.`, 14, yPos);
+      }
+      yPos += 10;
+      
+      // Recommendations
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Implications:', 14, yPos);
+      yPos += 5;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      if (avatarStrength > 0.3 || sessionStrength > 0.3) {
+        doc.text('• Engagement time is a meaningful predictor of learning success.', 14, yPos);
+        yPos += 4;
+        doc.text('• Consider strategies to increase participant engagement duration.', 14, yPos);
+      } else {
+        doc.text('• Engagement duration shows limited predictive value for learning outcomes.', 14, yPos);
+        yPos += 4;
+        doc.text('• Other factors (e.g., prior knowledge, learning style) may be more influential.', 14, yPos);
+      }
+    }
+
     // Footer
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {

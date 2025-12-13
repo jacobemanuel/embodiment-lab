@@ -164,40 +164,39 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Status Banner for Admins */}
-      {!isOwner && (
-        <Card className={`border-2 ${anamUsable ? 'bg-green-900/20 border-green-600' : 'bg-red-900/20 border-red-600'}`}>
-          <CardContent className="py-4">
-            <div className="flex items-center gap-3">
+      {/* Overall Status Summary */}
+      <Card className={`border-2 ${anamUsable ? 'bg-green-900/20 border-green-600' : 'bg-amber-900/20 border-amber-600'}`}>
+        <CardContent className="py-4">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${anamUsable ? 'bg-green-500/20' : 'bg-amber-500/20'}`}>
               {anamUsable ? (
-                <>
-                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                  <div>
-                    <p className="text-green-200 font-medium">Avatar API is Active</p>
-                    <p className="text-green-300/70 text-sm">
-                      {hasCustomKey 
-                        ? `Using custom key: ${currentAnamKey} (by ${settings.anam_api_key?.updated_by || 'unknown'})`
-                        : 'Using system default API key'}
-                    </p>
-                  </div>
-                </>
+                <Zap className="w-6 h-6 text-green-400" />
               ) : (
-                <>
-                  <div className="w-3 h-3 rounded-full bg-red-500" />
-                  <div>
-                    <p className="text-red-200 font-medium">Avatar API is Inactive</p>
-                    <p className="text-red-300/70 text-sm">
-                      {!masterEnabled 
-                        ? 'Master switch is OFF (owner must enable)' 
-                        : 'Anam API is disabled - toggle it ON below'}
-                    </p>
-                  </div>
-                </>
+                <ZapOff className="w-6 h-6 text-amber-400" />
               )}
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className={`text-lg font-semibold ${anamUsable ? 'text-green-200' : 'text-amber-200'}`}>
+                  {anamUsable ? 'All Systems Operational' : 'Services Unavailable'}
+                </span>
+                <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${anamUsable ? 'bg-green-500/30 text-green-200' : 'bg-amber-500/30 text-amber-200'}`}>
+                  {anamUsable ? 'ONLINE' : 'OFFLINE'}
+                </div>
+              </div>
+              <p className={`text-sm mt-1 ${anamUsable ? 'text-green-300/70' : 'text-amber-300/70'}`}>
+                {anamUsable 
+                  ? hasCustomKey 
+                    ? `Avatar using custom key: ${currentAnamKey}`
+                    : 'Avatar using system default API key'
+                  : !masterEnabled 
+                    ? 'Master switch is OFF — all APIs are blocked'
+                    : 'Anam API is disabled — toggle it ON below'}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Master Switch - Owner Only */}
       {isOwner && (
@@ -206,10 +205,9 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
             <div className="flex items-center gap-2">
               <Power className="w-5 h-5 text-red-500" />
               <CardTitle className="text-white text-lg">Master Switch</CardTitle>
-              {/* Status indicator for owner */}
-              <div className={`ml-auto flex items-center gap-2 px-2 py-1 rounded-full text-xs ${masterEnabled ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'}`}>
-                <div className={`w-2 h-2 rounded-full ${masterEnabled ? 'bg-green-400' : 'bg-red-400'}`} />
-                {masterEnabled ? 'System Active' : 'System Disabled'}
+              <div className={`ml-auto flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${masterEnabled ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>
+                <div className={`w-2.5 h-2.5 rounded-full ${masterEnabled ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+                {masterEnabled ? 'ON' : 'OFF'}
               </div>
             </div>
             <CardDescription className="text-slate-400">
@@ -260,10 +258,9 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-blue-500" />
               <CardTitle className="text-white text-lg">OpenAI API (Text Mode)</CardTitle>
-              {/* Status indicator */}
-              <div className={`ml-auto flex items-center gap-2 px-2 py-1 rounded-full text-xs ${masterEnabled && openaiEnabled ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'}`}>
-                <div className={`w-2 h-2 rounded-full ${masterEnabled && openaiEnabled ? 'bg-green-400' : 'bg-red-400'}`} />
-                {masterEnabled && openaiEnabled ? 'Active' : 'Inactive'}
+              <div className={`ml-auto flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${masterEnabled && openaiEnabled ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>
+                <div className={`w-2.5 h-2.5 rounded-full ${masterEnabled && openaiEnabled ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+                {masterEnabled && openaiEnabled ? 'ON' : 'OFF'}
               </div>
             </div>
             <CardDescription className="text-slate-400">
@@ -319,11 +316,10 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-purple-500" />
             <CardTitle className="text-white text-lg">Anam API (Avatar Mode)</CardTitle>
-            {/* Status indicator */}
-            <div className={`ml-auto flex items-center gap-2 px-2 py-1 rounded-full text-xs ${anamUsable ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'}`}>
-              <div className={`w-2 h-2 rounded-full ${anamUsable ? 'bg-green-400' : 'bg-red-400'}`} />
-              {anamUsable ? 'Active' : 'Inactive'}
-            </div>
+              <div className={`ml-auto flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${anamUsable ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>
+                <div className={`w-2.5 h-2.5 rounded-full ${anamUsable ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+                {anamUsable ? 'ON' : 'OFF'}
+              </div>
           </div>
           <CardDescription className="text-slate-400">
             Controls avatar-based interaction functionality

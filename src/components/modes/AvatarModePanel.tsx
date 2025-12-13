@@ -124,6 +124,25 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
           console.log('Re-attaching existing camera stream to video element');
           userVideoRef.current.srcObject = userStreamRef.current;
           return;
+        } else {
+          // Stream died, restart it
+          console.log('Camera stream died, restarting...');
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: { width: 640, height: 480, facingMode: 'user' },
+              audio: false,
+            });
+            userStreamRef.current = stream;
+            if (userVideoRef.current) {
+              userVideoRef.current.srcObject = stream;
+            }
+            setCameraError(null);
+          } catch (err) {
+            console.error('Camera restart error:', err);
+            setCameraError('Camera access denied');
+            setIsCameraOn(false);
+          }
+          return;
         }
       }
       
@@ -153,7 +172,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
     };
 
     void startOrReattachCamera();
-  }, [isConnected, isCameraOn]);
+  }, [isConnected, isCameraOn, currentSlide.id]);
   
   // Periodically check if camera stream is still attached (handles slide change disconnects)
   useEffect(() => {

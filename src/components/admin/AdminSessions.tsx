@@ -171,50 +171,31 @@ interface SessionDetails {
     }
   };
 
-  // Update session validation status
+  // Update session validation status via edge function
   // Owner can directly accept/ignore, Admin can only request (goes to 'pending_approval')
   const updateValidationStatus = async (sessionId: string, status: 'accepted' | 'ignored') => {
     try {
-      // Determine the actual status to save based on permissions
-      let actualStatus = status;
-      let toastMessage = '';
+      console.log('updateValidationStatus called:', { sessionId, status });
       
-      if (permissions.canValidateSessionsDirectly) {
-        // Owner - directly accept/ignore
-        actualStatus = status;
-        toastMessage = status === 'accepted' 
-          ? 'Session accepted for statistics' 
-          : 'Session ignored from statistics';
-      } else if (permissions.canRequestValidation) {
-        // Admin - request approval (pending_accepted or pending_ignored)
-        actualStatus = status === 'accepted' ? 'pending_accepted' : 'pending_ignored' as any;
-        toastMessage = status === 'accepted'
-          ? 'Requested acceptance - awaiting owner approval'
-          : 'Requested ignore - awaiting owner approval';
-      } else {
-        toast.error('You do not have permission to validate sessions');
-        return;
+      const { data, error } = await supabase.functions.invoke('update-session-validation', {
+        body: { sessionId, status }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
       }
 
-      const { error } = await supabase
-        .from('study_sessions')
-        .update({
-          validation_status: actualStatus,
-          validated_by: userEmail,
-          validated_at: new Date().toISOString()
-        })
-        .eq('id', sessionId);
+      console.log('Edge function response:', data);
 
-      if (error) throw error;
-
-      // Update local state
+      // Update local state with the actual status from the edge function
       setSessions(prev => prev.map(s => 
         s.id === sessionId 
-          ? { ...s, validation_status: actualStatus, validated_by: userEmail, validated_at: new Date().toISOString() }
+          ? { ...s, validation_status: data.actualStatus, validated_by: userEmail, validated_at: new Date().toISOString() }
           : s
       ));
 
-      toast.success(toastMessage);
+      toast.success(data.message);
     } catch (error) {
       console.error('Error updating validation status:', error);
       toast.error('Failed to update session status');
@@ -229,45 +210,29 @@ interface SessionDetails {
     }
 
     try {
-      const session = sessions.find(s => s.id === sessionId);
-      if (!session) return;
+      const { data, error } = await supabase.functions.invoke('update-session-validation', {
+        body: { sessionId, approve }
+      });
 
-      // Determine final status based on what was requested
-      let finalStatus: string;
-      if (approve) {
-        finalStatus = session.validation_status === 'pending_accepted' ? 'accepted' : 'ignored';
-      } else {
-        // Rejected - reset to pending
-        finalStatus = 'pending';
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
       }
-
-      const { error } = await supabase
-        .from('study_sessions')
-        .update({
-          validation_status: finalStatus,
-          validated_by: userEmail,
-          validated_at: new Date().toISOString()
-        })
-        .eq('id', sessionId);
-
-      if (error) throw error;
 
       setSessions(prev => prev.map(s => 
         s.id === sessionId 
-          ? { ...s, validation_status: finalStatus, validated_by: userEmail, validated_at: new Date().toISOString() }
+          ? { ...s, validation_status: data.actualStatus, validated_by: userEmail, validated_at: new Date().toISOString() }
           : s
       ));
 
-      toast.success(approve 
-        ? `Validation request approved - session ${finalStatus}` 
-        : 'Validation request rejected');
+      toast.success(data.message);
     } catch (error) {
       console.error('Error approving validation:', error);
       toast.error('Failed to process validation request');
     }
   };
 
-  // Bulk validation for multiple sessions
+  // Bulk validation for multiple sessions via edge function
   const bulkUpdateValidation = async (status: 'accepted' | 'ignored') => {
     if (selectedSessionIds.size === 0) {
       toast.error('No sessions selected');
@@ -275,41 +240,25 @@ interface SessionDetails {
     }
 
     try {
-      let actualStatus = status;
-      let toastMessage = '';
-      
-      if (permissions.canValidateSessionsDirectly) {
-        actualStatus = status;
-        toastMessage = `${selectedSessionIds.size} session(s) ${status}`;
-      } else if (permissions.canRequestValidation) {
-        actualStatus = status === 'accepted' ? 'pending_accepted' : 'pending_ignored' as any;
-        toastMessage = `Requested ${status} for ${selectedSessionIds.size} session(s) - awaiting owner approval`;
-      } else {
-        toast.error('You do not have permission to validate sessions');
-        return;
-      }
-
       const sessionIdsArray = Array.from(selectedSessionIds);
       
-      const { error } = await supabase
-        .from('study_sessions')
-        .update({
-          validation_status: actualStatus,
-          validated_by: userEmail,
-          validated_at: new Date().toISOString()
-        })
-        .in('id', sessionIdsArray);
+      const { data, error } = await supabase.functions.invoke('update-session-validation', {
+        body: { sessionIds: sessionIdsArray, status }
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
       setSessions(prev => prev.map(s => 
         selectedSessionIds.has(s.id)
-          ? { ...s, validation_status: actualStatus, validated_by: userEmail, validated_at: new Date().toISOString() }
+          ? { ...s, validation_status: data.actualStatus, validated_by: userEmail, validated_at: new Date().toISOString() }
           : s
       ));
       
       setSelectedSessionIds(new Set());
-      toast.success(toastMessage);
+      toast.success(data.message);
     } catch (error) {
       console.error('Error bulk updating validation status:', error);
       toast.error('Failed to update sessions');
@@ -804,11 +753,20 @@ interface SessionDetails {
                                   <p className="font-semibold mb-2 text-white">Suspicion Score Explanation</p>
                                   <div className="text-xs space-y-2 text-slate-300">
                                     <p><strong>Score {session.suspicion_score || 0}/100</strong> - Higher = more suspicious</p>
+                                    <hr className="border-slate-700 my-2" />
+                                    <p className="font-semibold text-white">How Score is Calculated:</p>
+                                    <ul className="space-y-1 text-[11px]">
+                                      <li>• +20 pts if question answered in &lt;2 seconds</li>
+                                      <li>• +15 pts if page completed in &lt;5 seconds</li>
+                                      <li>• +25 pts if total study completed in &lt;3 minutes</li>
+                                      <li>• +10 pts for each unusually fast interaction</li>
+                                    </ul>
+                                    <hr className="border-slate-700 my-2" />
                                     <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-                                      <span>0-19: Normal</span><span className="text-green-400">✓ Valid</span>
+                                      <span>0-19: Normal</span><span className="text-green-400">✓ Valid data</span>
                                       <span>20-39: Low risk</span><span className="text-yellow-400">⚠ Minor flags</span>
                                       <span>40-59: Medium risk</span><span className="text-orange-400">⚠ Review needed</span>
-                                      <span>60+: High risk</span><span className="text-red-400">⚠ Likely bot/inattentive</span>
+                                      <span>60+: High risk</span><span className="text-red-400">⚠ Likely invalid</span>
                                     </div>
                                     <hr className="border-slate-700 my-2" />
                                     <p className="font-semibold text-white">Detected Issues:</p>

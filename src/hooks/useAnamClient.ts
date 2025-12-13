@@ -124,36 +124,26 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         setState(prev => ({ ...prev, isStreaming: true }));
       });
 
-      // Message history - for both user and persona messages
+      // Message history - we ONLY use this for debugging now to avoid
+      // mismatches between history text and actual spoken audio.
       client.addListener(AnamEvent.MESSAGE_HISTORY_UPDATED, (messages: any) => {
-        console.log('Message history updated:', messages);
-        if (messages && Array.isArray(messages)) {
-          messages.forEach((msg: any) => {
-            if (msg.role === MessageRole.PERSONA && msg.content) {
-              addTranscriptMessage('avatar', msg.content, true);
-            } else if (msg.role === MessageRole.USER && msg.content) {
-              addTranscriptMessage('user', msg.content, true);
-            }
-          });
-        }
+        console.log('Message history updated (debug only):', messages);
       });
 
-      // Stream events - for real-time updates (captures voice input transcription too!)
+      // Stream events - source of truth for avatar transcript
       client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, (event: any) => {
         console.log('Stream event:', event);
         
-        // Persona (avatar) speaking
+        // Persona (avatar) speaking – this is the ONLY thing we show
         if (event.role === MessageRole.PERSONA && event.content) {
           const isFinal = event.endOfSpeech === undefined ? true : event.endOfSpeech;
           addTranscriptMessage('avatar', event.content, isFinal);
           setState(prev => ({ ...prev, isTalking: !isFinal }));
         }
         
-        // User speaking (voice input transcription)
-        if (event.role === MessageRole.USER && event.content) {
-          const isFinal = event.endOfSpeech === undefined ? true : event.endOfSpeech;
-          addTranscriptMessage('user', event.content, isFinal);
-        }
+        // We intentionally ignore USER role events here so that the
+        // transcript panel shows a clean, exact transcript of ONLY
+        // what Alex says and nothing else.
       });
 
       clientRef.current = client;
@@ -181,8 +171,8 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
 
     try {
-      // Add user message to transcript for text input
-      addTranscriptMessage('user', message, true);
+      // We no longer add user messages to the transcript here –
+      // transcript should show ONLY what Alex says.
       console.log('Sending message to avatar:', message);
       await clientRef.current.talk(message);
       console.log('Message sent successfully');

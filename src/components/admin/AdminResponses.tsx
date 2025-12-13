@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Filter } from "lucide-react";
+import { Download, Filter, MessageSquare } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import DateRangeFilter from "./DateRangeFilter";
 import { startOfDay, endOfDay } from "date-fns";
@@ -23,6 +23,7 @@ const AdminResponses = () => {
   const [preTestData, setPreTestData] = useState<Record<string, ResponseData[]>>({});
   const [postTestData, setPostTestData] = useState<Record<string, ResponseData[]>>({});
   const [demographicsData, setDemographicsData] = useState<Record<string, ResponseData[]>>({});
+  const [openFeedbackData, setOpenFeedbackData] = useState<Array<{session_id: string; question_id: string; answer: string; created_at: string}>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -92,6 +93,7 @@ const AdminResponses = () => {
         setPreTestData({});
         setPostTestData({});
         setDemographicsData({});
+        setOpenFeedbackData([]);
         setIsRefreshing(false);
         return;
       }
@@ -142,9 +144,20 @@ const AdminResponses = () => {
         }
       });
 
+      // Filter open feedback from post-test responses
+      const openFeedback = (postTest || []).filter(r => 
+        r.question_id.startsWith('open_')
+      ).map(r => ({
+        session_id: r.session_id,
+        question_id: r.question_id,
+        answer: r.answer,
+        created_at: ''
+      }));
+
       setPreTestData(preTestAggregated);
       setPostTestData(postTestAggregated);
       setDemographicsData(demoAggregated);
+      setOpenFeedbackData(openFeedback);
     } catch (error) {
       console.error('Error fetching responses:', error);
     } finally {
@@ -290,6 +303,10 @@ const AdminResponses = () => {
           <TabsTrigger value="demographics">Demographics</TabsTrigger>
           <TabsTrigger value="pretest">Pre-test</TabsTrigger>
           <TabsTrigger value="posttest">Post-test</TabsTrigger>
+          <TabsTrigger value="openfeedback" className="flex items-center gap-1">
+            <MessageSquare className="w-3 h-3" />
+            Open Feedback
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="demographics" className="space-y-6">
@@ -409,6 +426,43 @@ const AdminResponses = () => {
           </div>
           {Object.keys(postTestData).length === 0 && (
             <p className="text-slate-500 text-center py-8">No post-test data</p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="openfeedback" className="space-y-6">
+          {/* Group responses by question */}
+          {['open_liked', 'open_frustrating', 'open_improvement'].map(questionId => {
+            const questionText = getQuestionText(questionId);
+            const questionResponses = openFeedbackData.filter(r => r.question_id === questionId);
+            
+            return (
+              <Card key={questionId} className="bg-slate-800 border-slate-700">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-purple-400" />
+                    <CardTitle className="text-white text-sm">{questionText}</CardTitle>
+                  </div>
+                  <CardDescription className="text-slate-400">{questionResponses.length} responses</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {questionResponses.length > 0 ? (
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                      {questionResponses.map((response, idx) => (
+                        <div key={idx} className="bg-slate-900/50 rounded-lg p-3 border border-slate-700">
+                          <p className="text-slate-300 text-sm whitespace-pre-wrap">{response.answer}</p>
+                          <p className="text-slate-500 text-xs mt-1">Session: {response.session_id.slice(0, 8)}...</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-slate-500 text-center py-4">No responses yet</p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+          {openFeedbackData.length === 0 && (
+            <p className="text-slate-500 text-center py-8">No open feedback data</p>
           )}
         </TabsContent>
       </Tabs>

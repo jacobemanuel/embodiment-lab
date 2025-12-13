@@ -1,22 +1,17 @@
 import { Button } from "@/components/ui/button";
-
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import logo from "@/assets/logo-white.png";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
-import { savePostTestResponses, completeStudySession } from "@/lib/studyData";
-import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 
 const PostTestPage2 = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { questions: postTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('post_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const scrollToQuestion = (index: number) => {
@@ -70,53 +65,11 @@ const PostTestPage2 = () => {
     }
   };
 
-  const handleComplete = async () => {
+  const handleContinue = () => {
     if (allQuestionsAnswered) {
-      setIsLoading(true);
-      try {
-        let sessionId = sessionStorage.getItem('sessionId');
-
-        // If session was lost (e.g. new tab / cleared storage), force a restart
-        if (!sessionId) {
-          console.error('Session not found when completing study');
-          toast({
-            title: "Session expired",
-            description: "We need to restart the study to save your results.",
-            variant: "destructive",
-          });
-          // Clean up any partial post-test data
-          sessionStorage.removeItem('postTestPage1');
-          sessionStorage.removeItem('postTestPage2');
-          sessionStorage.removeItem('postTest1');
-          setIsLoading(false);
-          navigate("/");
-          return;
-        }
-        
-        // Combine all responses from both pages
-        const allResponses = {
-          ...page1Responses,
-          ...responses
-        };
-        
-        await savePostTestResponses(sessionId, allResponses);
-        await completeStudySession(sessionId);
-        
-        // Clear sessionStorage for post-test data
-        sessionStorage.removeItem('postTestPage1');
-        sessionStorage.removeItem('postTestPage2');
-        sessionStorage.removeItem('postTest1');
-        
-        navigate("/completion");
-      } catch (error) {
-        console.error('Error completing study:', error);
-        toast({
-          title: "Error",
-          description: "Failed to save your responses. Please try again.",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-      }
+      // Save page 2 responses and navigate to page 3
+      sessionStorage.setItem('postTestPage2', JSON.stringify(responses));
+      navigate("/post-test-3");
     }
   };
 
@@ -230,14 +183,12 @@ const PostTestPage2 = () => {
             <Button
               size="lg"
               className={`w-full transition-all duration-300 ${allQuestionsAnswered ? 'gradient-ai hover:shadow-ai-glow hover:scale-[1.02]' : 'bg-muted text-muted-foreground'}`}
-              onClick={handleComplete}
-              disabled={!allQuestionsAnswered || isLoading}
+              onClick={handleContinue}
+              disabled={!allQuestionsAnswered}
             >
-              {isLoading 
-                ? "Saving..." 
-                : allQuestionsAnswered 
-                  ? "Complete Study 🎉" 
-                  : `Answer all questions to continue (${answeredQuestionsCount}/${knowledgeQuestions.length})`
+              {allQuestionsAnswered 
+                ? "Continue to Feedback →" 
+                : `Answer all questions to continue (${answeredQuestionsCount}/${knowledgeQuestions.length})`
               }
             </Button>
           </div>

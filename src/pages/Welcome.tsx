@@ -35,7 +35,7 @@ const Welcome = () => {
                 </h1>
               </div>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                Learn the fundamentals of AI-powered image generation through interactive scenarios and hands-on practice. Explore prompt engineering, style control, and creative techniques.
+                Explore how AI avatars can enhance learning through an interactive experience. Learn AI image generation fundamentals while contributing to research on trust and engagement in AI-powered education.
               </p>
             </div>
 
@@ -46,7 +46,7 @@ const Welcome = () => {
                   Welcome!
                 </h2>
                 <p className="text-muted-foreground leading-relaxed text-lg">
-                  Thank you for participating in this study on AI-powered learning. You'll explore AI image generation through an interactive learning experience designed to enhance your understanding and creativity.
+                  Thank you for participating in this study on AI-powered learning. You'll explore AI image generation through an interactive experience designed to investigate how embodied AI agents can enhance trust, engagement, and comprehension in education.
                 </p>
               </div>
 

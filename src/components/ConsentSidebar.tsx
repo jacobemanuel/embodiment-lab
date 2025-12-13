@@ -34,7 +34,7 @@ const ConsentSidebar = () => {
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Purpose of the Study</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                This research examines how different presentation formats (text-based vs. avatar-based) affect learning about AI image generation fundamentals. You will complete a brief pre-test, learn through interactive slides about AI-powered image creation, practice with a real-time image playground, and complete a post-test assessment.
+                This research investigates how embodied AI agents, such as virtual avatars powered by large language models, can enhance learners' trust, engagement, and comprehension in AI literacy education. You will learn about AI image generation as a practical example of AI capabilities, comparing text-based and avatar-based learning formats.
               </p>
             </section>
 

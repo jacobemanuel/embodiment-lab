@@ -175,8 +175,8 @@ function renderSlideContent(content: string) {
           )}
           <ul className="space-y-2">
             {currentSection.items.map((item, i) => (
-              <li key={i} className="flex items-start gap-3 text-muted-foreground">
-                <span className="text-primary mt-1">•</span>
+              <li key={i} className="flex items-baseline gap-3 text-muted-foreground">
+                <span className="text-primary flex-shrink-0">•</span>
                 <span dangerouslySetInnerHTML={{ __html: formatText(item) }} />
               </li>
             ))}

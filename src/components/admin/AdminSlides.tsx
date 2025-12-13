@@ -446,24 +446,42 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
               </>
             ) : (
               <>
-                <Button
-                  onClick={() => startEditing(slide)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Edit2 className="w-4 h-4 mr-2" />
-                  Edit Slide
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => toggleSlideActive(slide)}
-                  className={slide.is_active ? 'border-orange-600 text-orange-400' : 'border-green-600 text-green-400'}
-                >
-                  {slide.is_active ? (
-                    <><EyeOff className="w-4 h-4 mr-2" /> Hide</>
-                  ) : (
-                    <><Eye className="w-4 h-4 mr-2" /> Show</>
-                  )}
-                </Button>
+                {permissions.canEditSlides ? (
+                  <Button
+                    onClick={() => startEditing(slide)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Edit Slide
+                  </Button>
+                ) : (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" disabled className="border-slate-600 opacity-50">
+                          <Lock className="w-4 h-4 mr-2" />
+                          View Only
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600">
+                        <p className="text-sm">You have read-only access</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                {permissions.canHideSlides && (
+                  <Button
+                    variant="outline"
+                    onClick={() => toggleSlideActive(slide)}
+                    className={slide.is_active ? 'border-orange-600 text-orange-400' : 'border-green-600 text-green-400'}
+                  >
+                    {slide.is_active ? (
+                      <><EyeOff className="w-4 h-4 mr-2" /> Hide</>
+                    ) : (
+                      <><Eye className="w-4 h-4 mr-2" /> Show</>
+                    )}
+                  </Button>
+                )}
                 {permissions.canDeleteSlides ? (
                   <Button
                     variant="ghost"
@@ -549,12 +567,14 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
               Manage the slide content shown to participants
             </CardDescription>
           </div>
-          <Button 
-            onClick={addNewSlide}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" /> Add Slide
-          </Button>
+          {permissions.canCreateSlides && (
+            <Button 
+              onClick={addNewSlide}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="w-4 h-4 mr-2" /> Add Slide
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {slides.length === 0 ? (

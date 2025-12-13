@@ -203,48 +203,62 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
         )}
       </div>
 
-      {/* User Camera Section */}
+      {/* User Camera Section - full width with overlay controls */}
       {isConnected && (
-        <div className="border-b border-border bg-muted/30 p-2">
-          <div className="flex items-center gap-3">
-            {/* Camera toggle button */}
+        <div className="border-b border-border bg-muted/30 relative" style={{ height: '140px' }}>
+          {/* User video feed - full width */}
+          <video
+            ref={userVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className={cn(
+              "w-full h-full object-cover bg-black/80",
+              !isCameraOn && "hidden"
+            )}
+            style={{ transform: 'scaleX(-1)' }}
+          />
+          
+          {/* Camera off placeholder */}
+          {!isCameraOn && (
+            <div className="w-full h-full flex items-center justify-center bg-muted/50">
+              <VideoOff className="w-12 h-12 text-muted-foreground/50" />
+            </div>
+          )}
+
+          {/* Overlay controls on camera */}
+          <div className="absolute inset-0 flex items-center justify-between px-4">
+            {/* Camera toggle button - left side */}
             <Button
               size="sm"
-              variant={isCameraOn ? "default" : "outline"}
-              className="gap-2"
+              variant={isCameraOn ? "default" : "secondary"}
+              className="gap-2 shadow-lg"
               onClick={handleToggleCamera}
             >
               {isCameraOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
               {isCameraOn ? "Camera On" : "Enable Camera"}
             </Button>
 
-            {/* User video feed */}
+            {/* "You" label - bottom left of video */}
             {isCameraOn && (
-              <div className="relative rounded-lg overflow-hidden border border-border shadow-sm">
-                <video
-                  ref={userVideoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-[120px] h-[90px] object-cover bg-black"
-                  style={{ transform: 'scaleX(-1)' }}
-                />
-                <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
-                  You
-                </div>
+              <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                You
               </div>
             )}
 
-            {cameraError && (
-              <span className="text-xs text-destructive">{cameraError}</span>
-            )}
-
+            {/* Avatar can see you - right side */}
             {isCameraOn && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm text-muted-foreground bg-background/80 px-3 py-1.5 rounded-lg shadow">
                 Avatar can see you
               </span>
             )}
           </div>
+
+          {cameraError && (
+            <div className="absolute bottom-2 right-2">
+              <span className="text-xs text-destructive bg-background/80 px-2 py-1 rounded">{cameraError}</span>
+            </div>
+          )}
         </div>
       )}
 

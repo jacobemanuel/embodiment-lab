@@ -182,7 +182,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
 
         {/* Push-to-talk button */}
         {isConnected && (
-          <div className="absolute bottom-3 right-3">
+          <div className="absolute bottom-3 right-3 flex flex-col items-center">
             <Button
               size="lg"
               variant="outline"
@@ -201,7 +201,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
                 <MicOff className="w-6 h-6" />
               )}
             </Button>
-            <p className="text-xs text-center mt-1 text-muted-foreground">
+            <p className="text-xs text-center mt-1 text-muted-foreground w-32">
               {isListening ? "Alex can hear you now" : "Alex can't hear you"}
             </p>
           </div>
@@ -209,8 +209,8 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
       </div>
 
       {isConnected && (
-        <div className="border-b border-border bg-card/80" style={{ height: '150px' }}>
-          <div className="flex h-full items-center justify-between px-4 gap-6 pr-20">
+        <div className="border-b border-border bg-card/80">
+          <div className="flex items-center justify-start px-4 py-3 gap-4">
             {/* Left side: controls and labels */}
             <div className="flex flex-col gap-1">
               <Button

@@ -202,7 +202,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
               )}
             </Button>
             <p className="text-xs text-center mt-1 text-muted-foreground w-32">
-              {isListening ? "Alex can hear you now" : "Alex can't hear you"}
+              {isListening ? "Listening mode" : "Tap to talk"}
             </p>
           </div>
         )}

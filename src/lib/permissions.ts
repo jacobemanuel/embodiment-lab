@@ -87,7 +87,7 @@ export const getPermissions = (email: string): PermissionConfig => {
     
     canViewSessions: true,
     canExportData: true,
-    canViewAuditLog: false, // Only owner sees audit log
+    canViewAuditLog: true, // Admins can now see audit log too
     
     canDeleteSessions: false, // SAFETY: Can't delete research data
     canResetData: false, // SAFETY: Can't reset data

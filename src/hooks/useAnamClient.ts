@@ -129,17 +129,29 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         console.log('Stream event:', event, 'role:', event.role, 'endOfSpeech:', event.endOfSpeech);
 
         const isFinal = event.endOfSpeech === undefined ? true : event.endOfSpeech;
+        const contentChunk = event.content || '';
 
         // Avatar (persona) speaking – show as "Tutor"
         if (event.role === MessageRole.PERSONA || event.role === 'assistant' || event.role === 'persona') {
-          addTranscriptMessage('avatar', event.content || '', isFinal);
+          // Accumulate full utterance across streaming chunks. Anam often sends
+          // many small pieces where the *final* event has empty content but
+          // endOfSpeech=true, so we must buffer everything ourselves.
+          const bufferKey = 'avatar-buffer';
+          (processedMessagesRef.current as any)[bufferKey] = ((processedMessagesRef.current as any)[bufferKey] || '') + contentChunk;
+          const fullContent = (processedMessagesRef.current as any)[bufferKey] as string;
+
+          if (isFinal) {
+            addTranscriptMessage('avatar', fullContent, true);
+            (processedMessagesRef.current as any)[bufferKey] = '';
+          }
+
           setState(prev => ({ ...prev, isTalking: !isFinal }));
           return;
         }
 
         // User speech – show as "You" in transcript
         if (event.role === MessageRole.USER || event.role === 'user') {
-          addTranscriptMessage('user', event.content || '', isFinal);
+          addTranscriptMessage('user', contentChunk, isFinal);
         }
       });
 

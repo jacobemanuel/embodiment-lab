@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw, CheckCircle, XCircle, AlertTriangle, Info, Clock, CheckSquare, Square } from "lucide-react";
+import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw, CheckCircle, XCircle, AlertTriangle, Info, Clock, CheckSquare, Square, FileText } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import jsPDF from "jspdf";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -437,6 +438,124 @@ interface SessionDetails {
     a.href = url;
     a.download = `sessions_export_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
+  };
+
+  // Export individual session to PDF
+  const exportSessionToPDF = (session: Session, details: SessionDetails) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 20;
+    const lineHeight = 7;
+    const margin = 15;
+    const maxWidth = pageWidth - margin * 2;
+
+    // Helper to add text with word wrap
+    const addText = (text: string, fontSize: number = 10, isBold: boolean = false) => {
+      doc.setFontSize(fontSize);
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      const lines = doc.splitTextToSize(text, maxWidth);
+      lines.forEach((line: string) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(line, margin, y);
+        y += lineHeight;
+      });
+    };
+
+    // Title
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Session Report', margin, y);
+    y += 10;
+
+    // Session info
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Session ID: ${session.session_id}`, margin, y);
+    y += lineHeight;
+    doc.text(`Mode: ${session.modes_used?.join(', ') || session.mode}`, margin, y);
+    y += lineHeight;
+    doc.text(`Started: ${session.started_at ? format(new Date(session.started_at), 'dd MMM yyyy HH:mm') : '-'}`, margin, y);
+    y += lineHeight;
+    doc.text(`Completed: ${session.completed_at ? format(new Date(session.completed_at), 'dd MMM yyyy HH:mm') : 'Not completed'}`, margin, y);
+    y += lineHeight;
+    
+    if (session.completed_at && session.started_at) {
+      const duration = Math.round((new Date(session.completed_at).getTime() - new Date(session.started_at).getTime()) / 1000 / 60);
+      doc.text(`Duration: ${duration} minutes`, margin, y);
+      y += lineHeight;
+    }
+
+    if ((session.suspicion_score || 0) > 0) {
+      doc.text(`Suspicion Score: ${session.suspicion_score}/100`, margin, y);
+      y += lineHeight;
+      doc.text(`Validation Status: ${session.validation_status || 'pending'}`, margin, y);
+      y += lineHeight;
+    }
+
+    y += 5;
+
+    // Demographics
+    addText('DEMOGRAPHICS', 12, true);
+    y += 2;
+    if (details.demographicResponses.length > 0) {
+      details.demographicResponses.forEach((r) => {
+        addText(`${r.question_id}: ${r.answer}`);
+      });
+    } else if (details.demographics) {
+      addText(`Age: ${details.demographics.age_range || '-'}`);
+      addText(`Education: ${details.demographics.education || '-'}`);
+      addText(`Experience: ${details.demographics.digital_experience || '-'}`);
+    } else {
+      addText('No demographic data');
+    }
+    y += 5;
+
+    // Pre-test
+    addText('PRE-TEST RESPONSES', 12, true);
+    y += 2;
+    if (details.preTest.length > 0) {
+      details.preTest.forEach((r) => {
+        addText(`${r.question_id}: ${r.answer}`);
+      });
+    } else {
+      addText('No responses');
+    }
+    y += 5;
+
+    // Post-test
+    addText('POST-TEST RESPONSES', 12, true);
+    y += 2;
+    if (details.postTest.length > 0) {
+      details.postTest.forEach((r) => {
+        addText(`${r.question_id}: ${r.answer}`);
+      });
+    } else {
+      addText('No responses');
+    }
+    y += 5;
+
+    // Dialogue
+    addText('DIALOGUE', 12, true);
+    y += 2;
+    if (details.dialogueTurns.length > 0) {
+      details.dialogueTurns.forEach((turn) => {
+        const role = turn.role === 'user' ? 'User' : 'AI';
+        addText(`[${role}]: ${turn.content}`);
+      });
+    } else {
+      addText('No dialogues');
+    }
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'italic');
+    doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, margin, 285);
+
+    doc.save(`session_${session.session_id.slice(0, 8)}_report.pdf`);
+    toast.success('PDF report downloaded');
   };
 
   if (isLoading) {
@@ -898,9 +1017,22 @@ interface SessionDetails {
       <Dialog open={!!selectedSession} onOpenChange={() => setSelectedSession(null)}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-slate-800 border-slate-700">
           <DialogHeader>
-            <DialogTitle className="text-white">
-              Session Details: {selectedSession?.session_id.slice(0, 12)}...
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-white">
+                Session Details: {selectedSession?.session_id.slice(0, 12)}...
+              </DialogTitle>
+              {permissions.canExportData && selectedSession && sessionDetails && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-slate-600"
+                  onClick={() => exportSessionToPDF(selectedSession, sessionDetails)}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export PDF
+                </Button>
+              )}
+            </div>
           </DialogHeader>
           
           {isDetailsLoading ? (
@@ -909,6 +1041,45 @@ interface SessionDetails {
             </div>
           ) : sessionDetails ? (
             <div className="space-y-6">
+              {/* Session Summary */}
+              <div className="bg-slate-900 p-4 rounded">
+                <h3 className="text-lg font-semibold text-white mb-3">Session Summary</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-slate-400 block">Mode</span>
+                    <span className="text-white">{selectedSession?.modes_used?.join(', ') || selectedSession?.mode}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Started</span>
+                    <span className="text-white">{selectedSession?.started_at ? format(new Date(selectedSession.started_at), 'dd MMM yyyy HH:mm') : '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Completed</span>
+                    <span className="text-white">{selectedSession?.completed_at ? format(new Date(selectedSession.completed_at), 'dd MMM yyyy HH:mm') : 'Not completed'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Duration</span>
+                    <span className="text-white">
+                      {selectedSession?.completed_at && selectedSession?.started_at
+                        ? `${Math.round((new Date(selectedSession.completed_at).getTime() - new Date(selectedSession.started_at).getTime()) / 1000 / 60)} min`
+                        : '-'}
+                    </span>
+                  </div>
+                  {(selectedSession?.suspicion_score || 0) > 0 && (
+                    <>
+                      <div>
+                        <span className="text-slate-400 block">Suspicion Score</span>
+                        <span className="text-orange-400">{selectedSession?.suspicion_score}/100</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Validation</span>
+                        <span className="text-white capitalize">{selectedSession?.validation_status || 'pending'}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
               {/* Demographics */}
               <div>
                 <h3 className="text-lg font-semibold text-white mb-2">

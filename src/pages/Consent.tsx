@@ -6,6 +6,7 @@ import { FileText, List, Database, Scale, Hand, Loader2 } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 import { createStudySession } from "@/lib/studyData";
 import { toast } from "sonner";
+import ExitStudyButton from "@/components/ExitStudyButton";
 
 const Consent = () => {
   const navigate = useNavigate();
@@ -31,8 +32,9 @@ const Consent = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <img src={logo} alt="TUM Logo" className="h-8" />
+          <ExitStudyButton />
         </div>
       </header>
 

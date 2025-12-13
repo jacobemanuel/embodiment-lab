@@ -10,6 +10,7 @@ import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection";
+import ExitStudyButton from "@/components/ExitStudyButton";
 
 const PostTestPage2 = () => {
   const navigate = useNavigate();
@@ -130,8 +131,11 @@ const PostTestPage2 = () => {
             </Button>
             <img src={logo} alt="Majewski Studio" className="h-8" />
           </div>
-          <div className="text-sm text-muted-foreground">
-            Page 2 of 3 • {answeredQuestionsCount} of {knowledgeQuestions.length} answered
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              Page 2 of 3 • {answeredQuestionsCount} of {knowledgeQuestions.length} answered
+            </div>
+            <ExitStudyButton />
           </div>
         </div>
       </header>

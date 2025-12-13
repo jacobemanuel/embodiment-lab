@@ -12,6 +12,7 @@ import { Loader2, MessageSquare, SkipForward, ChevronLeft } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
+import ExitStudyButton from "@/components/ExitStudyButton";
 
 const MAX_CHARS = 200;
 const SKIP_VALUE = '__SKIPPED__';
@@ -181,8 +182,11 @@ const PostTestPage3 = () => {
             </Button>
             <img src={logo} alt="Majewski Studio" className="h-8" />
           </div>
-          <div className="text-sm text-muted-foreground">
-            Page 3 of 3 • {answeredQuestionsCount} of {openFeedbackQuestions.length} answered
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              Page 3 of 3 • {answeredQuestionsCount} of {openFeedbackQuestions.length} answered
+            </div>
+            <ExitStudyButton />
           </div>
         </div>
       </header>

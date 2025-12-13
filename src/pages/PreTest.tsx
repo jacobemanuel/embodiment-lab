@@ -12,6 +12,7 @@ import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection";
+import ExitStudyButton from "@/components/ExitStudyButton";
 
 const PreTest = () => {
   const navigate = useNavigate();
@@ -143,8 +144,11 @@ const PreTest = () => {
             </Button>
             <img src={logo} alt="TUM Logo" className="h-8" />
           </div>
-          <div className="text-sm text-muted-foreground">
-            {answeredQuestionsCount} of {preTestQuestions.length} answered
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              {answeredQuestionsCount} of {preTestQuestions.length} answered
+            </div>
+            <ExitStudyButton />
           </div>
         </div>
       </header>

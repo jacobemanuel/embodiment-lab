@@ -11,9 +11,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import { 
   Save, Edit2, XCircle, CheckCircle, RefreshCw, Plus, Trash2, 
-  HelpCircle, Eye, EyeOff, GripVertical, Brain, BookOpen 
+  HelpCircle, Eye, EyeOff, GripVertical, Brain, BookOpen, Lock, AlertTriangle
 } from "lucide-react";
 import { logAdminAction, computeChanges } from "@/lib/auditLog";
+import { getPermissions } from "@/lib/permissions";
 
 interface StudySlide {
   id: string;
@@ -27,7 +28,12 @@ interface StudySlide {
   is_active: boolean;
 }
 
-const AdminSlides = () => {
+interface AdminSlidesProps {
+  userEmail: string;
+}
+
+const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
+  const permissions = getPermissions(userEmail);
   const [slides, setSlides] = useState<StudySlide[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -212,6 +218,10 @@ const AdminSlides = () => {
   };
 
   const deleteSlide = async (slideId: string) => {
+    if (!permissions.canDeleteSlides) {
+      toast.error('You do not have permission to delete slides. You can hide them instead.');
+      return;
+    }
     if (!confirm('Are you sure you want to delete this slide? This cannot be undone.')) return;
 
     const slideToDelete = slides.find(s => s.id === slideId);
@@ -454,14 +464,30 @@ const AdminSlides = () => {
                     <><Eye className="w-4 h-4 mr-2" /> Show</>
                   )}
                 </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => deleteSlide(slide.id)}
-                  className="text-red-400 hover:text-red-300 ml-auto"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
+                {permissions.canDeleteSlides ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => deleteSlide(slide.id)}
+                    className="text-red-400 hover:text-red-300 ml-auto"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
+                ) : (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                         <div className="ml-auto flex items-center gap-1 text-slate-500 cursor-not-allowed opacity-50 px-3">
+                          <Lock className="w-4 h-4" />
+                          <span className="text-xs">Delete (Owner only)</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600 max-w-xs">
+                        <p className="text-sm">Deleting slides is restricted to the owner. You can hide slides instead.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </>
             )}
           </div>

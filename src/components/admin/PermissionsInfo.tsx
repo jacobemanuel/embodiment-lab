@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { getPermissions, PERMISSION_DESCRIPTIONS, PermissionConfig, OWNER_EMAIL } from "@/lib/permissions";
-import { CheckCircle2, XCircle, AlertTriangle, Shield, Lock, Info } from "lucide-react";
+import { getPermissions, PERMISSION_DESCRIPTIONS, PERMISSION_IMPACT_LABELS, PermissionConfig, OWNER_EMAIL } from "@/lib/permissions";
+import { CheckCircle2, Shield, Lock, Info, RotateCcw, Users, Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PermissionsInfoProps {
   userEmail: string;
@@ -26,23 +27,37 @@ const PermissionsInfo = ({ userEmail }: PermissionsInfoProps) => {
   const getLevelIcon = (level: 'safe' | 'caution' | 'danger') => {
     switch (level) {
       case 'safe':
-        return <CheckCircle2 className="w-4 h-4 text-green-400" />;
+        return <RotateCcw className="w-3 h-3" />;
       case 'caution':
-        return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
+        return <Users className="w-3 h-3" />;
       case 'danger':
-        return <XCircle className="w-4 h-4 text-red-400" />;
+        return <Trash2 className="w-3 h-3" />;
     }
   };
 
   const getLevelBadge = (level: 'safe' | 'caution' | 'danger') => {
-    switch (level) {
-      case 'safe':
-        return <Badge className="bg-green-500/20 text-green-300 border-green-500/30">Safe</Badge>;
-      case 'caution':
-        return <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30">Caution</Badge>;
-      case 'danger':
-        return <Badge className="bg-red-500/20 text-red-300 border-red-500/30">Danger</Badge>;
-    }
+    const impact = PERMISSION_IMPACT_LABELS[level];
+    const colorClasses = {
+      green: "bg-green-500/20 text-green-300 border-green-500/30",
+      yellow: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+      red: "bg-red-500/20 text-red-300 border-red-500/30",
+    };
+    
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge className={`${colorClasses[impact.color]} cursor-help flex items-center gap-1`}>
+              {getLevelIcon(level)}
+              {impact.label}
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="bg-slate-800 border-slate-700">
+            <p className="text-sm">{impact.description}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
   };
 
   return (

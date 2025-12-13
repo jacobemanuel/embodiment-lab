@@ -145,6 +145,13 @@ export const getPermissions = (email: string): PermissionConfig => {
   };
 };
 
+// Permission impact labels for UI - describes what the action does, not abstract risk
+export const PERMISSION_IMPACT_LABELS = {
+  safe: { label: 'Reversible', color: 'green', description: 'Changes can be easily undone' },
+  caution: { label: 'Affects Study', color: 'yellow', description: 'May impact active participants' },
+  danger: { label: 'Permanent', color: 'red', description: 'Cannot be undone, data loss possible' },
+} as const;
+
 // Permission descriptions for UI
 export const PERMISSION_DESCRIPTIONS: Record<keyof PermissionConfig, { label: string; description: string; level: 'safe' | 'caution' | 'danger' }> = {
   canEditSlides: {

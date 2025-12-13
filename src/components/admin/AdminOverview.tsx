@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, CheckCircle, Clock, Download, Timer, BarChart3, TrendingUp, ArrowUp, ArrowDown, FileSpreadsheet, AlertTriangle, Filter } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, ScatterChart, Scatter, ZAxis } from "recharts";
+import { Users, CheckCircle, Clock, Download, Timer, BarChart3, TrendingUp, ArrowUp, ArrowDown, FileSpreadsheet, AlertTriangle, Filter, HelpCircle, Info } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, ScatterChart, Scatter, ZAxis } from "recharts";
 import DateRangeFilter from "./DateRangeFilter";
 import { format, parseISO, startOfDay, endOfDay } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 interface AvatarTimeData {
   session_id: string;
   slide_id: string;
@@ -433,22 +433,26 @@ const AdminOverview = () => {
         hasCorrectAnswer: stats.hasCorrectAnswer,
       }));
 
-      // Correlation data
+      // Correlation data - include ALL sessions with knowledge gain data (not just avatar users)
       const correlations: CorrelationData = {
+        // Avatar Time vs Gain - only for sessions with avatar time tracked
         avatarTimeVsGain: knowledgeGain.filter(k => k.avatarTime > 0).map(k => ({
-          x: Math.round(k.avatarTime / 60), // minutes
+          x: Math.round((k.avatarTime / 60) * 100) / 100, // minutes with 2 decimals
           y: k.gain,
           mode: k.mode,
         })),
-        sessionTimeVsGain: sessionsToAnalyze.map(s => {
-          const gain = knowledgeGain.find(k => k.sessionId === s.session_id);
-          const duration = s.completed_at ? (new Date(s.completed_at).getTime() - new Date(s.started_at).getTime()) / 1000 / 60 : 0;
+        // Session Time vs Gain - for ALL sessions with knowledge gain
+        sessionTimeVsGain: knowledgeGain.map(k => {
+          const session = sessionsToAnalyze.find(s => s.session_id === k.sessionId);
+          const duration = session?.completed_at 
+            ? (new Date(session.completed_at).getTime() - new Date(session.started_at).getTime()) / 1000 / 60 
+            : 0;
           return {
-            x: Math.round(duration),
-            y: gain?.gain || 0,
-            mode: gain?.mode || 'text',
+            x: Math.round(duration * 10) / 10,
+            y: k.gain,
+            mode: k.mode,
           };
-        }).filter(d => d.y !== 0),
+        }),
       };
 
       setStats({
@@ -883,12 +887,23 @@ const AdminOverview = () => {
       {/* Knowledge Gain Section */}
       <Card className="bg-slate-800 border-slate-700">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-green-500" />
-            Knowledge Gain Analysis
-          </CardTitle>
+            <CardTitle className="text-white">Knowledge Gain Analysis</CardTitle>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-sm">
+                  <p className="font-medium mb-1">How Knowledge Gain is Calculated:</p>
+                  <p className="text-xs">Post-Test Score minus Pre-Test Score. A positive value indicates learning improvement. Only sessions with BOTH pre-test AND post-test scored responses are included.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <CardDescription className="text-slate-400">
-            Pre-test vs Post-test comparison (based on {stats.knowledgeGain.length} sessions with scored data)
+            Pre-test vs Post-test comparison • Based on {stats.knowledgeGain.length} sessions with complete scored data
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1006,7 +1021,7 @@ const AdminOverview = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                       <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
                       <YAxis stroke="#9ca3af" fontSize={12} domain={[0, 100]} />
-                      <Tooltip 
+                      <ChartTooltip 
                         contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
                         formatter={(value: number) => [`${value}%`, 'Score']}
                       />
@@ -1026,7 +1041,7 @@ const AdminOverview = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                       <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
                       <YAxis stroke="#9ca3af" fontSize={12} />
-                      <Tooltip 
+                      <ChartTooltip 
                         contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
                         formatter={(value: number, name: string) => {
                           if (name === 'gain') return [`${value >= 0 ? '+' : ''}${value}%`, 'Gain'];
@@ -1051,72 +1066,126 @@ const AdminOverview = () => {
         </CardContent>
       </Card>
 
-      {/* Question Performance */}
+      {/* Question Performance - Enhanced Visual Display */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white text-sm">Pre-Test Question Performance</CardTitle>
-            <CardDescription className="text-slate-400">Correct answer rate per question</CardDescription>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-white text-sm">Pre-Test Question Performance</CardTitle>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>Shows how many participants answered each pre-test question correctly BEFORE learning. Low scores indicate knowledge gaps that the learning should address.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                Avg: {stats.avgPreScore}%
+              </Badge>
+            </div>
+            <CardDescription className="text-slate-400 text-xs">
+              % of participants who answered correctly • n = number of responses
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {stats.preTestQuestionAnalysis.length > 0 ? (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
                 {stats.preTestQuestionAnalysis.map(q => (
-                  <div key={q.questionId} className="flex items-center gap-2 text-sm">
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate text-slate-300" title={q.questionText}>{q.questionText}</div>
+                  <div key={q.questionId} className="bg-slate-700/30 rounded-lg p-3">
+                    <div className="text-sm text-slate-200 mb-2 line-clamp-2" title={q.questionText}>
+                      {q.questionText}
                     </div>
-                    <div className="w-16 text-right">
-                      {q.hasCorrectAnswer ? (
-                        <span className={q.correctRate >= 50 ? 'text-green-400' : 'text-red-400'}>
-                          {q.correctRate}%
-                        </span>
-                      ) : (
-                        <span className="text-amber-400 text-xs">No answer set</span>
-                      )}
-                    </div>
-                    <div className="w-12 text-right text-slate-500 text-xs">
-                      n={q.totalResponses}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {q.hasCorrectAnswer ? (
+                          <>
+                            <div className="w-24 h-2 bg-slate-600 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full ${q.correctRate >= 50 ? 'bg-green-500' : 'bg-red-500'}`}
+                                style={{ width: `${q.correctRate}%` }}
+                              />
+                            </div>
+                            <span className={`text-sm font-medium ${q.correctRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                              {q.correctRate}%
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-amber-400 text-xs bg-amber-900/30 px-2 py-1 rounded">⚠ No correct answer set</span>
+                        )}
+                      </div>
+                      <span className="text-slate-500 text-xs">n={q.totalResponses}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 text-center py-4">No pre-test data</p>
+              <p className="text-slate-500 text-center py-8">No pre-test data available</p>
             )}
           </CardContent>
         </Card>
 
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white text-sm">Post-Test Question Performance</CardTitle>
-            <CardDescription className="text-slate-400">Correct answer rate per knowledge question</CardDescription>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-white text-sm">Post-Test Question Performance</CardTitle>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>Shows how many participants answered each knowledge question correctly AFTER learning. Compare with pre-test to measure learning effectiveness.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                Avg: {stats.avgPostScore}%
+              </Badge>
+            </div>
+            <CardDescription className="text-slate-400 text-xs">
+              % of participants who answered correctly • Only knowledge-check questions
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {stats.postTestQuestionAnalysis.length > 0 ? (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
                 {stats.postTestQuestionAnalysis.map(q => (
-                  <div key={q.questionId} className="flex items-center gap-2 text-sm">
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate text-slate-300" title={q.questionText}>{q.questionText}</div>
+                  <div key={q.questionId} className="bg-slate-700/30 rounded-lg p-3">
+                    <div className="text-sm text-slate-200 mb-2 line-clamp-2" title={q.questionText}>
+                      {q.questionText}
                     </div>
-                    <div className="w-16 text-right">
-                      {q.hasCorrectAnswer ? (
-                        <span className={q.correctRate >= 50 ? 'text-green-400' : 'text-red-400'}>
-                          {q.correctRate}%
-                        </span>
-                      ) : (
-                        <span className="text-amber-400 text-xs">No answer set</span>
-                      )}
-                    </div>
-                    <div className="w-12 text-right text-slate-500 text-xs">
-                      n={q.totalResponses}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {q.hasCorrectAnswer ? (
+                          <>
+                            <div className="w-24 h-2 bg-slate-600 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full ${q.correctRate >= 50 ? 'bg-green-500' : 'bg-red-500'}`}
+                                style={{ width: `${q.correctRate}%` }}
+                              />
+                            </div>
+                            <span className={`text-sm font-medium ${q.correctRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                              {q.correctRate}%
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-amber-400 text-xs bg-amber-900/30 px-2 py-1 rounded">⚠ No correct answer set</span>
+                        )}
+                      </div>
+                      <span className="text-slate-500 text-xs">n={q.totalResponses}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 text-center py-4">No post-test knowledge data</p>
+              <p className="text-slate-500 text-center py-8">No post-test knowledge data available</p>
             )}
           </CardContent>
         </Card>
@@ -1138,7 +1207,7 @@ const AdminOverview = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis dataKey="slide" stroke="#9ca3af" fontSize={10} angle={-20} textAnchor="end" height={60} />
                   <YAxis stroke="#9ca3af" fontSize={12} label={{ value: 'Avg seconds', angle: -90, position: 'insideLeft', fill: '#9ca3af' }} />
-                  <Tooltip 
+                  <ChartTooltip 
                     contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
                     formatter={(value: number, name: string) => {
                       if (name === 'avgTime') return [`${value}s`, 'Avg Time'];
@@ -1169,12 +1238,27 @@ const AdminOverview = () => {
         </CardContent>
       </Card>
 
-      {/* Correlations */}
+      {/* Correlations - Avatar Time vs Knowledge Gain */}
       {stats.correlations.avatarTimeVsGain.length > 0 && (
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
-            <CardTitle className="text-white">Correlation: Avatar Time vs Knowledge Gain</CardTitle>
-            <CardDescription className="text-slate-400">Each dot represents one session</CardDescription>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-white">Correlation: Avatar Interaction Time vs Knowledge Gain</CardTitle>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p className="font-medium mb-1">Avatar Time Correlation</p>
+                    <p className="text-xs">Shows relationship between time spent interacting with the avatar tutor and learning improvement. Only includes sessions where participants used Avatar Mode and have tracked interaction time.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <CardDescription className="text-slate-400">
+              Each dot = 1 avatar session • Total: {stats.correlations.avatarTimeVsGain.length} sessions with avatar tracking
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -1197,7 +1281,7 @@ const AdminOverview = () => {
                   label={{ value: 'Knowledge Gain (%)', angle: -90, position: 'insideLeft', fill: '#9ca3af' }}
                 />
                 <ZAxis range={[60, 60]} />
-                <Tooltip 
+                <ChartTooltip 
                   cursor={{ strokeDasharray: '3 3' }}
                   contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
                   formatter={(value: number, name: string) => {
@@ -1230,7 +1314,7 @@ const AdminOverview = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
                 <YAxis stroke="#9ca3af" fontSize={12} />
-                <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                <ChartTooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
                 <Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981' }} />
               </LineChart>
             </ResponsiveContainer>
@@ -1248,7 +1332,7 @@ const AdminOverview = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
                 <YAxis stroke="#9ca3af" fontSize={12} />
-                <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                <ChartTooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
                 <Bar dataKey="count" name="Sessions" fill="#3b82f6" />
               </BarChart>
             </ResponsiveContainer>
@@ -1256,31 +1340,37 @@ const AdminOverview = () => {
         </Card>
       </div>
 
-      {/* Demographics Charts */}
+      {/* Demographics Charts - Using Bar Charts for Better Label Visibility */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white text-sm">Age Distribution</CardTitle>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-white text-sm">Age Distribution</CardTitle>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Distribution of participant ages grouped into ranges. Helps assess sample representativeness.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </CardHeader>
           <CardContent>
             {stats.demographicBreakdown.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={stats.demographicBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={70}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                  >
-                    {stats.demographicBreakdown.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                </PieChart>
+                <BarChart data={stats.demographicBreakdown} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                  <XAxis type="number" stroke="#9ca3af" fontSize={11} />
+                  <YAxis type="category" dataKey="name" stroke="#9ca3af" fontSize={11} width={60} />
+                  <ChartTooltip 
+                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                    formatter={(value: number) => [`${value} participants`, 'Count']}
+                  />
+                  <Bar dataKey="value" fill="#3b82f6" />
+                </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-[200px] text-slate-500">No data</div>
@@ -1289,28 +1379,34 @@ const AdminOverview = () => {
         </Card>
 
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white text-sm">Education Level</CardTitle>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-white text-sm">Education Level</CardTitle>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Highest education level reported by participants. Important for analyzing baseline knowledge.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </CardHeader>
           <CardContent>
             {stats.educationBreakdown.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={stats.educationBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={70}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name.length > 10 ? name.substring(0, 10) + '...' : name} (${(percent * 100).toFixed(0)}%)`}
-                  >
-                    {stats.educationBreakdown.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                </PieChart>
+                <BarChart data={stats.educationBreakdown} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                  <XAxis type="number" stroke="#9ca3af" fontSize={11} />
+                  <YAxis type="category" dataKey="name" stroke="#9ca3af" fontSize={10} width={80} tick={{ fontSize: 10 }} />
+                  <ChartTooltip 
+                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                    formatter={(value: number) => [`${value} participants`, 'Count']}
+                  />
+                  <Bar dataKey="value" fill="#10b981" />
+                </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-[200px] text-slate-500">No data</div>
@@ -1319,28 +1415,34 @@ const AdminOverview = () => {
         </Card>
 
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white text-sm">Digital Experience</CardTitle>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-white text-sm">Digital Experience</CardTitle>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Self-reported digital/AI experience level. Higher levels may correlate with better baseline performance.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </CardHeader>
           <CardContent>
             {stats.experienceBreakdown.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={stats.experienceBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={70}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name.length > 15 ? name.substring(0, 15) + '...' : name} (${(percent * 100).toFixed(0)}%)`}
-                  >
-                    {stats.experienceBreakdown.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                </PieChart>
+                <BarChart data={stats.experienceBreakdown} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                  <XAxis type="number" stroke="#9ca3af" fontSize={11} />
+                  <YAxis type="category" dataKey="name" stroke="#9ca3af" fontSize={10} width={100} tick={{ fontSize: 9 }} />
+                  <ChartTooltip 
+                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                    formatter={(value: number) => [`${value} participants`, 'Count']}
+                  />
+                  <Bar dataKey="value" fill="#f59e0b" />
+                </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-[200px] text-slate-500">No data</div>
@@ -1348,6 +1450,68 @@ const AdminOverview = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Session Time vs Knowledge Gain Correlation - Shows ALL sessions */}
+      {stats.correlations.sessionTimeVsGain.length > 0 && (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-white">Correlation: Session Duration vs Knowledge Gain</CardTitle>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Each dot represents one session. Shows relationship between total study time and learning improvement. Includes ALL {stats.correlations.sessionTimeVsGain.length} sessions with scored data.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <CardDescription className="text-slate-400">
+              Each dot = 1 session • Total: {stats.correlations.sessionTimeVsGain.length} sessions with knowledge gain data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <ScatterChart margin={{ top: 20, right: 30, bottom: 40, left: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis 
+                  type="number" 
+                  dataKey="x" 
+                  name="Session Time" 
+                  stroke="#9ca3af"
+                  fontSize={11}
+                  label={{ value: 'Session Duration (minutes)', position: 'bottom', offset: 20, fill: '#9ca3af', fontSize: 12 }}
+                />
+                <YAxis 
+                  type="number" 
+                  dataKey="y" 
+                  name="Knowledge Gain" 
+                  stroke="#9ca3af"
+                  fontSize={11}
+                  label={{ value: 'Knowledge Gain (%)', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 12 }}
+                />
+                <ZAxis range={[80, 80]} />
+                <ChartTooltip 
+                  cursor={{ strokeDasharray: '3 3' }}
+                  contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                  formatter={(value: number, name: string) => {
+                    if (name === 'Session Time') return [`${value} min`, 'Duration'];
+                    if (name === 'Knowledge Gain') return [`${value}%`, 'Gain'];
+                    return [value, name];
+                  }}
+                />
+                <Scatter 
+                  name="Sessions" 
+                  data={stats.correlations.sessionTimeVsGain} 
+                  fill="#10b981"
+                />
+              </ScatterChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary */}
       <Card className="bg-slate-800 border-slate-700">

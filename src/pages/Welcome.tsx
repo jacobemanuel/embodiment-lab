@@ -51,8 +51,11 @@ const Welcome = () => {
               </div>
 
               {/* Features grid */}
-              <div className="grid gap-4 stagger-fade-in">
-                <div className="flex gap-4 p-4 rounded-xl bg-ai-primary/5 border border-ai-primary/10 hover:bg-ai-primary/10 transition-all hover:scale-[1.02]">
+              <div className="grid gap-4">
+                <div 
+                  className="flex gap-4 p-4 rounded-xl bg-ai-primary/5 border border-ai-primary/10 hover:bg-ai-primary/10 transition-all hover:scale-[1.02] opacity-0 animate-fade-in"
+                  style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}
+                >
                   <div className="w-10 h-10 rounded-lg bg-ai-primary/10 flex items-center justify-center shrink-0">
                     <Clock className="w-5 h-5 text-ai-primary" />
                   </div>
@@ -62,7 +65,10 @@ const Welcome = () => {
                   </div>
                 </div>
                 
-                <div className="flex gap-4 p-4 rounded-xl bg-ai-accent/5 border border-ai-accent/10 hover:bg-ai-accent/10 transition-all hover:scale-[1.02]">
+                <div 
+                  className="flex gap-4 p-4 rounded-xl bg-ai-accent/5 border border-ai-accent/10 hover:bg-ai-accent/10 transition-all hover:scale-[1.02] opacity-0 animate-fade-in"
+                  style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}
+                >
                   <div className="w-10 h-10 rounded-lg bg-ai-accent/10 flex items-center justify-center shrink-0">
                     <Sparkles className="w-5 h-5 text-ai-accent" />
                   </div>
@@ -72,7 +78,10 @@ const Welcome = () => {
                   </div>
                 </div>
                 
-                <div className="flex gap-4 p-4 rounded-xl bg-ai-primary/5 border border-ai-primary/10 hover:bg-ai-primary/10 transition-all hover:scale-[1.02]">
+                <div 
+                  className="flex gap-4 p-4 rounded-xl bg-ai-primary/5 border border-ai-primary/10 hover:bg-ai-primary/10 transition-all hover:scale-[1.02] opacity-0 animate-fade-in"
+                  style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}
+                >
                   <div className="w-10 h-10 rounded-lg bg-ai-primary/10 flex items-center justify-center shrink-0">
                     <MousePointerClick className="w-5 h-5 text-ai-primary" />
                   </div>
@@ -82,7 +91,10 @@ const Welcome = () => {
                   </div>
                 </div>
                 
-                <div className="flex gap-4 p-4 rounded-xl bg-ai-accent/5 border border-ai-accent/10 hover:bg-ai-accent/10 transition-all hover:scale-[1.02]">
+                <div 
+                  className="flex gap-4 p-4 rounded-xl bg-ai-accent/5 border border-ai-accent/10 hover:bg-ai-accent/10 transition-all hover:scale-[1.02] opacity-0 animate-fade-in"
+                  style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}
+                >
                   <div className="w-10 h-10 rounded-lg bg-ai-accent/10 flex items-center justify-center shrink-0">
                     <ShieldCheck className="w-5 h-5 text-ai-accent" />
                   </div>

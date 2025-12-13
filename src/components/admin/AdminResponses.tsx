@@ -259,8 +259,13 @@ const AdminResponses = () => {
     downloadCSV(data, 'pretest_responses');
   };
 
-  const exportPostTestCSV = () => {
-    const data = rawResponses.post.map(r => ({
+  const exportPostTestKnowledgeCSV = () => {
+    // Only export knowledge questions (those with correct answers for scoring)
+    const knowledgeResponses = rawResponses.post.filter(r => 
+      r.question_id.startsWith('knowledge-') || 
+      (questionData[r.question_id]?.category === 'knowledge' && questionData[r.question_id]?.correct_answer)
+    );
+    const data = knowledgeResponses.map(r => ({
       SessionID: r.session_id,
       QuestionID: r.question_id,
       Question: questionData[r.question_id]?.question_text || r.question_id,
@@ -268,7 +273,24 @@ const AdminResponses = () => {
       CorrectAnswer: questionData[r.question_id]?.correct_answer || '',
       IsCorrect: isAnswerCorrect(r.question_id, r.answer) ? 'Yes' : 'No'
     }));
-    downloadCSV(data, 'posttest_responses');
+    downloadCSV(data, 'posttest_knowledge_responses');
+  };
+
+  const exportPostTestPerceptionCSV = () => {
+    // Export perception questions (Likert scale - no correct answer)
+    const perceptionCategories = ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'];
+    const perceptionResponses = rawResponses.post.filter(r => {
+      const category = questionData[r.question_id]?.category;
+      return category && perceptionCategories.includes(category);
+    });
+    const data = perceptionResponses.map(r => ({
+      SessionID: r.session_id,
+      QuestionID: r.question_id,
+      Category: questionData[r.question_id]?.category || '',
+      Question: questionData[r.question_id]?.question_text || r.question_id,
+      Answer: r.answer
+    }));
+    downloadCSV(data, 'posttest_perception_responses');
   };
 
   const exportOpenFeedbackCSV = () => {
@@ -518,7 +540,15 @@ const AdminResponses = () => {
             <div className="ml-auto flex gap-2">
               <Button onClick={exportAllData} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
                 <Download className="w-3 h-3" />
-                Full JSON
+                Full JSON (Raw)
+              </Button>
+              <Button onClick={exportPostTestKnowledgeCSV} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
+                <FileSpreadsheet className="w-3 h-3" />
+                Knowledge CSV
+              </Button>
+              <Button onClick={exportPostTestPerceptionCSV} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
+                <FileSpreadsheet className="w-3 h-3" />
+                Perception CSV
               </Button>
             </div>
           </div>
@@ -629,7 +659,7 @@ const AdminResponses = () => {
               <Brain className="w-4 h-4 text-purple-400" />
               <h3 className="text-sm text-slate-400">Knowledge Check Questions ({knowledgeQuestions.reduce((sum, [, r]) => sum + r.reduce((s, x) => s + x.count, 0), 0)} responses)</h3>
             </div>
-            <Button onClick={exportPostTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+            <Button onClick={exportPostTestKnowledgeCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
               <FileSpreadsheet className="w-3 h-3" /> Export CSV
             </Button>
           </div>
@@ -663,7 +693,7 @@ const AdminResponses = () => {
               <ThumbsUp className="w-4 h-4 text-blue-400" />
               <h3 className="text-sm text-slate-400">Perception & Experience Questions ({perceptionQuestions.reduce((sum, [, r]) => sum + r.reduce((s, x) => s + x.count, 0), 0)} responses)</h3>
             </div>
-            <Button onClick={exportPostTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+            <Button onClick={exportPostTestPerceptionCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
               <FileSpreadsheet className="w-3 h-3" /> Export CSV
             </Button>
           </div>

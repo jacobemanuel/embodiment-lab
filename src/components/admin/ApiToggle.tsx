@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Zap, ZapOff, Shield, Loader2, Key, Save, Eye, EyeOff, Power } from "lucide-react";
+import { Zap, ZapOff, Shield, Loader2, Key, Save, Eye, EyeOff, Power, AlertTriangle } from "lucide-react";
 
 interface ApiToggleProps {
   userEmail: string;
@@ -30,28 +30,50 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
   const [isSavingKey, setIsSavingKey] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
 
+  const fetchStatus = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke('toggle-api', {
+        body: { action: 'get' }
+      });
+
+      if (error) throw error;
+      setSettings(data.settings || {});
+      setIsOwner(data.isOwner || false);
+    } catch (error) {
+      console.error('Error fetching API status:', error);
+      toast.error('Failed to fetch API status');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
-        const { data, error } = await supabase.functions.invoke('toggle-api', {
-          body: { action: 'get' }
-        });
-
-        if (error) throw error;
-        setSettings(data.settings || {});
-        setIsOwner(data.isOwner || false);
-      } catch (error) {
-        console.error('Error fetching API status:', error);
-        toast.error('Failed to fetch API status');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchStatus();
+
+    // Subscribe to real-time changes on app_settings table
+    const channel = supabase
+      .channel('api-settings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'app_settings',
+        },
+        (payload) => {
+          console.log('Settings changed:', payload);
+          // Refetch settings when any change occurs
+          fetchStatus();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleToggle = async (apiType: 'master' | 'openai' | 'anam') => {
@@ -120,7 +142,12 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
   const masterEnabled = settings.api_enabled?.enabled ?? false;
   const openaiEnabled = settings.openai_api_enabled?.enabled ?? false;
   const anamEnabled = settings.anam_api_enabled?.enabled ?? false;
-  const currentAnamKey = settings.anam_api_key?.key || 'Not set';
+  const currentAnamKey = settings.anam_api_key?.key || '';
+  const hasCustomKey = currentAnamKey && currentAnamKey !== 'Not set' && currentAnamKey.length > 0;
+
+  // Anam is usable if master ON + anam ON (we assume system fallback key exists if no custom key)
+  // Status shows: Active = master ON + anam ON, Inactive = otherwise
+  const anamUsable = masterEnabled && anamEnabled;
 
   if (isLoading) {
     return (
@@ -135,9 +162,6 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
     );
   }
 
-  // For admins: show if Anam API is actually usable (master enabled + anam enabled + key set)
-  const anamUsable = masterEnabled && anamEnabled && currentAnamKey !== 'Not set';
-
   return (
     <div className="space-y-4">
       {/* Status Banner for Admins */}
@@ -151,7 +175,9 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                   <div>
                     <p className="text-green-200 font-medium">Avatar API is Active</p>
                     <p className="text-green-300/70 text-sm">
-                      Current key: {currentAnamKey} (added by {settings.anam_api_key?.updated_by || 'unknown'})
+                      {hasCustomKey 
+                        ? `Using custom key: ${currentAnamKey} (by ${settings.anam_api_key?.updated_by || 'unknown'})`
+                        : 'Using system default API key'}
                     </p>
                   </div>
                 </>
@@ -161,9 +187,9 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                   <div>
                     <p className="text-red-200 font-medium">Avatar API is Inactive</p>
                     <p className="text-red-300/70 text-sm">
-                      {!masterEnabled ? 'Master switch is OFF (owner must enable)' : 
-                       !anamEnabled ? 'Anam API is disabled - enable below or add your API key' :
-                       'No API key set - add your Anam API key below'}
+                      {!masterEnabled 
+                        ? 'Master switch is OFF (owner must enable)' 
+                        : 'Anam API is disabled - toggle it ON below'}
                     </p>
                   </div>
                 </>
@@ -180,9 +206,14 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
             <div className="flex items-center gap-2">
               <Power className="w-5 h-5 text-red-500" />
               <CardTitle className="text-white text-lg">Master Switch</CardTitle>
+              {/* Status indicator for owner */}
+              <div className={`ml-auto flex items-center gap-2 px-2 py-1 rounded-full text-xs ${masterEnabled ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'}`}>
+                <div className={`w-2 h-2 rounded-full ${masterEnabled ? 'bg-green-400' : 'bg-red-400'}`} />
+                {masterEnabled ? 'System Active' : 'System Disabled'}
+              </div>
             </div>
             <CardDescription className="text-slate-400">
-              Owner-only: Kill switch for ALL API services
+              Owner-only: Kill switch for ALL API services. When OFF, all APIs are blocked and admins cannot add their keys.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -229,6 +260,11 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-blue-500" />
               <CardTitle className="text-white text-lg">OpenAI API (Text Mode)</CardTitle>
+              {/* Status indicator */}
+              <div className={`ml-auto flex items-center gap-2 px-2 py-1 rounded-full text-xs ${masterEnabled && openaiEnabled ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'}`}>
+                <div className={`w-2 h-2 rounded-full ${masterEnabled && openaiEnabled ? 'bg-green-400' : 'bg-red-400'}`} />
+                {masterEnabled && openaiEnabled ? 'Active' : 'Inactive'}
+              </div>
             </div>
             <CardDescription className="text-slate-400">
               Controls text-based chat functionality
@@ -257,12 +293,18 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                   id="openai-toggle"
                   checked={openaiEnabled}
                   onCheckedChange={() => handleToggle('openai')}
-                  disabled={isToggling !== null}
+                  disabled={isToggling !== null || !masterEnabled}
                   className="data-[state=checked]:bg-blue-600"
                 />
               </div>
             </div>
-            {settings.openai_api_enabled?.updated_by && (
+            {!masterEnabled && (
+              <p className="text-xs text-yellow-400 mt-2 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                Master switch is OFF - this toggle is disabled
+              </p>
+            )}
+            {settings.openai_api_enabled?.updated_by && masterEnabled && (
               <p className="text-xs text-slate-500 mt-2">
                 Last changed by: {settings.openai_api_enabled.updated_by}
               </p>
@@ -272,7 +314,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
       )}
 
       {/* Anam API Toggle - Available to all admins */}
-      <Card className="bg-slate-800 border-slate-700">
+      <Card className={`bg-slate-800 border-slate-700 ${!masterEnabled && !isOwner ? 'opacity-60' : ''}`}>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-purple-500" />
@@ -288,6 +330,17 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Master OFF warning for admins */}
+          {!masterEnabled && !isOwner && (
+            <div className="bg-yellow-900/30 border border-yellow-600/50 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-yellow-200 text-sm font-medium">System is disabled by owner</p>
+                <p className="text-yellow-300/70 text-xs">All API controls are locked until the owner enables the master switch.</p>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {anamEnabled ? (
@@ -310,7 +363,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                 id="anam-toggle"
                 checked={anamEnabled}
                 onCheckedChange={() => handleToggle('anam')}
-                disabled={isToggling !== null}
+                disabled={isToggling !== null || (!masterEnabled && !isOwner)}
                 className="data-[state=checked]:bg-purple-600"
               />
             </div>
@@ -321,7 +374,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
             </p>
           )}
 
-          {/* API Key Section - All Admins can update */}
+          {/* API Key Section - All Admins can update, but blocked when master is OFF */}
           <div className="pt-4 border-t border-slate-700">
             <div className="flex items-center gap-2 mb-3">
               <Key className="w-4 h-4 text-yellow-500" />
@@ -331,10 +384,10 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
             {/* Current key info */}
             <div className="flex items-center gap-2 mb-3 text-sm flex-wrap">
               <span className="text-slate-400">Current:</span>
-              <code className={`px-2 py-1 rounded ${currentAnamKey === 'Not set' ? 'bg-red-900/50 text-red-300' : 'bg-slate-900 text-slate-300'}`}>
-                {currentAnamKey}
+              <code className={`px-2 py-1 rounded ${hasCustomKey ? 'bg-slate-900 text-slate-300' : 'bg-blue-900/50 text-blue-300'}`}>
+                {hasCustomKey ? currentAnamKey : 'System default'}
               </code>
-              {settings.anam_api_key?.updated_by && (
+              {settings.anam_api_key?.updated_by && hasCustomKey && (
                 <span className="text-xs text-slate-500">
                   (by {settings.anam_api_key.updated_by}
                   {settings.anam_api_key.updated_at && ` on ${new Date(settings.anam_api_key.updated_at).toLocaleDateString()}`})
@@ -350,19 +403,21 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                   onChange={(e) => setNewApiKey(e.target.value)}
                   placeholder="Enter your Anam API key..."
                   className="bg-slate-900 border-slate-600 text-white pr-10"
+                  disabled={!masterEnabled && !isOwner}
                 />
                 <button
                   type="button"
                   onClick={() => setShowApiKey(!showApiKey)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  disabled={!masterEnabled && !isOwner}
                 >
                   {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               <Button
                 onClick={handleSaveApiKey}
-                disabled={isSavingKey || !newApiKey.trim()}
-                className="bg-yellow-600 hover:bg-yellow-700"
+                disabled={isSavingKey || !newApiKey.trim() || (!masterEnabled && !isOwner)}
+                className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-slate-700"
               >
                 {isSavingKey ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -375,7 +430,9 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
               </Button>
             </div>
             <p className="text-xs text-slate-500 mt-2">
-              Add your own Anam API key from your free account to enable Avatar Mode.
+              {masterEnabled || isOwner 
+                ? 'Add your own Anam API key from your free account. This will override the system default key.'
+                : 'API key changes are locked while the system is disabled.'}
             </p>
           </div>
         </CardContent>

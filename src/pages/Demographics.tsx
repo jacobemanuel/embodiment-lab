@@ -38,6 +38,7 @@ const Demographics = () => {
   const { questions: demographicQuestions, isLoading: questionsLoading, error } = useStudyQuestions('demographic');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isUnderAge, setIsUnderAge] = useState(false);
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Track when questions are viewed
@@ -97,6 +98,53 @@ const Demographics = () => {
     const lowerText = questionText.toLowerCase();
     return lowerText.includes('age') || lowerText.includes('wiek');
   };
+
+  // Handle age input change with under-18 check
+  const handleAgeChange = (questionId: string, value: string) => {
+    setResponses(prev => ({ ...prev, [questionId]: value }));
+    
+    // Check if user is under 18
+    const age = parseInt(value, 10);
+    if (!isNaN(age) && age < 18 && age > 0) {
+      setIsUnderAge(true);
+    } else {
+      setIsUnderAge(false);
+    }
+  };
+
+  // Under-age screen
+  if (isUnderAge) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="border-b border-border bg-card">
+          <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+            <img src={logo} alt="Majewski Studio" className="h-8" />
+          </div>
+        </header>
+
+        <main className="flex-1 container mx-auto px-6 py-12 max-w-2xl flex items-center justify-center">
+          <div className="glass-card rounded-2xl p-8 text-center space-y-6">
+            <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-ai-primary to-ai-accent flex items-center justify-center">
+              <span className="text-3xl">🙏</span>
+            </div>
+            <h1 className="text-2xl font-semibold">Thank You for Your Interest!</h1>
+            <p className="text-muted-foreground leading-relaxed">
+              We appreciate your willingness to participate in our study. Unfortunately, participants must be <strong>18 years or older</strong> to take part in this research.
+            </p>
+            <p className="text-muted-foreground">
+              Thank you for your understanding, and we wish you all the best!
+            </p>
+            <Button 
+              onClick={() => navigate('/')}
+              className="gradient-ai hover:shadow-ai-glow"
+            >
+              Return to Home
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (questionsLoading) {
     return (
@@ -176,7 +224,7 @@ const Demographics = () => {
                       type="number"
                       placeholder="Enter your age"
                       value={responses[question.id] || ""}
-                      onChange={(e) => setResponses(prev => ({ ...prev, [question.id]: e.target.value }))}
+                      onChange={(e) => handleAgeChange(question.id, e.target.value)}
                       className="max-w-xs"
                       min="1"
                       max="150"
@@ -188,6 +236,7 @@ const Demographics = () => {
                         onCheckedChange={(checked) => {
                           if (checked) {
                             setResponses(prev => ({ ...prev, [question.id]: "Prefer not to say" }));
+                            setIsUnderAge(false);
                           } else {
                             setResponses(prev => ({ ...prev, [question.id]: "" }));
                           }

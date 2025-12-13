@@ -156,7 +156,11 @@ const Learning = () => {
           {isTextMode ? (
             <TextModeChat currentSlide={currentSlide} />
           ) : (
-            <AvatarModePanel currentSlide={currentSlide} onSlideChange={handleSlideChange} />
+            // To avoid creating TWO Anam clients at once, we only mount
+            // AvatarModePanel on desktop. On mobile we show an info message.
+            <div className="h-full flex items-center justify-center px-4 text-sm text-muted-foreground text-center">
+              Avatar Mode is currently available on larger screens. Please use a desktop or tablet for the full avatar experience.
+            </div>
           )}
         </div>
       </div>

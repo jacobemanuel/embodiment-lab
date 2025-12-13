@@ -138,9 +138,12 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         const contentChunk = event.content || '';
         const trimmed = contentChunk.trim();
 
-        // Ignore low-level system-event payloads that we send as hidden context
-        if (trimmed.startsWith('[SYSTEM_EVENT')) {
-          console.log('Skipping system-event chunk from transcript');
+        // Ignore system-event payloads and silent acknowledgments
+        if (trimmed.startsWith('[SYSTEM_EVENT') || 
+            trimmed.startsWith('[SILENT_CONTEXT_UPDATE') ||
+            trimmed.includes('[ACKNOWLEDGED]') ||
+            trimmed.includes('[DO_NOT_SPEAK]')) {
+          console.log('Skipping context update from transcript');
           return;
         }
 
@@ -216,15 +219,19 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
   }, [state.isConnected]);
 
-  // System event sender - currently NO-OP to avoid confusing the avatar LLM
-  // We'll re-enable this once Anam officially supports out-of-band UI events.
+  // System event sender - sends SILENT context updates to avatar
   const sendSystemEvent = useCallback(async (eventType: string, data: Record<string, any> = {}) => {
     if (!clientRef.current || !state.isConnected) return;
 
-    console.log('System event (disabled talk):', eventType, data);
-    // IMPORTANT: Do NOT call client.talk() here for now.
-    // Sending hidden metadata as text was causing the LLM to reply with
-    // extra "ghost" messages that did not match spoken audio.
+    // Format as a silent context update that the avatar should NOT respond to
+    const eventMessage = `[SILENT_CONTEXT_UPDATE:${eventType}] ${JSON.stringify(data)} [DO_NOT_SPEAK]`;
+    console.log('Sending silent context update:', eventMessage);
+
+    try {
+      await clientRef.current.talk(eventMessage);
+    } catch (error) {
+      console.error('Error sending context update:', error);
+    }
   }, [state.isConnected]);
 
   const notifySlideChange = useCallback(async (slide: Slide) => {

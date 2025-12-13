@@ -2175,35 +2175,28 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="bg-slate-800/50 rounded-lg p-4 text-center">
                   <div className="text-xs text-slate-400 mb-1">Flagged</div>
                   <div className={`text-2xl font-bold ${hasUnresolvedAlerts ? 'text-amber-400' : 'text-slate-500'}`}>{stats.suspiciousCount}</div>
                   <div className="text-[10px] text-slate-500 mt-1">total alerts</div>
                 </div>
-                <div className={`rounded-lg p-3 text-center ${stats.pendingCount > 0 ? 'bg-yellow-900/30 border border-yellow-600/50' : 'bg-slate-800/50'}`}>
+                <div className={`rounded-lg p-4 text-center ${stats.pendingCount > 0 ? 'bg-yellow-900/30 border border-yellow-600/50' : 'bg-slate-800/50'}`}>
                   <div className="text-xs text-slate-400 mb-1">Pending</div>
                   <div className={`text-2xl font-bold ${stats.pendingCount > 0 ? 'text-yellow-400 animate-pulse' : 'text-slate-500'}`}>{stats.pendingCount}</div>
                   <div className="text-[10px] text-slate-500 mt-1">needs review</div>
                 </div>
-                {stats.awaitingApprovalCount > 0 && (
-                  <div className="bg-orange-900/30 border border-orange-600/50 rounded-lg p-3 text-center">
-                    <div className="text-xs text-orange-300 mb-1">Awaiting Approval</div>
-                    <div className="text-2xl font-bold text-orange-400 animate-pulse">{stats.awaitingApprovalCount}</div>
-                    <div className="text-[10px] text-orange-300/70 mt-1">from admins</div>
-                  </div>
-                )}
-                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                <div className="bg-slate-800/50 rounded-lg p-4 text-center">
                   <div className="text-xs text-slate-400 mb-1">Accepted</div>
                   <div className="text-2xl font-bold text-green-400">{stats.acceptedCount}</div>
                   <div className="text-[10px] text-slate-500 mt-1">in statistics</div>
                 </div>
-                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                <div className="bg-slate-800/50 rounded-lg p-4 text-center">
                   <div className="text-xs text-slate-400 mb-1">Ignored</div>
                   <div className="text-2xl font-bold text-red-400">{stats.ignoredCount}</div>
                   <div className="text-[10px] text-slate-500 mt-1">excluded</div>
                 </div>
-                <div className="bg-slate-800/50 rounded-lg p-3">
+                <div className="bg-slate-800/50 rounded-lg p-4">
                   <div className="text-xs text-slate-400 mb-2">Top Flags</div>
                   <div className="space-y-1 text-xs max-h-16 overflow-y-auto">
                     {stats.suspiciousFlags.slice(0, 3).map(f => (
@@ -2211,7 +2204,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="flex justify-between cursor-help">
-                              <span className="text-amber-400 truncate mr-2">{f.flag.replace(/_/g, ' ').slice(0, 25)}...</span>
+                              <span className="text-amber-400 truncate mr-2">{f.flag.replace(/_/g, ' ').slice(0, 20)}...</span>
                               <span className="text-slate-300">{f.count}</span>
                             </div>
                           </TooltipTrigger>
@@ -2227,6 +2220,13 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   </div>
                 </div>
               </div>
+              {stats.awaitingApprovalCount > 0 && (
+                <div className="mt-3 bg-orange-900/30 border border-orange-600/50 rounded-lg p-3 text-center">
+                  <div className="text-xs text-orange-300 mb-1">Awaiting Owner Approval</div>
+                  <div className="text-2xl font-bold text-orange-400 animate-pulse">{stats.awaitingApprovalCount}</div>
+                  <div className="text-[10px] text-orange-300/70 mt-1">admin validations pending owner review</div>
+                </div>
+              )}
               {stats.resetCount > 0 && (
                 <div className="mt-3 pt-3 border-t border-slate-700/50">
                   <div className="flex items-center gap-2 text-sm text-red-400">

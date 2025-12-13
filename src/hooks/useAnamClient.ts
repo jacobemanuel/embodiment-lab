@@ -38,6 +38,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   const currentSlideRef = useRef<Slide>(currentSlide);
   const processedMessagesRef = useRef<Record<string, string>>({});
   const toggleStatsRef = useRef<ToggleStats>({ cameraToggles: 0, micToggles: 0, lastToggleTime: 0 });
+  const isUserMicOnRef = useRef(false);
 
   useEffect(() => {
     currentSlideRef.current = currentSlide;
@@ -168,16 +169,8 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       // Stream to video element
       console.log('Starting stream to video element:', videoElementId);
       await client.streamToVideoElement(videoElementId);
-
-      // HARD-MUTE input audio right after the stream starts so Alex is deaf
-      // by default. She will only hear the user while the mic button is blue
-      // (startListening -> unmuteInputAudio, stopListening -> muteInputAudio).
-      try {
-        const audioState = (client as any).muteInputAudio?.();
-        console.log('Initial hard mute after stream start, state:', audioState);
-      } catch (err) {
-        console.error('Error applying initial hard mute:', err);
-      }
+      // Do not touch audio hardware here; push-to-talk will be handled logically
+      // via system events and local gating of transcript/behavior.
 
     } catch (error) {
       console.error('Error initializing Anam client:', error);
@@ -304,25 +297,15 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
   }, [sendSystemEvent]);
 
-  // Push-to-talk actually controls Anam microphone input
+  // Push-to-talk is now a logical control only – we don't touch Anam's
+  // hardware mic, we just use system events + prompt to tell Alex when
+  // she should listen/respond.
   const startListening = useCallback(() => {
-    if (!clientRef.current) return;
-    try {
-      const audioState = (clientRef.current as any).unmuteInputAudio?.();
-      console.log('startListening – mic UNMUTED, state:', audioState);
-    } catch (err) {
-      console.error('Error unmuting Anam mic:', err);
-    }
+    console.log('startListening – logical mic ON');
   }, []);
 
   const stopListening = useCallback(() => {
-    if (!clientRef.current) return;
-    try {
-      const audioState = (clientRef.current as any).muteInputAudio?.();
-      console.log('stopListening – mic MUTED, state:', audioState);
-    } catch (err) {
-      console.error('Error muting Anam mic:', err);
-    }
+    console.log('stopListening – logical mic OFF');
   }, []);
 
   const disconnect = useCallback(() => {

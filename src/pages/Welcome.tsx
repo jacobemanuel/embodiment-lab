@@ -54,7 +54,7 @@ const Welcome = () => {
                 <div className="flex gap-4 p-4 rounded-xl bg-ai-primary/5 border border-ai-primary/10 hover:bg-ai-primary/10 transition-all hover:scale-[1.02]">
                   <span className="text-2xl">⏱️</span>
                   <div>
-                    <strong className="text-foreground">~8 minutes</strong>
+                    <strong className="text-foreground">~10 minutes</strong>
                     <p className="text-sm text-muted-foreground">Complete at your own pace</p>
                   </div>
                 </div>
@@ -71,7 +71,7 @@ const Welcome = () => {
                   <span className="text-2xl">🎯</span>
                   <div>
                     <strong className="text-foreground">Interactive Format</strong>
-                    <p className="text-sm text-muted-foreground">Pre-test, learning scenarios, and post-test</p>
+                    <p className="text-sm text-muted-foreground">Pre-test, learning slides, and post-test</p>
                   </div>
                 </div>
                 

@@ -34,7 +34,7 @@ const ConsentSidebar = () => {
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Purpose of the Study</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                This research examines how different presentation formats (text-based vs. avatar-based) affect learning about AI image generation fundamentals. You will complete a brief pre-test, engage with interactive learning scenarios about AI-powered image creation, practice with a real-time image playground, and complete a post-test assessment.
+                This research examines how different presentation formats (text-based vs. avatar-based) affect learning about AI image generation fundamentals. You will complete a brief pre-test, learn through interactive slides about AI-powered image creation, practice with a real-time image playground, and complete a post-test assessment.
               </p>
             </section>
 
@@ -47,7 +47,7 @@ const ConsentSidebar = () => {
                 </li>
                 <li className="flex gap-2">
                   <span>2.</span>
-                  <span>Learn AI image generation basics through interactive scenarios (~8 minutes)</span>
+                  <span>Learn AI image generation basics through interactive slides (~10 minutes)</span>
                 </li>
                 <li className="flex gap-2">
                   <span>3.</span>
@@ -77,7 +77,7 @@ const ConsentSidebar = () => {
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Risks & Benefits</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the 8-minute session.
+                <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the approximately 10-minute session.
               </p>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 <strong className="text-foreground">Benefits:</strong> You will learn fundamental concepts of AI image generation, including prompt engineering, style control, and creative techniques. You'll contribute to research on AI-powered educational systems.

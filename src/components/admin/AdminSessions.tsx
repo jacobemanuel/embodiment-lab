@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw, CheckCircle, XCircle, AlertTriangle, Info } from "lucide-react";
+import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw, CheckCircle, XCircle, AlertTriangle, Info, Clock } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -168,12 +168,34 @@ interface SessionDetails {
   };
 
   // Update session validation status
+  // Owner can directly accept/ignore, Admin can only request (goes to 'pending_approval')
   const updateValidationStatus = async (sessionId: string, status: 'accepted' | 'ignored') => {
     try {
+      // Determine the actual status to save based on permissions
+      let actualStatus = status;
+      let toastMessage = '';
+      
+      if (permissions.canValidateSessionsDirectly) {
+        // Owner - directly accept/ignore
+        actualStatus = status;
+        toastMessage = status === 'accepted' 
+          ? 'Session accepted for statistics' 
+          : 'Session ignored from statistics';
+      } else if (permissions.canRequestValidation) {
+        // Admin - request approval (pending_accepted or pending_ignored)
+        actualStatus = status === 'accepted' ? 'pending_accepted' : 'pending_ignored' as any;
+        toastMessage = status === 'accepted'
+          ? 'Requested acceptance - awaiting owner approval'
+          : 'Requested ignore - awaiting owner approval';
+      } else {
+        toast.error('You do not have permission to validate sessions');
+        return;
+      }
+
       const { error } = await supabase
         .from('study_sessions')
         .update({
-          validation_status: status,
+          validation_status: actualStatus,
           validated_by: userEmail,
           validated_at: new Date().toISOString()
         })
@@ -184,14 +206,60 @@ interface SessionDetails {
       // Update local state
       setSessions(prev => prev.map(s => 
         s.id === sessionId 
-          ? { ...s, validation_status: status, validated_by: userEmail, validated_at: new Date().toISOString() }
+          ? { ...s, validation_status: actualStatus, validated_by: userEmail, validated_at: new Date().toISOString() }
           : s
       ));
 
-      toast.success(`Session ${status === 'accepted' ? 'accepted for statistics' : 'ignored from statistics'}`);
+      toast.success(toastMessage);
     } catch (error) {
       console.error('Error updating validation status:', error);
       toast.error('Failed to update session status');
+    }
+  };
+
+  // Owner can approve pending validation requests
+  const approveValidationRequest = async (sessionId: string, approve: boolean) => {
+    if (!permissions.canValidateSessionsDirectly) {
+      toast.error('Only owner can approve validation requests');
+      return;
+    }
+
+    try {
+      const session = sessions.find(s => s.id === sessionId);
+      if (!session) return;
+
+      // Determine final status based on what was requested
+      let finalStatus: string;
+      if (approve) {
+        finalStatus = session.validation_status === 'pending_accepted' ? 'accepted' : 'ignored';
+      } else {
+        // Rejected - reset to pending
+        finalStatus = 'pending';
+      }
+
+      const { error } = await supabase
+        .from('study_sessions')
+        .update({
+          validation_status: finalStatus,
+          validated_by: userEmail,
+          validated_at: new Date().toISOString()
+        })
+        .eq('id', sessionId);
+
+      if (error) throw error;
+
+      setSessions(prev => prev.map(s => 
+        s.id === sessionId 
+          ? { ...s, validation_status: finalStatus, validated_by: userEmail, validated_at: new Date().toISOString() }
+          : s
+      ));
+
+      toast.success(approve 
+        ? `Validation request approved - session ${finalStatus}` 
+        : 'Validation request rejected');
+    } catch (error) {
+      console.error('Error approving validation:', error);
+      toast.error('Failed to process validation request');
     }
   };
 
@@ -477,7 +545,11 @@ interface SessionDetails {
                                         <CheckCircle className="w-4 h-4" />
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>Accept for statistics</TooltipContent>
+                                    <TooltipContent>
+                                      {permissions.canValidateSessionsDirectly 
+                                        ? 'Accept for statistics' 
+                                        : 'Request acceptance (needs owner approval)'}
+                                    </TooltipContent>
                                   </Tooltip>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
@@ -490,10 +562,60 @@ interface SessionDetails {
                                         <XCircle className="w-4 h-4" />
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>Ignore from statistics</TooltipContent>
+                                    <TooltipContent>
+                                      {permissions.canValidateSessionsDirectly 
+                                        ? 'Ignore from statistics' 
+                                        : 'Request ignore (needs owner approval)'}
+                                    </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
                               </div>
+                            ) : validationStatus === 'pending_accepted' || validationStatus === 'pending_ignored' ? (
+                              // Pending approval from owner
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge className="bg-yellow-600/20 text-yellow-400 border-yellow-600/50 cursor-help">
+                                      <Clock className="w-3 h-3 mr-1" />
+                                      {validationStatus === 'pending_accepted' ? 'Awaiting Accept' : 'Awaiting Ignore'}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Requested by {session.validated_by}</p>
+                                    {session.validated_at && <p className="text-xs text-muted-foreground">{format(new Date(session.validated_at), 'dd MMM yyyy HH:mm')}</p>}
+                                  </TooltipContent>
+                                </Tooltip>
+                                {permissions.canValidateSessionsDirectly && (
+                                  <div className="flex gap-1 mt-1">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          size="sm" 
+                                          variant="ghost"
+                                          className="h-6 w-6 p-0 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                                          onClick={() => approveValidationRequest(session.id, true)}
+                                        >
+                                          <CheckCircle className="w-3 h-3" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Approve request</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          size="sm" 
+                                          variant="ghost"
+                                          className="h-6 w-6 p-0 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                                          onClick={() => approveValidationRequest(session.id, false)}
+                                        >
+                                          <XCircle className="w-3 h-3" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Reject request</TooltipContent>
+                                    </Tooltip>
+                                  </div>
+                                )}
+                              </TooltipProvider>
                             ) : validationStatus === 'accepted' ? (
                               <TooltipProvider>
                                 <Tooltip>
@@ -509,7 +631,7 @@ interface SessionDetails {
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
-                            ) : (
+                            ) : validationStatus === 'ignored' ? (
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -524,7 +646,7 @@ interface SessionDetails {
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
-                            )}
+                            ) : null}
                           </div>
                         ) : (
                           <span className="text-xs text-slate-500">-</span>

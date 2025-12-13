@@ -37,6 +37,8 @@ export interface PermissionConfig {
   // Dangerous Operations
   canDeleteSessions: boolean;
   canResetData: boolean;
+  canValidateSessionsDirectly: boolean; // Owner can directly accept/ignore sessions
+  canRequestValidation: boolean; // Admin can request validation (needs owner approval)
   
   // UI Visibility
   canViewSlides: boolean;
@@ -77,6 +79,8 @@ export const getPermissions = (email: string): PermissionConfig => {
       
       canDeleteSessions: true,
       canResetData: true,
+      canValidateSessionsDirectly: true,
+      canRequestValidation: true,
       
       canViewSlides: true,
       canViewQuestions: true,
@@ -108,6 +112,8 @@ export const getPermissions = (email: string): PermissionConfig => {
       
       canDeleteSessions: false,
       canResetData: false,
+      canValidateSessionsDirectly: false,
+      canRequestValidation: false,
       
       canViewSlides: true, // Can view slides (read-only)
       canViewQuestions: true, // Can view questions (read-only)
@@ -138,13 +144,14 @@ export const getPermissions = (email: string): PermissionConfig => {
     
     canDeleteSessions: false, // SAFETY: Can't delete research data
     canResetData: false, // SAFETY: Can't reset data
+    canValidateSessionsDirectly: false, // Admin cannot directly validate - needs owner approval
+    canRequestValidation: true, // Admin can request validation
     
     canViewSlides: true,
     canViewQuestions: true,
     canViewPermissionsTab: true,
   };
 };
-
 // Permission impact labels for UI - describes what the action does, not abstract risk
 export const PERMISSION_IMPACT_LABELS = {
   safe: { label: 'Reversible', color: 'green', description: 'Changes can be easily undone' },
@@ -238,6 +245,16 @@ export const PERMISSION_DESCRIPTIONS: Record<keyof PermissionConfig, { label: st
     label: 'Reset Data',
     description: 'Clear all research data',
     level: 'danger',
+  },
+  canValidateSessionsDirectly: {
+    label: 'Validate Sessions Directly',
+    description: 'Accept or ignore suspicious sessions for statistics immediately',
+    level: 'caution',
+  },
+  canRequestValidation: {
+    label: 'Request Session Validation',
+    description: 'Request owner approval for suspicious session validation',
+    level: 'safe',
   },
   canViewSlides: {
     label: 'View Slides',

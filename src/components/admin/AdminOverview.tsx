@@ -133,6 +133,7 @@ interface StudyStats {
   ignoredCount: number;
   acceptedCount: number;
   pendingCount: number;
+  awaitingApprovalCount: number;
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
@@ -784,6 +785,9 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       const acceptedCount = suspiciousSessions.filter(s => s.validation_status === 'accepted').length;
       const ignoredCount = suspiciousSessions.filter(s => s.validation_status === 'ignored').length;
       const pendingCount = suspiciousSessions.filter(s => !s.validation_status || s.validation_status === 'pending').length;
+      const awaitingApprovalCount = suspiciousSessions.filter(s => 
+        s.validation_status === 'pending_accepted' || s.validation_status === 'pending_ignored'
+      ).length;
       
       // Count flag occurrences
       const flagCounts: Record<string, number> = {};
@@ -849,6 +853,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         ignoredCount,
         acceptedCount,
         pendingCount,
+        awaitingApprovalCount,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -2147,7 +2152,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
               <div className="bg-slate-800/50 rounded-lg p-3 text-center">
                 <div className="text-xs text-slate-400 mb-1">Flagged</div>
                 <div className="text-2xl font-bold text-amber-400">{stats.suspiciousCount}</div>
@@ -2158,6 +2163,13 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 <div className="text-2xl font-bold text-yellow-400">{stats.pendingCount}</div>
                 <div className="text-[10px] text-slate-500 mt-1">needs review</div>
               </div>
+              {stats.awaitingApprovalCount > 0 && (
+                <div className="bg-orange-900/30 border border-orange-600/50 rounded-lg p-3 text-center">
+                  <div className="text-xs text-orange-300 mb-1">Awaiting Approval</div>
+                  <div className="text-2xl font-bold text-orange-400 animate-pulse">{stats.awaitingApprovalCount}</div>
+                  <div className="text-[10px] text-orange-300/70 mt-1">from admins</div>
+                </div>
+              )}
               <div className="bg-slate-800/50 rounded-lg p-3 text-center">
                 <div className="text-xs text-slate-400 mb-1">Accepted</div>
                 <div className="text-2xl font-bold text-green-400">{stats.acceptedCount}</div>

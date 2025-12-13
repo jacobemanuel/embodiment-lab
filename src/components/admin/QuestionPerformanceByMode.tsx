@@ -23,9 +23,13 @@ interface QuestionModePerformance {
 interface Props {
   startDate?: Date;
   endDate?: Date;
+  userEmail?: string;
 }
 
-const QuestionPerformanceByMode = ({ startDate, endDate }: Props) => {
+import { getPermissions } from "@/lib/permissions";
+
+const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props) => {
+  const permissions = getPermissions(userEmail);
   const [data, setData] = useState<QuestionModePerformance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -225,10 +229,12 @@ const QuestionPerformanceByMode = ({ startDate, endDate }: Props) => {
               Text vs Avatar mode performance per question (only questions with correct answers)
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={exportCSV} className="gap-2 border-slate-600">
-            <Download className="w-4 h-4" />
-            CSV
-          </Button>
+          {permissions.canExportData && (
+            <Button variant="outline" size="sm" onClick={exportCSV} className="gap-2 border-slate-600">
+              <Download className="w-4 h-4" />
+              CSV
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-6">

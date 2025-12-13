@@ -806,44 +806,50 @@ interface SessionDetails {
                         {isSuspicious || suspiciousFlags.length > 0 ? (
                           <div className="flex flex-col gap-1">
                             {validationStatus === 'pending' ? (
-                              <div className="flex gap-1">
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        size="sm" 
-                                        variant="ghost"
-                                        className="h-7 w-7 p-0 text-green-500 hover:text-green-400 hover:bg-green-500/10"
-                                        onClick={() => updateValidationStatus(session.id, 'accepted')}
-                                      >
-                                        <CheckCircle className="w-4 h-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      {permissions.canValidateSessionsDirectly 
-                                        ? 'Accept for statistics' 
-                                        : 'Request acceptance (needs owner approval)'}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        size="sm" 
-                                        variant="ghost"
-                                        className="h-7 w-7 p-0 text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                                        onClick={() => updateValidationStatus(session.id, 'ignored')}
-                                      >
-                                        <XCircle className="w-4 h-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      {permissions.canValidateSessionsDirectly 
-                                        ? 'Ignore from statistics' 
-                                        : 'Request ignore (needs owner approval)'}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </div>
+                              (permissions.canValidateSessionsDirectly || permissions.canRequestValidation) ? (
+                                <div className="flex gap-1">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          size="sm" 
+                                          variant="ghost"
+                                          className="h-7 w-7 p-0 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                                          onClick={() => updateValidationStatus(session.id, 'accepted')}
+                                        >
+                                          <CheckCircle className="w-4 h-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {permissions.canValidateSessionsDirectly 
+                                          ? 'Accept for statistics' 
+                                          : 'Request acceptance (needs owner approval)'}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          size="sm" 
+                                          variant="ghost"
+                                          className="h-7 w-7 p-0 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                                          onClick={() => updateValidationStatus(session.id, 'ignored')}
+                                        >
+                                          <XCircle className="w-4 h-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {permissions.canValidateSessionsDirectly 
+                                          ? 'Ignore from statistics' 
+                                          : 'Request ignore (needs owner approval)'}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-slate-500 border-slate-600">
+                                  Pending
+                                </Badge>
+                              )
                             ) : validationStatus === 'pending_accepted' || validationStatus === 'pending_ignored' ? (
                               // Pending approval from owner
                               <TooltipProvider>

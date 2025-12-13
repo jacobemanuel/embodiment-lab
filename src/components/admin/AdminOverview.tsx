@@ -3320,7 +3320,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       )}
 
       {/* Question Performance by Mode */}
-      <QuestionPerformanceByMode startDate={startDate} endDate={endDate} />
+      <QuestionPerformanceByMode startDate={startDate} endDate={endDate} userEmail={userEmail} />
     </div>
   );
 };

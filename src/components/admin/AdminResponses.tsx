@@ -749,9 +749,11 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
               <ThumbsUp className="w-4 h-4 text-blue-400" />
               <h3 className="text-sm text-slate-400">Perception & Experience Questions ({perceptionQuestions.reduce((sum, [, r]) => sum + r.reduce((s, x) => s + x.count, 0), 0)} responses)</h3>
             </div>
-            <Button onClick={exportPostTestPerceptionCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-              <FileSpreadsheet className="w-3 h-3" /> Export CSV
-            </Button>
+            {permissions.canExportData && (
+              <Button onClick={exportPostTestPerceptionCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <FileSpreadsheet className="w-3 h-3" /> Export CSV
+              </Button>
+            )}
           </div>
           
           {/* Group by category */}

@@ -36,9 +36,10 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   const [transcriptMessages, setTranscriptMessages] = useState<TranscriptMessage[]>([]);
   const clientRef = useRef<AnamClient | null>(null);
   const currentSlideRef = useRef<Slide>(currentSlide);
-  const processedMessagesRef = useRef<Record<string, string>>({});
+  const avatarBufferRef = useRef<string>('');
   const toggleStatsRef = useRef<ToggleStats>({ cameraToggles: 0, micToggles: 0, lastToggleTime: 0 });
   const isUserMicOnRef = useRef(false);
+  const isInitializingRef = useRef(false);
 
   useEffect(() => {
     currentSlideRef.current = currentSlide;
@@ -99,6 +100,13 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   }, []);
 
   const initializeClient = useCallback(async () => {
+    // Prevent double initialization
+    if (isInitializingRef.current || clientRef.current) {
+      console.log('Already initializing or initialized, skipping');
+      return;
+    }
+    isInitializingRef.current = true;
+
     try {
       setState(prev => ({ ...prev, error: null }));
       
@@ -106,11 +114,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       console.log('Creating Anam client with token...');
       const client = createClient(sessionToken);
 
-      // We'll explicitly control the microphone via the push-to-talk button.
-      // On connect we immediately HARD-MUTE the mic so Alex cannot hear
-      // anything until the user presses the blue mic button.
-
-      // Set up event listeners
+      // Set up event listeners BEFORE streaming
       client.addListener(AnamEvent.CONNECTION_ESTABLISHED, () => {
         console.log('Anam connection established');
         setState(prev => ({ ...prev, isConnected: true }));
@@ -130,7 +134,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, (event: any) => {
         console.log('Stream event:', event, 'role:', event.role, 'endOfSpeech:', event.endOfSpeech);
 
-        const isFinal = event.endOfSpeech === undefined ? true : event.endOfSpeech;
+        const isFinal = event.endOfSpeech === true;
         const contentChunk = event.content || '';
         const trimmed = contentChunk.trim();
 
@@ -142,25 +146,28 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
 
         // Avatar (persona) speaking – show as "Tutor"
         if (event.role === MessageRole.PERSONA || event.role === 'assistant' || event.role === 'persona') {
-          // Accumulate full utterance across streaming chunks. Anam often sends
-          // many small pieces where the *final* event has empty content but
-          // endOfSpeech=true, so we must buffer everything ourselves.
-          const bufferKey = 'avatar-buffer';
-          (processedMessagesRef.current as any)[bufferKey] = ((processedMessagesRef.current as any)[bufferKey] || '') + contentChunk;
-          const fullContent = (processedMessagesRef.current as any)[bufferKey] as string;
+          // Accumulate full utterance across streaming chunks
+          avatarBufferRef.current += contentChunk;
 
           if (isFinal) {
-            addTranscriptMessage('avatar', fullContent, true);
-            (processedMessagesRef.current as any)[bufferKey] = '';
+            const fullContent = avatarBufferRef.current.trim();
+            if (fullContent) {
+              addTranscriptMessage('avatar', fullContent, true);
+            }
+            avatarBufferRef.current = '';
           }
 
           setState(prev => ({ ...prev, isTalking: !isFinal }));
           return;
         }
 
-        // User speech – show as "You" in transcript
+        // User speech – show as "You" in transcript, but ONLY when mic is ON
         if (event.role === MessageRole.USER || event.role === 'user') {
-          addTranscriptMessage('user', contentChunk, isFinal);
+          if (isUserMicOnRef.current) {
+            addTranscriptMessage('user', contentChunk, isFinal);
+          } else {
+            console.log('Ignoring user speech while mic is OFF');
+          }
         }
       });
 
@@ -169,8 +176,15 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       // Stream to video element
       console.log('Starting stream to video element:', videoElementId);
       await client.streamToVideoElement(videoElementId);
-      // Do not touch audio hardware here; push-to-talk will be handled logically
-      // via system events and local gating of transcript/behavior.
+
+      // HARD-MUTE microphone immediately after stream starts
+      // So Alex starts "deaf" until user presses the blue mic button
+      try {
+        const audioState = client.muteInputAudio();
+        console.log('Initial hard mute after stream start:', audioState);
+      } catch (err) {
+        console.error('Error applying initial hard mute:', err);
+      }
 
     } catch (error) {
       console.error('Error initializing Anam client:', error);
@@ -178,6 +192,8 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         ...prev, 
         error: 'Service temporarily unavailable'
       }));
+    } finally {
+      isInitializingRef.current = false;
     }
   }, [getSessionToken, addTranscriptMessage, videoElementId]);
 
@@ -188,8 +204,6 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
 
     try {
-      // We no longer add user messages to the transcript here –
-      // transcript should show ONLY what Alex says.
       console.log('Sending message to avatar:', message);
       await clientRef.current.talk(message);
       console.log('Message sent successfully');
@@ -200,7 +214,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         error: 'Service temporarily unavailable'
       }));
     }
-  }, [state.isConnected, addTranscriptMessage]);
+  }, [state.isConnected]);
 
   // System event sender - sends invisible context to avatar
   const sendSystemEvent = useCallback(async (eventType: string, data: Record<string, any> = {}) => {
@@ -217,12 +231,10 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   }, [state.isConnected]);
 
   const notifySlideChange = useCallback(async (slide: Slide) => {
-    // Don't auto-speak on slide change - let user ask questions
     console.log('Slide changed to:', slide.title);
 
     // Send a hidden system event so Alex always knows which slide
-    // the learner is currently viewing. This keeps her answers in
-    // sync with the visible slide title & key points.
+    // the learner is currently viewing.
     await sendSystemEvent('SLIDE_CHANGE', {
       id: slide.id,
       title: slide.title,
@@ -297,15 +309,33 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
   }, [sendSystemEvent]);
 
-  // Push-to-talk is now a logical control only – we don't touch Anam's
-  // hardware mic, we just use system events + prompt to tell Alex when
-  // she should listen/respond.
+  // Push-to-talk controls Anam microphone input via SDK methods
   const startListening = useCallback(() => {
-    console.log('startListening – logical mic ON');
+    if (!clientRef.current) {
+      console.warn('startListening: no client');
+      return;
+    }
+    isUserMicOnRef.current = true;
+    try {
+      const audioState = clientRef.current.unmuteInputAudio();
+      console.log('startListening – mic UNMUTED, state:', audioState);
+    } catch (err) {
+      console.error('Error unmuting Anam mic:', err);
+    }
   }, []);
 
   const stopListening = useCallback(() => {
-    console.log('stopListening – logical mic OFF');
+    if (!clientRef.current) {
+      console.warn('stopListening: no client');
+      return;
+    }
+    isUserMicOnRef.current = false;
+    try {
+      const audioState = clientRef.current.muteInputAudio();
+      console.log('stopListening – mic MUTED, state:', audioState);
+    } catch (err) {
+      console.error('Error muting Anam mic:', err);
+    }
   }, []);
 
   const disconnect = useCallback(() => {
@@ -314,8 +344,10 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       clientRef.current = null;
     }
     setState({ isConnected: false, isStreaming: false, isTalking: false, error: null });
-    processedMessagesRef.current = {};
+    avatarBufferRef.current = '';
     toggleStatsRef.current = { cameraToggles: 0, micToggles: 0, lastToggleTime: 0 };
+    isUserMicOnRef.current = false;
+    isInitializingRef.current = false;
   }, []);
 
   useEffect(() => {

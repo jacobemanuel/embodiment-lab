@@ -161,14 +161,9 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       // Stream to video element
       console.log('Starting stream to video element:', videoElementId);
       await client.streamToVideoElement(videoElementId);
-      console.log('Stream started successfully, muting microphone by default');
-
-      // IMPORTANT: microphone OFF by default – user must press the button to talk
-      try {
-        client.muteInputAudio();
-      } catch (muteError) {
-        console.error('Error muting input audio on init:', muteError);
-      }
+      // NOTE: Let Anam manage microphone defaults itself.
+      // We keep push-to-talk purely as a visual/helper control for now so that
+      // we don't accidentally block audio input.
 
     } catch (error) {
       console.error('Error initializing Anam client:', error);
@@ -205,36 +200,15 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     console.log('Slide changed to:', slide.title);
   }, []);
 
-  // Push-to-talk: Start listening (enable microphone input)
+  // Push-to-talk UI only for now – we do NOT touch Anam audio state to avoid
+  // breaking microphone input again.
   const startListening = useCallback(() => {
-    if (clientRef.current && state.isConnected) {
-      try {
-        // Enable audio input - user can now speak
-        clientRef.current.unmuteInputAudio();
-        console.log('Started listening - microphone enabled');
-      } catch (error) {
-        console.error('Error starting listening:', error);
-      }
-    } else {
-      console.warn('Cannot start listening - client not connected', { 
-        hasClient: !!clientRef.current, 
-        isConnected: state.isConnected 
-      });
-    }
-  }, [state.isConnected]);
+    console.log('startListening UI toggle – Anam manages mic internally');
+  }, []);
 
-  // Push-to-talk: Stop listening (disable microphone input)
   const stopListening = useCallback(() => {
-    if (clientRef.current && state.isConnected) {
-      try {
-        // Disable audio input
-        clientRef.current.muteInputAudio();
-        console.log('Stopped listening - microphone disabled');
-      } catch (error) {
-        console.error('Error stopping listening:', error);
-      }
-    }
-  }, [state.isConnected]);
+    console.log('stopListening UI toggle – Anam manages mic internally');
+  }, []);
 
   const disconnect = useCallback(() => {
     if (clientRef.current) {

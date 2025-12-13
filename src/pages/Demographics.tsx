@@ -99,16 +99,16 @@ const Demographics = () => {
     return lowerText.includes('age') || lowerText.includes('wiek');
   };
 
-  // Handle age input change with under-18 check
+  // Handle age input change (just update value, no validation yet)
   const handleAgeChange = (questionId: string, value: string) => {
     setResponses(prev => ({ ...prev, [questionId]: value }));
-    
-    // Check if user is under 18
+  };
+
+  // Validate age on blur (when user leaves the field)
+  const handleAgeBlur = (value: string) => {
     const age = parseInt(value, 10);
     if (!isNaN(age) && age < 18 && age > 0) {
       setIsUnderAge(true);
-    } else {
-      setIsUnderAge(false);
     }
   };
 
@@ -225,6 +225,7 @@ const Demographics = () => {
                       placeholder="Enter your age"
                       value={responses[question.id] || ""}
                       onChange={(e) => handleAgeChange(question.id, e.target.value)}
+                      onBlur={(e) => handleAgeBlur(e.target.value)}
                       className="max-w-xs"
                       min="1"
                       max="150"

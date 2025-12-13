@@ -40,6 +40,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   const toggleStatsRef = useRef<ToggleStats>({ cameraToggles: 0, micToggles: 0, lastToggleTime: 0 });
   const isUserMicOnRef = useRef(false);
   const isInitializingRef = useRef(false);
+  const isReconnectingRef = useRef(false);
 
   useEffect(() => {
     currentSlideRef.current = currentSlide;
@@ -243,13 +244,107 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     // Skip all other system events to prevent avatar from speaking JSON
   }, [state.isConnected]);
 
-  // Slide change notification - NO LONGER sends anything to avatar via talk()
-  // The avatar knows the initial slide from session creation, and users can ask questions
+  // Slide change notification - RECONNECTS session to update avatar's knowledge
+  // This ensures Alex ALWAYS knows the current slide context from admin's AI Tutor Context field
   const notifySlideChange = useCallback(async (slide: Slide) => {
-    console.log('Slide changed to:', slide.title, '(not sending to avatar - context is in system prompt)');
-    // We just update the ref - no talk() call that would make avatar speak JSON
+    console.log('Slide changed to:', slide.title);
     currentSlideRef.current = slide;
-  }, []);
+    
+    // If connected, reconnect to get fresh system prompt with new slide context
+    if (clientRef.current && state.isConnected && !isReconnectingRef.current) {
+      console.log('Reconnecting Anam session for slide context update...');
+      isReconnectingRef.current = true;
+      
+      try {
+        // Stop current stream but keep transcript
+        clientRef.current.stopStreaming();
+        clientRef.current = null;
+        
+        // Get new session token with updated slide context
+        const sessionToken = await getSessionToken();
+        console.log('Got new session token for slide:', slide.title);
+        
+        const client = createClient(sessionToken);
+        
+        // Re-setup event listeners
+        client.addListener(AnamEvent.CONNECTION_ESTABLISHED, () => {
+          console.log('Anam reconnected for new slide');
+          setState(prev => ({ ...prev, isConnected: true }));
+        });
+
+        client.addListener(AnamEvent.CONNECTION_CLOSED, () => {
+          console.log('Anam connection closed');
+          setState(prev => ({ ...prev, isConnected: false, isStreaming: false, isTalking: false }));
+        });
+
+        client.addListener(AnamEvent.VIDEO_PLAY_STARTED, () => {
+          console.log('Anam video restarted');
+          setState(prev => ({ ...prev, isStreaming: true }));
+        });
+
+        // Stream events handler
+        client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, (event: any) => {
+          const isFinal = event.endOfSpeech === true;
+          const contentChunk = event.content || '';
+          const trimmed = contentChunk.trim();
+
+          // AGGRESSIVE filter for JSON/system messages
+          const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[{');
+          const containsJsonKeys = /"(id|title|keyPoints|systemPromptContext|state|toggleCount)"/.test(trimmed);
+          const isSystemMessage = trimmed.startsWith('[SYSTEM_EVENT') || 
+                                  trimmed.startsWith('[SILENT_CONTEXT_UPDATE') ||
+                                  trimmed.includes('[ACKNOWLEDGED]') ||
+                                  trimmed.includes('[DO_NOT_SPEAK]');
+          
+          if (isSystemMessage || looksLikeJson || containsJsonKeys) {
+            return;
+          }
+
+          // Avatar speaking
+          if (event.role === MessageRole.PERSONA || event.role === 'assistant' || event.role === 'persona') {
+            avatarBufferRef.current += contentChunk;
+            if (isFinal) {
+              const fullContent = avatarBufferRef.current.trim();
+              if (fullContent) {
+                addTranscriptMessage('avatar', fullContent, true);
+              }
+              avatarBufferRef.current = '';
+            }
+            setState(prev => ({ ...prev, isTalking: !isFinal }));
+            return;
+          }
+
+          // User speech
+          if (event.role === MessageRole.USER || event.role === 'user') {
+            if (isUserMicOnRef.current) {
+              addTranscriptMessage('user', contentChunk, isFinal);
+            }
+          }
+        });
+
+        clientRef.current = client;
+        await client.streamToVideoElement(videoElementId);
+        
+        // Re-apply mute state
+        try {
+          if (isUserMicOnRef.current) {
+            client.unmuteInputAudio();
+          } else {
+            client.muteInputAudio();
+          }
+        } catch (err) {
+          console.error('Error applying mic state after reconnect:', err);
+        }
+        
+        console.log('Successfully reconnected with new slide context:', slide.title);
+      } catch (error) {
+        console.error('Error reconnecting for slide change:', error);
+        setState(prev => ({ ...prev, error: 'Failed to update slide context' }));
+      } finally {
+        isReconnectingRef.current = false;
+      }
+    }
+  }, [state.isConnected, getSessionToken, addTranscriptMessage, videoElementId]);
 
   // Camera toggle notification with spam detection
   const notifyCameraToggle = useCallback(async (isOn: boolean) => {
@@ -356,6 +451,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     toggleStatsRef.current = { cameraToggles: 0, micToggles: 0, lastToggleTime: 0 };
     isUserMicOnRef.current = false;
     isInitializingRef.current = false;
+    isReconnectingRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -364,6 +460,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
 
   return {
     ...state,
+    isReconnecting: isReconnectingRef.current,
     transcriptMessages,
     initializeClient,
     sendMessage,

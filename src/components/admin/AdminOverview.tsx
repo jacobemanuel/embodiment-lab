@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, CheckCircle, Clock, Download, Timer, BarChart3, TrendingUp, ArrowUp, ArrowDown, FileSpreadsheet, AlertTriangle, Filter, HelpCircle, Info } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, ScatterChart, Scatter, ZAxis } from "recharts";
+import { CheckCircle, Clock, Download, Timer, TrendingUp, FileSpreadsheet, AlertTriangle, Filter, Info, RefreshCw, BarChart2 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Cell, Legend, ScatterChart, Scatter, ZAxis, LineChart, Line } from "recharts";
 import DateRangeFilter from "./DateRangeFilter";
 import { format, parseISO, startOfDay, endOfDay } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
+
 interface AvatarTimeData {
   session_id: string;
   slide_id: string;
@@ -86,6 +88,35 @@ interface StudyStats {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
 type StatusFilter = 'completed' | 'all' | 'incomplete';
+
+// Sorting helpers
+const AGE_ORDER = ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
+const EXPERIENCE_ORDER = ['1 - No Experience', '2 - Limited Experience', '3 - Moderate Experience', '4 - Good Experience', '5 - Extensive Experience'];
+const EDUCATION_ORDER = ['High school or less', 'Some college', "Bachelor's degree", "Master's degree", 'Doctoral degree'];
+
+const sortByOrder = (data: { name: string; value: number }[], order: string[]) => {
+  return [...data].sort((a, b) => {
+    const aIdx = order.findIndex(o => a.name.includes(o) || o.includes(a.name));
+    const bIdx = order.findIndex(o => b.name.includes(o) || o.includes(b.name));
+    if (aIdx === -1 && bIdx === -1) return a.name.localeCompare(b.name);
+    if (aIdx === -1) return 1;
+    if (bIdx === -1) return -1;
+    return aIdx - bIdx;
+  });
+};
+
+// Helper component for section CSV export
+const ExportButton = ({ onClick, label, size = "sm" }: { onClick: () => void; label: string; size?: "sm" | "xs" }) => (
+  <Button 
+    variant="ghost" 
+    size={size === "xs" ? "sm" : size}
+    onClick={onClick} 
+    className={`gap-1 text-slate-400 hover:text-white ${size === "xs" ? "h-6 px-2 text-xs" : ""}`}
+  >
+    <Download className={size === "xs" ? "w-3 h-3" : "w-4 h-4"} />
+    {label}
+  </Button>
+);
 
 const AdminOverview = () => {
   const [stats, setStats] = useState<StudyStats | null>(null);
@@ -284,7 +315,6 @@ const AdminOverview = () => {
           const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
           const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
           
-          // Check if user got all correct answers and only correct answers
           const allCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca));
           const noExtra = userAnswers.every((ua: string) => correctAnswers.includes(ua));
           
@@ -297,7 +327,6 @@ const AdminOverview = () => {
       // POST-TEST scoring (knowledge questions)
       const sessionPostScores: Record<string, { correct: number; total: number }> = {};
       postTestResponses.forEach(r => {
-        // Only score knowledge questions (knowledge-X)
         if (r.question_id.startsWith('knowledge-')) {
           const question = questionMap.get(r.question_id);
           if (question?.correct_answer) {
@@ -417,7 +446,7 @@ const AdminOverview = () => {
 
       const preTestQuestionAnalysis = Object.entries(preTestQuestionStats).map(([qId, stats]) => ({
         questionId: qId,
-        questionText: stats.text.length > 60 ? stats.text.substring(0, 60) + '...' : stats.text,
+        questionText: stats.text.length > 80 ? stats.text.substring(0, 80) + '...' : stats.text,
         questionType: 'pre_test',
         correctRate: stats.hasCorrectAnswer && stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
         totalResponses: stats.total,
@@ -426,22 +455,20 @@ const AdminOverview = () => {
 
       const postTestQuestionAnalysis = Object.entries(postTestQuestionStats).map(([qId, stats]) => ({
         questionId: qId,
-        questionText: stats.text.length > 60 ? stats.text.substring(0, 60) + '...' : stats.text,
+        questionText: stats.text.length > 80 ? stats.text.substring(0, 80) + '...' : stats.text,
         questionType: 'post_test',
         correctRate: stats.hasCorrectAnswer && stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
         totalResponses: stats.total,
         hasCorrectAnswer: stats.hasCorrectAnswer,
       }));
 
-      // Correlation data - include ALL sessions with knowledge gain data (not just avatar users)
+      // Correlation data - include ALL sessions with knowledge gain data
       const correlations: CorrelationData = {
-        // Avatar Time vs Gain - only for sessions with avatar time tracked
         avatarTimeVsGain: knowledgeGain.filter(k => k.avatarTime > 0).map(k => ({
-          x: Math.round((k.avatarTime / 60) * 100) / 100, // minutes with 2 decimals
+          x: Math.round((k.avatarTime / 60) * 100) / 100,
           y: k.gain,
           mode: k.mode,
         })),
-        // Session Time vs Gain - for ALL sessions with knowledge gain
         sessionTimeVsGain: knowledgeGain.map(k => {
           const session = sessionsToAnalyze.find(s => s.session_id === k.sessionId);
           const duration = session?.completed_at 
@@ -465,9 +492,9 @@ const AdminOverview = () => {
         avgAvatarTime,
         totalAvatarTime,
         sessionsPerDay,
-        demographicBreakdown: Object.entries(ageBreakdown).map(([name, value]) => ({ name, value })),
-        educationBreakdown: Object.entries(educationBreakdown).map(([name, value]) => ({ name, value })),
-        experienceBreakdown: Object.entries(experienceBreakdown).map(([name, value]) => ({ name, value })),
+        demographicBreakdown: sortByOrder(Object.entries(ageBreakdown).map(([name, value]) => ({ name, value })), AGE_ORDER),
+        educationBreakdown: sortByOrder(Object.entries(educationBreakdown).map(([name, value]) => ({ name, value })), EDUCATION_ORDER),
+        experienceBreakdown: sortByOrder(Object.entries(experienceBreakdown).map(([name, value]) => ({ name, value })), EXPERIENCE_ORDER),
         modeComparison: [
           { name: 'Text Only', count: textModeCompleted },
           { name: 'Avatar Only', count: avatarModeCompleted },
@@ -515,11 +542,27 @@ const AdminOverview = () => {
     return () => clearInterval(interval);
   }, [autoRefresh, fetchStats]);
 
-  // Export CSV with each session as a row
+  // Export CSV helper
+  const downloadCSV = (data: any[], filename: string) => {
+    if (!data.length) return;
+    const headers = Object.keys(data[0]);
+    const csv = [
+      headers.map(h => `"${h}"`).join(','),
+      ...data.map(row => headers.map(h => `"${String(row[h] ?? '').replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Export comprehensive CSV with each session as a row
   const exportComprehensiveCSV = async () => {
     if (!stats) return;
 
-    // Fetch ALL question data
     const { data: questions } = await supabase
       .from('study_questions')
       .select('question_id, question_text, correct_answer, question_type')
@@ -533,15 +576,12 @@ const AdminOverview = () => {
       correctAnswerMap[q.question_id] = q.correct_answer || '';
     });
 
-    // Get unique question IDs for each type
     const demoQuestionIds = [...new Set(stats.rawDemographics.map(r => r.question_id))].sort();
     const preTestQuestionIds = [...new Set(stats.rawPreTest.map(r => r.question_id))].sort();
     const postTestQuestionIds = [...new Set(stats.rawPostTest.map(r => r.question_id))].sort();
 
-    // Build CSV with sessions as rows
     let csv = '';
     
-    // Header row
     const headers = [
       'Session ID',
       'Mode',
@@ -562,7 +602,6 @@ const AdminOverview = () => {
     ];
     csv += headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',') + '\n';
 
-    // Data rows - one per session
     stats.rawSessions.forEach(session => {
       const kg = stats.knowledgeGain.find(k => k.sessionId === session.session_id);
       const duration = session.completed_at 
@@ -585,9 +624,9 @@ const AdminOverview = () => {
         session.started_at,
         session.completed_at || '',
         duration,
-        kg?.preScore || '',
-        kg?.postScore || '',
-        kg?.gain || '',
+        kg?.preScore ?? '',
+        kg?.postScore ?? '',
+        kg?.gain ?? '',
         avatarTime,
         ...demoQuestionIds.map(qId => {
           const resp = demoResponses.find(r => r.question_id === qId);
@@ -632,7 +671,7 @@ const AdminOverview = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `study_data_${statusFilter}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `full_study_data_${statusFilter}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -657,6 +696,7 @@ const AdminOverview = () => {
         totalCompleted: stats.totalCompleted,
         totalIncomplete: stats.totalIncomplete,
         sessionsAnalyzed: stats.rawSessions.length,
+        sessionsWithKnowledgeGainData: stats.knowledgeGain.length,
         textModeCompleted: stats.textModeCompleted,
         avatarModeCompleted: stats.avatarModeCompleted,
         bothModesCompleted: stats.bothModesCompleted,
@@ -714,9 +754,70 @@ const AdminOverview = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `study_data_${statusFilter}_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `full_study_data_${statusFilter}_${format(new Date(), 'yyyy-MM-dd')}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Export section-specific CSV
+  const exportDemographicsCSV = () => {
+    if (!stats) return;
+    const data = [
+      ...stats.demographicBreakdown.map(d => ({ Category: 'Age', Name: d.name, Count: d.value })),
+      ...stats.educationBreakdown.map(d => ({ Category: 'Education', Name: d.name, Count: d.value })),
+      ...stats.experienceBreakdown.map(d => ({ Category: 'Digital Experience', Name: d.name, Count: d.value })),
+    ];
+    downloadCSV(data, 'demographics');
+  };
+
+  const exportKnowledgeGainCSV = () => {
+    if (!stats) return;
+    const data = stats.knowledgeGain.map(k => ({
+      SessionID: k.sessionId,
+      Mode: k.mode,
+      PreTestScore: k.preScore,
+      PostTestScore: k.postScore,
+      KnowledgeGain: k.gain,
+      PreCorrect: k.preCorrect,
+      PreTotal: k.preTotal,
+      PostCorrect: k.postCorrect,
+      PostTotal: k.postTotal,
+      AvatarTimeSeconds: k.avatarTime,
+    }));
+    downloadCSV(data, 'knowledge_gain');
+  };
+
+  const exportCorrelationCSV = () => {
+    if (!stats) return;
+    const data = stats.correlations.sessionTimeVsGain.map(c => ({
+      SessionDurationMinutes: c.x,
+      KnowledgeGainPercent: c.y,
+      Mode: c.mode,
+    }));
+    downloadCSV(data, 'correlation_session_time_vs_gain');
+  };
+
+  const exportQuestionPerformanceCSV = () => {
+    if (!stats) return;
+    const data = [
+      ...stats.preTestQuestionAnalysis.map(q => ({
+        TestType: 'Pre-Test',
+        QuestionID: q.questionId,
+        QuestionText: q.questionText,
+        CorrectRate: q.correctRate,
+        TotalResponses: q.totalResponses,
+        HasCorrectAnswerSet: q.hasCorrectAnswer ? 'Yes' : 'No',
+      })),
+      ...stats.postTestQuestionAnalysis.map(q => ({
+        TestType: 'Post-Test',
+        QuestionID: q.questionId,
+        QuestionText: q.questionText,
+        CorrectRate: q.correctRate,
+        TotalResponses: q.totalResponses,
+        HasCorrectAnswerSet: q.hasCorrectAnswer ? 'Yes' : 'No',
+      })),
+    ];
+    downloadCSV(data, 'question_performance');
   };
 
   if (isLoading) {
@@ -744,9 +845,9 @@ const AdminOverview = () => {
 
   return (
     <div className="space-y-6">
-      {/* Filters Section */}
+      {/* Filters & Export Section */}
       <Card className="bg-slate-800/50 border-slate-700">
-        <CardContent className="pt-4">
+        <CardContent className="pt-4 space-y-4">
           <div className="flex flex-wrap gap-4 items-end">
             <DateRangeFilter
               startDate={startDate}
@@ -774,24 +875,20 @@ const AdminOverview = () => {
               </Select>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Export Actions */}
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardContent className="pt-4">
-          <div className="flex flex-wrap gap-3 items-center">
-            <span className="text-sm text-slate-400 mr-2">Export Data:</span>
-            <Button variant="outline" size="sm" onClick={exportComprehensiveCSV} className="gap-2 border-slate-600">
-              <FileSpreadsheet className="w-4 h-4" />
-              CSV (Sessions as Rows)
+          {/* Export Buttons */}
+          <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-slate-700">
+            <span className="text-xs text-slate-500 uppercase tracking-wider mr-2">Export:</span>
+            <Button variant="outline" size="sm" onClick={exportComprehensiveCSV} className="gap-2 border-slate-600 h-8 text-xs">
+              <FileSpreadsheet className="w-3 h-3" />
+              Full CSV
             </Button>
-            <Button variant="outline" size="sm" onClick={exportComprehensiveJSON} className="gap-2 border-slate-600">
-              <Download className="w-4 h-4" />
+            <Button variant="outline" size="sm" onClick={exportComprehensiveJSON} className="gap-2 border-slate-600 h-8 text-xs">
+              <Download className="w-3 h-3" />
               Full JSON
             </Button>
-            <Badge variant="secondary" className="ml-2">
-              {stats.rawSessions.length} sessions
+            <Badge variant="secondary" className="ml-auto">
+              {stats.rawSessions.length} sessions • {stats.knowledgeGain.length} with scores
             </Badge>
           </div>
         </CardContent>
@@ -814,199 +911,179 @@ const AdminOverview = () => {
         </div>
       )}
 
-      {/* Info banner */}
-      <div className="bg-blue-900/30 border border-blue-700/50 rounded-lg p-3 text-sm text-blue-200">
-        📊 Showing <strong>{statusFilter === 'completed' ? 'completed sessions only' : statusFilter === 'incomplete' ? 'incomplete sessions only' : 'all sessions'}</strong> 
-        {' '}({stats.totalCompleted} completed, {stats.totalIncomplete} incomplete) • Analyzing {stats.rawSessions.length} sessions
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Sessions Analyzed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.rawSessions.length}</div>
-            <p className="text-xs text-slate-500 mt-1">
-              {statusFilter === 'completed' ? 'completed studies' : statusFilter === 'incomplete' ? 'incomplete studies' : 'total studies'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Avg. Knowledge Gain</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white flex items-center gap-2">
-              {stats.knowledgeGain.length > 0 ? (
-                <>
-                  {stats.avgGain >= 0 ? '+' : ''}{stats.avgGain}%
-                  {stats.avgGain > 0 && <ArrowUp className="h-5 w-5 text-green-500" />}
-                  {stats.avgGain < 0 && <ArrowDown className="h-5 w-5 text-red-500" />}
-                </>
-              ) : (
-                <span className="text-slate-500">N/A</span>
-              )}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              {stats.knowledgeGain.length > 0 ? `based on ${stats.knowledgeGain.length} scored sessions` : 'no scored data yet'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Avg. Session Time</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.avgSessionDuration} min</div>
-            <p className="text-xs text-slate-500 mt-1">from start to completion</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Mode Distribution</CardTitle>
-            <BarChart3 className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xs space-y-1">
-              <div className="flex justify-between"><span className="text-blue-400">Text:</span><span className="text-white">{stats.textModeCompleted}</span></div>
-              <div className="flex justify-between"><span className="text-purple-400">Avatar:</span><span className="text-white">{stats.avatarModeCompleted}</span></div>
-              <div className="flex justify-between"><span className="text-cyan-400">Both:</span><span className="text-white">{stats.bothModesCompleted}</span></div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Knowledge Gain Section */}
-      <Card className="bg-slate-800 border-slate-700">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-green-500" />
-            <CardTitle className="text-white">Knowledge Gain Analysis</CardTitle>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="w-4 h-4 text-slate-500 cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-sm">
-                  <p className="font-medium mb-1">How Knowledge Gain is Calculated:</p>
-                  <p className="text-xs">Post-Test Score minus Pre-Test Score. A positive value indicates learning improvement. Only sessions with BOTH pre-test AND post-test scored responses are included.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+      {/* Summary Stats - Combined */}
+      <Card className="bg-gradient-to-r from-slate-800 to-slate-800/80 border-slate-700">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-white text-lg flex items-center gap-2">
+              <BarChart2 className="w-5 h-5 text-primary" />
+              Summary Statistics
+            </CardTitle>
+            <Badge variant="outline" className="text-slate-400">
+              {statusFilter === 'completed' ? 'Completed sessions' : statusFilter === 'incomplete' ? 'Incomplete sessions' : 'All sessions'}
+            </Badge>
           </div>
           <CardDescription className="text-slate-400">
-            Pre-test vs Post-test comparison • Based on {stats.knowledgeGain.length} sessions with complete scored data
+            Key metrics for {stats.rawSessions.length} sessions in selected range
+            {stats.knowledgeGain.length < stats.rawSessions.length && (
+              <span className="text-amber-400"> • {stats.rawSessions.length - stats.knowledgeGain.length} sessions missing score data</span>
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+              <div className="text-xs text-slate-400 mb-1">Sessions</div>
+              <div className="text-2xl font-bold text-white">{stats.rawSessions.length}</div>
+              <div className="text-[10px] text-slate-500 mt-1">{statusFilter}</div>
+            </div>
+            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+              <div className="text-xs text-slate-400 mb-1">Avg Pre-Test</div>
+              <div className="text-2xl font-bold text-red-400">{stats.avgPreScore || 0}%</div>
+              <div className="text-[10px] text-slate-500 mt-1">n={stats.knowledgeGain.length}</div>
+            </div>
+            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+              <div className="text-xs text-slate-400 mb-1">Avg Post-Test</div>
+              <div className="text-2xl font-bold text-green-400">{stats.avgPostScore || 0}%</div>
+              <div className="text-[10px] text-slate-500 mt-1">n={stats.knowledgeGain.length}</div>
+            </div>
+            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+              <div className="text-xs text-slate-400 mb-1">Avg Gain</div>
+              <div className={`text-2xl font-bold ${stats.avgGain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {stats.avgGain >= 0 ? '+' : ''}{stats.avgGain || 0}%
+              </div>
+              <div className="text-[10px] text-slate-500 mt-1">learning effect</div>
+            </div>
+            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+              <div className="text-xs text-slate-400 mb-1">Avg Session</div>
+              <div className="text-2xl font-bold text-yellow-400">{stats.avgSessionDuration} min</div>
+              <div className="text-[10px] text-slate-500 mt-1">duration</div>
+            </div>
+            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+              <div className="text-xs text-slate-400 mb-1">Avg Avatar</div>
+              <div className="text-2xl font-bold text-purple-400">{Math.round(stats.avgAvatarTime / 60)} min</div>
+              <div className="text-[10px] text-slate-500 mt-1">interaction</div>
+            </div>
+            <div className="bg-slate-700/50 rounded-lg p-3">
+              <div className="text-xs text-slate-400 mb-2">Mode Distribution</div>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between"><span className="text-blue-400">Text:</span><span>{stats.textModeCompleted}</span></div>
+                <div className="flex justify-between"><span className="text-purple-400">Avatar:</span><span>{stats.avatarModeCompleted}</span></div>
+                <div className="flex justify-between"><span className="text-cyan-400">Both:</span><span>{stats.bothModesCompleted}</span></div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Knowledge Gain Analysis */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-white flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+                Knowledge Gain Analysis
+              </CardTitle>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-xs">Post-Test Score minus Pre-Test Score. Only sessions with BOTH pre-test AND post-test scored responses are included. If you have {stats.rawSessions.length} sessions but only {stats.knowledgeGain.length} with scores, some sessions are missing pre-test or post-test answers, or questions don't have correct answers set.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <ExportButton onClick={exportKnowledgeGainCSV} label="CSV" />
+          </div>
+          <CardDescription className="text-slate-400">
+            Based on {stats.knowledgeGain.length} of {stats.rawSessions.length} sessions with complete scored data
           </CardDescription>
         </CardHeader>
         <CardContent>
           {stats.knowledgeGain.length > 0 ? (
             <div className="space-y-6">
-              {/* Overall Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-slate-700/50 rounded-lg p-4 text-center">
-                  <div className="text-sm text-slate-400 mb-1">Overall Avg. Pre-Test</div>
-                  <div className="text-2xl font-bold text-red-400">{stats.avgPreScore}%</div>
-                </div>
-                <div className="bg-slate-700/50 rounded-lg p-4 text-center">
-                  <div className="text-sm text-slate-400 mb-1">Overall Avg. Post-Test</div>
-                  <div className="text-2xl font-bold text-green-400">{stats.avgPostScore}%</div>
-                </div>
-                <div className="bg-slate-700/50 rounded-lg p-4 text-center">
-                  <div className="text-sm text-slate-400 mb-1">Overall Avg. Gain</div>
-                  <div className="text-2xl font-bold text-white">{stats.avgGain >= 0 ? '+' : ''}{stats.avgGain}%</div>
-                </div>
-              </div>
-
               {/* Mode-specific breakdown */}
-              <div className="border-t border-slate-700 pt-4">
-                <h4 className="text-sm font-medium text-slate-300 mb-4">Knowledge Gain by Learning Mode</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Text Only */}
-                  <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
-                    <div className="text-sm font-medium text-blue-400 mb-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-400" />
-                        Text Only
-                      </div>
-                      <span className="text-slate-500 text-xs">n={stats.textModeCompleted}</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Text Only */}
+                <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
+                  <div className="text-sm font-medium text-blue-400 mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-400" />
+                      Text Only
                     </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Pre-Test:</span>
-                        <span className="text-red-400">{stats.textModePreScore}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Post-Test:</span>
-                        <span className="text-green-400">{stats.textModePostScore}%</span>
-                      </div>
-                      <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
-                        <span className="text-slate-300 font-medium">Gain:</span>
-                        <span className={`font-bold ${stats.textModeGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {stats.textModeGain >= 0 ? '+' : ''}{stats.textModeGain}%
-                        </span>
-                      </div>
+                    <span className="text-slate-500 text-xs">n={stats.knowledgeGain.filter(k => k.mode === 'text').length}</span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Pre-Test:</span>
+                      <span className="text-red-400">{stats.textModePreScore}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Post-Test:</span>
+                      <span className="text-green-400">{stats.textModePostScore}%</span>
+                    </div>
+                    <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
+                      <span className="text-slate-300 font-medium">Gain:</span>
+                      <span className={`font-bold ${stats.textModeGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {stats.textModeGain >= 0 ? '+' : ''}{stats.textModeGain}%
+                      </span>
                     </div>
                   </div>
+                </div>
 
-                  {/* Avatar Only */}
-                  <div className="bg-purple-900/20 border border-purple-700/50 rounded-lg p-4">
-                    <div className="text-sm font-medium text-purple-400 mb-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-purple-400" />
-                        Avatar Only
-                      </div>
-                      <span className="text-slate-500 text-xs">n={stats.avatarModeCompleted}</span>
+                {/* Avatar Only */}
+                <div className="bg-purple-900/20 border border-purple-700/50 rounded-lg p-4">
+                  <div className="text-sm font-medium text-purple-400 mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-purple-400" />
+                      Avatar Only
                     </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Pre-Test:</span>
-                        <span className="text-red-400">{stats.avatarModePreScore}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Post-Test:</span>
-                        <span className="text-green-400">{stats.avatarModePostScore}%</span>
-                      </div>
-                      <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
-                        <span className="text-slate-300 font-medium">Gain:</span>
-                        <span className={`font-bold ${stats.avatarModeGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {stats.avatarModeGain >= 0 ? '+' : ''}{stats.avatarModeGain}%
-                        </span>
-                      </div>
+                    <span className="text-slate-500 text-xs">n={stats.knowledgeGain.filter(k => k.mode === 'avatar').length}</span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Pre-Test:</span>
+                      <span className="text-red-400">{stats.avatarModePreScore}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Post-Test:</span>
+                      <span className="text-green-400">{stats.avatarModePostScore}%</span>
+                    </div>
+                    <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
+                      <span className="text-slate-300 font-medium">Gain:</span>
+                      <span className={`font-bold ${stats.avatarModeGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {stats.avatarModeGain >= 0 ? '+' : ''}{stats.avatarModeGain}%
+                      </span>
                     </div>
                   </div>
+                </div>
 
-                  {/* Both Modes */}
-                  <div className="bg-cyan-900/20 border border-cyan-700/50 rounded-lg p-4">
-                    <div className="text-sm font-medium text-cyan-400 mb-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-cyan-400" />
-                        Both Modes
-                      </div>
-                      <span className="text-slate-500 text-xs">n={stats.bothModesCompleted}</span>
+                {/* Both Modes */}
+                <div className="bg-cyan-900/20 border border-cyan-700/50 rounded-lg p-4">
+                  <div className="text-sm font-medium text-cyan-400 mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-cyan-400" />
+                      Both Modes
                     </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Pre-Test:</span>
-                        <span className="text-red-400">{stats.bothModesPreScore}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Post-Test:</span>
-                        <span className="text-green-400">{stats.bothModesPostScore}%</span>
-                      </div>
-                      <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
-                        <span className="text-slate-300 font-medium">Gain:</span>
-                        <span className={`font-bold ${stats.bothModesGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {stats.bothModesGain >= 0 ? '+' : ''}{stats.bothModesGain}%
-                        </span>
-                      </div>
+                    <span className="text-slate-500 text-xs">n={stats.knowledgeGain.filter(k => k.mode === 'both').length}</span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Pre-Test:</span>
+                      <span className="text-red-400">{stats.bothModesPreScore}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Post-Test:</span>
+                      <span className="text-green-400">{stats.bothModesPostScore}%</span>
+                    </div>
+                    <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
+                      <span className="text-slate-300 font-medium">Gain:</span>
+                      <span className={`font-bold ${stats.bothModesGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {stats.bothModesGain >= 0 ? '+' : ''}{stats.bothModesGain}%
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1015,17 +1092,17 @@ const AdminOverview = () => {
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="text-sm font-medium text-slate-300 mb-3">Pre-Test vs Post-Test Scores</h4>
-                  <ResponsiveContainer width="100%" height={200}>
+                  <h4 className="text-sm font-medium text-slate-300 mb-3">Pre-Test vs Post-Test (Overall)</h4>
+                  <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={prePostComparisonData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                       <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
                       <YAxis stroke="#9ca3af" fontSize={12} domain={[0, 100]} />
                       <ChartTooltip 
                         contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                        formatter={(value: number) => [`${value}%`, 'Score']}
+                        formatter={(value: number) => [`${value}%`, 'Avg Score']}
                       />
-                      <Bar dataKey="score" fill="#3b82f6">
+                      <Bar dataKey="score">
                         {prePostComparisonData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
@@ -1035,20 +1112,17 @@ const AdminOverview = () => {
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-slate-300 mb-3">Knowledge Gain by Mode</h4>
-                  <ResponsiveContainer width="100%" height={200}>
+                  <h4 className="text-sm font-medium text-slate-300 mb-3">Pre vs Post by Mode</h4>
+                  <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={modeGainData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
-                      <YAxis stroke="#9ca3af" fontSize={12} />
+                      <XAxis dataKey="name" stroke="#9ca3af" fontSize={11} />
+                      <YAxis stroke="#9ca3af" fontSize={12} domain={[0, 100]} />
                       <ChartTooltip 
                         contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                        formatter={(value: number, name: string) => {
-                          if (name === 'gain') return [`${value >= 0 ? '+' : ''}${value}%`, 'Gain'];
-                          return [`${value}%`, name];
-                        }}
+                        formatter={(value: number, name: string) => [`${value}%`, name]}
                       />
-                      <Legend />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
                       <Bar dataKey="preScore" name="Pre-Test" fill="#ef4444" />
                       <Bar dataKey="postScore" name="Post-Test" fill="#10b981" />
                     </BarChart>
@@ -1057,7 +1131,7 @@ const AdminOverview = () => {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-[200px] text-slate-500">
+            <div className="flex flex-col items-center justify-center h-[150px] text-slate-500">
               <AlertTriangle className="w-8 h-8 mb-2 text-amber-500" />
               <p>No knowledge gain data available</p>
               <p className="text-xs mt-1">Requires both pre-test and post-test questions to have correct answers set</p>
@@ -1066,65 +1140,53 @@ const AdminOverview = () => {
         </CardContent>
       </Card>
 
-      {/* Question Performance - Enhanced Visual Display */}
+      {/* Question Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CardTitle className="text-white text-sm">Pre-Test Question Performance</CardTitle>
+                <CardTitle className="text-white text-sm">Pre-Test Performance</CardTitle>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Info className="w-4 h-4 text-slate-500 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p>Shows how many participants answered each pre-test question correctly BEFORE learning. Low scores indicate knowledge gaps that the learning should address.</p>
+                      <p className="text-xs">% of participants who answered correctly BEFORE learning. Low scores = knowledge gaps.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Badge variant="outline" className="text-xs">
-                Avg: {stats.avgPreScore}%
-              </Badge>
+              <ExportButton onClick={exportQuestionPerformanceCSV} label="CSV" size="xs" />
             </div>
-            <CardDescription className="text-slate-400 text-xs">
-              % of participants who answered correctly • n = number of responses
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {stats.preTestQuestionAnalysis.length > 0 ? (
-              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                 {stats.preTestQuestionAnalysis.map(q => (
                   <div key={q.questionId} className="bg-slate-700/30 rounded-lg p-3">
-                    <div className="text-sm text-slate-200 mb-2 line-clamp-2" title={q.questionText}>
+                    <div className="text-xs text-slate-300 mb-2 line-clamp-2" title={q.questionText}>
                       {q.questionText}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {q.hasCorrectAnswer ? (
-                          <>
-                            <div className="w-24 h-2 bg-slate-600 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full ${q.correctRate >= 50 ? 'bg-green-500' : 'bg-red-500'}`}
-                                style={{ width: `${q.correctRate}%` }}
-                              />
-                            </div>
-                            <span className={`text-sm font-medium ${q.correctRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
-                              {q.correctRate}%
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-amber-400 text-xs bg-amber-900/30 px-2 py-1 rounded">⚠ No correct answer set</span>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-3">
+                      {q.hasCorrectAnswer ? (
+                        <>
+                          <Progress value={q.correctRate} className="h-2 flex-1" />
+                          <span className={`text-sm font-medium min-w-[40px] text-right ${q.correctRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                            {q.correctRate}%
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-amber-400 text-xs">⚠ No correct answer set</span>
+                      )}
                       <span className="text-slate-500 text-xs">n={q.totalResponses}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 text-center py-8">No pre-test data available</p>
+              <p className="text-slate-500 text-center py-8 text-sm">No pre-test data</p>
             )}
           </CardContent>
         </Card>
@@ -1133,348 +1195,191 @@ const AdminOverview = () => {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CardTitle className="text-white text-sm">Post-Test Question Performance</CardTitle>
+                <CardTitle className="text-white text-sm">Post-Test Performance</CardTitle>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Info className="w-4 h-4 text-slate-500 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p>Shows how many participants answered each knowledge question correctly AFTER learning. Compare with pre-test to measure learning effectiveness.</p>
+                      <p className="text-xs">% of participants who answered correctly AFTER learning. Compare with pre-test to measure effectiveness.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Badge variant="outline" className="text-xs">
-                Avg: {stats.avgPostScore}%
-              </Badge>
             </div>
-            <CardDescription className="text-slate-400 text-xs">
-              % of participants who answered correctly • Only knowledge-check questions
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {stats.postTestQuestionAnalysis.length > 0 ? (
-              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                 {stats.postTestQuestionAnalysis.map(q => (
                   <div key={q.questionId} className="bg-slate-700/30 rounded-lg p-3">
-                    <div className="text-sm text-slate-200 mb-2 line-clamp-2" title={q.questionText}>
+                    <div className="text-xs text-slate-300 mb-2 line-clamp-2" title={q.questionText}>
                       {q.questionText}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {q.hasCorrectAnswer ? (
-                          <>
-                            <div className="w-24 h-2 bg-slate-600 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full ${q.correctRate >= 50 ? 'bg-green-500' : 'bg-red-500'}`}
-                                style={{ width: `${q.correctRate}%` }}
-                              />
-                            </div>
-                            <span className={`text-sm font-medium ${q.correctRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
-                              {q.correctRate}%
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-amber-400 text-xs bg-amber-900/30 px-2 py-1 rounded">⚠ No correct answer set</span>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-3">
+                      {q.hasCorrectAnswer ? (
+                        <>
+                          <Progress value={q.correctRate} className="h-2 flex-1" />
+                          <span className={`text-sm font-medium min-w-[40px] text-right ${q.correctRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                            {q.correctRate}%
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-amber-400 text-xs">⚠ No correct answer set</span>
+                      )}
                       <span className="text-slate-500 text-xs">n={q.totalResponses}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 text-center py-8">No post-test knowledge data available</p>
+              <p className="text-slate-500 text-center py-8 text-sm">No post-test data</p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Avatar Time Tracking */}
+      {/* Demographics */}
       <Card className="bg-slate-800 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-white">Avatar Interaction Time</CardTitle>
-          <CardDescription className="text-slate-400">
-            Time spent with avatar per slide ({stats.avatarTimeData.length} records from {Object.keys(stats.avatarTimeBySlide).length > 0 ? stats.avatarTimeBySlide.length : '0'} slides)
-          </CardDescription>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-white">Demographic Distribution</CardTitle>
+            <ExportButton onClick={exportDemographicsCSV} label="CSV" />
+          </div>
+          <CardDescription className="text-slate-400">Participant background data</CardDescription>
         </CardHeader>
         <CardContent>
-          {stats.avatarTimeBySlide.length > 0 ? (
-            <div className="space-y-4">
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={stats.avatarTimeBySlide}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="slide" stroke="#9ca3af" fontSize={10} angle={-20} textAnchor="end" height={60} />
-                  <YAxis stroke="#9ca3af" fontSize={12} label={{ value: 'Avg seconds', angle: -90, position: 'insideLeft', fill: '#9ca3af' }} />
-                  <ChartTooltip 
-                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                    formatter={(value: number, name: string) => {
-                      if (name === 'avgTime') return [`${value}s`, 'Avg Time'];
-                      if (name === 'count') return [value, 'Sessions'];
-                      return [value, name];
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="avgTime" name="Avg Time (s)" fill="#8b5cf6" />
-                </BarChart>
-              </ResponsiveContainer>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div className="bg-slate-700/50 rounded p-3">
-                  <div className="text-slate-400">Total Time</div>
-                  <div className="text-xl font-bold text-purple-400">{Math.round(stats.totalAvatarTime / 60)} min</div>
-                </div>
-                <div className="bg-slate-700/50 rounded p-3">
-                  <div className="text-slate-400">Avg per Session</div>
-                  <div className="text-xl font-bold text-purple-400">{Math.round(stats.avgAvatarTime / 60)} min</div>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Age */}
+            <div>
+              <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+                Age Distribution
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3 h-3 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Participant age groups (sorted youngest to oldest)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </h4>
+              {stats.demographicBreakdown.length > 0 ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={stats.demographicBreakdown} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                    <XAxis type="number" stroke="#9ca3af" fontSize={11} />
+                    <YAxis type="category" dataKey="name" stroke="#9ca3af" fontSize={10} width={50} />
+                    <ChartTooltip 
+                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                      formatter={(value: number) => [`${value}`, 'Count']}
+                    />
+                    <Bar dataKey="value" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[180px] text-slate-500 text-sm">No data</div>
+              )}
             </div>
-          ) : (
-            <div className="flex items-center justify-center h-[250px] text-slate-500">
-              No avatar interaction data available yet
+
+            {/* Education */}
+            <div>
+              <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+                Education Level
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3 h-3 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Highest education level completed</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </h4>
+              {stats.educationBreakdown.length > 0 ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={stats.educationBreakdown} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                    <XAxis type="number" stroke="#9ca3af" fontSize={11} />
+                    <YAxis type="category" dataKey="name" stroke="#9ca3af" fontSize={9} width={70} tick={{ fontSize: 9 }} />
+                    <ChartTooltip 
+                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                      formatter={(value: number) => [`${value}`, 'Count']}
+                    />
+                    <Bar dataKey="value" fill="#10b981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[180px] text-slate-500 text-sm">No data</div>
+              )}
             </div>
-          )}
+
+            {/* Digital Experience */}
+            <div>
+              <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+                Digital Experience
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3 h-3 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Self-reported digital/AI experience (1=None, 5=Extensive)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </h4>
+              {stats.experienceBreakdown.length > 0 ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={stats.experienceBreakdown} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                    <XAxis type="number" stroke="#9ca3af" fontSize={11} />
+                    <YAxis type="category" dataKey="name" stroke="#9ca3af" fontSize={8} width={80} tick={{ fontSize: 8 }} />
+                    <ChartTooltip 
+                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                      formatter={(value: number) => [`${value}`, 'Count']}
+                    />
+                    <Bar dataKey="value" fill="#f59e0b" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[180px] text-slate-500 text-sm">No data</div>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Correlations - Avatar Time vs Knowledge Gain */}
-      {stats.correlations.avatarTimeVsGain.length > 0 && (
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-white">Correlation: Avatar Interaction Time vs Knowledge Gain</CardTitle>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-slate-500 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-sm">
-                    <p className="font-medium mb-1">Avatar Time Correlation</p>
-                    <p className="text-xs">Shows relationship between time spent interacting with the avatar tutor and learning improvement. Only includes sessions where participants used Avatar Mode and have tracked interaction time.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <CardDescription className="text-slate-400">
-              Each dot = 1 avatar session • Total: {stats.correlations.avatarTimeVsGain.length} sessions with avatar tracking
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis 
-                  type="number" 
-                  dataKey="x" 
-                  name="Avatar Time" 
-                  unit=" min" 
-                  stroke="#9ca3af"
-                  label={{ value: 'Avatar Time (min)', position: 'bottom', fill: '#9ca3af' }}
-                />
-                <YAxis 
-                  type="number" 
-                  dataKey="y" 
-                  name="Knowledge Gain" 
-                  unit="%" 
-                  stroke="#9ca3af"
-                  label={{ value: 'Knowledge Gain (%)', angle: -90, position: 'insideLeft', fill: '#9ca3af' }}
-                />
-                <ZAxis range={[60, 60]} />
-                <ChartTooltip 
-                  cursor={{ strokeDasharray: '3 3' }}
-                  contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                  formatter={(value: number, name: string) => {
-                    if (name === 'Avatar Time') return [`${value} min`, name];
-                    if (name === 'Knowledge Gain') return [`${value}%`, name];
-                    return [value, name];
-                  }}
-                />
-                <Scatter 
-                  name="Sessions" 
-                  data={stats.correlations.avatarTimeVsGain} 
-                  fill="#8b5cf6"
-                />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white">Sessions Over Time</CardTitle>
-            <CardDescription className="text-slate-400">Daily {statusFilter === 'completed' ? 'completed' : ''} studies</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={stats.sessionsPerDay}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
-                <YAxis stroke="#9ca3af" fontSize={12} />
-                <ChartTooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                <Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981' }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white">Mode Distribution</CardTitle>
-            <CardDescription className="text-slate-400">{statusFilter === 'completed' ? 'Completed' : 'All'} sessions by learning mode</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={stats.modeComparison}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
-                <YAxis stroke="#9ca3af" fontSize={12} />
-                <ChartTooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                <Bar dataKey="count" name="Sessions" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Demographics Charts - Using Bar Charts for Better Label Visibility */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-white text-sm">Age Distribution</CardTitle>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-slate-500 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>Distribution of participant ages grouped into ranges. Helps assess sample representativeness.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {stats.demographicBreakdown.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={stats.demographicBreakdown} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
-                  <XAxis type="number" stroke="#9ca3af" fontSize={11} />
-                  <YAxis type="category" dataKey="name" stroke="#9ca3af" fontSize={11} width={60} />
-                  <ChartTooltip 
-                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                    formatter={(value: number) => [`${value} participants`, 'Count']}
-                  />
-                  <Bar dataKey="value" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-[200px] text-slate-500">No data</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-white text-sm">Education Level</CardTitle>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-slate-500 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>Highest education level reported by participants. Important for analyzing baseline knowledge.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {stats.educationBreakdown.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={stats.educationBreakdown} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
-                  <XAxis type="number" stroke="#9ca3af" fontSize={11} />
-                  <YAxis type="category" dataKey="name" stroke="#9ca3af" fontSize={10} width={80} tick={{ fontSize: 10 }} />
-                  <ChartTooltip 
-                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                    formatter={(value: number) => [`${value} participants`, 'Count']}
-                  />
-                  <Bar dataKey="value" fill="#10b981" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-[200px] text-slate-500">No data</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-white text-sm">Digital Experience</CardTitle>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-slate-500 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>Self-reported digital/AI experience level. Higher levels may correlate with better baseline performance.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {stats.experienceBreakdown.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={stats.experienceBreakdown} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
-                  <XAxis type="number" stroke="#9ca3af" fontSize={11} />
-                  <YAxis type="category" dataKey="name" stroke="#9ca3af" fontSize={10} width={100} tick={{ fontSize: 9 }} />
-                  <ChartTooltip 
-                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                    formatter={(value: number) => [`${value} participants`, 'Count']}
-                  />
-                  <Bar dataKey="value" fill="#f59e0b" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-[200px] text-slate-500">No data</div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Session Time vs Knowledge Gain Correlation - Shows ALL sessions */}
+      {/* Correlation: Session Time vs Knowledge Gain */}
       {stats.correlations.sessionTimeVsGain.length > 0 && (
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-white">Correlation: Session Duration vs Knowledge Gain</CardTitle>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-slate-500 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>Each dot represents one session. Shows relationship between total study time and learning improvement. Includes ALL {stats.correlations.sessionTimeVsGain.length} sessions with scored data.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-white">Session Duration vs Knowledge Gain</CardTitle>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">Each dot = 1 session. Shows relationship between total study time and learning improvement. Positive correlation would suggest longer study = more learning.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <ExportButton onClick={exportCorrelationCSV} label="CSV" />
             </div>
             <CardDescription className="text-slate-400">
-              Each dot = 1 session • Total: {stats.correlations.sessionTimeVsGain.length} sessions with knowledge gain data
+              {stats.correlations.sessionTimeVsGain.length} sessions with scored data
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <ScatterChart margin={{ top: 20, right: 30, bottom: 40, left: 40 }}>
+            <ResponsiveContainer width="100%" height={280}>
+              <ScatterChart margin={{ top: 20, right: 30, bottom: 40, left: 50 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis 
                   type="number" 
@@ -1482,7 +1387,7 @@ const AdminOverview = () => {
                   name="Session Time" 
                   stroke="#9ca3af"
                   fontSize={11}
-                  label={{ value: 'Session Duration (minutes)', position: 'bottom', offset: 20, fill: '#9ca3af', fontSize: 12 }}
+                  label={{ value: 'Session Duration (minutes)', position: 'bottom', offset: 20, fill: '#9ca3af', fontSize: 11 }}
                 />
                 <YAxis 
                   type="number" 
@@ -1490,9 +1395,9 @@ const AdminOverview = () => {
                   name="Knowledge Gain" 
                   stroke="#9ca3af"
                   fontSize={11}
-                  label={{ value: 'Knowledge Gain (%)', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 12 }}
+                  label={{ value: 'Knowledge Gain (%)', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 11, dx: -10 }}
                 />
-                <ZAxis range={[80, 80]} />
+                <ZAxis range={[60, 60]} />
                 <ChartTooltip 
                   cursor={{ strokeDasharray: '3 3' }}
                   contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
@@ -1513,43 +1418,89 @@ const AdminOverview = () => {
         </Card>
       )}
 
-      {/* Summary */}
-      <Card className="bg-slate-800 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-white">Summary Statistics</CardTitle>
-          <CardDescription className="text-slate-400">Key metrics for {statusFilter} participants</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400">Sessions Analyzed</div>
-              <div className="text-xl font-bold text-white">{stats.rawSessions.length}</div>
+      {/* Avatar Time by Slide */}
+      {stats.avatarTimeBySlide.length > 0 && (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-white">Avatar Interaction by Slide</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Avg time participants spent with avatar on each slide
+                </CardDescription>
+              </div>
+              <ExportButton 
+                onClick={() => downloadCSV(stats.avatarTimeBySlide.map(s => ({ Slide: s.slide, AvgTimeSeconds: s.avgTime, TotalTimeSeconds: s.totalTime, SessionCount: s.count })), 'avatar_time_by_slide')} 
+                label="CSV" 
+              />
             </div>
-            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400">Avg Pre-Test</div>
-              <div className="text-xl font-bold text-red-400">{stats.avgPreScore || 'N/A'}%</div>
-            </div>
-            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400">Avg Post-Test</div>
-              <div className="text-xl font-bold text-green-400">{stats.avgPostScore || 'N/A'}%</div>
-            </div>
-            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400">Avg Gain</div>
-              <div className={`text-xl font-bold ${stats.avgGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {stats.knowledgeGain.length > 0 ? `${stats.avgGain >= 0 ? '+' : ''}${stats.avgGain}%` : 'N/A'}
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={stats.avatarTimeBySlide}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="slide" stroke="#9ca3af" fontSize={9} angle={-15} textAnchor="end" height={50} />
+                <YAxis stroke="#9ca3af" fontSize={11} label={{ value: 'Avg seconds', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 10 }} />
+                <ChartTooltip 
+                  contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                  formatter={(value: number, name: string) => {
+                    if (name === 'avgTime') return [`${value}s`, 'Avg Time'];
+                    if (name === 'count') return [value, 'Sessions'];
+                    return [value, name];
+                  }}
+                />
+                <Bar dataKey="avgTime" name="Avg Time (s)" fill="#8b5cf6" />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
+              <div className="bg-slate-700/50 rounded p-2 text-center">
+                <div className="text-slate-400 text-xs">Total Time</div>
+                <div className="text-white font-medium">{Math.round(stats.totalAvatarTime / 60)} min</div>
+              </div>
+              <div className="bg-slate-700/50 rounded p-2 text-center">
+                <div className="text-slate-400 text-xs">Avg per Session</div>
+                <div className="text-white font-medium">{Math.round(stats.avgAvatarTime / 60)} min</div>
+              </div>
+              <div className="bg-slate-700/50 rounded p-2 text-center">
+                <div className="text-slate-400 text-xs">Sessions Tracked</div>
+                <div className="text-white font-medium">{Object.keys(stats.avatarTimeBySlide).length > 0 ? new Set(stats.avatarTimeData.map(t => t.session_id)).size : 0}</div>
               </div>
             </div>
-            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400">Avg Session Time</div>
-              <div className="text-xl font-bold text-yellow-400">{stats.avgSessionDuration} min</div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sessions per Day */}
+      {stats.sessionsPerDay.length > 0 && (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-white">Sessions Over Time</CardTitle>
+                <CardDescription className="text-slate-400">Daily session count</CardDescription>
+              </div>
+              <ExportButton 
+                onClick={() => downloadCSV(stats.sessionsPerDay.map(s => ({ Date: s.date, SessionCount: s.count })), 'sessions_per_day')} 
+                label="CSV" 
+              />
             </div>
-            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400">Avg Avatar Time</div>
-              <div className="text-xl font-bold text-purple-400">{Math.round(stats.avgAvatarTime / 60)} min</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={stats.sessionsPerDay}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="date" stroke="#9ca3af" fontSize={11} />
+                <YAxis stroke="#9ca3af" fontSize={11} allowDecimals={false} />
+                <ChartTooltip 
+                  contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                  formatter={(value: number) => [value, 'Sessions']}
+                />
+                <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

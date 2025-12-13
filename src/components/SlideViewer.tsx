@@ -38,19 +38,28 @@ export const SlideViewer = ({
   };
 
   return (
-    <div className={cn("flex flex-col h-full bg-gradient-to-br from-background via-background to-primary/5", className)}>
+    <div className={cn("flex flex-col h-full bg-background", className)}>
       {/* Slide Content - PowerPoint Style */}
       <div className={cn(
         "flex-1 overflow-y-auto flex items-center justify-center",
         compact ? "p-4" : "p-6 md:p-10"
       )}>
         <div className="w-full max-w-4xl mx-auto">
-          {/* Slide Card */}
-          <div className="bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
+          {/* Slide Card - Distinctive presentation look */}
+          <div 
+            className="bg-slide border-2 border-slide-border rounded-2xl overflow-hidden relative"
+            style={{ boxShadow: 'var(--slide-shadow)' }}
+          >
+            {/* Slide corner decorations for presentation feel */}
+            <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-primary/30 rounded-tl-2xl pointer-events-none" />
+            <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-primary/30 rounded-tr-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-primary/30 rounded-bl-2xl pointer-events-none" />
+            <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-primary/30 rounded-br-2xl pointer-events-none" />
+            
             {/* Slide Header */}
-            <div className="bg-gradient-to-r from-primary/20 via-primary/10 to-secondary/20 px-8 py-6 border-b border-border">
+            <div className="bg-gradient-to-r from-primary/30 via-primary/15 to-accent/20 px-8 py-6 border-b-2 border-slide-border">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center border border-primary/50">
                   <span className="text-lg font-bold text-primary">{currentIndex + 1}</span>
                 </div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
@@ -82,7 +91,7 @@ export const SlideViewer = ({
 
               {/* Key Points - Highlighted Box (at the end) */}
               {currentSlide.keyPoints.length > 0 && (
-                <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-6 border border-primary/20">
+                <div className="bg-gradient-to-r from-primary/15 to-accent/15 rounded-xl p-6 border-2 border-primary/30">
                   <div className="flex items-center gap-2 mb-4">
                     <Lightbulb className="w-5 h-5 text-primary" />
                     <h3 className="font-semibold text-primary">Key Takeaways</h3>
@@ -90,7 +99,7 @@ export const SlideViewer = ({
                   <ul className="grid gap-3">
                     {currentSlide.keyPoints.map((point, i) => (
                       <li key={i} className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="w-6 h-6 rounded-full bg-primary/30 flex items-center justify-center flex-shrink-0 mt-0.5 border border-primary/50">
                           <span className="text-xs font-bold text-primary">{i + 1}</span>
                         </div>
                         <span className="text-foreground">{point}</span>

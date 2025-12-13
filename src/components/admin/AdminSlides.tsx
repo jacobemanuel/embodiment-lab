@@ -496,6 +496,24 @@ const AdminSlides = () => {
         </CardContent>
       </Card>
 
+      {/* Slide Visual Style Info */}
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-3">
+            <BookOpen className="w-5 h-5 text-cyan-400 mt-0.5" />
+            <div>
+              <p className="text-slate-200 font-medium">Slide Presentation Style</p>
+              <p className="text-slate-400 text-sm mt-1">
+                Slides are displayed with a distinctive <strong className="text-cyan-400">presentation-style background</strong> that 
+                visually separates them from the rest of the page. Each slide has corner accents, a gradient header, 
+                and an elevated shadow effect to create a PowerPoint-like feel. Content uses Markdown formatting 
+                (headers, lists, tables, code blocks) which is automatically styled for best presentation.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Main Card */}
       <Card className="bg-slate-800 border-slate-700">
         <CardHeader className="flex flex-row items-center justify-between">

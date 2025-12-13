@@ -47,6 +47,10 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        slide: {
+          DEFAULT: "hsl(var(--slide-bg))",
+          border: "hsl(var(--slide-border))",
+        },
         ai: {
           primary: "hsl(var(--ai-primary))",
           secondary: "hsl(var(--ai-secondary))",

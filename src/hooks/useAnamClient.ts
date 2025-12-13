@@ -161,17 +161,13 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       // Stream to video element
       console.log('Starting stream to video element:', videoElementId);
       await client.streamToVideoElement(videoElementId);
-      console.log('Stream started successfully');
-
-      // Check initial audio state
-      const audioState = client.getInputAudioState();
-      console.log('Initial audio state:', audioState);
+      console.log('Stream started successfully, muting microphone by default');
 
       // IMPORTANT: microphone OFF by default – user must press the button to talk
-      if (!audioState.isMuted) {
-        console.log('Muting microphone by default');
+      try {
         client.muteInputAudio();
-        console.log('Microphone muted, state:', client.getInputAudioState());
+      } catch (muteError) {
+        console.error('Error muting input audio on init:', muteError);
       }
 
     } catch (error) {
@@ -213,12 +209,9 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   const startListening = useCallback(() => {
     if (clientRef.current && state.isConnected) {
       try {
-        const beforeState = clientRef.current.getInputAudioState();
-        console.log('Before unmute, audio state:', beforeState);
-        
         // Enable audio input - user can now speak
-        const newState = clientRef.current.unmuteInputAudio();
-        console.log('Started listening - microphone enabled, new state:', newState);
+        clientRef.current.unmuteInputAudio();
+        console.log('Started listening - microphone enabled');
       } catch (error) {
         console.error('Error starting listening:', error);
       }
@@ -234,12 +227,9 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   const stopListening = useCallback(() => {
     if (clientRef.current && state.isConnected) {
       try {
-        const beforeState = clientRef.current.getInputAudioState();
-        console.log('Before mute, audio state:', beforeState);
-        
         // Disable audio input
-        const newState = clientRef.current.muteInputAudio();
-        console.log('Stopped listening - microphone disabled, new state:', newState);
+        clientRef.current.muteInputAudio();
+        console.log('Stopped listening - microphone disabled');
       } catch (error) {
         console.error('Error stopping listening:', error);
       }

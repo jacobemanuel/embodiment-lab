@@ -22,6 +22,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   const userVideoRef = useRef<HTMLVideoElement>(null);
   const userStreamRef = useRef<MediaStream | null>(null);
   const prevSlideRef = useRef<string>(currentSlide.id);
+  const hasAutoStartedCameraRef = useRef(false);
 
   const {
     isConnected,
@@ -64,7 +65,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   // Auto-start user camera once avatar is connected (to match mockup UX)
   useEffect(() => {
     const startCamera = async () => {
-      if (!isConnected || isCameraOn) return;
+      if (!isConnected || isCameraOn || hasAutoStartedCameraRef.current) return;
       try {
         console.log('Auto-starting user camera after avatar connect');
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -77,6 +78,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
         }
         setIsCameraOn(true);
         setCameraError(null);
+        hasAutoStartedCameraRef.current = true;
       } catch (err) {
         console.error('Camera auto-start error:', err);
         setCameraError('Camera access denied');
@@ -206,62 +208,59 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
         )}
       </div>
 
-      {/* User Camera Section - full width with overlay controls */}
+      {/* User Camera Section - aligned right with overlay controls */}
       {isConnected && (
-        <div className="border-b border-border bg-black relative" style={{ height: '120px' }}>
-          {/* User video feed - full width, object-contain to show full camera */}
-          <video
-            ref={userVideoRef}
-            autoPlay
-            playsInline
-            muted
-            className={cn(
-              "w-full h-full object-contain",
-              !isCameraOn && "hidden"
-            )}
-            style={{ transform: 'scaleX(-1)' }}
-          />
-          
-          {/* Camera off placeholder */}
-          {!isCameraOn && (
-            <div className="w-full h-full flex items-center justify-center bg-muted/50">
-              <VideoOff className="w-12 h-12 text-muted-foreground/50" />
+        <div className="border-b border-border bg-muted/40 relative" style={{ height: '140px' }}>
+          <div className="absolute inset-0 flex items-center justify-between px-4 gap-4">
+            {/* Left side: controls and labels */}
+            <div className="flex flex-col gap-2">
+              <Button
+                size="sm"
+                variant={isCameraOn ? "default" : "secondary"}
+                className="gap-2 shadow-lg"
+                onClick={handleToggleCamera}
+              >
+                {isCameraOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+                {isCameraOn ? "Camera On" : "Enable Camera"}
+              </Button>
+              {cameraError && (
+                <p className="text-xs text-destructive mt-1 max-w-xs">{cameraError}</p>
+              )}
             </div>
-          )}
 
-          {/* Overlay controls on camera */}
-          <div className="absolute inset-0 flex items-center justify-between px-4">
-            {/* Camera toggle button - left side */}
-            <Button
-              size="sm"
-              variant={isCameraOn ? "default" : "secondary"}
-              className="gap-2 shadow-lg"
-              onClick={handleToggleCamera}
-            >
-              {isCameraOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-              {isCameraOn ? "Camera On" : "Enable Camera"}
-            </Button>
+            {/* Right side: user camera preview */}
+            <div className="relative h-24 w-32 sm:h-28 sm:w-40 rounded-lg overflow-hidden bg-background/60 border border-border/40 flex items-center justify-center">
+              <video
+                ref={userVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className={cn(
+                  "w-full h-full object-contain",
+                  !isCameraOn && "hidden"
+                )}
+                style={{ transform: 'scaleX(-1)' }}
+              />
 
-            {/* "You" label - bottom left of video */}
-            {isCameraOn && (
-              <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                You
-              </div>
-            )}
+              {!isCameraOn && (
+                <div className="flex items-center justify-center w-full h-full text-muted-foreground/60">
+                  <VideoOff className="w-8 h-8" />
+                </div>
+              )}
 
-            {/* Avatar can see you - right side */}
-            {isCameraOn && (
-              <span className="text-sm text-muted-foreground bg-background/80 px-3 py-1.5 rounded-lg shadow">
-                Avatar can see you
-              </span>
-            )}
+              {isCameraOn && (
+                <div className="absolute bottom-1 left-1 bg-background/80 text-foreground text-[10px] px-1.5 py-0.5 rounded">
+                  You
+                </div>
+              )}
+
+              {isCameraOn && (
+                <div className="absolute bottom-1 right-1 bg-background/90 text-foreground text-[10px] px-1.5 py-0.5 rounded shadow">
+                  Alex can see you
+                </div>
+              )}
+            </div>
           </div>
-
-          {cameraError && (
-            <div className="absolute bottom-2 right-2">
-              <span className="text-xs text-destructive bg-background/80 px-2 py-1 rounded">{cameraError}</span>
-            </div>
-          )}
         </div>
       )}
 

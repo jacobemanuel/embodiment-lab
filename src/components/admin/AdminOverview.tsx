@@ -41,6 +41,18 @@ interface QuestionAnalysis {
   hasCorrectAnswer: boolean;
 }
 
+interface LikertAnalysis {
+  questionId: string;
+  questionText: string;
+  category: 'trust' | 'engagement' | 'satisfaction';
+  mean: number;
+  median: number;
+  std: number;
+  distribution: { [key: number]: number };
+  totalResponses: number;
+  responses: number[];
+}
+
 interface CorrelationData {
   avatarTimeVsGain: { x: number; y: number; mode: string }[];
   sessionTimeVsGain: { x: number; y: number; mode: string }[];
@@ -90,6 +102,12 @@ interface StudyStats {
   rawPostTest: any[];
   missingCorrectAnswers: { preTest: number; postTest: number };
   statisticalTests: StatisticalTest | null;
+  likertAnalysis: LikertAnalysis[];
+  likertByMode: {
+    text: LikertAnalysis[];
+    avatar: LikertAnalysis[];
+    both: LikertAnalysis[];
+  };
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
@@ -577,6 +595,76 @@ const AdminOverview = () => {
         }),
       };
 
+      // Likert Scale Analysis (trust, engagement, satisfaction questions)
+      const LIKERT_QUESTIONS: { id: string; text: string; category: 'trust' | 'engagement' | 'satisfaction' }[] = [
+        { id: 'trust-1', text: 'I trust the AI system to provide accurate information', category: 'trust' },
+        { id: 'trust-2', text: 'I would rely on this AI system for learning complex topics', category: 'trust' },
+        { id: 'trust-3', text: "The AI system's explanations were credible and trustworthy", category: 'trust' },
+        { id: 'engagement-1', text: 'The learning experience kept me engaged throughout', category: 'engagement' },
+        { id: 'engagement-2', text: 'I felt motivated to complete all the scenarios', category: 'engagement' },
+        { id: 'engagement-3', text: 'The interactive format was more engaging than traditional reading', category: 'engagement' },
+        { id: 'satisfaction-1', text: 'Overall, I am satisfied with this learning experience', category: 'satisfaction' },
+        { id: 'satisfaction-2', text: 'I would recommend this learning format to other students', category: 'satisfaction' },
+        { id: 'satisfaction-3', text: 'The learning mode I used was effective for understanding AI concepts', category: 'satisfaction' },
+      ];
+
+      const analyzeLikertForSessions = (sessionIds: string[]): LikertAnalysis[] => {
+        const relevantResponses = postTestResponses.filter(r => 
+          sessionIds.includes(r.session_id) && 
+          LIKERT_QUESTIONS.some(q => q.id === r.question_id)
+        );
+
+        return LIKERT_QUESTIONS.map(q => {
+          const responses = relevantResponses
+            .filter(r => r.question_id === q.id)
+            .map(r => parseInt(r.answer, 10))
+            .filter(n => !isNaN(n) && n >= 1 && n <= 5);
+
+          const distribution: { [key: number]: number } = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+          responses.forEach(r => { distribution[r] = (distribution[r] || 0) + 1; });
+
+          const mean = responses.length > 0 
+            ? Math.round((responses.reduce((a, b) => a + b, 0) / responses.length) * 100) / 100 
+            : 0;
+          
+          const sorted = [...responses].sort((a, b) => a - b);
+          const median = responses.length > 0
+            ? sorted.length % 2 === 0
+              ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+              : sorted[Math.floor(sorted.length / 2)]
+            : 0;
+
+          const variance = responses.length > 1
+            ? responses.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0) / (responses.length - 1)
+            : 0;
+          const std = Math.round(Math.sqrt(variance) * 100) / 100;
+
+          return {
+            questionId: q.id,
+            questionText: q.text,
+            category: q.category,
+            mean,
+            median,
+            std,
+            distribution,
+            totalResponses: responses.length,
+            responses,
+          };
+        }).filter(a => a.totalResponses > 0);
+      };
+
+      const allSessionIds = sessionsToAnalyze.map(s => s.id);
+      const textSessionIds = sessionsToAnalyze.filter(s => getSessionMode(s) === 'text').map(s => s.id);
+      const avatarSessionIds = sessionsToAnalyze.filter(s => getSessionMode(s) === 'avatar').map(s => s.id);
+      const bothSessionIds = sessionsToAnalyze.filter(s => getSessionMode(s) === 'both').map(s => s.id);
+
+      const likertAnalysis = analyzeLikertForSessions(allSessionIds);
+      const likertByMode = {
+        text: analyzeLikertForSessions(textSessionIds),
+        avatar: analyzeLikertForSessions(avatarSessionIds),
+        both: analyzeLikertForSessions(bothSessionIds),
+      };
+
       setStats({
         totalCompleted: completedSessions.length,
         totalIncomplete: incompleteSessions.length,
@@ -619,6 +707,8 @@ const AdminOverview = () => {
         rawPostTest: postTestResponses,
         missingCorrectAnswers: { preTest: missingPreTest, postTest: missingPostTest },
         statisticalTests,
+        likertAnalysis,
+        likertByMode,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -914,6 +1004,52 @@ const AdminOverview = () => {
       })),
     ];
     downloadCSV(data, 'question_performance');
+  };
+
+  const exportLikertCSV = () => {
+    if (!stats) return;
+    const data = stats.likertAnalysis.map(l => ({
+      Category: l.category.charAt(0).toUpperCase() + l.category.slice(1),
+      QuestionID: l.questionId,
+      QuestionText: l.questionText,
+      Mean: l.mean,
+      Median: l.median,
+      StdDev: l.std,
+      TotalResponses: l.totalResponses,
+      'Score_1': l.distribution[1],
+      'Score_2': l.distribution[2],
+      'Score_3': l.distribution[3],
+      'Score_4': l.distribution[4],
+      'Score_5': l.distribution[5],
+    }));
+    downloadCSV(data, 'likert_perception_analysis');
+  };
+
+  const exportLikertByModeCSV = () => {
+    if (!stats) return;
+    const data: any[] = [];
+    
+    ['text', 'avatar', 'both'].forEach(mode => {
+      const modeData = stats.likertByMode[mode as 'text' | 'avatar' | 'both'];
+      modeData.forEach(l => {
+        data.push({
+          Mode: mode.charAt(0).toUpperCase() + mode.slice(1),
+          Category: l.category.charAt(0).toUpperCase() + l.category.slice(1),
+          QuestionID: l.questionId,
+          QuestionText: l.questionText,
+          Mean: l.mean,
+          Median: l.median,
+          StdDev: l.std,
+          TotalResponses: l.totalResponses,
+          'Score_1': l.distribution[1],
+          'Score_2': l.distribution[2],
+          'Score_3': l.distribution[3],
+          'Score_4': l.distribution[4],
+          'Score_5': l.distribution[5],
+        });
+      });
+    });
+    downloadCSV(data, 'likert_by_mode');
   };
 
   if (isLoading) {
@@ -1424,6 +1560,7 @@ const AdminOverview = () => {
                   </Tooltip>
                 </TooltipProvider>
               </div>
+              <ExportButton onClick={exportQuestionPerformanceCSV} label="CSV" size="xs" />
             </div>
           </CardHeader>
           <CardContent>
@@ -1457,7 +1594,188 @@ const AdminOverview = () => {
         </Card>
       </div>
 
-      {/* Demographics */}
+      {/* Likert Scale Perception Analysis - Trust, Engagement, Satisfaction */}
+      {stats.likertAnalysis.length > 0 && (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-white">Perception Analysis (Trust, Engagement, Satisfaction)</CardTitle>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <p className="text-xs">5-point Likert scale responses (1=Strongly Disagree, 5=Strongly Agree). Mean closer to 5 = positive perception. Shows participant attitudes toward the learning experience.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex gap-2">
+                <ExportButton onClick={exportLikertCSV} label="CSV" size="xs" />
+                <ExportButton onClick={exportLikertByModeCSV} label="By Mode" size="xs" />
+              </div>
+            </div>
+            <CardDescription className="text-slate-400">
+              Participant attitudes and perceptions measured on 5-point Likert scale
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {/* Overall Summary by Category */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {(['trust', 'engagement', 'satisfaction'] as const).map(category => {
+                  const categoryData = stats.likertAnalysis.filter(l => l.category === category);
+                  const avgMean = categoryData.length > 0
+                    ? Math.round((categoryData.reduce((sum, l) => sum + l.mean, 0) / categoryData.length) * 100) / 100
+                    : 0;
+                  const totalResponses = categoryData.reduce((sum, l) => sum + l.totalResponses, 0);
+                  
+                  const categoryColors = {
+                    trust: { bg: 'bg-blue-900/20', border: 'border-blue-700/50', text: 'text-blue-400', dot: 'bg-blue-400' },
+                    engagement: { bg: 'bg-green-900/20', border: 'border-green-700/50', text: 'text-green-400', dot: 'bg-green-400' },
+                    satisfaction: { bg: 'bg-purple-900/20', border: 'border-purple-700/50', text: 'text-purple-400', dot: 'bg-purple-400' },
+                  };
+                  const colors = categoryColors[category];
+                  
+                  return (
+                    <div key={category} className={`${colors.bg} border ${colors.border} rounded-lg p-4`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
+                          <span className={`text-sm font-medium ${colors.text} capitalize`}>{category}</span>
+                        </div>
+                        <span className="text-slate-500 text-xs">n={totalResponses / categoryData.length || 0}</span>
+                      </div>
+                      <div className="text-3xl font-bold text-white mb-2">{avgMean.toFixed(2)}</div>
+                      <div className="flex items-center gap-2">
+                        <Progress value={(avgMean / 5) * 100} className="h-2 flex-1" />
+                        <span className="text-xs text-slate-400">/5.0</span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-2">
+                        {avgMean >= 4 ? 'Very positive' : avgMean >= 3 ? 'Moderately positive' : avgMean >= 2 ? 'Neutral' : 'Needs improvement'}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* By Mode Comparison */}
+              <div className="border-t border-slate-700 pt-4">
+                <h4 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
+                  Perception by Learning Mode
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-slate-500 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Compare how participants in each learning mode rated their experience</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {(['text', 'avatar', 'both'] as const).map(mode => {
+                    const modeData = stats.likertByMode[mode];
+                    const trustAvg = modeData.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(modeData.filter(l => l.category === 'trust').length, 1);
+                    const engagementAvg = modeData.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(modeData.filter(l => l.category === 'engagement').length, 1);
+                    const satisfactionAvg = modeData.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(modeData.filter(l => l.category === 'satisfaction').length, 1);
+                    const sampleSize = modeData.length > 0 ? modeData[0].totalResponses : 0;
+
+                    const modeColors = {
+                      text: 'border-blue-600',
+                      avatar: 'border-purple-600',
+                      both: 'border-cyan-600',
+                    };
+
+                    return (
+                      <div key={mode} className={`bg-slate-700/30 rounded-lg p-4 border-l-4 ${modeColors[mode]}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-slate-200 capitalize">{mode === 'both' ? 'Both Modes' : `${mode} Mode`}</span>
+                          <span className="text-slate-500 text-xs">n={sampleSize}</span>
+                        </div>
+                        {modeData.length > 0 ? (
+                          <div className="space-y-2 text-xs">
+                            <div className="flex justify-between items-center">
+                              <span className="text-blue-400">Trust:</span>
+                              <div className="flex items-center gap-2">
+                                <Progress value={(trustAvg / 5) * 100} className="h-1.5 w-16" />
+                                <span className="text-white font-medium w-8 text-right">{trustAvg.toFixed(1)}</span>
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-green-400">Engagement:</span>
+                              <div className="flex items-center gap-2">
+                                <Progress value={(engagementAvg / 5) * 100} className="h-1.5 w-16" />
+                                <span className="text-white font-medium w-8 text-right">{engagementAvg.toFixed(1)}</span>
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-purple-400">Satisfaction:</span>
+                              <div className="flex items-center gap-2">
+                                <Progress value={(satisfactionAvg / 5) * 100} className="h-1.5 w-16" />
+                                <span className="text-white font-medium w-8 text-right">{satisfactionAvg.toFixed(1)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-slate-500 text-xs">No data</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Individual Questions */}
+              <div className="border-t border-slate-700 pt-4">
+                <h4 className="text-sm font-medium text-slate-300 mb-4">Individual Question Responses</h4>
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                  {stats.likertAnalysis.map(l => {
+                    const categoryColors = {
+                      trust: 'border-l-blue-500',
+                      engagement: 'border-l-green-500',
+                      satisfaction: 'border-l-purple-500',
+                    };
+                    
+                    return (
+                      <div key={l.questionId} className={`bg-slate-700/30 rounded-lg p-3 border-l-4 ${categoryColors[l.category]}`}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{l.category}</div>
+                            <div className="text-sm text-slate-200 mb-2">{l.questionText}</div>
+                            <div className="flex items-center gap-4 text-xs">
+                              <span className="text-slate-400">Mean: <span className="text-white font-medium">{l.mean.toFixed(2)}</span></span>
+                              <span className="text-slate-400">Median: <span className="text-white font-medium">{l.median}</span></span>
+                              <span className="text-slate-400">SD: <span className="text-white font-medium">{l.std.toFixed(2)}</span></span>
+                              <span className="text-slate-500">n={l.totalResponses}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map(score => (
+                              <div key={score} className="text-center">
+                                <div className="text-[10px] text-slate-500 mb-0.5">{score}</div>
+                                <div 
+                                  className="w-6 bg-slate-600 rounded-sm" 
+                                  style={{ height: `${Math.max(4, (l.distribution[score] / l.totalResponses) * 40)}px` }}
+                                  title={`${score}: ${l.distribution[score]} responses (${Math.round((l.distribution[score] / l.totalResponses) * 100)}%)`}
+                                />
+                                <div className="text-[9px] text-slate-500 mt-0.5">{l.distribution[score]}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card className="bg-slate-800 border-slate-700">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">

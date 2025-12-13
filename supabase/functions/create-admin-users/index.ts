@@ -61,18 +61,26 @@ serve(async (req) => {
       'jakub.majewski@tum.de',
       'Markus_Moenkhoff@hotmail.com',
       'michel.alexander017@gmail.com',
-      'manuelpeichl@yahoo.com'
+      'manuelpeichl@yahoo.com',
+      'efe.bozkir@tum.de' // Mentor/Evaluator
     ];
 
     const OWNER_EMAIL = 'jakub.majewski@tum.de';
+    const MENTOR_EMAIL = 'efe.bozkir@tum.de';
     const results: Array<Record<string, unknown>> = [];
 
     for (const email of adminEmails) {
       console.log(`Processing admin: ${email}`);
 
-      const password = email.toLowerCase() === OWNER_EMAIL.toLowerCase()
-        ? OWNER_PASSWORD
-        : DEFAULT_ADMIN_PASSWORD;
+      // Owner gets OWNER_PASSWORD, Mentor gets simple password, others get DEFAULT_ADMIN_PASSWORD
+      let password: string;
+      if (email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
+        password = OWNER_PASSWORD;
+      } else if (email.toLowerCase() === MENTOR_EMAIL.toLowerCase()) {
+        password = 'mentor2025'; // Simple password for mentor
+      } else {
+        password = DEFAULT_ADMIN_PASSWORD;
+      }
       
       // Check if user already exists
       const { data: existingUsers } = await supabase.auth.admin.listUsers();

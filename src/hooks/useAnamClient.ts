@@ -138,12 +138,18 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         const contentChunk = event.content || '';
         const trimmed = contentChunk.trim();
 
-        // Ignore system-event payloads and silent acknowledgments
+        // Ignore system-event payloads, silent acknowledgments, and any JSON code
         if (trimmed.startsWith('[SYSTEM_EVENT') || 
             trimmed.startsWith('[SILENT_CONTEXT_UPDATE') ||
             trimmed.includes('[ACKNOWLEDGED]') ||
-            trimmed.includes('[DO_NOT_SPEAK]')) {
-          console.log('Skipping context update from transcript');
+            trimmed.includes('[DO_NOT_SPEAK]') ||
+            // Filter out JSON-like content that shouldn't be in transcript
+            trimmed.startsWith('{"') ||
+            trimmed.includes('"state":') ||
+            trimmed.includes('"toggleCount":') ||
+            trimmed.includes('"responseHint":') ||
+            trimmed.includes('"title":') && trimmed.includes('"keyPoints":')) {
+          console.log('Skipping system/JSON content from transcript:', trimmed.substring(0, 50));
           return;
         }
 

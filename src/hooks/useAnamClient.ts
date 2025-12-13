@@ -105,8 +105,9 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       console.log('Creating Anam client with token...');
       const client = createClient(sessionToken);
 
-      // Do NOT change mic state before the stream starts – we'll control it
-      // explicitly via the push-to-talk button once streaming is active.
+      // We'll explicitly control the microphone via the push-to-talk button.
+      // On connect we immediately HARD-MUTE the mic so Alex cannot hear
+      // anything until the user presses the blue mic button.
 
       // Set up event listeners
       client.addListener(AnamEvent.CONNECTION_ESTABLISHED, () => {
@@ -167,9 +168,16 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       // Stream to video element
       console.log('Starting stream to video element:', videoElementId);
       await client.streamToVideoElement(videoElementId);
-      // NOTE: Let Anam manage microphone defaults itself.
-      // We keep push-to-talk purely as a visual/helper control for now so that
-      // we don't accidentally block audio input.
+
+      // HARD-MUTE input audio right after the stream starts so Alex is deaf
+      // by default. She will only hear the user while the mic button is blue
+      // (startListening -> unmuteInputAudio, stopListening -> muteInputAudio).
+      try {
+        const audioState = (client as any).muteInputAudio?.();
+        console.log('Initial hard mute after stream start, state:', audioState);
+      } catch (err) {
+        console.error('Error applying initial hard mute:', err);
+      }
 
     } catch (error) {
       console.error('Error initializing Anam client:', error);
@@ -201,11 +209,6 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
   }, [state.isConnected, addTranscriptMessage]);
 
-  const notifySlideChange = useCallback(async (slide: Slide) => {
-    // Don't auto-speak on slide change - let user ask questions
-    console.log('Slide changed to:', slide.title);
-  }, []);
-
   // System event sender - sends invisible context to avatar
   const sendSystemEvent = useCallback(async (eventType: string, data: Record<string, any> = {}) => {
     if (!clientRef.current || !state.isConnected) return;
@@ -219,6 +222,21 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       console.error('Error sending system event:', error);
     }
   }, [state.isConnected]);
+
+  const notifySlideChange = useCallback(async (slide: Slide) => {
+    // Don't auto-speak on slide change - let user ask questions
+    console.log('Slide changed to:', slide.title);
+
+    // Send a hidden system event so Alex always knows which slide
+    // the learner is currently viewing. This keeps her answers in
+    // sync with the visible slide title & key points.
+    await sendSystemEvent('SLIDE_CHANGE', {
+      id: slide.id,
+      title: slide.title,
+      keyPoints: slide.keyPoints,
+      systemPromptContext: slide.systemPromptContext,
+    });
+  }, [sendSystemEvent]);
 
   // Camera toggle notification with spam detection
   const notifyCameraToggle = useCallback(async (isOn: boolean) => {

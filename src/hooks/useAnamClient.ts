@@ -138,17 +138,16 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         const contentChunk = event.content || '';
         const trimmed = contentChunk.trim();
 
-        // Filter out system messages AND any JSON-like content from transcript
-        const looksLikeJson = trimmed.startsWith('{') && trimmed.includes('"state"');
-        const looksLikeKeyPoints = trimmed.includes('"keyPoints"') || trimmed.includes('"systemPromptContext"');
+        // AGGRESSIVE filter: skip any content that looks like JSON, system messages, or slide context
+        const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[{');
+        const containsJsonKeys = /"(id|title|keyPoints|systemPromptContext|state|toggleCount)"/.test(trimmed);
+        const isSystemMessage = trimmed.startsWith('[SYSTEM_EVENT') || 
+                                trimmed.startsWith('[SILENT_CONTEXT_UPDATE') ||
+                                trimmed.includes('[ACKNOWLEDGED]') ||
+                                trimmed.includes('[DO_NOT_SPEAK]');
         
-        if (trimmed.startsWith('[SYSTEM_EVENT') || 
-            trimmed.startsWith('[SILENT_CONTEXT_UPDATE') ||
-            trimmed.includes('[ACKNOWLEDGED]') ||
-            trimmed.includes('[DO_NOT_SPEAK]') ||
-            looksLikeJson ||
-            looksLikeKeyPoints) {
-          console.log('Filtering from transcript:', trimmed.substring(0, 40));
+        if (isSystemMessage || looksLikeJson || containsJsonKeys) {
+          console.log('Filtering from transcript (JSON/system):', trimmed.substring(0, 60));
           return;
         }
 
@@ -225,32 +224,32 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   }, [state.isConnected]);
 
   // System event sender - sends SILENT context updates to avatar
+  // NOTE: We no longer send slide context via talk() as it causes the avatar to speak JSON
+  // Slide context is embedded in the initial system prompt; users can ask about current slide
   const sendSystemEvent = useCallback(async (eventType: string, data: Record<string, any> = {}) => {
     if (!clientRef.current || !state.isConnected) return;
-
-    // Format as a silent context update that the avatar should NOT respond to
-    const eventMessage = `[SILENT_CONTEXT_UPDATE:${eventType}] ${JSON.stringify(data)} [DO_NOT_SPEAK]`;
-    console.log('Sending silent context update:', eventMessage);
-
-    try {
-      await clientRef.current.talk(eventMessage);
-    } catch (error) {
-      console.error('Error sending context update:', error);
+    
+    // Only send brief, non-JSON notifications for camera/mic toggles
+    // These should NOT include slide data
+    if (eventType === 'CAMERA_TOGGLE' || eventType === 'MIC_TOGGLE') {
+      const briefMessage = `[SYSTEM_EVENT:${eventType}] ${data.state} [DO_NOT_SPEAK]`;
+      console.log('Sending brief system event:', briefMessage);
+      try {
+        await clientRef.current.talk(briefMessage);
+      } catch (error) {
+        console.error('Error sending system event:', error);
+      }
     }
+    // Skip all other system events to prevent avatar from speaking JSON
   }, [state.isConnected]);
 
+  // Slide change notification - NO LONGER sends anything to avatar via talk()
+  // The avatar knows the initial slide from session creation, and users can ask questions
   const notifySlideChange = useCallback(async (slide: Slide) => {
-    console.log('Slide changed to:', slide.title);
-
-    // Send a hidden system event so Alex always knows which slide
-    // the learner is currently viewing.
-    await sendSystemEvent('SLIDE_CHANGE', {
-      id: slide.id,
-      title: slide.title,
-      keyPoints: slide.keyPoints,
-      systemPromptContext: slide.systemPromptContext,
-    });
-  }, [sendSystemEvent]);
+    console.log('Slide changed to:', slide.title, '(not sending to avatar - context is in system prompt)');
+    // We just update the ref - no talk() call that would make avatar speak JSON
+    currentSlideRef.current = slide;
+  }, []);
 
   // Camera toggle notification with spam detection
   const notifyCameraToggle = useCallback(async (isOn: boolean) => {

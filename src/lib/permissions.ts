@@ -1,7 +1,13 @@
 // Centralized permission system for admin panel
 // Owner has full control, Admins have content editing with safety restrictions
+// Viewers (Mentors/Evaluators) have read-only access to research data
 
 export const OWNER_EMAIL = "jakub.majewski@tum.de";
+
+// Mentor/Evaluator emails - read-only access to statistics
+export const VIEWER_EMAILS = [
+  "efe.bozkir@tum.de", // Mentor
+];
 
 export type PermissionLevel = 'owner' | 'admin' | 'viewer';
 
@@ -31,11 +37,17 @@ export interface PermissionConfig {
   // Dangerous Operations
   canDeleteSessions: boolean;
   canResetData: boolean;
+  
+  // UI Visibility
+  canViewSlides: boolean;
+  canViewQuestions: boolean;
+  canViewPermissionsTab: boolean;
 }
 
 export const getPermissionLevel = (email: string): PermissionLevel => {
   if (email === OWNER_EMAIL) return 'owner';
-  return 'admin'; // All authenticated admin_users are admins
+  if (VIEWER_EMAILS.includes(email.toLowerCase())) return 'viewer';
+  return 'admin'; // All other authenticated admin_users are admins
 };
 
 export const getPermissions = (email: string): PermissionConfig => {
@@ -65,6 +77,41 @@ export const getPermissions = (email: string): PermissionConfig => {
       
       canDeleteSessions: true,
       canResetData: true,
+      
+      canViewSlides: true,
+      canViewQuestions: true,
+      canViewPermissionsTab: true,
+    };
+  }
+  
+  if (level === 'viewer') {
+    // Viewer/Mentor permissions - READ-ONLY access to research data
+    return {
+      canEditSlides: false,
+      canDeleteSlides: false,
+      canCreateSlides: false,
+      canHideSlides: false,
+      
+      canEditQuestions: false,
+      canDeleteQuestions: false,
+      canCreateQuestions: false,
+      canDisableQuestions: false,
+      canMarkCorrectAnswers: false,
+      
+      canViewApiSettings: false, // Hide API settings completely
+      canToggleApis: false,
+      canEditApiKeys: false,
+      
+      canViewSessions: true, // Can view sessions
+      canExportData: true, // Can export data for evaluation
+      canViewAuditLog: false, // No audit log access
+      
+      canDeleteSessions: false,
+      canResetData: false,
+      
+      canViewSlides: true, // Can view slides (read-only)
+      canViewQuestions: true, // Can view questions (read-only)
+      canViewPermissionsTab: false, // Hide permissions tab
     };
   }
   
@@ -91,6 +138,10 @@ export const getPermissions = (email: string): PermissionConfig => {
     
     canDeleteSessions: false, // SAFETY: Can't delete research data
     canResetData: false, // SAFETY: Can't reset data
+    
+    canViewSlides: true,
+    canViewQuestions: true,
+    canViewPermissionsTab: true,
   };
 };
 
@@ -180,5 +231,20 @@ export const PERMISSION_DESCRIPTIONS: Record<keyof PermissionConfig, { label: st
     label: 'Reset Data',
     description: 'Clear all research data',
     level: 'danger',
+  },
+  canViewSlides: {
+    label: 'View Slides',
+    description: 'See learning content slides',
+    level: 'safe',
+  },
+  canViewQuestions: {
+    label: 'View Questions',
+    description: 'See survey questions',
+    level: 'safe',
+  },
+  canViewPermissionsTab: {
+    label: 'View Permissions',
+    description: 'See your access level and permissions',
+    level: 'safe',
   },
 };

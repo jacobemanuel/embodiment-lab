@@ -143,30 +143,38 @@ const AdminDashboard = () => {
               label="Responses" 
               help="View and export all participant responses to pre-test, post-test, and demographic questions."
             />
-            <TabWithHelp 
-              value="slides" 
-              icon={Presentation} 
-              label="Slides" 
-              help="Edit learning content. The 'AI Context' field tells the AI tutor what each slide is about."
-            />
-            <TabWithHelp 
-              value="questions" 
-              icon={Settings} 
-              label="Questions" 
-              help="Edit pre-test, post-test, and demographic survey questions. Changes go live immediately."
-            />
-            <TabWithHelp 
-              value="settings" 
-              icon={Cog} 
-              label="API Settings" 
-              help="Control API toggles (OpenAI, Anam) and manage API keys for the study."
-            />
-            <TabWithHelp 
-              value="permissions" 
-              icon={Shield} 
-              label="My Access" 
-              help="View your permissions and what you can do in the admin panel."
-            />
+            {permissions.canViewSlides && (
+              <TabWithHelp 
+                value="slides" 
+                icon={Presentation} 
+                label="Slides" 
+                help="Edit learning content. The 'AI Context' field tells the AI tutor what each slide is about."
+              />
+            )}
+            {permissions.canViewQuestions && (
+              <TabWithHelp 
+                value="questions" 
+                icon={Settings} 
+                label="Questions" 
+                help="Edit pre-test, post-test, and demographic survey questions. Changes go live immediately."
+              />
+            )}
+            {permissions.canViewApiSettings && (
+              <TabWithHelp 
+                value="settings" 
+                icon={Cog} 
+                label="API Settings" 
+                help="Control API toggles (OpenAI, Anam) and manage API keys for the study."
+              />
+            )}
+            {permissions.canViewPermissionsTab && (
+              <TabWithHelp 
+                value="permissions" 
+                icon={Shield} 
+                label="My Access" 
+                help="View your permissions and what you can do in the admin panel."
+              />
+            )}
             {permissions.canViewAuditLog && (
               <TabWithHelp 
                 value="audit" 
@@ -189,21 +197,29 @@ const AdminDashboard = () => {
             <AdminResponses />
           </TabsContent>
 
-          <TabsContent value="slides">
-            <AdminSlides userEmail={userEmail} />
-          </TabsContent>
+          {permissions.canViewSlides && (
+            <TabsContent value="slides">
+              <AdminSlides userEmail={userEmail} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="questions">
-            <AdminQuestions userEmail={userEmail} />
-          </TabsContent>
+          {permissions.canViewQuestions && (
+            <TabsContent value="questions">
+              <AdminQuestions userEmail={userEmail} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="settings">
-            <ApiToggle userEmail={userEmail} />
-          </TabsContent>
+          {permissions.canViewApiSettings && (
+            <TabsContent value="settings">
+              <ApiToggle userEmail={userEmail} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="permissions">
-            <PermissionsInfo userEmail={userEmail} />
-          </TabsContent>
+          {permissions.canViewPermissionsTab && (
+            <TabsContent value="permissions">
+              <PermissionsInfo userEmail={userEmail} />
+            </TabsContent>
+          )}
 
           {permissions.canViewAuditLog && (
             <TabsContent value="audit">

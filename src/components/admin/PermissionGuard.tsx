@@ -74,26 +74,34 @@ export const usePermissions = (userEmail: string) => {
 /**
  * Visual badge showing permission level
  */
+import { getPermissionLevel, OWNER_EMAIL, VIEWER_EMAILS } from "@/lib/permissions";
+import { Eye } from "lucide-react";
+
 export const PermissionBadge = ({ userEmail }: { userEmail: string }) => {
-  const isOwner = userEmail === "jakub.majewski@tum.de";
+  const level = getPermissionLevel(userEmail);
+  
+  if (level === 'owner') {
+    return (
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
+        <ShieldAlert className="w-3.5 h-3.5" />
+        Owner
+      </div>
+    );
+  }
+  
+  if (level === 'viewer') {
+    return (
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+        <Eye className="w-3.5 h-3.5" />
+        Evaluator
+      </div>
+    );
+  }
   
   return (
-    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-      isOwner 
-        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
-        : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-    }`}>
-      {isOwner ? (
-        <>
-          <ShieldAlert className="w-3.5 h-3.5" />
-          Owner
-        </>
-      ) : (
-        <>
-          <Lock className="w-3.5 h-3.5" />
-          Admin
-        </>
-      )}
+    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+      <Lock className="w-3.5 h-3.5" />
+      Admin
     </div>
   );
 };

@@ -18,6 +18,7 @@ serve(async (req) => {
     const ADMIN_CREATION_SECRET = Deno.env.get('ADMIN_CREATION_SECRET');
     const OWNER_PASSWORD = Deno.env.get('OWNER_PASSWORD');
     const DEFAULT_ADMIN_PASSWORD = Deno.env.get('DEFAULT_ADMIN_PASSWORD');
+    const MENTOR_PASSWORD = Deno.env.get('MENTOR_PASSWORD');
     
     // Validate required secrets are configured
     if (!ADMIN_CREATION_SECRET) {
@@ -28,7 +29,7 @@ serve(async (req) => {
       );
     }
     
-    if (!OWNER_PASSWORD || !DEFAULT_ADMIN_PASSWORD) {
+    if (!OWNER_PASSWORD || !DEFAULT_ADMIN_PASSWORD || !MENTOR_PASSWORD) {
       console.error('Password secrets not configured');
       return new Response(
         JSON.stringify({ error: 'Server configuration error - passwords not set' }),
@@ -77,7 +78,7 @@ serve(async (req) => {
       if (email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
         password = OWNER_PASSWORD;
       } else if (email.toLowerCase() === MENTOR_EMAIL.toLowerCase()) {
-        password = 'mentorTUMHAII2026'; // Mentor password
+        password = MENTOR_PASSWORD;
       } else {
         password = DEFAULT_ADMIN_PASSWORD;
       }

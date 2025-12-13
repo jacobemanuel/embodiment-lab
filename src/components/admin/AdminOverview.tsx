@@ -2140,84 +2140,110 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       </Card>
 
       {/* Data Quality & Suspicious Activity */}
-      {(stats.suspiciousCount > 0 || stats.resetCount > 0) && (
-        <Card className="bg-gradient-to-r from-amber-900/30 to-red-900/30 border-amber-700/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-white text-lg flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-400" />
-              Data Quality Alerts
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              Sessions flagged for potential data quality issues. Manage validation in the Sessions tab.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                <div className="text-xs text-slate-400 mb-1">Flagged</div>
-                <div className="text-2xl font-bold text-amber-400">{stats.suspiciousCount}</div>
-                <div className="text-[10px] text-slate-500 mt-1">total alerts</div>
+      {(stats.suspiciousCount > 0 || stats.resetCount > 0) && (() => {
+        // Check if there are any unresolved alerts
+        const hasUnresolvedAlerts = stats.pendingCount > 0 || stats.awaitingApprovalCount > 0;
+        const allResolved = stats.pendingCount === 0 && stats.awaitingApprovalCount === 0;
+        
+        return (
+          <Card className={`transition-all duration-300 ${
+            hasUnresolvedAlerts 
+              ? 'bg-gradient-to-r from-amber-900/30 to-red-900/30 border-amber-700/50' 
+              : 'bg-slate-800/30 border-slate-700/50 opacity-75'
+          }`}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white text-lg flex items-center gap-2">
+                <AlertTriangle className={`w-5 h-5 ${hasUnresolvedAlerts ? 'text-amber-400' : 'text-slate-500'}`} />
+                Data Quality Alerts
+                {hasUnresolvedAlerts && (
+                  <Badge variant="destructive" className="ml-2 animate-pulse bg-red-600">
+                    {stats.pendingCount + stats.awaitingApprovalCount} New
+                  </Badge>
+                )}
+                {allResolved && (
+                  <Badge variant="outline" className="ml-2 text-green-400 border-green-600">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    All Resolved
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription className="text-slate-400">
+                {hasUnresolvedAlerts 
+                  ? 'Sessions flagged for potential data quality issues. Manage validation in the Sessions tab.'
+                  : 'All flagged sessions have been reviewed.'
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                  <div className="text-xs text-slate-400 mb-1">Flagged</div>
+                  <div className={`text-2xl font-bold ${hasUnresolvedAlerts ? 'text-amber-400' : 'text-slate-500'}`}>{stats.suspiciousCount}</div>
+                  <div className="text-[10px] text-slate-500 mt-1">total alerts</div>
+                </div>
+                <div className={`rounded-lg p-3 text-center ${stats.pendingCount > 0 ? 'bg-yellow-900/30 border border-yellow-600/50' : 'bg-slate-800/50'}`}>
+                  <div className="text-xs text-slate-400 mb-1">Pending</div>
+                  <div className={`text-2xl font-bold ${stats.pendingCount > 0 ? 'text-yellow-400 animate-pulse' : 'text-slate-500'}`}>{stats.pendingCount}</div>
+                  <div className="text-[10px] text-slate-500 mt-1">needs review</div>
+                </div>
+                {stats.awaitingApprovalCount > 0 && (
+                  <div className="bg-orange-900/30 border border-orange-600/50 rounded-lg p-3 text-center">
+                    <div className="text-xs text-orange-300 mb-1">Awaiting Approval</div>
+                    <div className="text-2xl font-bold text-orange-400 animate-pulse">{stats.awaitingApprovalCount}</div>
+                    <div className="text-[10px] text-orange-300/70 mt-1">from admins</div>
+                  </div>
+                )}
+                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                  <div className="text-xs text-slate-400 mb-1">Accepted</div>
+                  <div className="text-2xl font-bold text-green-400">{stats.acceptedCount}</div>
+                  <div className="text-[10px] text-slate-500 mt-1">in statistics</div>
+                </div>
+                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                  <div className="text-xs text-slate-400 mb-1">Ignored</div>
+                  <div className="text-2xl font-bold text-red-400">{stats.ignoredCount}</div>
+                  <div className="text-[10px] text-slate-500 mt-1">excluded</div>
+                </div>
+                <div className="bg-slate-800/50 rounded-lg p-3">
+                  <div className="text-xs text-slate-400 mb-2">Top Flags</div>
+                  <div className="space-y-1 text-xs max-h-16 overflow-y-auto">
+                    {stats.suspiciousFlags.slice(0, 3).map(f => (
+                      <TooltipProvider key={f.flag}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex justify-between cursor-help">
+                              <span className="text-amber-400 truncate mr-2">{f.flag.replace(/_/g, ' ').slice(0, 25)}...</span>
+                              <span className="text-slate-300">{f.count}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">{f.flag.replace(/_/g, ' ')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                    {stats.suspiciousFlags.length === 0 && (
+                      <div className="text-slate-500">No flags</div>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                <div className="text-xs text-slate-400 mb-1">Pending</div>
-                <div className="text-2xl font-bold text-yellow-400">{stats.pendingCount}</div>
-                <div className="text-[10px] text-slate-500 mt-1">needs review</div>
-              </div>
-              {stats.awaitingApprovalCount > 0 && (
-                <div className="bg-orange-900/30 border border-orange-600/50 rounded-lg p-3 text-center">
-                  <div className="text-xs text-orange-300 mb-1">Awaiting Approval</div>
-                  <div className="text-2xl font-bold text-orange-400 animate-pulse">{stats.awaitingApprovalCount}</div>
-                  <div className="text-[10px] text-orange-300/70 mt-1">from admins</div>
+              {stats.resetCount > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-700/50">
+                  <div className="flex items-center gap-2 text-sm text-red-400">
+                    <span className="font-medium">{stats.resetCount}</span>
+                    <span className="text-slate-400">session(s) were reset due to invalid actions (e.g., mode switching attempts)</span>
+                  </div>
                 </div>
               )}
-              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                <div className="text-xs text-slate-400 mb-1">Accepted</div>
-                <div className="text-2xl font-bold text-green-400">{stats.acceptedCount}</div>
-                <div className="text-[10px] text-slate-500 mt-1">in statistics</div>
-              </div>
-              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                <div className="text-xs text-slate-400 mb-1">Ignored</div>
-                <div className="text-2xl font-bold text-red-400">{stats.ignoredCount}</div>
-                <div className="text-[10px] text-slate-500 mt-1">excluded</div>
-              </div>
-              <div className="bg-slate-800/50 rounded-lg p-3">
-                <div className="text-xs text-slate-400 mb-2">Top Flags</div>
-                <div className="space-y-1 text-xs max-h-16 overflow-y-auto">
-                  {stats.suspiciousFlags.slice(0, 3).map(f => (
-                    <TooltipProvider key={f.flag}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex justify-between cursor-help">
-                            <span className="text-amber-400 truncate mr-2">{f.flag.replace(/_/g, ' ').slice(0, 25)}...</span>
-                            <span className="text-slate-300">{f.count}</span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="text-xs">{f.flag.replace(/_/g, ' ')}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
-                  {stats.suspiciousFlags.length === 0 && (
-                    <div className="text-slate-500">No flags</div>
-                  )}
-                </div>
-              </div>
-            </div>
-            {stats.resetCount > 0 && (
-              <div className="mt-3 pt-3 border-t border-slate-700/50">
-                <div className="flex items-center gap-2 text-sm text-red-400">
-                  <span className="font-medium">{stats.resetCount}</span>
-                  <span className="text-slate-400">session(s) were reset due to invalid actions (e.g., mode switching attempts)</span>
-                </div>
-              </div>
-            )}
-            <p className="text-xs text-slate-500 mt-3">
-              💡 Tip: Go to the <strong>Sessions</strong> tab, filter by "Suspicious" status, and click the ✓ or ✗ buttons to accept or ignore flagged sessions.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+              {hasUnresolvedAlerts && (
+                <p className="text-xs text-slate-500 mt-3">
+                  💡 Tip: Go to the <strong>Sessions</strong> tab, filter by "Suspicious" status, and click the ✓ or ✗ buttons to accept or ignore flagged sessions.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Knowledge Gain Analysis */}
       <Card className="bg-slate-800 border-slate-700">

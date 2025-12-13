@@ -14,8 +14,10 @@ import adminBg3 from "@/assets/admin-bg-3.jpg";
 import adminBg4 from "@/assets/admin-bg-4.png";
 import adminBg5 from "@/assets/admin-bg-5.jpg";
 import adminBg6 from "@/assets/admin-bg-6.png";
+import adminBg7 from "@/assets/admin-bg-7.jpg";
+import adminBg8 from "@/assets/admin-bg-8.jpg";
 
-const adminBackgrounds = [adminBg1, adminBg2, adminBg3, adminBg4, adminBg5, adminBg6];
+const adminBackgrounds = [adminBg1, adminBg2, adminBg3, adminBg4, adminBg5, adminBg6, adminBg7, adminBg8];
 
 const AdminLogin = () => {
   const navigate = useNavigate();

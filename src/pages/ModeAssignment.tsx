@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { StudyMode } from "@/types/study";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,17 @@ const ModeAssignment = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMode, setSelectedMode] = useState<StudyMode | null>(null);
+
+  // Check if mode was already selected - if so, redirect back to learning
+  // Mode is LOCKED after first selection to ensure clean research data
+  useEffect(() => {
+    const existingMode = sessionStorage.getItem('studyMode') as StudyMode | null;
+    const existingSessionId = sessionStorage.getItem('sessionId');
+    
+    if (existingMode && existingSessionId) {
+      navigate(`/learning/${existingMode}`, { replace: true });
+    }
+  }, [navigate]);
 
   const handleModeSelect = async (mode: StudyMode) => {
     setSelectedMode(mode);

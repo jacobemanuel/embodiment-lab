@@ -1052,6 +1052,164 @@ const AdminOverview = () => {
     downloadCSV(data, 'likert_by_mode');
   };
 
+  // Publication-ready summary report export
+  const exportPublicationReport = async () => {
+    if (!stats) return;
+
+    const { data: questions } = await supabase
+      .from('study_questions')
+      .select('question_id, question_text, correct_answer, question_type')
+      .eq('is_active', true);
+
+    const dateRange = startDate && endDate 
+      ? `${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}` 
+      : 'All time';
+
+    const textKG = stats.knowledgeGain.filter(k => k.mode === 'text');
+    const avatarKG = stats.knowledgeGain.filter(k => k.mode === 'avatar');
+
+    const report = {
+      metadata: {
+        title: 'AI Image Generation Learning Study - Summary Report',
+        generatedAt: new Date().toISOString(),
+        dateRange,
+        statusFilter,
+        totalSessions: stats.rawSessions.length,
+        sessionsWithScores: stats.knowledgeGain.length,
+      },
+      sampleCharacteristics: {
+        totalParticipants: stats.rawSessions.length,
+        completed: stats.totalCompleted,
+        incomplete: stats.totalIncomplete,
+        modeDistribution: {
+          textMode: { n: stats.textModeCompleted, percentage: Math.round((stats.textModeCompleted / stats.rawSessions.length) * 100) || 0 },
+          avatarMode: { n: stats.avatarModeCompleted, percentage: Math.round((stats.avatarModeCompleted / stats.rawSessions.length) * 100) || 0 },
+          bothModes: { n: stats.bothModesCompleted, percentage: Math.round((stats.bothModesCompleted / stats.rawSessions.length) * 100) || 0, note: 'Requires manual review - participants should use single mode' },
+        },
+        demographics: {
+          ageDistribution: stats.demographicBreakdown,
+          educationDistribution: stats.educationBreakdown,
+          experienceDistribution: stats.experienceBreakdown,
+        },
+      },
+      learningOutcomes: {
+        overall: {
+          preTestMean: stats.avgPreScore,
+          postTestMean: stats.avgPostScore,
+          knowledgeGain: stats.avgGain,
+          n: stats.knowledgeGain.length,
+        },
+        byMode: {
+          textMode: {
+            preTestMean: stats.textModePreScore,
+            postTestMean: stats.textModePostScore,
+            knowledgeGain: stats.textModeGain,
+            n: textKG.length,
+            stdDev: stats.statisticalTests?.textVsAvatar.textStd || 0,
+          },
+          avatarMode: {
+            preTestMean: stats.avatarModePreScore,
+            postTestMean: stats.avatarModePostScore,
+            knowledgeGain: stats.avatarModeGain,
+            n: avatarKG.length,
+            stdDev: stats.statisticalTests?.textVsAvatar.avatarStd || 0,
+          },
+        },
+      },
+      statisticalAnalysis: stats.statisticalTests ? {
+        textVsAvatar: {
+          comparison: 'Text Mode vs Avatar Mode',
+          textMean: stats.statisticalTests.textVsAvatar.textMean,
+          avatarMean: stats.statisticalTests.textVsAvatar.avatarMean,
+          tStatistic: stats.statisticalTests.textVsAvatar.tStatistic,
+          pValue: stats.statisticalTests.textVsAvatar.pValue,
+          significant: stats.statisticalTests.textVsAvatar.significant,
+          textN: stats.statisticalTests.textVsAvatar.textN,
+          avatarN: stats.statisticalTests.textVsAvatar.avatarN,
+        },
+      } : null,
+      perceptionAnalysis: {
+        overall: {
+          trust: {
+            mean: stats.likertAnalysis.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'trust').length, 1),
+            questions: stats.likertAnalysis.filter(l => l.category === 'trust').map(l => ({
+              question: l.questionText,
+              mean: l.mean,
+              median: l.median,
+              std: l.std,
+              n: l.totalResponses,
+            })),
+          },
+          engagement: {
+            mean: stats.likertAnalysis.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'engagement').length, 1),
+            questions: stats.likertAnalysis.filter(l => l.category === 'engagement').map(l => ({
+              question: l.questionText,
+              mean: l.mean,
+              median: l.median,
+              std: l.std,
+              n: l.totalResponses,
+            })),
+          },
+          satisfaction: {
+            mean: stats.likertAnalysis.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'satisfaction').length, 1),
+            questions: stats.likertAnalysis.filter(l => l.category === 'satisfaction').map(l => ({
+              question: l.questionText,
+              mean: l.mean,
+              median: l.median,
+              std: l.std,
+              n: l.totalResponses,
+            })),
+          },
+        },
+        byMode: {
+          textMode: {
+            trust: stats.likertByMode.text.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.text.filter(l => l.category === 'trust').length, 1),
+            engagement: stats.likertByMode.text.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.text.filter(l => l.category === 'engagement').length, 1),
+            satisfaction: stats.likertByMode.text.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.text.filter(l => l.category === 'satisfaction').length, 1),
+          },
+          avatarMode: {
+            trust: stats.likertByMode.avatar.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.avatar.filter(l => l.category === 'trust').length, 1),
+            engagement: stats.likertByMode.avatar.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.avatar.filter(l => l.category === 'engagement').length, 1),
+            satisfaction: stats.likertByMode.avatar.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.avatar.filter(l => l.category === 'satisfaction').length, 1),
+          },
+        },
+      },
+      questionPerformance: {
+        preTest: stats.preTestQuestionAnalysis.map(q => ({
+          questionId: q.questionId,
+          question: q.questionText,
+          correctRate: q.correctRate,
+          n: q.totalResponses,
+        })),
+        postTest: stats.postTestQuestionAnalysis.map(q => ({
+          questionId: q.questionId,
+          question: q.questionText,
+          correctRate: q.correctRate,
+          n: q.totalResponses,
+        })),
+      },
+      sessionMetrics: {
+        avgDurationMinutes: stats.avgSessionDuration,
+        avgAvatarTimeMinutes: Math.round(stats.avgAvatarTime / 60),
+        totalAvatarTimeMinutes: Math.round(stats.totalAvatarTime / 60),
+        avatarTimeBySlide: stats.avatarTimeBySlide.map(s => ({
+          slide: s.slide,
+          avgTimeSeconds: s.avgTime,
+          totalTimeSeconds: s.totalTime,
+          sessions: s.count,
+        })),
+      },
+    };
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `publication_summary_report_${format(new Date(), 'yyyy-MM-dd')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1118,6 +1276,10 @@ const AdminOverview = () => {
             <Button variant="outline" size="sm" onClick={exportComprehensiveJSON} className="gap-2 border-slate-600 h-8 text-xs">
               <Download className="w-3 h-3" />
               Full JSON
+            </Button>
+            <Button variant="default" size="sm" onClick={exportPublicationReport} className="gap-2 h-8 text-xs bg-emerald-600 hover:bg-emerald-700">
+              <FileSpreadsheet className="w-3 h-3" />
+              Publication Report
             </Button>
             <Badge variant="secondary" className="ml-auto">
               {stats.rawSessions.length} sessions • {stats.knowledgeGain.length} with scores
@@ -1201,7 +1363,10 @@ const AdminOverview = () => {
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between"><span className="text-blue-400">Text:</span><span>{stats.textModeCompleted}</span></div>
                 <div className="flex justify-between"><span className="text-purple-400">Avatar:</span><span>{stats.avatarModeCompleted}</span></div>
-                <div className="flex justify-between"><span className="text-cyan-400">Both:</span><span>{stats.bothModesCompleted}</span></div>
+                <div className="flex justify-between opacity-50"><span className="text-cyan-400">Both:</span><span>{stats.bothModesCompleted}</span></div>
+                {stats.bothModesCompleted > 0 && (
+                  <div className="text-[8px] text-amber-400 mt-1">⚠ Needs review</div>
+                )}
               </div>
             </div>
           </div>
@@ -1293,11 +1458,23 @@ const AdminOverview = () => {
                   </div>
                 </div>
 
-                {/* Both Modes */}
-                <div className="bg-cyan-900/20 border border-cyan-700/50 rounded-lg p-4">
-                  <div className="text-sm font-medium text-cyan-400 mb-3 flex items-center justify-between">
+                {/* Both Modes - Grayed out with warning */}
+                <div className="bg-slate-700/30 border border-slate-600 rounded-lg p-4 opacity-60 relative">
+                  <div className="absolute top-2 right-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangle className="w-4 h-4 text-amber-400 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Participants should use only one mode. These sessions require manual review.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <div className="text-sm font-medium text-cyan-400/60 mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-cyan-400" />
+                      <div className="w-2 h-2 rounded-full bg-cyan-400/60" />
                       Both Modes
                     </div>
                     <span className="text-slate-500 text-xs">n={stats.knowledgeGain.filter(k => k.mode === 'both').length}</span>
@@ -1305,18 +1482,21 @@ const AdminOverview = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-slate-400">Pre-Test:</span>
-                      <span className="text-red-400">{stats.bothModesPreScore}%</span>
+                      <span className="text-red-400/60">{stats.bothModesPreScore}%</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Post-Test:</span>
-                      <span className="text-green-400">{stats.bothModesPostScore}%</span>
+                      <span className="text-green-400/60">{stats.bothModesPostScore}%</span>
                     </div>
                     <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
                       <span className="text-slate-300 font-medium">Gain:</span>
-                      <span className={`font-bold ${stats.bothModesGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <span className={`font-bold ${stats.bothModesGain >= 0 ? 'text-green-400/60' : 'text-red-400/60'}`}>
                         {stats.bothModesGain >= 0 ? '+' : ''}{stats.bothModesGain}%
                       </span>
                     </div>
+                  </div>
+                  <div className="mt-2 text-[10px] text-amber-400/80 bg-amber-900/20 rounded px-2 py-1">
+                    ⚠ Requires manual review
                   </div>
                 </div>
               </div>
@@ -1477,9 +1657,6 @@ const AdminOverview = () => {
                     </div>
                   </div>
                   
-                  <p className="text-xs text-slate-500 mt-3 italic">
-                    Note: Results are preliminary. For publication-quality analysis, export data and use dedicated statistical software (SPSS, R, Python).
-                  </p>
                 </div>
               )}
             </div>
@@ -1690,10 +1867,15 @@ const AdminOverview = () => {
                       both: 'border-cyan-600',
                     };
 
+                    const isBothMode = mode === 'both';
+
                     return (
-                      <div key={mode} className={`bg-slate-700/30 rounded-lg p-4 border-l-4 ${modeColors[mode]}`}>
+                      <div key={mode} className={`bg-slate-700/30 rounded-lg p-4 border-l-4 ${modeColors[mode]} ${isBothMode ? 'opacity-60' : ''}`}>
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-medium text-slate-200 capitalize">{mode === 'both' ? 'Both Modes' : `${mode} Mode`}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-slate-200 capitalize">{mode === 'both' ? 'Both Modes' : `${mode} Mode`}</span>
+                            {isBothMode && <AlertTriangle className="w-3 h-3 text-amber-400" />}
+                          </div>
                           <span className="text-slate-500 text-xs">n={sampleSize}</span>
                         </div>
                         {modeData.length > 0 ? (

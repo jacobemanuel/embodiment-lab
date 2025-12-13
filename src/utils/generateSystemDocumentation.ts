@@ -1,14 +1,8 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: { finalY: number };
-  }
-}
+import autoTable from 'jspdf-autotable';
 
 export const generateSystemDocumentationPDF = () => {
+  try {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -73,7 +67,7 @@ export const generateSystemDocumentationPDF = () => {
 
   const addTable = (headers: string[], data: string[][]) => {
     addNewPageIfNeeded(40);
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [headers],
       body: data,
@@ -97,7 +91,7 @@ export const generateSystemDocumentationPDF = () => {
         lineWidth: 0.1,
       },
     });
-    yPos = doc.lastAutoTable.finalY + 10;
+    yPos = (doc as any).lastAutoTable.finalY + 10;
   };
 
   const addDivider = () => {
@@ -768,6 +762,10 @@ export const generateSystemDocumentationPDF = () => {
   doc.text('AIDA Study Platform - System Documentation', margin, yPos);
   doc.text('Confidential Research Document', pageWidth - margin, yPos, { align: 'right' });
 
-  // Save the PDF
-  doc.save('AIDA-System-Documentation.pdf');
+    // Save the PDF
+    doc.save('AIDA-System-Documentation.pdf');
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    throw error;
+  }
 };

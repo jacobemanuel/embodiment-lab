@@ -18,6 +18,13 @@ interface AnamState {
   error: string | null;
 }
 
+// Track toggle counts for spam detection
+interface ToggleStats {
+  cameraToggles: number;
+  micToggles: number;
+  lastToggleTime: number;
+}
+
 export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId }: UseAnamClientProps) => {
   const [state, setState] = useState<AnamState>({
     isConnected: false,
@@ -30,6 +37,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   const clientRef = useRef<AnamClient | null>(null);
   const currentSlideRef = useRef<Slide>(currentSlide);
   const processedMessagesRef = useRef<Record<string, string>>({});
+  const toggleStatsRef = useRef<ToggleStats>({ cameraToggles: 0, micToggles: 0, lastToggleTime: 0 });
 
   useEffect(() => {
     currentSlideRef.current = currentSlide;
@@ -190,6 +198,86 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     console.log('Slide changed to:', slide.title);
   }, []);
 
+  // System event sender - sends invisible context to avatar
+  const sendSystemEvent = useCallback(async (eventType: string, data: Record<string, any> = {}) => {
+    if (!clientRef.current || !state.isConnected) return;
+    
+    const eventMessage = `[SYSTEM_EVENT: ${eventType}] ${JSON.stringify(data)}`;
+    console.log('Sending system event:', eventMessage);
+    
+    try {
+      await clientRef.current.talk(eventMessage);
+    } catch (error) {
+      console.error('Error sending system event:', error);
+    }
+  }, [state.isConnected]);
+
+  // Camera toggle notification with spam detection
+  const notifyCameraToggle = useCallback(async (isOn: boolean) => {
+    const now = Date.now();
+    const stats = toggleStatsRef.current;
+    
+    // Reset counter if more than 10 seconds since last toggle
+    if (now - stats.lastToggleTime > 10000) {
+      stats.cameraToggles = 0;
+    }
+    
+    stats.cameraToggles++;
+    stats.lastToggleTime = now;
+    
+    // Determine response type based on toggle frequency
+    let responseHint = 'normal';
+    if (stats.cameraToggles >= 5) {
+      responseHint = 'spam_annoyed';
+    } else if (stats.cameraToggles >= 3) {
+      responseHint = 'playful_notice';
+    } else if (Math.random() > 0.6) {
+      // 40% chance to not respond at all for natural feel
+      responseHint = 'silent';
+    }
+    
+    if (responseHint !== 'silent') {
+      await sendSystemEvent('CAMERA_TOGGLE', { 
+        state: isOn ? 'on' : 'off', 
+        toggleCount: stats.cameraToggles,
+        responseHint 
+      });
+    }
+  }, [sendSystemEvent]);
+
+  // Mic toggle notification with spam detection
+  const notifyMicToggle = useCallback(async (isOn: boolean) => {
+    const now = Date.now();
+    const stats = toggleStatsRef.current;
+    
+    // Reset counter if more than 10 seconds since last toggle
+    if (now - stats.lastToggleTime > 10000) {
+      stats.micToggles = 0;
+    }
+    
+    stats.micToggles++;
+    stats.lastToggleTime = now;
+    
+    // Mic toggles - respond less frequently
+    let responseHint = 'silent'; // Default silent for mic
+    if (stats.micToggles >= 5) {
+      responseHint = 'spam_annoyed';
+    } else if (stats.micToggles >= 3) {
+      responseHint = 'playful_notice';
+    } else if (Math.random() > 0.8) {
+      // Only 20% chance to respond to normal mic toggle
+      responseHint = 'brief';
+    }
+    
+    if (responseHint !== 'silent') {
+      await sendSystemEvent('MIC_TOGGLE', { 
+        state: isOn ? 'on' : 'off', 
+        toggleCount: stats.micToggles,
+        responseHint 
+      });
+    }
+  }, [sendSystemEvent]);
+
   // Push-to-talk UI only – Anam manages mic internally to avoid breaking audio
   const startListening = useCallback(() => {
     console.log('startListening (UI only) – Anam mic state unchanged');
@@ -206,6 +294,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
     setState({ isConnected: false, isStreaming: false, isTalking: false, error: null });
     processedMessagesRef.current = {};
+    toggleStatsRef.current = { cameraToggles: 0, micToggles: 0, lastToggleTime: 0 };
   }, []);
 
   useEffect(() => {
@@ -218,6 +307,8 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     initializeClient,
     sendMessage,
     notifySlideChange,
+    notifyCameraToggle,
+    notifyMicToggle,
     startListening,
     stopListening,
     disconnect,

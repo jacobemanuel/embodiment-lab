@@ -32,6 +32,8 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
     initializeClient,
     sendMessage,
     notifySlideChange,
+    notifyCameraToggle,
+    notifyMicToggle,
     startListening,
     stopListening,
   } = useAnamClient({
@@ -97,17 +99,21 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   };
 
   const handleToggleListening = () => {
-    if (isListening) {
-      stopListening();
-      setIsListening(false);
-    } else {
+    const newState = !isListening;
+    if (newState) {
       startListening();
-      setIsListening(true);
+    } else {
+      stopListening();
     }
+    setIsListening(newState);
+    // Notify avatar about mic toggle
+    notifyMicToggle(newState);
   };
 
   const handleToggleCamera = async () => {
     console.log('Toggle camera clicked, current state:', isCameraOn);
+    const newCameraState = !isCameraOn;
+    
     if (isCameraOn) {
       // Turn off camera
       console.log('Turning camera OFF');
@@ -138,8 +144,12 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
         console.error('Camera access error:', err);
         setCameraError('Camera access denied');
         setIsCameraOn(false);
+        return; // Don't notify if camera failed
       }
     }
+    
+    // Notify avatar about camera toggle
+    notifyCameraToggle(newCameraState);
   };
 
   return (

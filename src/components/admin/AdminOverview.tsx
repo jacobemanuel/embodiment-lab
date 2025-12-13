@@ -2296,6 +2296,305 @@ const AdminOverview = () => {
         </CardContent>
       </Card>
 
+      {/* Correlation Analysis - Scatter Plots */}
+      {(stats.correlations.avatarTimeVsGain.length > 0 || stats.correlations.sessionTimeVsGain.length > 0) && (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-white">Correlation Analysis</CardTitle>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <p className="text-xs">
+                        Scatter plots showing relationship between engagement metrics and learning outcomes.<br/>
+                        <strong>r:</strong> Correlation coefficient (-1 to 1).<br/>
+                        <strong>R²:</strong> Variance explained by the relationship.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <ExportButton onClick={exportCorrelationCSV} label="CSV" size="xs" />
+            </div>
+            <CardDescription className="text-slate-400">
+              Engagement metrics vs knowledge gain with trend lines
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Avatar Time vs Knowledge Gain */}
+              <div>
+                <h4 className="text-sm font-medium text-slate-300 mb-3">Avatar Time vs Knowledge Gain</h4>
+                {stats.correlations.avatarTimeVsGain.filter(d => d.x > 0).length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis 
+                        type="number" 
+                        dataKey="x" 
+                        name="Avatar Time" 
+                        stroke="#9ca3af" 
+                        fontSize={11}
+                        label={{ value: 'Avatar Time (min)', position: 'bottom', offset: 0, style: { fill: '#9ca3af', fontSize: 10 } }}
+                      />
+                      <YAxis 
+                        type="number" 
+                        dataKey="y" 
+                        name="Knowledge Gain" 
+                        stroke="#9ca3af" 
+                        fontSize={11}
+                        label={{ value: 'Gain %', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: 10 } }}
+                      />
+                      <ZAxis range={[50, 50]} />
+                      <ChartTooltip 
+                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                        formatter={(value: number, name: string) => [
+                          name === 'x' ? `${value.toFixed(1)} min` : `${value.toFixed(1)}%`,
+                          name === 'x' ? 'Avatar Time' : 'Knowledge Gain'
+                        ]}
+                      />
+                      <Scatter 
+                        data={stats.correlations.avatarTimeVsGain.filter(d => d.x > 0)} 
+                        fill="#8b5cf6"
+                      />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[220px] flex items-center justify-center text-slate-500 text-sm">
+                    No avatar interaction data
+                  </div>
+                )}
+                {(() => {
+                  const data = stats.correlations.avatarTimeVsGain.filter(d => d.x > 0);
+                  if (data.length < 2) return null;
+                  const n = data.length;
+                  const xVals = data.map(d => d.x);
+                  const yVals = data.map(d => d.y);
+                  const sumX = xVals.reduce((a, b) => a + b, 0);
+                  const sumY = yVals.reduce((a, b) => a + b, 0);
+                  const sumXY = data.reduce((a, d) => a + d.x * d.y, 0);
+                  const sumX2 = xVals.reduce((a, b) => a + b * b, 0);
+                  const sumY2 = yVals.reduce((a, b) => a + b * b, 0);
+                  const num = n * sumXY - sumX * sumY;
+                  const den = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                  const r = den !== 0 ? num / den : 0;
+                  const r2 = r * r;
+                  const strength = Math.abs(r) >= 0.7 ? 'Strong' : Math.abs(r) >= 0.4 ? 'Moderate' : Math.abs(r) >= 0.2 ? 'Weak' : 'Negligible';
+                  return (
+                    <div className="mt-2 text-xs text-slate-400 flex items-center gap-4">
+                      <span>r = <span className="text-white font-medium">{r.toFixed(3)}</span></span>
+                      <span>R² = <span className="text-cyan-400 font-medium">{(r2 * 100).toFixed(1)}%</span></span>
+                      <span className={`px-2 py-0.5 rounded ${Math.abs(r) >= 0.4 ? 'bg-green-900/30 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
+                        {strength}
+                      </span>
+                      <span className="text-slate-500">n={n}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Session Duration vs Knowledge Gain */}
+              <div>
+                <h4 className="text-sm font-medium text-slate-300 mb-3">Session Duration vs Knowledge Gain</h4>
+                {stats.correlations.sessionTimeVsGain.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis 
+                        type="number" 
+                        dataKey="x" 
+                        name="Session Duration" 
+                        stroke="#9ca3af" 
+                        fontSize={11}
+                        label={{ value: 'Session (min)', position: 'bottom', offset: 0, style: { fill: '#9ca3af', fontSize: 10 } }}
+                      />
+                      <YAxis 
+                        type="number" 
+                        dataKey="y" 
+                        name="Knowledge Gain" 
+                        stroke="#9ca3af" 
+                        fontSize={11}
+                        label={{ value: 'Gain %', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: 10 } }}
+                      />
+                      <ZAxis range={[50, 50]} />
+                      <ChartTooltip 
+                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                        formatter={(value: number, name: string) => [
+                          name === 'x' ? `${value.toFixed(1)} min` : `${value.toFixed(1)}%`,
+                          name === 'x' ? 'Session Duration' : 'Knowledge Gain'
+                        ]}
+                      />
+                      <Scatter 
+                        data={stats.correlations.sessionTimeVsGain} 
+                        fill="#3b82f6"
+                      />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[220px] flex items-center justify-center text-slate-500 text-sm">
+                    No session duration data
+                  </div>
+                )}
+                {(() => {
+                  const data = stats.correlations.sessionTimeVsGain;
+                  if (data.length < 2) return null;
+                  const n = data.length;
+                  const xVals = data.map(d => d.x);
+                  const yVals = data.map(d => d.y);
+                  const sumX = xVals.reduce((a, b) => a + b, 0);
+                  const sumY = yVals.reduce((a, b) => a + b, 0);
+                  const sumXY = data.reduce((a, d) => a + d.x * d.y, 0);
+                  const sumX2 = xVals.reduce((a, b) => a + b * b, 0);
+                  const sumY2 = yVals.reduce((a, b) => a + b * b, 0);
+                  const num = n * sumXY - sumX * sumY;
+                  const den = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                  const r = den !== 0 ? num / den : 0;
+                  const r2 = r * r;
+                  const strength = Math.abs(r) >= 0.7 ? 'Strong' : Math.abs(r) >= 0.4 ? 'Moderate' : Math.abs(r) >= 0.2 ? 'Weak' : 'Negligible';
+                  return (
+                    <div className="mt-2 text-xs text-slate-400 flex items-center gap-4">
+                      <span>r = <span className="text-white font-medium">{r.toFixed(3)}</span></span>
+                      <span>R² = <span className="text-cyan-400 font-medium">{(r2 * 100).toFixed(1)}%</span></span>
+                      <span className={`px-2 py-0.5 rounded ${Math.abs(r) >= 0.4 ? 'bg-green-900/30 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
+                        {strength}
+                      </span>
+                      <span className="text-slate-500">n={n}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Correlation Comparison Summary */}
+            <div className="mt-6 border-t border-slate-700 pt-4">
+              <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+                Engagement Metrics Comparison
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3 h-3 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Which engagement metric better predicts learning outcomes</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </h4>
+              {(() => {
+                const calcCorr = (data: { x: number; y: number }[]) => {
+                  if (data.length < 2) return { r: 0, r2: 0 };
+                  const n = data.length;
+                  const xVals = data.map(d => d.x);
+                  const yVals = data.map(d => d.y);
+                  const sumX = xVals.reduce((a, b) => a + b, 0);
+                  const sumY = yVals.reduce((a, b) => a + b, 0);
+                  const sumXY = data.reduce((a, d) => a + d.x * d.y, 0);
+                  const sumX2 = xVals.reduce((a, b) => a + b * b, 0);
+                  const sumY2 = yVals.reduce((a, b) => a + b * b, 0);
+                  const num = n * sumXY - sumX * sumY;
+                  const den = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                  const r = den !== 0 ? num / den : 0;
+                  return { r, r2: r * r };
+                };
+                
+                const avatarData = stats.correlations.avatarTimeVsGain.filter(d => d.x > 0);
+                const avatarCorr = calcCorr(avatarData);
+                const sessionCorr = calcCorr(stats.correlations.sessionTimeVsGain);
+                
+                const getStrength = (r: number) => Math.abs(r) >= 0.7 ? 'Strong' : Math.abs(r) >= 0.4 ? 'Moderate' : Math.abs(r) >= 0.2 ? 'Weak' : 'Negligible';
+                const getDirection = (r: number) => r > 0 ? 'Positive' : r < 0 ? 'Negative' : 'None';
+                
+                const avatarStronger = Math.abs(avatarCorr.r) > Math.abs(sessionCorr.r);
+                const equalStrength = Math.abs(avatarCorr.r) === Math.abs(sessionCorr.r);
+                
+                return (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className={`rounded-lg p-3 border ${avatarStronger && !equalStrength ? 'bg-purple-900/20 border-purple-600' : 'bg-slate-700/30 border-slate-600'}`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 rounded-full bg-purple-400" />
+                          <span className="text-sm font-medium text-slate-200">Avatar Time</span>
+                          {avatarStronger && !equalStrength && <Badge variant="outline" className="text-[10px] border-purple-500 text-purple-400">Stronger</Badge>}
+                        </div>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Pearson r:</span>
+                            <span className="text-white">{avatarCorr.r.toFixed(3)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">R² (variance):</span>
+                            <span className="text-cyan-400">{(avatarCorr.r2 * 100).toFixed(1)}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Direction:</span>
+                            <span className="text-slate-300">{getDirection(avatarCorr.r)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Strength:</span>
+                            <span className="text-slate-300">{getStrength(avatarCorr.r)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Sample:</span>
+                            <span className="text-slate-500">n={avatarData.length}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className={`rounded-lg p-3 border ${!avatarStronger && !equalStrength ? 'bg-blue-900/20 border-blue-600' : 'bg-slate-700/30 border-slate-600'}`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-400" />
+                          <span className="text-sm font-medium text-slate-200">Session Duration</span>
+                          {!avatarStronger && !equalStrength && <Badge variant="outline" className="text-[10px] border-blue-500 text-blue-400">Stronger</Badge>}
+                        </div>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Pearson r:</span>
+                            <span className="text-white">{sessionCorr.r.toFixed(3)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">R² (variance):</span>
+                            <span className="text-cyan-400">{(sessionCorr.r2 * 100).toFixed(1)}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Direction:</span>
+                            <span className="text-slate-300">{getDirection(sessionCorr.r)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Strength:</span>
+                            <span className="text-slate-300">{getStrength(sessionCorr.r)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Sample:</span>
+                            <span className="text-slate-500">n={stats.correlations.sessionTimeVsGain.length}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Key Finding */}
+                    <div className="bg-slate-700/30 rounded-lg p-3 border border-slate-600">
+                      <div className="text-xs font-medium text-slate-300 mb-1">Key Finding</div>
+                      <p className="text-xs text-slate-400">
+                        {equalStrength 
+                          ? 'Both metrics show equal correlation strength with learning outcomes.'
+                          : avatarStronger
+                            ? `Avatar interaction time shows stronger correlation (R²=${(avatarCorr.r2 * 100).toFixed(1)}%) with knowledge gain, explaining more variance in learning outcomes.`
+                            : `Session duration shows stronger correlation (R²=${(sessionCorr.r2 * 100).toFixed(1)}%) with knowledge gain, explaining more variance in learning outcomes.`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Question Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="bg-slate-800 border-slate-700">

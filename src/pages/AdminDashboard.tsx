@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, BarChart3, FileText, Settings, Users, Presentation, Clock, Cog, Shield, Info } from "lucide-react";
+import { LogOut, BarChart3, FileText, Settings, Users, Presentation, Clock, Cog, Shield, Info, FileDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminSessions from "@/components/admin/AdminSessions";
@@ -15,7 +15,8 @@ import AdminAuditLog from "@/components/admin/AdminAuditLog";
 import ApiToggle from "@/components/admin/ApiToggle";
 import PermissionsInfo from "@/components/admin/PermissionsInfo";
 import { PermissionBadge } from "@/components/admin/PermissionGuard";
-import { getPermissions, OWNER_EMAIL } from "@/lib/permissions";
+import { getPermissions, getPermissionLevel, OWNER_EMAIL } from "@/lib/permissions";
+import { generateSystemDocumentationPDF } from "@/utils/generateSystemDocumentation";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -110,6 +111,29 @@ const AdminDashboard = () => {
               <PermissionBadge userEmail={userEmail} />
               <span className="text-xs md:text-sm text-slate-400 truncate max-w-[120px] md:max-w-none">{userEmail}</span>
             </div>
+            {getPermissionLevel(userEmail) === 'owner' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        generateSystemDocumentationPDF();
+                        toast.success("System documentation PDF generated!");
+                      }}
+                      className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                    >
+                      <FileDown className="w-4 h-4 md:mr-2" />
+                      <span className="hidden md:inline">System Docs</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600">
+                    <p className="text-sm">Download complete system documentation PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             <Button 
               variant="outline" 
               size="sm" 

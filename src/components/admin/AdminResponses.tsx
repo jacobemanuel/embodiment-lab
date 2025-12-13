@@ -82,7 +82,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
     setIsRefreshing(true);
     try {
       // First get session IDs that match the date filter, mode filter, and status filter
-      let sessionQuery = supabase.from('study_sessions').select('id, mode, modes_used, completed_at, created_at, status');
+      let sessionQuery = supabase.from('study_sessions').select('id, mode, modes_used, completed_at, created_at, status, suspicion_score, validation_status');
       if (startDate) {
         sessionQuery = sessionQuery.gte('created_at', startOfDay(startDate).toISOString());
       }
@@ -91,8 +91,17 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       }
       const { data: sessions } = await sessionQuery;
       
-      // IMPORTANT: Filter out reset sessions from main statistics
-      const validSessions = sessions?.filter(s => s.status !== 'reset') || [];
+      // IMPORTANT: Filter out reset sessions, ignored sessions, and unvalidated suspicious sessions from main statistics
+      // Suspicious sessions (suspicion_score > 0) must be explicitly ACCEPTED to be included
+      const validSessions = sessions?.filter(s => {
+        // Exclude reset sessions
+        if (s.status === 'reset') return false;
+        // Exclude ignored sessions
+        if (s.validation_status === 'ignored') return false;
+        // For suspicious sessions (flagged), only include if explicitly accepted
+        if ((s.suspicion_score || 0) > 0 && s.validation_status !== 'accepted') return false;
+        return true;
+      }) || [];
       const resetSessions = sessions?.filter(s => s.status === 'reset') || [];
       
       // Count sessions by status (only valid sessions)
@@ -354,7 +363,19 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
         sessionQuery = sessionQuery.is('completed_at', null);
       }
       
-      const { data: sessions } = await sessionQuery;
+      const { data: allSessions } = await sessionQuery;
+      
+      // IMPORTANT: Filter out reset, ignored, and unvalidated suspicious sessions from exports
+      // Suspicious sessions (suspicion_score > 0) must be explicitly ACCEPTED to be included
+      const sessions = allSessions?.filter(s => {
+        // Exclude reset sessions (unless specifically filtering for them)
+        if (statusFilter !== 'reset' && s.status === 'reset') return false;
+        // Exclude ignored sessions
+        if (s.validation_status === 'ignored') return false;
+        // For suspicious sessions (flagged), only include if explicitly accepted
+        if ((s.suspicion_score || 0) > 0 && s.validation_status !== 'accepted') return false;
+        return true;
+      }) || [];
       const sessionIds = sessions?.map(s => s.id) || [];
 
       let demographicsQuery = supabase.from('demographic_responses').select('*');

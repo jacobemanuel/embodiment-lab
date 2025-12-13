@@ -255,23 +255,21 @@ const PostTestPage3 = () => {
                       disabled={isSkipped}
                     />
                     <div className="flex items-center justify-between">
-                      <div 
+                      <label 
+                        htmlFor={`skip-${question.id}`}
                         className="flex items-center gap-2 cursor-pointer group"
-                        onClick={() => handleSkipToggle(question.id)}
                       >
                         <Checkbox 
                           checked={isSkipped}
                           onCheckedChange={() => handleSkipToggle(question.id)}
                           id={`skip-${question.id}`}
+                          className="cursor-pointer"
                         />
-                        <label 
-                          htmlFor={`skip-${question.id}`}
-                          className="text-sm text-muted-foreground cursor-pointer group-hover:text-foreground transition-colors flex items-center gap-1"
-                        >
+                        <span className="text-sm text-muted-foreground cursor-pointer group-hover:text-foreground transition-colors flex items-center gap-1">
                           <SkipForward className="w-3 h-3" />
                           Skip this question
-                        </label>
-                      </div>
+                        </span>
+                      </label>
                       {!isSkipped && (
                         <div className={`text-xs ${charsRemaining < 20 ? 'text-destructive' : 'text-muted-foreground'}`}>
                           {charsRemaining} characters remaining

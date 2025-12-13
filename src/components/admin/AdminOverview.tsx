@@ -1183,6 +1183,116 @@ const AdminOverview = () => {
     return startY + data.length * (barHeight + barGap) + 5;
   };
 
+  // Draw a scatter plot in PDF
+  const drawScatterPlot = (doc: jsPDF, data: { x: number; y: number; mode?: string }[], startX: number, startY: number, width: number, height: number, title: string, xLabel: string, yLabel: string) => {
+    if (data.length === 0) return startY;
+    
+    // Title
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0);
+    doc.text(title, startX, startY);
+    startY += 10;
+    
+    const plotWidth = width - 30;
+    const plotHeight = height - 25;
+    const plotX = startX + 25;
+    const plotY = startY;
+    
+    // Calculate ranges
+    const xValues = data.map(d => d.x);
+    const yValues = data.map(d => d.y);
+    const minX = Math.min(...xValues, 0);
+    const maxX = Math.max(...xValues, 1);
+    const minY = Math.min(...yValues, -50);
+    const maxY = Math.max(...yValues, 50);
+    const xRange = maxX - minX || 1;
+    const yRange = maxY - minY || 1;
+    
+    // Draw axes
+    doc.setDrawColor(100);
+    doc.setLineWidth(0.5);
+    // Y axis
+    doc.line(plotX, plotY, plotX, plotY + plotHeight);
+    // X axis
+    doc.line(plotX, plotY + plotHeight, plotX + plotWidth, plotY + plotHeight);
+    
+    // Axis labels
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80);
+    
+    // X axis label
+    doc.text(xLabel, plotX + plotWidth / 2, plotY + plotHeight + 12, { align: 'center' });
+    
+    // Y axis label (rotated text not easily supported, use horizontal)
+    doc.text(yLabel, startX, plotY + plotHeight / 2 - 5);
+    
+    // Axis tick labels
+    doc.setFontSize(6);
+    doc.text(minX.toFixed(0), plotX, plotY + plotHeight + 5);
+    doc.text(maxX.toFixed(0), plotX + plotWidth - 5, plotY + plotHeight + 5);
+    doc.text(minY.toFixed(0), plotX - 12, plotY + plotHeight);
+    doc.text(maxY.toFixed(0), plotX - 12, plotY + 3);
+    
+    // Zero line if applicable
+    if (minY < 0 && maxY > 0) {
+      const zeroY = plotY + plotHeight - ((0 - minY) / yRange) * plotHeight;
+      doc.setDrawColor(200);
+      doc.setLineDashPattern([2, 2], 0);
+      doc.line(plotX, zeroY, plotX + plotWidth, zeroY);
+      doc.setLineDashPattern([], 0);
+    }
+    
+    // Draw points
+    data.forEach(point => {
+      const px = plotX + ((point.x - minX) / xRange) * plotWidth;
+      const py = plotY + plotHeight - ((point.y - minY) / yRange) * plotHeight;
+      
+      // Color based on mode
+      if (point.mode === 'text') {
+        doc.setFillColor(59, 130, 246); // blue
+      } else if (point.mode === 'avatar') {
+        doc.setFillColor(139, 92, 246); // purple
+      } else {
+        doc.setFillColor(100, 100, 100);
+      }
+      
+      doc.circle(px, py, 1.5, 'F');
+    });
+    
+    // Legend
+    doc.setFontSize(7);
+    const legendY = plotY + 5;
+    doc.setFillColor(59, 130, 246);
+    doc.circle(plotX + plotWidth - 40, legendY, 2, 'F');
+    doc.setTextColor(60);
+    doc.text('Text', plotX + plotWidth - 35, legendY + 1);
+    doc.setFillColor(139, 92, 246);
+    doc.circle(plotX + plotWidth - 18, legendY, 2, 'F');
+    doc.text('Avatar', plotX + plotWidth - 13, legendY + 1);
+    
+    // Calculate and show correlation coefficient
+    if (data.length >= 3) {
+      const n = data.length;
+      const sumX = xValues.reduce((a, b) => a + b, 0);
+      const sumY = yValues.reduce((a, b) => a + b, 0);
+      const sumXY = data.reduce((a, d) => a + d.x * d.y, 0);
+      const sumX2 = xValues.reduce((a, b) => a + b * b, 0);
+      const sumY2 = yValues.reduce((a, b) => a + b * b, 0);
+      
+      const numerator = n * sumXY - sumX * sumY;
+      const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+      const r = denominator !== 0 ? numerator / denominator : 0;
+      
+      doc.setFontSize(8);
+      doc.setTextColor(0);
+      doc.text(`r = ${r.toFixed(3)} (n=${n})`, plotX, plotY + plotHeight + 18);
+    }
+    
+    return startY + plotHeight + 25;
+  };
+
   // Draw a comparison bar chart (pre vs post)
   const drawComparisonChart = (doc: jsPDF, startX: number, startY: number, width: number, title: string, data: { label: string; value1: number; value2: number }[], legend: { label1: string; label2: string }) => {
     doc.setFontSize(11);
@@ -1376,6 +1486,58 @@ const AdminOverview = () => {
     }
 
     // Check page break
+    if (yPos > 180) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Correlation Scatter Plot - Avatar Time vs Knowledge Gain
+    if (stats.correlations.avatarTimeVsGain.length > 0) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('5. Correlation Analysis', 14, yPos);
+      yPos += 8;
+      
+      // Filter to only include avatar mode participants for avatar time correlation
+      const avatarTimeData = stats.correlations.avatarTimeVsGain.filter(d => d.x > 0);
+      yPos = drawScatterPlot(
+        doc, 
+        avatarTimeData, 
+        14, 
+        yPos, 
+        180, 
+        70, 
+        'Avatar Interaction Time vs Knowledge Gain', 
+        'Avatar Time (minutes)', 
+        'Knowledge Gain (%)'
+      );
+      
+      // Add interpretation
+      if (avatarTimeData.length >= 3) {
+        const xValues = avatarTimeData.map(d => d.x);
+        const yValues = avatarTimeData.map(d => d.y);
+        const n = avatarTimeData.length;
+        const sumX = xValues.reduce((a, b) => a + b, 0);
+        const sumY = yValues.reduce((a, b) => a + b, 0);
+        const sumXY = avatarTimeData.reduce((a, d) => a + d.x * d.y, 0);
+        const sumX2 = xValues.reduce((a, b) => a + b * b, 0);
+        const sumY2 = yValues.reduce((a, b) => a + b * b, 0);
+        
+        const numerator = n * sumXY - sumX * sumY;
+        const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+        const r = denominator !== 0 ? numerator / denominator : 0;
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(80);
+        const interpretation = Math.abs(r) >= 0.7 ? 'strong' : Math.abs(r) >= 0.4 ? 'moderate' : Math.abs(r) >= 0.2 ? 'weak' : 'negligible';
+        const direction = r > 0 ? 'positive' : r < 0 ? 'negative' : 'no';
+        doc.text(`Interpretation: ${interpretation} ${direction} correlation between avatar interaction time and learning outcomes.`, 14, yPos);
+        yPos += 8;
+      }
+    }
+
+    // Check page break
     if (yPos > 200) {
       doc.addPage();
       yPos = 20;
@@ -1384,7 +1546,7 @@ const AdminOverview = () => {
     // Mode Comparison Chart
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('5. Mode Distribution', 14, yPos);
+    doc.text('6. Mode Distribution', 14, yPos);
     yPos += 8;
     
     const modeData = [
@@ -1396,7 +1558,7 @@ const AdminOverview = () => {
     // Perception Analysis
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('6. Perception Analysis (Likert 1-5)', 14, yPos);
+    doc.text('7. Perception Analysis (Likert 1-5)', 14, yPos);
     yPos += 8;
 
     const trustAvg = stats.likertAnalysis.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'trust').length, 1);
@@ -1451,7 +1613,7 @@ const AdminOverview = () => {
     if (stats.avatarTimeBySlide.length > 0) {
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('7. Avatar Interaction Time by Slide', 14, yPos);
+      doc.text('8. Avatar Interaction Time by Slide', 14, yPos);
       yPos += 8;
 
       const slideTimeData = stats.avatarTimeBySlide.slice(0, 7).map(s => ({
@@ -1470,7 +1632,7 @@ const AdminOverview = () => {
     // Question Performance
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('8. Question Performance', 14, yPos);
+    doc.text('9. Question Performance', 14, yPos);
     yPos += 8;
 
     const questionData = [
@@ -1523,7 +1685,7 @@ const AdminOverview = () => {
       
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('9. Data Collection Timeline', 14, yPos);
+      doc.text('10. Data Collection Timeline', 14, yPos);
       yPos += 8;
       
       const timelineData = stats.sessionsPerDay.slice(-14).map(s => ({

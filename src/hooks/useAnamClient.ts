@@ -124,26 +124,23 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         setState(prev => ({ ...prev, isStreaming: true }));
       });
 
-      // Message history - we ONLY use this for debugging now to avoid
-      // mismatches between history text and actual spoken audio.
-      client.addListener(AnamEvent.MESSAGE_HISTORY_UPDATED, (messages: any) => {
-        console.log('Message history updated (debug only):', messages);
-      });
-
-      // Stream events - source of truth for avatar transcript
+      // Stream events - source of truth for avatar + user transcript
       client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, (event: any) => {
-        console.log('Stream event:', event);
-        
-        // Persona (avatar) speaking – this is the ONLY thing we show
-        if (event.role === MessageRole.PERSONA && event.content) {
-          const isFinal = event.endOfSpeech === undefined ? true : event.endOfSpeech;
-          addTranscriptMessage('avatar', event.content, isFinal);
+        console.log('Stream event:', event, 'role:', event.role, 'endOfSpeech:', event.endOfSpeech);
+
+        const isFinal = event.endOfSpeech === undefined ? true : event.endOfSpeech;
+
+        // Avatar (persona) speaking – show as "Tutor"
+        if (event.role === MessageRole.PERSONA || event.role === 'assistant' || event.role === 'persona') {
+          addTranscriptMessage('avatar', event.content || '', isFinal);
           setState(prev => ({ ...prev, isTalking: !isFinal }));
+          return;
         }
-        
-        // We intentionally ignore USER role events here so that the
-        // transcript panel shows a clean, exact transcript of ONLY
-        // what Alex says and nothing else.
+
+        // User speech – show as "You" in transcript
+        if (event.role === MessageRole.USER || event.role === 'user') {
+          addTranscriptMessage('user', event.content || '', isFinal);
+        }
       });
 
       clientRef.current = client;

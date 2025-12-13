@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, CheckCircle, Clock, Download, Timer, BarChart3 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { Users, CheckCircle, Clock, Download, Timer, BarChart3, TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
 import DateRangeFilter from "./DateRangeFilter";
 import { format, parseISO, startOfDay, endOfDay } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,26 @@ interface AvatarTimeData {
   slide_title: string;
   duration_seconds: number;
   started_at: string;
+}
+
+interface KnowledgeGainData {
+  sessionId: string;
+  mode: string;
+  preScore: number;
+  postScore: number;
+  gain: number;
+  preCorrect: number;
+  preTotal: number;
+  postCorrect: number;
+  postTotal: number;
+}
+
+interface QuestionAnalysis {
+  questionId: string;
+  questionText: string;
+  preCorrectRate: number;
+  postCorrectRate: number;
+  improvement: number;
 }
 
 interface StudyStats {
@@ -28,8 +48,13 @@ interface StudyStats {
   modeComparison: { name: string; count: number }[];
   avatarTimeBySlide: { slide: string; avgTime: number; totalTime: number }[];
   avatarTimeData: AvatarTimeData[];
-  preTestAvgScore: number;
-  postTestAvgScore: number;
+  knowledgeGain: KnowledgeGainData[];
+  avgPreScore: number;
+  avgPostScore: number;
+  avgGain: number;
+  textModeGain: number;
+  avatarModeGain: number;
+  questionAnalysis: QuestionAnalysis[];
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -162,9 +187,23 @@ const AdminOverview = () => {
         { name: 'Both Modes', count: bothModesCompleted },
       ];
 
-      // Fetch pre/post test scores for knowledge gain
-      let preTestAvg = 0;
-      let postTestAvg = 0;
+      // Fetch questions with correct answers for scoring
+      const { data: questionsData } = await supabase
+        .from('study_questions')
+        .select('question_id, question_text, correct_answer, question_type')
+        .in('question_type', ['pre_test', 'post_test'])
+        .eq('is_active', true);
+
+      const questionMap = new Map(questionsData?.map(q => [q.question_id, q]) || []);
+
+      // Fetch pre/post test responses for knowledge gain calculation
+      let knowledgeGain: KnowledgeGainData[] = [];
+      let questionAnalysis: QuestionAnalysis[] = [];
+      let avgPreScore = 0;
+      let avgPostScore = 0;
+      let avgGain = 0;
+      let textModeGain = 0;
+      let avatarModeGain = 0;
       
       if (sessionIds.length > 0) {
         const { data: preTestResponses } = await supabase
@@ -176,12 +215,128 @@ const AdminOverview = () => {
           .from('post_test_responses')
           .select('*')
           .in('session_id', sessionIds);
+
+        // Calculate scores per session
+        const sessionScores: Record<string, { preCorrect: number; preTotal: number; postCorrect: number; postTotal: number }> = {};
         
-        // Calculate average scores (simplified - would need correct answers for accuracy)
-        const preTestCount = preTestResponses?.length || 0;
-        const postTestCount = postTestResponses?.length || 0;
-        preTestAvg = preTestCount > 0 ? Math.round((preTestCount / (sessionIds.length * 10)) * 100) : 0;
-        postTestAvg = postTestCount > 0 ? Math.round((postTestCount / (sessionIds.length * 10)) * 100) : 0;
+        // Process pre-test responses
+        preTestResponses?.forEach(r => {
+          if (!sessionScores[r.session_id]) {
+            sessionScores[r.session_id] = { preCorrect: 0, preTotal: 0, postCorrect: 0, postTotal: 0 };
+          }
+          const question = questionMap.get(r.question_id);
+          if (question?.correct_answer) {
+            sessionScores[r.session_id].preTotal++;
+            const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
+            const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
+            const isCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca)) && 
+                             userAnswers.every((ua: string) => correctAnswers.includes(ua));
+            if (isCorrect) {
+              sessionScores[r.session_id].preCorrect++;
+            }
+          }
+        });
+
+        // Process post-test responses
+        postTestResponses?.forEach(r => {
+          if (!sessionScores[r.session_id]) {
+            sessionScores[r.session_id] = { preCorrect: 0, preTotal: 0, postCorrect: 0, postTotal: 0 };
+          }
+          const question = questionMap.get(r.question_id);
+          if (question?.correct_answer) {
+            sessionScores[r.session_id].postTotal++;
+            const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
+            const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
+            const isCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca)) && 
+                             userAnswers.every((ua: string) => correctAnswers.includes(ua));
+            if (isCorrect) {
+              sessionScores[r.session_id].postCorrect++;
+            }
+          }
+        });
+
+        // Build knowledge gain array
+        sessions?.forEach(s => {
+          const scores = sessionScores[s.id];
+          if (scores && scores.preTotal > 0 && scores.postTotal > 0) {
+            const preScore = (scores.preCorrect / scores.preTotal) * 100;
+            const postScore = (scores.postCorrect / scores.postTotal) * 100;
+            const mode = s.modes_used?.includes('avatar') ? 'avatar' : s.mode;
+            knowledgeGain.push({
+              sessionId: s.session_id,
+              mode,
+              preScore: Math.round(preScore),
+              postScore: Math.round(postScore),
+              gain: Math.round(postScore - preScore),
+              preCorrect: scores.preCorrect,
+              preTotal: scores.preTotal,
+              postCorrect: scores.postCorrect,
+              postTotal: scores.postTotal,
+            });
+          }
+        });
+
+        // Calculate averages
+        if (knowledgeGain.length > 0) {
+          avgPreScore = Math.round(knowledgeGain.reduce((sum, k) => sum + k.preScore, 0) / knowledgeGain.length);
+          avgPostScore = Math.round(knowledgeGain.reduce((sum, k) => sum + k.postScore, 0) / knowledgeGain.length);
+          avgGain = Math.round(knowledgeGain.reduce((sum, k) => sum + k.gain, 0) / knowledgeGain.length);
+
+          const textModeData = knowledgeGain.filter(k => k.mode === 'text');
+          const avatarModeData = knowledgeGain.filter(k => k.mode === 'avatar');
+          
+          textModeGain = textModeData.length > 0 
+            ? Math.round(textModeData.reduce((sum, k) => sum + k.gain, 0) / textModeData.length) 
+            : 0;
+          avatarModeGain = avatarModeData.length > 0 
+            ? Math.round(avatarModeData.reduce((sum, k) => sum + k.gain, 0) / avatarModeData.length) 
+            : 0;
+        }
+
+        // Question-level analysis
+        const questionStats: Record<string, { preCorrect: number; preTotal: number; postCorrect: number; postTotal: number; text: string }> = {};
+        
+        preTestResponses?.forEach(r => {
+          const question = questionMap.get(r.question_id);
+          if (question?.correct_answer) {
+            if (!questionStats[r.question_id]) {
+              questionStats[r.question_id] = { preCorrect: 0, preTotal: 0, postCorrect: 0, postTotal: 0, text: question.question_text };
+            }
+            questionStats[r.question_id].preTotal++;
+            const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
+            const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
+            const isCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca)) && 
+                             userAnswers.every((ua: string) => correctAnswers.includes(ua));
+            if (isCorrect) questionStats[r.question_id].preCorrect++;
+          }
+        });
+
+        postTestResponses?.forEach(r => {
+          const question = questionMap.get(r.question_id);
+          if (question?.correct_answer) {
+            if (!questionStats[r.question_id]) {
+              questionStats[r.question_id] = { preCorrect: 0, preTotal: 0, postCorrect: 0, postTotal: 0, text: question.question_text };
+            }
+            questionStats[r.question_id].postTotal++;
+            const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
+            const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
+            const isCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca)) && 
+                             userAnswers.every((ua: string) => correctAnswers.includes(ua));
+            if (isCorrect) questionStats[r.question_id].postCorrect++;
+          }
+        });
+
+        questionAnalysis = Object.entries(questionStats)
+          .filter(([_, stats]) => stats.preTotal > 0 || stats.postTotal > 0)
+          .map(([questionId, stats]) => ({
+            questionId,
+            questionText: stats.text.length > 60 ? stats.text.substring(0, 60) + '...' : stats.text,
+            preCorrectRate: stats.preTotal > 0 ? Math.round((stats.preCorrect / stats.preTotal) * 100) : 0,
+            postCorrectRate: stats.postTotal > 0 ? Math.round((stats.postCorrect / stats.postTotal) * 100) : 0,
+            improvement: stats.preTotal > 0 && stats.postTotal > 0 
+              ? Math.round((stats.postCorrect / stats.postTotal) * 100) - Math.round((stats.preCorrect / stats.preTotal) * 100)
+              : 0,
+          }));
       }
 
       setStats({
@@ -197,8 +352,13 @@ const AdminOverview = () => {
         modeComparison,
         avatarTimeBySlide,
         avatarTimeData: avatarTimeData || [],
-        preTestAvgScore: preTestAvg,
-        postTestAvgScore: postTestAvg,
+        knowledgeGain,
+        avgPreScore,
+        avgPostScore,
+        avgGain,
+        textModeGain,
+        avatarModeGain,
+        questionAnalysis,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -240,6 +400,32 @@ const AdminOverview = () => {
     URL.revokeObjectURL(url);
   };
 
+  const exportKnowledgeGainCSV = () => {
+    if (!stats?.knowledgeGain.length) return;
+    
+    const headers = ['Session ID', 'Mode', 'Pre-Test Score (%)', 'Post-Test Score (%)', 'Knowledge Gain (%)', 'Pre Correct', 'Pre Total', 'Post Correct', 'Post Total'];
+    const rows = stats.knowledgeGain.map(k => [
+      k.sessionId,
+      k.mode,
+      k.preScore.toString(),
+      k.postScore.toString(),
+      k.gain.toString(),
+      k.preCorrect.toString(),
+      k.preTotal.toString(),
+      k.postCorrect.toString(),
+      k.postTotal.toString(),
+    ]);
+    
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `knowledge-gain-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -251,6 +437,16 @@ const AdminOverview = () => {
   if (!stats) {
     return <div className="text-slate-400">Error loading statistics</div>;
   }
+
+  const modeComparisonData = [
+    { name: 'Text Mode', gain: stats.textModeGain },
+    { name: 'Avatar Mode', gain: stats.avatarModeGain },
+  ];
+
+  const prePostComparisonData = [
+    { name: 'Pre-Test', score: stats.avgPreScore, fill: '#ef4444' },
+    { name: 'Post-Test', score: stats.avgPostScore, fill: '#10b981' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -286,23 +482,27 @@ const AdminOverview = () => {
 
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-400">Avg. Knowledge Gain</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white flex items-center gap-2">
+              {stats.avgGain >= 0 ? '+' : ''}{stats.avgGain}%
+              {stats.avgGain > 0 && <ArrowUp className="h-5 w-5 text-green-500" />}
+              {stats.avgGain < 0 && <ArrowDown className="h-5 w-5 text-red-500" />}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">post-test vs pre-test</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-400">Avg. Session Time</CardTitle>
             <Clock className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{stats.avgSessionDuration} min</div>
             <p className="text-xs text-slate-500 mt-1">from start to completion</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Avg. Avatar Time</CardTitle>
-            <Timer className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{Math.round(stats.avgAvatarTime / 60)} min</div>
-            <p className="text-xs text-slate-500 mt-1">per avatar session</p>
           </CardContent>
         </Card>
 
@@ -320,6 +520,136 @@ const AdminOverview = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Knowledge Gain Section */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-white flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-500" />
+              Knowledge Gain Analysis
+            </CardTitle>
+            <CardDescription className="text-slate-400">Pre-test vs Post-test score comparison</CardDescription>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={exportKnowledgeGainCSV}
+            disabled={!stats.knowledgeGain.length}
+            className="gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {stats.knowledgeGain.length > 0 ? (
+            <div className="space-y-6">
+              {/* Summary cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-slate-700/50 rounded-lg p-4 text-center">
+                  <div className="text-sm text-slate-400 mb-1">Avg. Pre-Test</div>
+                  <div className="text-2xl font-bold text-red-400">{stats.avgPreScore}%</div>
+                </div>
+                <div className="bg-slate-700/50 rounded-lg p-4 text-center">
+                  <div className="text-sm text-slate-400 mb-1">Avg. Post-Test</div>
+                  <div className="text-2xl font-bold text-green-400">{stats.avgPostScore}%</div>
+                </div>
+                <div className="bg-slate-700/50 rounded-lg p-4 text-center">
+                  <div className="text-sm text-slate-400 mb-1">Text Mode Gain</div>
+                  <div className="text-2xl font-bold text-blue-400">{stats.textModeGain >= 0 ? '+' : ''}{stats.textModeGain}%</div>
+                </div>
+                <div className="bg-slate-700/50 rounded-lg p-4 text-center">
+                  <div className="text-sm text-slate-400 mb-1">Avatar Mode Gain</div>
+                  <div className="text-2xl font-bold text-purple-400">{stats.avatarModeGain >= 0 ? '+' : ''}{stats.avatarModeGain}%</div>
+                </div>
+              </div>
+
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-sm font-medium text-slate-300 mb-3">Pre-Test vs Post-Test Scores</h4>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={prePostComparisonData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
+                      <YAxis stroke="#9ca3af" fontSize={12} domain={[0, 100]} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                        labelStyle={{ color: '#fff' }}
+                        formatter={(value: number) => [`${value}%`, 'Score']}
+                      />
+                      <Bar dataKey="score" fill="#3b82f6">
+                        {prePostComparisonData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-slate-300 mb-3">Knowledge Gain by Mode</h4>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={modeComparisonData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
+                      <YAxis stroke="#9ca3af" fontSize={12} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                        labelStyle={{ color: '#fff' }}
+                        formatter={(value: number) => [`${value >= 0 ? '+' : ''}${value}%`, 'Knowledge Gain']}
+                      />
+                      <Bar dataKey="gain" name="Gain">
+                        {modeComparisonData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={index === 0 ? '#3b82f6' : '#8b5cf6'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Question-level analysis */}
+              {stats.questionAnalysis.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-slate-300 mb-3">Question-Level Performance</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-700">
+                          <th className="text-left py-2 px-3 text-slate-400">Question</th>
+                          <th className="text-center py-2 px-3 text-slate-400">Pre-Test %</th>
+                          <th className="text-center py-2 px-3 text-slate-400">Post-Test %</th>
+                          <th className="text-center py-2 px-3 text-slate-400">Improvement</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stats.questionAnalysis.map((q, i) => (
+                          <tr key={q.questionId} className={i % 2 === 0 ? 'bg-slate-700/30' : ''}>
+                            <td className="py-2 px-3 text-slate-300">{q.questionText}</td>
+                            <td className="text-center py-2 px-3 text-red-400">{q.preCorrectRate}%</td>
+                            <td className="text-center py-2 px-3 text-green-400">{q.postCorrectRate}%</td>
+                            <td className="text-center py-2 px-3">
+                              <span className={q.improvement >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                {q.improvement >= 0 ? '+' : ''}{q.improvement}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-[200px] text-slate-500">
+              No knowledge gain data available yet (requires scored pre/post test questions)
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Avatar Time Tracking Section */}
       <Card className="bg-slate-800 border-slate-700">
@@ -454,28 +784,26 @@ const AdminOverview = () => {
               <span className="text-white font-semibold">{stats.totalCompleted}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-700">
-              <span className="text-slate-400">Text Mode only</span>
-              <span className="text-blue-400 font-semibold">{stats.textModeCompleted}</span>
+              <span className="text-slate-400">Avg. pre-test score</span>
+              <span className="text-red-400 font-semibold">{stats.avgPreScore}%</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-700">
-              <span className="text-slate-400">Avatar Mode only</span>
-              <span className="text-green-400 font-semibold">{stats.avatarModeCompleted}</span>
+              <span className="text-slate-400">Avg. post-test score</span>
+              <span className="text-green-400 font-semibold">{stats.avgPostScore}%</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-700">
-              <span className="text-slate-400">Used both modes</span>
-              <span className="text-cyan-400 font-semibold">{stats.bothModesCompleted}</span>
+              <span className="text-slate-400">Avg. knowledge gain</span>
+              <span className={`font-semibold ${stats.avgGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {stats.avgGain >= 0 ? '+' : ''}{stats.avgGain}%
+              </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-700">
               <span className="text-slate-400">Avg. learning time</span>
               <span className="text-yellow-400 font-semibold">{stats.avgSessionDuration} min</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-slate-700">
+            <div className="flex justify-between items-center py-2">
               <span className="text-slate-400">Avg. avatar interaction</span>
               <span className="text-purple-400 font-semibold">{Math.round(stats.avgAvatarTime / 60)} min</span>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <span className="text-slate-400">Total avatar time</span>
-              <span className="text-purple-400 font-semibold">{Math.round(stats.totalAvatarTime / 60)} min</span>
             </div>
           </CardContent>
         </Card>

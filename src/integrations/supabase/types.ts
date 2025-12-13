@@ -453,31 +453,40 @@ export type Database = {
       }
       study_sessions: {
         Row: {
+          browser_fingerprint: string | null
           completed_at: string | null
           created_at: string
           id: string
+          last_activity_at: string | null
           mode: Database["public"]["Enums"]["study_mode"]
           modes_used: string[] | null
           session_id: string
           started_at: string
+          status: string
         }
         Insert: {
+          browser_fingerprint?: string | null
           completed_at?: string | null
           created_at?: string
           id?: string
+          last_activity_at?: string | null
           mode: Database["public"]["Enums"]["study_mode"]
           modes_used?: string[] | null
           session_id: string
           started_at?: string
+          status?: string
         }
         Update: {
+          browser_fingerprint?: string | null
           completed_at?: string | null
           created_at?: string
           id?: string
+          last_activity_at?: string | null
           mode?: Database["public"]["Enums"]["study_mode"]
           modes_used?: string[] | null
           session_id?: string
           started_at?: string
+          status?: string
         }
         Relationships: []
       }

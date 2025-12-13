@@ -129,7 +129,7 @@ interface StudyStats {
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
-type StatusFilter = 'completed' | 'all' | 'incomplete';
+type StatusFilter = 'completed' | 'all' | 'incomplete' | 'reset';
 
 // Sorting helpers
 const AGE_ORDER = ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
@@ -198,15 +198,22 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       const { data: allSessions, error: sessionsError } = await sessionQuery;
       if (sessionsError) throw sessionsError;
 
+      // IMPORTANT: Filter out reset/invalid sessions from statistics by default
+      // Reset sessions are those where users tried to switch modes or other invalid actions
+      const validSessions = allSessions?.filter(s => s.status !== 'reset') || [];
+      const resetSessions = allSessions?.filter(s => s.status === 'reset') || [];
+
       // Filter sessions based on status filter
-      const completedSessions = allSessions?.filter(s => s.completed_at) || [];
-      const incompleteSessions = allSessions?.filter(s => !s.completed_at) || [];
+      const completedSessions = validSessions.filter(s => s.completed_at);
+      const incompleteSessions = validSessions.filter(s => !s.completed_at);
       
       let sessionsToAnalyze = completedSessions;
       if (statusFilter === 'all') {
-        sessionsToAnalyze = allSessions || [];
+        sessionsToAnalyze = validSessions;
       } else if (statusFilter === 'incomplete') {
         sessionsToAnalyze = incompleteSessions;
+      } else if (statusFilter === 'reset') {
+        sessionsToAnalyze = resetSessions;
       }
       
       const sessionIds = sessionsToAnalyze.map(s => s.id);

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, MessageSquare, SkipForward, ChevronLeft } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
+import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 
 const MAX_CHARS = 200;
 const SKIP_VALUE = '__SKIPPED__';
@@ -18,6 +19,10 @@ const SKIP_VALUE = '__SKIPPED__';
 const PostTestPage3 = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Guard: Ensure user completed post-test page 2
+  useStudyFlowGuard('posttest3');
+  
   const { questions: postTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('post_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);

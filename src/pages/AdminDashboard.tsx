@@ -75,7 +75,10 @@ const AdminDashboard = () => {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <TabsTrigger value={value} className="data-[state=active]:bg-primary">
+          <TabsTrigger 
+            value={value} 
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:font-semibold transition-all duration-200"
+          >
             <Icon className="w-4 h-4 mr-2" />
             {label}
           </TabsTrigger>
@@ -117,7 +120,7 @@ const AdminDashboard = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto p-6 space-y-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="bg-slate-800 border border-slate-700 flex-wrap h-auto gap-1 p-1">
+          <TabsList className="bg-slate-800 border border-slate-700 flex-wrap h-auto gap-1.5 p-1.5 rounded-xl">
             <TabWithHelp 
               value="overview" 
               icon={BarChart3} 

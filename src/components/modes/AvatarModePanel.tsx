@@ -61,6 +61,32 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
     };
   }, []);
 
+  // Auto-start user camera once avatar is connected (to match mockup UX)
+  useEffect(() => {
+    const startCamera = async () => {
+      if (!isConnected || isCameraOn) return;
+      try {
+        console.log('Auto-starting user camera after avatar connect');
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 200, height: 150, facingMode: 'user' },
+          audio: false,
+        });
+        userStreamRef.current = stream;
+        if (userVideoRef.current) {
+          userVideoRef.current.srcObject = stream;
+        }
+        setIsCameraOn(true);
+        setCameraError(null);
+      } catch (err) {
+        console.error('Camera auto-start error:', err);
+        setCameraError('Camera access denied');
+        setIsCameraOn(false);
+      }
+    };
+
+    void startCamera();
+  }, [isConnected, isCameraOn]);
+
   const handleSend = () => {
     if (input.trim() && isConnected) {
       sendMessage(input);

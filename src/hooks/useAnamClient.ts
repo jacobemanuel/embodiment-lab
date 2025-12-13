@@ -116,7 +116,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
 
       client.addListener(AnamEvent.CONNECTION_CLOSED, () => {
         console.log('Anam connection closed');
-        setState(prev => ({ ...prev, isConnected: false, isStreaming: false }));
+        setState(prev => ({ ...prev, isConnected: false, isStreaming: false, isTalking: false }));
       });
 
       client.addListener(AnamEvent.VIDEO_PLAY_STARTED, () => {
@@ -144,13 +144,15 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         
         // Persona (avatar) speaking
         if (event.role === MessageRole.PERSONA && event.content) {
-          addTranscriptMessage('avatar', event.content, event.endOfSpeech || false);
-          setState(prev => ({ ...prev, isTalking: !event.endOfSpeech }));
+          const isFinal = event.endOfSpeech === undefined ? true : event.endOfSpeech;
+          addTranscriptMessage('avatar', event.content, isFinal);
+          setState(prev => ({ ...prev, isTalking: !isFinal }));
         }
         
         // User speaking (voice input transcription)
         if (event.role === MessageRole.USER && event.content) {
-          addTranscriptMessage('user', event.content, event.endOfSpeech || false);
+          const isFinal = event.endOfSpeech === undefined ? true : event.endOfSpeech;
+          addTranscriptMessage('user', event.content, isFinal);
         }
       });
 
@@ -159,7 +161,14 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       // Stream to video element
       console.log('Starting stream to video element:', videoElementId);
       await client.streamToVideoElement(videoElementId);
-      console.log('Stream started successfully');
+      console.log('Stream started successfully, muting microphone by default');
+
+      // IMPORTANT: microphone OFF by default – user must press the button to talk
+      try {
+        client.muteInputAudio();
+      } catch (muteError) {
+        console.error('Error muting input audio on init:', muteError);
+      }
 
     } catch (error) {
       console.error('Error initializing Anam client:', error);

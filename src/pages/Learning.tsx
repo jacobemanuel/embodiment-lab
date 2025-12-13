@@ -10,10 +10,15 @@ import { LogOut, Sparkles, ChevronLeft, ChevronRight, MessageSquare, Smile, Load
 import { TextModeChat } from "@/components/modes/TextModeChat";
 import { AvatarModePanel } from "@/components/modes/AvatarModePanel";
 import { cn } from "@/lib/utils";
+import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 
 const Learning = () => {
   const { mode } = useParams<{ mode: StudyMode }>();
   const navigate = useNavigate();
+  
+  // Guard: Ensure user completed pre-test and selected a mode
+  useStudyFlowGuard('learning');
+  
   const { slides, isLoading, error } = useStudySlides();
   const [currentSlide, setCurrentSlide] = useState<Slide | null>(null);
   const [isPlaygroundVisible, setIsPlaygroundVisible] = useState(false);

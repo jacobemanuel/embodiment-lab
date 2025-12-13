@@ -10,10 +10,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, ChevronLeft } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
+import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 
 const PreTest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Guard: Ensure user completed demographics first
+  useStudyFlowGuard('pretest');
+  
   const { questions: preTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('pre_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);

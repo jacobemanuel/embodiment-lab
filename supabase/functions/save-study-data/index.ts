@@ -61,6 +61,17 @@ const updateModeSchema = z.object({
   mode: modeSchema,
 });
 
+const resetSessionSchema = z.object({
+  action: z.literal('reset_session'),
+  sessionId: z.string().min(10).max(100),
+  reason: z.enum(['mode_switch', 'user_request', 'timeout', 'abandoned']).optional().default('mode_switch'),
+});
+
+const updateActivitySchema = z.object({
+  action: z.literal('update_activity'),
+  sessionId: z.string().min(10).max(100),
+});
+
 // Rate limiting
 const rateLimitMap = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW = 60000;
@@ -398,7 +409,8 @@ serve(async (req) => {
           .from('study_sessions')
           .update({ 
             mode: validated.mode,
-            modes_used: updatedModes
+            modes_used: updatedModes,
+            last_activity_at: new Date().toISOString()
           })
           .eq('id', session.id);
 
@@ -412,6 +424,69 @@ serve(async (req) => {
 
         return new Response(
           JSON.stringify({ success: true, modesUsed: updatedModes }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'reset_session': {
+        let validated;
+        try {
+          validated = resetSessionSchema.parse(body);
+        } catch (error) {
+          console.error('Validation error:', error);
+          return new Response(
+            JSON.stringify({ error: "Invalid request data" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Mark session as reset - it will be excluded from statistics
+        const { error: updateError } = await supabase
+          .from('study_sessions')
+          .update({ 
+            status: 'reset',
+            last_activity_at: new Date().toISOString()
+          })
+          .eq('session_id', validated.sessionId);
+
+        if (updateError) {
+          console.error('Failed to reset session:', updateError);
+          return new Response(
+            JSON.stringify({ error: "Unable to reset session" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        console.log(`Session ${validated.sessionId} marked as reset. Reason: ${validated.reason}`);
+
+        return new Response(
+          JSON.stringify({ success: true, reason: validated.reason }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'update_activity': {
+        let validated;
+        try {
+          validated = updateActivitySchema.parse(body);
+        } catch (error) {
+          return new Response(
+            JSON.stringify({ error: "Invalid request data" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { error: updateError } = await supabase
+          .from('study_sessions')
+          .update({ last_activity_at: new Date().toISOString() })
+          .eq('session_id', validated.sessionId);
+
+        if (updateError) {
+          console.error('Failed to update activity:', updateError);
+        }
+
+        return new Response(
+          JSON.stringify({ success: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

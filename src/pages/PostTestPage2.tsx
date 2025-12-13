@@ -8,9 +8,14 @@ import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { Loader2, ChevronLeft } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
+import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 
 const PostTestPage2 = () => {
   const navigate = useNavigate();
+  
+  // Guard: Ensure user completed post-test page 1
+  useStudyFlowGuard('posttest2');
+  
   const { questions: postTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('post_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);

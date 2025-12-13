@@ -13,10 +13,15 @@ import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { Loader2 } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
+import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 
 const Demographics = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Guard: Ensure user has a valid session (from consent)
+  useStudyFlowGuard('demographics');
+  
   const { questions: demographicQuestions, isLoading: questionsLoading, error } = useStudyQuestions('demographic');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);

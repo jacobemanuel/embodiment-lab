@@ -6,11 +6,15 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, Smile } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 import { toast } from "sonner";
+import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 
 const ModeAssignment = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMode, setSelectedMode] = useState<StudyMode | null>(null);
+
+  // Guard: Ensure user completed pre-test
+  useStudyFlowGuard('mode-assignment');
 
   // Check if mode was already selected - if so, redirect back to learning
   // Mode is LOCKED after first selection to ensure clean research data
@@ -29,7 +33,20 @@ const ModeAssignment = () => {
     const existingSessionId = sessionStorage.getItem('sessionId');
     
     if (existingMode && existingSessionId && existingMode !== mode) {
-      // Mode switching attempt detected - reset entire session
+      // Mode switching attempt detected - mark session as reset in database
+      try {
+        await supabase.functions.invoke('save-study-data', {
+          body: {
+            action: 'reset_session',
+            sessionId: existingSessionId,
+            reason: 'mode_switch'
+          }
+        });
+      } catch (error) {
+        console.error('Failed to mark session as reset:', error);
+      }
+      
+      // Clear all local session data
       sessionStorage.removeItem('sessionId');
       sessionStorage.removeItem('studyMode');
       sessionStorage.removeItem('demographics');

@@ -29,7 +29,7 @@ interface QuestionData {
 }
 
 type ModeFilter = 'all' | 'text' | 'avatar' | 'both';
-type StatusFilter = 'all' | 'completed' | 'incomplete';
+type StatusFilter = 'all' | 'completed' | 'incomplete' | 'reset';
 
 import { getPermissions } from "@/lib/permissions";
 
@@ -82,7 +82,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
     setIsRefreshing(true);
     try {
       // First get session IDs that match the date filter, mode filter, and status filter
-      let sessionQuery = supabase.from('study_sessions').select('id, mode, modes_used, completed_at, created_at');
+      let sessionQuery = supabase.from('study_sessions').select('id, mode, modes_used, completed_at, created_at, status');
       if (startDate) {
         sessionQuery = sessionQuery.gte('created_at', startOfDay(startDate).toISOString());
       }
@@ -91,17 +91,24 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       }
       const { data: sessions } = await sessionQuery;
       
-      // Count sessions by status
-      const completedCount = sessions?.filter(s => s.completed_at).length || 0;
-      const incompleteCount = sessions?.filter(s => !s.completed_at).length || 0;
-      setSessionCount({ total: sessions?.length || 0, completed: completedCount, incomplete: incompleteCount });
+      // IMPORTANT: Filter out reset sessions from main statistics
+      const validSessions = sessions?.filter(s => s.status !== 'reset') || [];
+      const resetSessions = sessions?.filter(s => s.status === 'reset') || [];
+      
+      // Count sessions by status (only valid sessions)
+      const completedCount = validSessions.filter(s => s.completed_at).length;
+      const incompleteCount = validSessions.filter(s => !s.completed_at).length;
+      const resetCount = resetSessions.length;
+      setSessionCount({ total: validSessions.length, completed: completedCount, incomplete: incompleteCount });
       
       // Filter sessions by status
-      let filteredSessions = sessions || [];
+      let filteredSessions = validSessions;
       if (statusFilter === 'completed') {
-        filteredSessions = filteredSessions.filter(s => s.completed_at);
+        filteredSessions = validSessions.filter(s => s.completed_at);
       } else if (statusFilter === 'incomplete') {
-        filteredSessions = filteredSessions.filter(s => !s.completed_at);
+        filteredSessions = validSessions.filter(s => !s.completed_at);
+      } else if (statusFilter === 'reset') {
+        filteredSessions = resetSessions;
       }
       
       // Filter sessions by mode

@@ -7,9 +7,14 @@ import { LikertScale } from "@/components/LikertScale";
 import { Loader2 } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
+import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 
 const PostTestPage1 = () => {
   const navigate = useNavigate();
+  
+  // Guard: Ensure user completed learning phase
+  useStudyFlowGuard('posttest1');
+  
   const { questions: postTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('post_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);

@@ -119,8 +119,13 @@ const AdminDashboard = () => {
                       variant="outline" 
                       size="sm" 
                       onClick={() => {
-                        generateSystemDocumentationPDF();
-                        toast.success("System documentation PDF generated!");
+                        try {
+                          generateSystemDocumentationPDF();
+                          toast.success("System documentation PDF generated!");
+                        } catch (error) {
+                          console.error('PDF generation error:', error);
+                          toast.error("Failed to generate PDF. Check console for details.");
+                        }
                       }}
                       className="border-slate-600 text-slate-300 hover:bg-slate-700"
                     >

@@ -135,8 +135,44 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
     );
   }
 
+  // For admins: show if Anam API is actually usable (master enabled + anam enabled + key set)
+  const anamUsable = masterEnabled && anamEnabled && currentAnamKey !== 'Not set';
+
   return (
     <div className="space-y-4">
+      {/* Status Banner for Admins */}
+      {!isOwner && (
+        <Card className={`border-2 ${anamUsable ? 'bg-green-900/20 border-green-600' : 'bg-red-900/20 border-red-600'}`}>
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              {anamUsable ? (
+                <>
+                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                  <div>
+                    <p className="text-green-200 font-medium">Avatar API is Active</p>
+                    <p className="text-green-300/70 text-sm">
+                      Current key: {currentAnamKey} (added by {settings.anam_api_key?.updated_by || 'unknown'})
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-3 h-3 rounded-full bg-red-500" />
+                  <div>
+                    <p className="text-red-200 font-medium">Avatar API is Inactive</p>
+                    <p className="text-red-300/70 text-sm">
+                      {!masterEnabled ? 'Master switch is OFF (owner must enable)' : 
+                       !anamEnabled ? 'Anam API is disabled - enable below or add your API key' :
+                       'No API key set - add your Anam API key below'}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Master Switch - Owner Only */}
       {isOwner && (
         <Card className="bg-slate-800 border-red-700/50">
@@ -241,6 +277,11 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-purple-500" />
             <CardTitle className="text-white text-lg">Anam API (Avatar Mode)</CardTitle>
+            {/* Status indicator */}
+            <div className={`ml-auto flex items-center gap-2 px-2 py-1 rounded-full text-xs ${anamUsable ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'}`}>
+              <div className={`w-2 h-2 rounded-full ${anamUsable ? 'bg-green-400' : 'bg-red-400'}`} />
+              {anamUsable ? 'Active' : 'Inactive'}
+            </div>
           </div>
           <CardDescription className="text-slate-400">
             Controls avatar-based interaction functionality
@@ -280,20 +321,22 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
             </p>
           )}
 
-          {/* API Key Section - All Admins can update, Owner sees full info */}
+          {/* API Key Section - All Admins can update */}
           <div className="pt-4 border-t border-slate-700">
             <div className="flex items-center gap-2 mb-3">
               <Key className="w-4 h-4 text-yellow-500" />
               <Label className="text-white text-sm font-medium">Anam API Key</Label>
             </div>
             
-            {/* Current key info - Owner sees more details */}
+            {/* Current key info */}
             <div className="flex items-center gap-2 mb-3 text-sm flex-wrap">
               <span className="text-slate-400">Current:</span>
-              <code className="bg-slate-900 px-2 py-1 rounded text-slate-300">{currentAnamKey}</code>
+              <code className={`px-2 py-1 rounded ${currentAnamKey === 'Not set' ? 'bg-red-900/50 text-red-300' : 'bg-slate-900 text-slate-300'}`}>
+                {currentAnamKey}
+              </code>
               {settings.anam_api_key?.updated_by && (
                 <span className="text-xs text-slate-500">
-                  (added by {settings.anam_api_key.updated_by}
+                  (by {settings.anam_api_key.updated_by}
                   {settings.anam_api_key.updated_at && ` on ${new Date(settings.anam_api_key.updated_at).toLocaleDateString()}`})
                 </span>
               )}
@@ -305,7 +348,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                   type={showApiKey ? 'text' : 'password'}
                   value={newApiKey}
                   onChange={(e) => setNewApiKey(e.target.value)}
-                  placeholder="Enter new Anam API key..."
+                  placeholder="Enter your Anam API key..."
                   className="bg-slate-900 border-slate-600 text-white pr-10"
                 />
                 <button
@@ -332,7 +375,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
               </Button>
             </div>
             <p className="text-xs text-slate-500 mt-2">
-              Update to use your own Anam API key from your free account.
+              Add your own Anam API key from your free account to enable Avatar Mode.
             </p>
           </div>
         </CardContent>

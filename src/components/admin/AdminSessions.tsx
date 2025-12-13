@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw, CheckCircle, XCircle, AlertTriangle, Info, Clock } from "lucide-react";
+import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw, CheckCircle, XCircle, AlertTriangle, Info, Clock, CheckSquare, Square } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -53,6 +54,7 @@ interface SessionDetails {
   const [searchTerm, setSearchTerm] = useState("");
   const [modeFilter, setModeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [validationFilter, setValidationFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
@@ -60,6 +62,7 @@ interface SessionDetails {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
   const itemsPerPage = 10;
 
   const fetchSessions = useCallback(async () => {
@@ -263,6 +266,92 @@ interface SessionDetails {
     }
   };
 
+  // Bulk validation for multiple sessions
+  const bulkUpdateValidation = async (status: 'accepted' | 'ignored') => {
+    if (selectedSessionIds.size === 0) {
+      toast.error('No sessions selected');
+      return;
+    }
+
+    try {
+      let actualStatus = status;
+      let toastMessage = '';
+      
+      if (permissions.canValidateSessionsDirectly) {
+        actualStatus = status;
+        toastMessage = `${selectedSessionIds.size} session(s) ${status}`;
+      } else if (permissions.canRequestValidation) {
+        actualStatus = status === 'accepted' ? 'pending_accepted' : 'pending_ignored' as any;
+        toastMessage = `Requested ${status} for ${selectedSessionIds.size} session(s) - awaiting owner approval`;
+      } else {
+        toast.error('You do not have permission to validate sessions');
+        return;
+      }
+
+      const sessionIdsArray = Array.from(selectedSessionIds);
+      
+      const { error } = await supabase
+        .from('study_sessions')
+        .update({
+          validation_status: actualStatus,
+          validated_by: userEmail,
+          validated_at: new Date().toISOString()
+        })
+        .in('id', sessionIdsArray);
+
+      if (error) throw error;
+
+      setSessions(prev => prev.map(s => 
+        selectedSessionIds.has(s.id)
+          ? { ...s, validation_status: actualStatus, validated_by: userEmail, validated_at: new Date().toISOString() }
+          : s
+      ));
+      
+      setSelectedSessionIds(new Set());
+      toast.success(toastMessage);
+    } catch (error) {
+      console.error('Error bulk updating validation status:', error);
+      toast.error('Failed to update sessions');
+    }
+  };
+
+  // Toggle session selection
+  const toggleSessionSelection = (sessionId: string) => {
+    setSelectedSessionIds(prev => {
+      const next = new Set(prev);
+      if (next.has(sessionId)) {
+        next.delete(sessionId);
+      } else {
+        next.add(sessionId);
+      }
+      return next;
+    });
+  };
+
+  // Select all flagged sessions on current page
+  const selectAllFlagged = () => {
+    const flaggedOnPage = paginatedSessions.filter(s => 
+      (s.suspicion_score || 0) >= 40 || (Array.isArray(s.suspicious_flags) && s.suspicious_flags.length > 0)
+    );
+    const allSelected = flaggedOnPage.every(s => selectedSessionIds.has(s.id));
+    
+    if (allSelected) {
+      // Deselect all
+      setSelectedSessionIds(prev => {
+        const next = new Set(prev);
+        flaggedOnPage.forEach(s => next.delete(s.id));
+        return next;
+      });
+    } else {
+      // Select all
+      setSelectedSessionIds(prev => {
+        const next = new Set(prev);
+        flaggedOnPage.forEach(s => next.add(s.id));
+        return next;
+      });
+    }
+  };
+
   const filteredSessions = sessions.filter(session => {
     const matchesSearch = session.session_id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesMode = modeFilter === "all" || session.mode === modeFilter;
@@ -288,8 +377,31 @@ interface SessionDetails {
       default:
         matchesStatus = true;
     }
+
+    // Validation status filter
+    let matchesValidation = false;
+    const validationStatus = session.validation_status || 'pending';
+    switch (validationFilter) {
+      case 'all':
+        matchesValidation = true;
+        break;
+      case 'pending':
+        matchesValidation = validationStatus === 'pending';
+        break;
+      case 'awaiting':
+        matchesValidation = validationStatus === 'pending_accepted' || validationStatus === 'pending_ignored';
+        break;
+      case 'accepted':
+        matchesValidation = validationStatus === 'accepted';
+        break;
+      case 'ignored':
+        matchesValidation = validationStatus === 'ignored';
+        break;
+      default:
+        matchesValidation = true;
+    }
     
-    return matchesSearch && matchesMode && matchesStatus;
+    return matchesSearch && matchesMode && matchesStatus && matchesValidation;
   });
 
   const totalPages = Math.ceil(filteredSessions.length / itemsPerPage);
@@ -400,13 +512,87 @@ interface SessionDetails {
                 <SelectItem value="suspicious">Suspicious</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={validationFilter} onValueChange={setValidationFilter}>
+              <SelectTrigger className="w-[180px] bg-slate-900 border-slate-600">
+                <SelectValue placeholder="Validation" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Validation</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="awaiting">Awaiting Approval</SelectItem>
+                <SelectItem value="accepted">Accepted</SelectItem>
+                <SelectItem value="ignored">Ignored</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* Bulk Actions */}
+          {selectedSessionIds.size > 0 && (
+            <div className="flex items-center gap-4 p-3 bg-slate-900/50 border border-slate-700 rounded-lg">
+              <span className="text-sm text-slate-300">
+                {selectedSessionIds.size} session(s) selected
+              </span>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="border-green-600 text-green-500 hover:bg-green-600/10"
+                  onClick={() => bulkUpdateValidation('accepted')}
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  {permissions.canValidateSessionsDirectly ? 'Accept All' : 'Request Accept'}
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="border-red-600 text-red-500 hover:bg-red-600/10"
+                  onClick={() => bulkUpdateValidation('ignored')}
+                >
+                  <XCircle className="w-4 h-4 mr-1" />
+                  {permissions.canValidateSessionsDirectly ? 'Ignore All' : 'Request Ignore'}
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="text-slate-400"
+                  onClick={() => setSelectedSessionIds(new Set())}
+                >
+                  Clear Selection
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Table */}
           <div className="rounded-md border border-slate-700">
             <Table>
               <TableHeader>
                 <TableRow className="border-slate-700 hover:bg-slate-700/50">
+                  <TableHead className="text-slate-400 w-10">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0"
+                            onClick={selectAllFlagged}
+                          >
+                            {paginatedSessions.filter(s => 
+                              (s.suspicion_score || 0) >= 40 || (Array.isArray(s.suspicious_flags) && s.suspicious_flags.length > 0)
+                            ).every(s => selectedSessionIds.has(s.id)) && paginatedSessions.some(s => 
+                              (s.suspicion_score || 0) >= 40 || (Array.isArray(s.suspicious_flags) && s.suspicious_flags.length > 0)
+                            ) ? (
+                              <CheckSquare className="w-4 h-4 text-primary" />
+                            ) : (
+                              <Square className="w-4 h-4 text-slate-500" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Select all flagged sessions on this page</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableHead>
                   <TableHead className="text-slate-400">Session ID</TableHead>
                   <TableHead className="text-slate-400">Mode</TableHead>
                   <TableHead className="text-slate-400">Started</TableHead>
@@ -443,8 +629,19 @@ interface SessionDetails {
                   return (
                     <TableRow
                       key={session.id}
-                      className={`border-slate-700 hover:bg-slate-700/50 ${isReset ? 'opacity-40' : isCompleted ? '' : 'opacity-50'}`}
+                      className={`border-slate-700 hover:bg-slate-700/50 ${isReset ? 'opacity-40' : isCompleted ? '' : 'opacity-50'} ${selectedSessionIds.has(session.id) ? 'bg-slate-700/30' : ''}`}
                     >
+                      <TableCell>
+                        {isSuspicious ? (
+                          <Checkbox
+                            checked={selectedSessionIds.has(session.id)}
+                            onCheckedChange={() => toggleSessionSelection(session.id)}
+                            className="border-slate-500"
+                          />
+                        ) : (
+                          <span className="text-slate-600">-</span>
+                        )}
+                      </TableCell>
                       <TableCell className="font-mono text-sm text-slate-300">
                         {session.session_id.slice(0, 8)}...
                       </TableCell>

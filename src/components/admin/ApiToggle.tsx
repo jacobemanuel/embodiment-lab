@@ -280,61 +280,61 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
             </p>
           )}
 
-          {/* API Key Section - Owner Only */}
-          {isOwner && (
-            <div className="pt-4 border-t border-slate-700">
-              <div className="flex items-center gap-2 mb-3">
-                <Key className="w-4 h-4 text-yellow-500" />
-                <Label className="text-white text-sm font-medium">Anam API Key</Label>
-              </div>
-              
-              <div className="flex items-center gap-2 mb-3 text-sm">
-                <span className="text-slate-400">Current:</span>
-                <code className="bg-slate-900 px-2 py-1 rounded text-slate-300">{currentAnamKey}</code>
-                {settings.anam_api_key?.updated_by && (
-                  <span className="text-xs text-slate-500">
-                    (by {settings.anam_api_key.updated_by})
-                  </span>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    type={showApiKey ? 'text' : 'password'}
-                    value={newApiKey}
-                    onChange={(e) => setNewApiKey(e.target.value)}
-                    placeholder="Enter new Anam API key..."
-                    className="bg-slate-900 border-slate-600 text-white pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowApiKey(!showApiKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                  >
-                    {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                <Button
-                  onClick={handleSaveApiKey}
-                  disabled={isSavingKey || !newApiKey.trim()}
-                  className="bg-yellow-600 hover:bg-yellow-700"
-                >
-                  {isSavingKey ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-1" />
-                      Save
-                    </>
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-slate-500 mt-2">
-                When the free Anam account limit is reached, paste a new API key here.
-              </p>
+          {/* API Key Section - All Admins can update, Owner sees full info */}
+          <div className="pt-4 border-t border-slate-700">
+            <div className="flex items-center gap-2 mb-3">
+              <Key className="w-4 h-4 text-yellow-500" />
+              <Label className="text-white text-sm font-medium">Anam API Key</Label>
             </div>
-          )}
+            
+            {/* Current key info - Owner sees more details */}
+            <div className="flex items-center gap-2 mb-3 text-sm flex-wrap">
+              <span className="text-slate-400">Current:</span>
+              <code className="bg-slate-900 px-2 py-1 rounded text-slate-300">{currentAnamKey}</code>
+              {settings.anam_api_key?.updated_by && (
+                <span className="text-xs text-slate-500">
+                  (added by {settings.anam_api_key.updated_by}
+                  {settings.anam_api_key.updated_at && ` on ${new Date(settings.anam_api_key.updated_at).toLocaleDateString()}`})
+                </span>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={newApiKey}
+                  onChange={(e) => setNewApiKey(e.target.value)}
+                  placeholder="Enter new Anam API key..."
+                  className="bg-slate-900 border-slate-600 text-white pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <Button
+                onClick={handleSaveApiKey}
+                disabled={isSavingKey || !newApiKey.trim()}
+                className="bg-yellow-600 hover:bg-yellow-700"
+              >
+                {isSavingKey ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-1" />
+                    Save
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              Update to use your own Anam API key from your free account.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

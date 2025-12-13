@@ -15,6 +15,7 @@ import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection";
+import ExitStudyButton from "@/components/ExitStudyButton";
 
 const Demographics = () => {
   const navigate = useNavigate();
@@ -123,8 +124,9 @@ const Demographics = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <ConsentSidebar />
       <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <img src={logo} alt="Majewski Studio" className="h-8" />
+          <ExitStudyButton />
         </div>
       </header>
 

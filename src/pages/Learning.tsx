@@ -11,6 +11,7 @@ import { TextModeChat } from "@/components/modes/TextModeChat";
 import { AvatarModePanel } from "@/components/modes/AvatarModePanel";
 import { cn } from "@/lib/utils";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
+import ExitStudyButton from "@/components/ExitStudyButton";
 
 const Learning = () => {
   const { mode } = useParams<{ mode: StudyMode }>();
@@ -106,6 +107,7 @@ const Learning = () => {
               <LogOut className="w-4 h-4" />
               <span className={showFinishProminent ? "inline" : "hidden sm:inline"}>Finish</span>
             </Button>
+            <ExitStudyButton showLabel={false} />
           </div>
         </div>
       </header>

@@ -34,9 +34,6 @@ const Welcome = () => {
                   AI Image Generation Study
                 </h1>
               </div>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Learn AI image generation while helping research on AI-powered education.
-              </p>
             </div>
 
             {/* Premium glass card */}

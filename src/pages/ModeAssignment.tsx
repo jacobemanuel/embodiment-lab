@@ -7,6 +7,7 @@ import { MessageSquare, Smile } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 import { toast } from "sonner";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
+import ExitStudyButton from "@/components/ExitStudyButton";
 
 const ModeAssignment = () => {
   const navigate = useNavigate();
@@ -104,8 +105,9 @@ const ModeAssignment = () => {
   };
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border p-4">
+      <header className="border-b border-border p-4 flex items-center justify-between">
         <img src={logo} alt="Logo" className="h-8" />
+        <ExitStudyButton />
       </header>
 
       <div className="flex-1 flex items-center justify-center p-6">

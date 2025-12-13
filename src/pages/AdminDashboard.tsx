@@ -212,6 +212,38 @@ const AdminDashboard = () => {
           )}
         </Tabs>
       </main>
+
+      {/* Footer */}
+      <footer className="mt-12 border-t border-slate-700 bg-slate-800/50">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-purple-600/20 flex items-center justify-center border border-slate-600">
+                <BarChart3 className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-300">AI Image Generation Study</p>
+                <p className="text-xs text-slate-500">Research Dashboard v1.0</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-6 text-xs text-slate-500">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span>System Online</span>
+              </div>
+              <span className="hidden md:inline">•</span>
+              <span className="hidden md:inline">Technical University of Munich</span>
+              <span className="hidden md:inline">•</span>
+              <span>© {new Date().getFullYear()}</span>
+            </div>
+          </div>
+          
+          <div className="mt-6 pt-4 border-t border-slate-700/50 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-slate-600">
+            <span>Built with ❤️ for research</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

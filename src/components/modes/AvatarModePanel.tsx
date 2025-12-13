@@ -100,17 +100,9 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
     if (isListening) {
       stopListening();
       setIsListening(false);
-      if (isConnected) {
-        // Let Alex know the user muted their mic for more natural reactions
-        sendMessage("I just muted my microphone, so you might not hear me for a moment.");
-      }
     } else {
       startListening();
       setIsListening(true);
-      if (isConnected) {
-        // Let Alex know the user can speak again
-        sendMessage("I just turned my microphone back on, so you should be able to hear me now.");
-      }
     }
   };
 
@@ -128,11 +120,6 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
       }
       setIsCameraOn(false);
       setCameraError(null);
-
-      if (isConnected) {
-        // Tell Alex the camera was turned off for more realistic behavior
-        sendMessage("I just turned my camera off, so you can't see me anymore.");
-      }
     } else {
       // Turn on camera
       console.log('Turning camera ON');
@@ -147,11 +134,6 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
         }
         setIsCameraOn(true);
         setCameraError(null);
-
-        if (isConnected) {
-          // Let Alex know the user became visible
-          sendMessage("I just turned my camera on, so you can see me now.");
-        }
       } catch (err) {
         console.error('Camera access error:', err);
         setCameraError('Camera access denied');

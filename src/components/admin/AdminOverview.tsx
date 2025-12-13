@@ -17,7 +17,7 @@ interface AvatarTimeData {
 
 interface KnowledgeGainData {
   sessionId: string;
-  mode: string;
+  mode: 'text' | 'avatar' | 'both';
   preScore: number;
   postScore: number;
   gain: number;
@@ -54,6 +54,13 @@ interface StudyStats {
   avgGain: number;
   textModeGain: number;
   avatarModeGain: number;
+  bothModesGain: number;
+  textModePreScore: number;
+  textModePostScore: number;
+  avatarModePreScore: number;
+  avatarModePostScore: number;
+  bothModesPreScore: number;
+  bothModesPostScore: number;
   questionAnalysis: QuestionAnalysis[];
 }
 
@@ -87,15 +94,15 @@ const AdminOverview = () => {
       const { data: sessions, error: sessionsError } = await query;
       if (sessionsError) throw sessionsError;
 
-      // Fetch demographics for completed sessions
+      // Fetch demographic_responses for completed sessions (not the old demographics table)
       const sessionIds = sessions?.map(s => s.id) || [];
-      let demographics: any[] = [];
+      let demographicResponses: any[] = [];
       if (sessionIds.length > 0) {
         const { data: demoData } = await supabase
-          .from('demographics')
+          .from('demographic_responses')
           .select('*')
           .in('session_id', sessionIds);
-        demographics = demoData || [];
+        demographicResponses = demoData || [];
       }
 
       // Fetch avatar time tracking
@@ -172,13 +179,28 @@ const AdminOverview = () => {
         count: sessionsByDay[date]
       }));
 
-      // Age breakdown
+      // Age breakdown from demographic_responses (question_id = 'demo-age')
       const ageBreakdown: Record<string, number> = {};
-      demographics.forEach(d => {
-        if (d.age_range) {
-          ageBreakdown[d.age_range] = (ageBreakdown[d.age_range] || 0) + 1;
-        }
-      });
+      demographicResponses
+        .filter(r => r.question_id === 'demo-age')
+        .forEach(r => {
+          const age = r.answer;
+          if (age && age !== 'Prefer not to say') {
+            // Group ages into ranges
+            const ageNum = parseInt(age, 10);
+            let ageRange = age;
+            if (!isNaN(ageNum)) {
+              if (ageNum < 18) ageRange = 'Under 18';
+              else if (ageNum <= 24) ageRange = '18-24';
+              else if (ageNum <= 34) ageRange = '25-34';
+              else if (ageNum <= 44) ageRange = '35-44';
+              else if (ageNum <= 54) ageRange = '45-54';
+              else if (ageNum <= 64) ageRange = '55-64';
+              else ageRange = '65+';
+            }
+            ageBreakdown[ageRange] = (ageBreakdown[ageRange] || 0) + 1;
+          }
+        });
 
       // Mode comparison (completed only)
       const modeComparison = [
@@ -188,6 +210,7 @@ const AdminOverview = () => {
       ];
 
       // Fetch questions with correct answers for scoring
+      // FIXED: Use underscore format (pre_test, post_test) not hyphen
       const { data: questionsData } = await supabase
         .from('study_questions')
         .select('question_id, question_text, correct_answer, question_type')
@@ -204,6 +227,13 @@ const AdminOverview = () => {
       let avgGain = 0;
       let textModeGain = 0;
       let avatarModeGain = 0;
+      let bothModesGain = 0;
+      let textModePreScore = 0;
+      let textModePostScore = 0;
+      let avatarModePreScore = 0;
+      let avatarModePostScore = 0;
+      let bothModesPreScore = 0;
+      let bothModesPostScore = 0;
       
       if (sessionIds.length > 0) {
         const { data: preTestResponses } = await supabase
@@ -255,13 +285,25 @@ const AdminOverview = () => {
           }
         });
 
-        // Build knowledge gain array
+        // Build knowledge gain array with proper mode detection
         sessions?.forEach(s => {
           const scores = sessionScores[s.id];
           if (scores && scores.preTotal > 0 && scores.postTotal > 0) {
             const preScore = (scores.preCorrect / scores.preTotal) * 100;
             const postScore = (scores.postCorrect / scores.postTotal) * 100;
-            const mode = s.modes_used?.includes('avatar') ? 'avatar' : s.mode;
+            
+            // Determine mode: both if modes_used has both, otherwise check modes_used or fallback to mode
+            let mode: 'text' | 'avatar' | 'both' = 'text';
+            if (s.modes_used?.includes('text') && s.modes_used?.includes('avatar')) {
+              mode = 'both';
+            } else if (s.modes_used?.length === 1 && s.modes_used.includes('avatar')) {
+              mode = 'avatar';
+            } else if (s.modes_used?.length === 1 && s.modes_used.includes('text')) {
+              mode = 'text';
+            } else if (!s.modes_used && s.mode === 'avatar') {
+              mode = 'avatar';
+            }
+            
             knowledgeGain.push({
               sessionId: s.session_id,
               mode,
@@ -276,22 +318,48 @@ const AdminOverview = () => {
           }
         });
 
-        // Calculate averages
+        // Calculate averages overall
         if (knowledgeGain.length > 0) {
           avgPreScore = Math.round(knowledgeGain.reduce((sum, k) => sum + k.preScore, 0) / knowledgeGain.length);
           avgPostScore = Math.round(knowledgeGain.reduce((sum, k) => sum + k.postScore, 0) / knowledgeGain.length);
           avgGain = Math.round(knowledgeGain.reduce((sum, k) => sum + k.gain, 0) / knowledgeGain.length);
-
-          const textModeData = knowledgeGain.filter(k => k.mode === 'text');
-          const avatarModeData = knowledgeGain.filter(k => k.mode === 'avatar');
-          
-          textModeGain = textModeData.length > 0 
-            ? Math.round(textModeData.reduce((sum, k) => sum + k.gain, 0) / textModeData.length) 
-            : 0;
-          avatarModeGain = avatarModeData.length > 0 
-            ? Math.round(avatarModeData.reduce((sum, k) => sum + k.gain, 0) / avatarModeData.length) 
-            : 0;
         }
+
+        // Calculate per-mode averages
+        const textModeData = knowledgeGain.filter(k => k.mode === 'text');
+        const avatarModeData = knowledgeGain.filter(k => k.mode === 'avatar');
+        const bothModesData = knowledgeGain.filter(k => k.mode === 'both');
+        
+        textModeGain = textModeData.length > 0 
+          ? Math.round(textModeData.reduce((sum, k) => sum + k.gain, 0) / textModeData.length) 
+          : 0;
+        avatarModeGain = avatarModeData.length > 0 
+          ? Math.round(avatarModeData.reduce((sum, k) => sum + k.gain, 0) / avatarModeData.length) 
+          : 0;
+        bothModesGain = bothModesData.length > 0 
+          ? Math.round(bothModesData.reduce((sum, k) => sum + k.gain, 0) / bothModesData.length) 
+          : 0;
+
+        textModePreScore = textModeData.length > 0 
+          ? Math.round(textModeData.reduce((sum, k) => sum + k.preScore, 0) / textModeData.length) 
+          : 0;
+        textModePostScore = textModeData.length > 0 
+          ? Math.round(textModeData.reduce((sum, k) => sum + k.postScore, 0) / textModeData.length) 
+          : 0;
+
+        avatarModePreScore = avatarModeData.length > 0 
+          ? Math.round(avatarModeData.reduce((sum, k) => sum + k.preScore, 0) / avatarModeData.length) 
+          : 0;
+        avatarModePostScore = avatarModeData.length > 0 
+          ? Math.round(avatarModeData.reduce((sum, k) => sum + k.postScore, 0) / avatarModeData.length) 
+          : 0;
+
+        bothModesPreScore = bothModesData.length > 0 
+          ? Math.round(bothModesData.reduce((sum, k) => sum + k.preScore, 0) / bothModesData.length) 
+          : 0;
+        bothModesPostScore = bothModesData.length > 0 
+          ? Math.round(bothModesData.reduce((sum, k) => sum + k.postScore, 0) / bothModesData.length) 
+          : 0;
 
         // Question-level analysis
         const questionStats: Record<string, { preCorrect: number; preTotal: number; postCorrect: number; postTotal: number; text: string }> = {};
@@ -358,6 +426,13 @@ const AdminOverview = () => {
         avgGain,
         textModeGain,
         avatarModeGain,
+        bothModesGain,
+        textModePreScore,
+        textModePostScore,
+        avatarModePreScore,
+        avatarModePostScore,
+        bothModesPreScore,
+        bothModesPostScore,
         questionAnalysis,
       });
     } catch (error) {
@@ -439,8 +514,9 @@ const AdminOverview = () => {
   }
 
   const modeComparisonData = [
-    { name: 'Text Mode', gain: stats.textModeGain },
-    { name: 'Avatar Mode', gain: stats.avatarModeGain },
+    { name: 'Text Only', gain: stats.textModeGain, preScore: stats.textModePreScore, postScore: stats.textModePostScore },
+    { name: 'Avatar Only', gain: stats.avatarModeGain, preScore: stats.avatarModePreScore, postScore: stats.avatarModePostScore },
+    { name: 'Both Modes', gain: stats.bothModesGain, preScore: stats.bothModesPreScore, postScore: stats.bothModesPostScore },
   ];
 
   const prePostComparisonData = [
@@ -545,23 +621,97 @@ const AdminOverview = () => {
         <CardContent>
           {stats.knowledgeGain.length > 0 ? (
             <div className="space-y-6">
-              {/* Summary cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Overall Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-slate-700/50 rounded-lg p-4 text-center">
-                  <div className="text-sm text-slate-400 mb-1">Avg. Pre-Test</div>
+                  <div className="text-sm text-slate-400 mb-1">Overall Avg. Pre-Test</div>
                   <div className="text-2xl font-bold text-red-400">{stats.avgPreScore}%</div>
                 </div>
                 <div className="bg-slate-700/50 rounded-lg p-4 text-center">
-                  <div className="text-sm text-slate-400 mb-1">Avg. Post-Test</div>
+                  <div className="text-sm text-slate-400 mb-1">Overall Avg. Post-Test</div>
                   <div className="text-2xl font-bold text-green-400">{stats.avgPostScore}%</div>
                 </div>
                 <div className="bg-slate-700/50 rounded-lg p-4 text-center">
-                  <div className="text-sm text-slate-400 mb-1">Text Mode Gain</div>
-                  <div className="text-2xl font-bold text-blue-400">{stats.textModeGain >= 0 ? '+' : ''}{stats.textModeGain}%</div>
+                  <div className="text-sm text-slate-400 mb-1">Overall Avg. Gain</div>
+                  <div className="text-2xl font-bold text-white">{stats.avgGain >= 0 ? '+' : ''}{stats.avgGain}%</div>
                 </div>
-                <div className="bg-slate-700/50 rounded-lg p-4 text-center">
-                  <div className="text-sm text-slate-400 mb-1">Avatar Mode Gain</div>
-                  <div className="text-2xl font-bold text-purple-400">{stats.avatarModeGain >= 0 ? '+' : ''}{stats.avatarModeGain}%</div>
+              </div>
+
+              {/* Mode-specific breakdown */}
+              <div className="border-t border-slate-700 pt-4">
+                <h4 className="text-sm font-medium text-slate-300 mb-4">Knowledge Gain by Learning Mode</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Text Only */}
+                  <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-blue-400 mb-3 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-400" />
+                      Text Only
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Pre-Test:</span>
+                        <span className="text-red-400">{stats.textModePreScore}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Post-Test:</span>
+                        <span className="text-green-400">{stats.textModePostScore}%</span>
+                      </div>
+                      <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
+                        <span className="text-slate-300 font-medium">Gain:</span>
+                        <span className={`font-bold ${stats.textModeGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {stats.textModeGain >= 0 ? '+' : ''}{stats.textModeGain}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Avatar Only */}
+                  <div className="bg-purple-900/20 border border-purple-700/50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-purple-400 mb-3 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-purple-400" />
+                      Avatar Only
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Pre-Test:</span>
+                        <span className="text-red-400">{stats.avatarModePreScore}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Post-Test:</span>
+                        <span className="text-green-400">{stats.avatarModePostScore}%</span>
+                      </div>
+                      <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
+                        <span className="text-slate-300 font-medium">Gain:</span>
+                        <span className={`font-bold ${stats.avatarModeGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {stats.avatarModeGain >= 0 ? '+' : ''}{stats.avatarModeGain}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Both Modes */}
+                  <div className="bg-cyan-900/20 border border-cyan-700/50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-cyan-400 mb-3 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-cyan-400" />
+                      Both Modes
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Pre-Test:</span>
+                        <span className="text-red-400">{stats.bothModesPreScore}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Post-Test:</span>
+                        <span className="text-green-400">{stats.bothModesPostScore}%</span>
+                      </div>
+                      <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
+                        <span className="text-slate-300 font-medium">Gain:</span>
+                        <span className={`font-bold ${stats.bothModesGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {stats.bothModesGain >= 0 ? '+' : ''}{stats.bothModesGain}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

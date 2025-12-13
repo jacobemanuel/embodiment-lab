@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, BarChart3, FileText, Settings, Users, Presentation, HelpCircle, Clock } from "lucide-react";
+import { LogOut, BarChart3, FileText, Settings, Users, Presentation, Clock, Cog } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminSessions from "@/components/admin/AdminSessions";
@@ -116,9 +116,6 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Owner-only API Toggle */}
-        <ApiToggle userEmail={userEmail} />
-        
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="bg-slate-800 border border-slate-700 flex-wrap h-auto gap-1 p-1">
             <TabWithHelp 
@@ -151,6 +148,12 @@ const AdminDashboard = () => {
               label="Questions" 
               help="Edit pre-test, post-test, and demographic survey questions. Changes go live immediately."
             />
+            <TabWithHelp 
+              value="settings" 
+              icon={Cog} 
+              label="API Settings" 
+              help="Control API toggles (OpenAI, Anam) and manage API keys for the study."
+            />
             {userEmail === OWNER_EMAIL && (
               <TabWithHelp 
                 value="audit" 
@@ -179,6 +182,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="questions">
             <AdminQuestions />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <ApiToggle userEmail={userEmail} />
           </TabsContent>
 
           {userEmail === OWNER_EMAIL && (

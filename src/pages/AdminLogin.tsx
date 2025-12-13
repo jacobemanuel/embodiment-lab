@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Lock, Mail, Shield } from "lucide-react";
 import logo from "@/assets/logo-white.png";
-import adminBg from "@/assets/admin-bg.jpg";
+import adminBg1 from "@/assets/admin-bg.jpg";
+import adminBg2 from "@/assets/admin-bg-2.jpg";
+import adminBg3 from "@/assets/admin-bg-3.jpg";
+import adminBg4 from "@/assets/admin-bg-4.png";
+import adminBg5 from "@/assets/admin-bg-5.jpg";
+import adminBg6 from "@/assets/admin-bg-6.png";
+
+const adminBackgrounds = [adminBg1, adminBg2, adminBg3, adminBg4, adminBg5, adminBg6];
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Pick random background once on mount
+  const randomBg = useMemo(() => adminBackgrounds[Math.floor(Math.random() * adminBackgrounds.length)], []);
 
   useEffect(() => {
     // Check if already logged in as researcher
@@ -78,7 +88,7 @@ const AdminLogin = () => {
       {/* Background image with blur to hide low resolution */}
       <div 
         className="fixed inset-0 bg-cover bg-center bg-no-repeat scale-110 blur-sm"
-        style={{ backgroundImage: `url(${adminBg})` }}
+        style={{ backgroundImage: `url(${randomBg})` }}
       />
       {/* Gradient overlay for style */}
       <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/70" />

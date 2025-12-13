@@ -130,6 +130,9 @@ interface StudyStats {
   avgSuspicionScore: number;
   suspiciousFlags: { flag: string; count: number }[];
   resetCount: number;
+  ignoredCount: number;
+  acceptedCount: number;
+  pendingCount: number;
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
@@ -203,10 +206,12 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       const { data: allSessions, error: sessionsError } = await sessionQuery;
       if (sessionsError) throw sessionsError;
 
-      // IMPORTANT: Filter out reset/invalid sessions from statistics by default
+      // IMPORTANT: Filter out reset/invalid sessions AND ignored sessions from statistics by default
       // Reset sessions are those where users tried to switch modes or other invalid actions
-      const validSessions = allSessions?.filter(s => s.status !== 'reset') || [];
+      // Ignored sessions are those manually marked as invalid by admins
+      const validSessions = allSessions?.filter(s => s.status !== 'reset' && s.validation_status !== 'ignored') || [];
       const resetSessions = allSessions?.filter(s => s.status === 'reset') || [];
+      const ignoredSessions = allSessions?.filter(s => s.validation_status === 'ignored') || [];
 
       // Filter sessions based on status filter
       const completedSessions = validSessions.filter(s => s.completed_at);
@@ -769,11 +774,16 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       };
 
       // Calculate suspicious session statistics from ALL sessions (not filtered)
-      const suspiciousSessions = (allSessions || []).filter(s => (s.suspicion_score || 0) > 0);
+      const suspiciousSessions = (allSessions || []).filter(s => (s.suspicion_score || 0) > 0 || (Array.isArray(s.suspicious_flags) && s.suspicious_flags.length > 0));
       const suspiciousCount = suspiciousSessions.length;
       const avgSuspicionScore = suspiciousCount > 0 
         ? Math.round(suspiciousSessions.reduce((sum, s) => sum + (s.suspicion_score || 0), 0) / suspiciousCount)
         : 0;
+      
+      // Count validation statuses for suspicious sessions
+      const acceptedCount = suspiciousSessions.filter(s => s.validation_status === 'accepted').length;
+      const ignoredCount = suspiciousSessions.filter(s => s.validation_status === 'ignored').length;
+      const pendingCount = suspiciousSessions.filter(s => !s.validation_status || s.validation_status === 'pending').length;
       
       // Count flag occurrences
       const flagCounts: Record<string, number> = {};
@@ -836,6 +846,9 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         avgSuspicionScore,
         suspiciousFlags,
         resetCount: resetSessions.length,
+        ignoredCount,
+        acceptedCount,
+        pendingCount,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -2130,34 +2143,48 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               Data Quality Alerts
             </CardTitle>
             <CardDescription className="text-slate-400">
-              Sessions flagged for potential data quality issues
+              Sessions flagged for potential data quality issues. Manage validation in the Sessions tab.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                <div className="text-xs text-slate-400 mb-1">Suspicious</div>
+                <div className="text-xs text-slate-400 mb-1">Flagged</div>
                 <div className="text-2xl font-bold text-amber-400">{stats.suspiciousCount}</div>
-                <div className="text-[10px] text-slate-500 mt-1">sessions flagged</div>
+                <div className="text-[10px] text-slate-500 mt-1">total alerts</div>
               </div>
               <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                <div className="text-xs text-slate-400 mb-1">Avg Score</div>
-                <div className="text-2xl font-bold text-orange-400">{stats.avgSuspicionScore}</div>
-                <div className="text-[10px] text-slate-500 mt-1">suspicion level</div>
+                <div className="text-xs text-slate-400 mb-1">Pending</div>
+                <div className="text-2xl font-bold text-yellow-400">{stats.pendingCount}</div>
+                <div className="text-[10px] text-slate-500 mt-1">needs review</div>
               </div>
               <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                <div className="text-xs text-slate-400 mb-1">Reset</div>
-                <div className="text-2xl font-bold text-red-400">{stats.resetCount}</div>
-                <div className="text-[10px] text-slate-500 mt-1">invalidated</div>
+                <div className="text-xs text-slate-400 mb-1">Accepted</div>
+                <div className="text-2xl font-bold text-green-400">{stats.acceptedCount}</div>
+                <div className="text-[10px] text-slate-500 mt-1">in statistics</div>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                <div className="text-xs text-slate-400 mb-1">Ignored</div>
+                <div className="text-2xl font-bold text-red-400">{stats.ignoredCount}</div>
+                <div className="text-[10px] text-slate-500 mt-1">excluded</div>
               </div>
               <div className="bg-slate-800/50 rounded-lg p-3">
                 <div className="text-xs text-slate-400 mb-2">Top Flags</div>
                 <div className="space-y-1 text-xs max-h-16 overflow-y-auto">
                   {stats.suspiciousFlags.slice(0, 3).map(f => (
-                    <div key={f.flag} className="flex justify-between">
-                      <span className="text-amber-400 truncate mr-2">{f.flag.replace(/_/g, ' ')}</span>
-                      <span className="text-slate-300">{f.count}</span>
-                    </div>
+                    <TooltipProvider key={f.flag}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex justify-between cursor-help">
+                            <span className="text-amber-400 truncate mr-2">{f.flag.replace(/_/g, ' ').slice(0, 25)}...</span>
+                            <span className="text-slate-300">{f.count}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-xs">{f.flag.replace(/_/g, ' ')}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   ))}
                   {stats.suspiciousFlags.length === 0 && (
                     <div className="text-slate-500">No flags</div>
@@ -2165,6 +2192,17 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 </div>
               </div>
             </div>
+            {stats.resetCount > 0 && (
+              <div className="mt-3 pt-3 border-t border-slate-700/50">
+                <div className="flex items-center gap-2 text-sm text-red-400">
+                  <span className="font-medium">{stats.resetCount}</span>
+                  <span className="text-slate-400">session(s) were reset due to invalid actions (e.g., mode switching attempts)</span>
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-slate-500 mt-3">
+              💡 Tip: Go to the <strong>Sessions</strong> tab, filter by "Suspicious" status, and click the ✓ or ✗ buttons to accept or ignore flagged sessions.
+            </p>
           </CardContent>
         </Card>
       )}

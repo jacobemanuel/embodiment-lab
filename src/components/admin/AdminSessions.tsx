@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw } from "lucide-react";
+import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw, CheckCircle, XCircle, AlertTriangle, Info } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import DateRangeFilter from "./DateRangeFilter";
 import { getPermissions } from "@/lib/permissions";
+import { toast } from "sonner";
 
 interface AdminSessionsProps {
   userEmail?: string;
@@ -30,6 +32,9 @@ interface Session {
   status?: string;
   suspicion_score?: number;
   suspicious_flags?: unknown;
+  validation_status?: string;
+  validated_by?: string | null;
+  validated_at?: string | null;
 }
 
 interface SessionDetails {
@@ -159,6 +164,34 @@ interface SessionDetails {
       console.error('Error fetching session details:', error);
     } finally {
       setIsDetailsLoading(false);
+    }
+  };
+
+  // Update session validation status
+  const updateValidationStatus = async (sessionId: string, status: 'accepted' | 'ignored') => {
+    try {
+      const { error } = await supabase
+        .from('study_sessions')
+        .update({
+          validation_status: status,
+          validated_by: userEmail,
+          validated_at: new Date().toISOString()
+        })
+        .eq('id', sessionId);
+
+      if (error) throw error;
+
+      // Update local state
+      setSessions(prev => prev.map(s => 
+        s.id === sessionId 
+          ? { ...s, validation_status: status, validated_by: userEmail, validated_at: new Date().toISOString() }
+          : s
+      ));
+
+      toast.success(`Session ${status === 'accepted' ? 'accepted for statistics' : 'ignored from statistics'}`);
+    } catch (error) {
+      console.error('Error updating validation status:', error);
+      toast.error('Failed to update session status');
     }
   };
 
@@ -313,6 +346,7 @@ interface SessionDetails {
                   <TableHead className="text-slate-400">Duration</TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
                   <TableHead className="text-slate-400">Flags</TableHead>
+                  <TableHead className="text-slate-400">Validation</TableHead>
                   <TableHead className="text-slate-400">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -324,8 +358,9 @@ interface SessionDetails {
 
                   const isCompleted = !!session.completed_at;
                   const isReset = session.status === 'reset';
-                  const isSuspicious = (session.suspicion_score || 0) >= 40;
+                  const isSuspicious = (session.suspicion_score || 0) >= 40 || (Array.isArray(session.suspicious_flags) && session.suspicious_flags.length > 0);
                   const suspiciousFlags = Array.isArray(session.suspicious_flags) ? session.suspicious_flags : [];
+                  const validationStatus = session.validation_status || 'pending';
 
                   // Determine status display
                   let statusBadge;
@@ -372,21 +407,117 @@ interface SessionDetails {
                         {statusBadge}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1">
-                          {isSuspicious && (
-                            <Badge variant="destructive" className="text-xs">
-                              ⚠️ Score: {session.suspicion_score}
-                            </Badge>
-                          )}
-                          {suspiciousFlags.length > 0 && (
-                            <span className="text-xs text-yellow-500" title={suspiciousFlags.join(', ')}>
-                              {suspiciousFlags.length} flag{suspiciousFlags.length > 1 ? 's' : ''}
-                            </span>
-                          )}
-                          {!isSuspicious && suspiciousFlags.length === 0 && (
-                            <span className="text-xs text-slate-500">-</span>
-                          )}
-                        </div>
+                        <TooltipProvider>
+                          <div className="flex flex-col gap-1">
+                            {isSuspicious && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="destructive" className="text-xs cursor-help">
+                                    ⚠️ Score: {session.suspicion_score || 0}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p className="font-semibold mb-1">Suspicious Flags:</p>
+                                  <ul className="text-xs space-y-1">
+                                    {suspiciousFlags.map((flag, i) => (
+                                      <li key={i}>• {String(flag).replace(/_/g, ' ')}</li>
+                                    ))}
+                                    {suspiciousFlags.length === 0 && <li>No specific flags</li>}
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            {!isSuspicious && suspiciousFlags.length > 0 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="text-xs text-yellow-500 cursor-help">
+                                    {suspiciousFlags.length} flag{suspiciousFlags.length > 1 ? 's' : ''}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <ul className="text-xs space-y-1">
+                                    {suspiciousFlags.map((flag, i) => (
+                                      <li key={i}>• {String(flag).replace(/_/g, ' ')}</li>
+                                    ))}
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            {!isSuspicious && suspiciousFlags.length === 0 && (
+                              <span className="text-xs text-slate-500">-</span>
+                            )}
+                          </div>
+                        </TooltipProvider>
+                      </TableCell>
+                      <TableCell>
+                        {isSuspicious || suspiciousFlags.length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            {validationStatus === 'pending' ? (
+                              <div className="flex gap-1">
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost"
+                                        className="h-7 w-7 p-0 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                                        onClick={() => updateValidationStatus(session.id, 'accepted')}
+                                      >
+                                        <CheckCircle className="w-4 h-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Accept for statistics</TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost"
+                                        className="h-7 w-7 p-0 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                                        onClick={() => updateValidationStatus(session.id, 'ignored')}
+                                      >
+                                        <XCircle className="w-4 h-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Ignore from statistics</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                            ) : validationStatus === 'accepted' ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge className="bg-green-600/20 text-green-400 border-green-600/50 cursor-help">
+                                      <CheckCircle className="w-3 h-3 mr-1" />
+                                      Accepted
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Accepted by {session.validated_by}</p>
+                                    {session.validated_at && <p className="text-xs text-muted-foreground">{format(new Date(session.validated_at), 'dd MMM yyyy HH:mm')}</p>}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge className="bg-red-600/20 text-red-400 border-red-600/50 cursor-help">
+                                      <XCircle className="w-3 h-3 mr-1" />
+                                      Ignored
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Ignored by {session.validated_by}</p>
+                                    {session.validated_at && <p className="text-xs text-muted-foreground">{format(new Date(session.validated_at), 'dd MMM yyyy HH:mm')}</p>}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-500">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Button 

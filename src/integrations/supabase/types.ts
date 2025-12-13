@@ -465,6 +465,9 @@ export type Database = {
           status: string
           suspicion_score: number | null
           suspicious_flags: Json | null
+          validated_at: string | null
+          validated_by: string | null
+          validation_status: string
         }
         Insert: {
           browser_fingerprint?: string | null
@@ -479,6 +482,9 @@ export type Database = {
           status?: string
           suspicion_score?: number | null
           suspicious_flags?: Json | null
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_status?: string
         }
         Update: {
           browser_fingerprint?: string | null
@@ -493,6 +499,9 @@ export type Database = {
           status?: string
           suspicion_score?: number | null
           suspicious_flags?: Json | null
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_status?: string
         }
         Relationships: []
       }

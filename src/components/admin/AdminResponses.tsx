@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Filter, MessageSquare, FileSpreadsheet, CheckCircle, XCircle, Award, Brain, ThumbsUp } from "lucide-react";
+import { Download, Filter, MessageSquare, FileSpreadsheet, CheckCircle, XCircle, Award, Brain, ThumbsUp, Users, ClipboardList } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, ReferenceLine } from "recharts";
 import DateRangeFilter from "./DateRangeFilter";
 import { startOfDay, endOfDay, format } from "date-fns";
@@ -557,8 +557,14 @@ const AdminResponses = () => {
 
       <Tabs defaultValue="demographics" className="space-y-6">
         <TabsList className="bg-slate-800 border border-slate-700">
-          <TabsTrigger value="demographics">Demographics</TabsTrigger>
-          <TabsTrigger value="pretest">Pre-test</TabsTrigger>
+          <TabsTrigger value="demographics" className="flex items-center gap-1">
+            <Users className="w-3 h-3" />
+            Demographics
+          </TabsTrigger>
+          <TabsTrigger value="pretest" className="flex items-center gap-1">
+            <ClipboardList className="w-3 h-3" />
+            Pre-test
+          </TabsTrigger>
           <TabsTrigger value="posttest-knowledge" className="flex items-center gap-1">
             <Brain className="w-3 h-3" />
             Post-test (Knowledge)

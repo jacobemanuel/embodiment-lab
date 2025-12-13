@@ -6,6 +6,7 @@ import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { LikertScale } from "@/components/LikertScale";
 import { Loader2 } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
+import ConsentSidebar from "@/components/ConsentSidebar";
 
 const PostTestPage1 = () => {
   const navigate = useNavigate();
@@ -77,11 +78,12 @@ const PostTestPage1 = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <ConsentSidebar />
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <img src={logo} alt="TUM Logo" className="h-8" />
           <div className="text-sm text-muted-foreground">
-            Page 1 of 2 • {Object.keys(responses).length} of {likertQuestions.length} answered
+            Page 1 of 3 • {Object.keys(responses).length} of {likertQuestions.length} answered
           </div>
         </div>
       </header>

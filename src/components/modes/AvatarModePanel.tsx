@@ -68,7 +68,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
       try {
         console.log('Auto-starting user camera after avatar connect');
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 200, height: 150, facingMode: 'user' },
+          video: { width: 640, height: 480, facingMode: 'user' },
           audio: false,
         });
         userStreamRef.current = stream;
@@ -123,7 +123,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
       console.log('Turning camera ON');
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 200, height: 150, facingMode: 'user' },
+          video: { width: 640, height: 480, facingMode: 'user' },
           audio: false
         });
         userStreamRef.current = stream;
@@ -208,15 +208,15 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
 
       {/* User Camera Section - full width with overlay controls */}
       {isConnected && (
-        <div className="border-b border-border bg-muted/30 relative" style={{ height: '140px' }}>
-          {/* User video feed - full width */}
+        <div className="border-b border-border bg-black relative" style={{ height: '120px' }}>
+          {/* User video feed - full width, object-contain to show full camera */}
           <video
             ref={userVideoRef}
             autoPlay
             playsInline
             muted
             className={cn(
-              "w-full h-full object-cover bg-black/80",
+              "w-full h-full object-contain",
               !isCameraOn && "hidden"
             )}
             style={{ transform: 'scaleX(-1)' }}

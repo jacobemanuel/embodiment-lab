@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
+import QuestionPerformanceByMode from "./QuestionPerformanceByMode";
 
 interface AvatarTimeData {
   session_id: string;
@@ -3139,6 +3140,9 @@ const AdminOverview = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Question Performance by Mode */}
+      <QuestionPerformanceByMode startDate={startDate} endDate={endDate} />
     </div>
   );
 };

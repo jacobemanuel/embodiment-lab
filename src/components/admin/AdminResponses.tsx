@@ -254,7 +254,11 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
   };
 
   const exportDemographicsCSV = () => {
-    const data = rawResponses.demo.map(r => ({
+    // Only export responses for ACTIVE questions
+    const activeQuestionIds = Object.keys(questionData);
+    const filteredData = rawResponses.demo.filter(r => activeQuestionIds.includes(r.question_id));
+    
+    const data = filteredData.map(r => ({
       SessionID: r.session_id,
       QuestionID: r.question_id,
       Question: questionData[r.question_id]?.question_text || r.question_id,
@@ -264,7 +268,11 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
   };
 
   const exportPreTestCSV = () => {
-    const data = rawResponses.pre.map(r => ({
+    // Only export responses for ACTIVE questions
+    const activeQuestionIds = Object.keys(questionData);
+    const filteredData = rawResponses.pre.filter(r => activeQuestionIds.includes(r.question_id));
+    
+    const data = filteredData.map(r => ({
       SessionID: r.session_id,
       QuestionID: r.question_id,
       Question: questionData[r.question_id]?.question_text || r.question_id,
@@ -276,11 +284,13 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
   };
 
   const exportPostTestKnowledgeCSV = () => {
-    // Only export knowledge questions (those with correct answers for scoring)
-    const knowledgeResponses = rawResponses.post.filter(r => 
-      r.question_id.startsWith('knowledge-') || 
-      (questionData[r.question_id]?.category === 'knowledge' && questionData[r.question_id]?.correct_answer)
-    );
+    // Only export responses for ACTIVE knowledge questions
+    const activeQuestionIds = Object.keys(questionData);
+    const knowledgeResponses = rawResponses.post.filter(r => {
+      if (!activeQuestionIds.includes(r.question_id)) return false;
+      return r.question_id.startsWith('knowledge-') || 
+        (questionData[r.question_id]?.category === 'knowledge' && questionData[r.question_id]?.correct_answer);
+    });
     const data = knowledgeResponses.map(r => ({
       SessionID: r.session_id,
       QuestionID: r.question_id,
@@ -293,9 +303,11 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
   };
 
   const exportPostTestPerceptionCSV = () => {
-    // Export perception questions (Likert scale - no correct answer)
+    // Only export responses for ACTIVE perception questions
+    const activeQuestionIds = Object.keys(questionData);
     const perceptionCategories = ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'];
     const perceptionResponses = rawResponses.post.filter(r => {
+      if (!activeQuestionIds.includes(r.question_id)) return false;
       const category = questionData[r.question_id]?.category;
       return category && perceptionCategories.includes(category);
     });
@@ -310,7 +322,11 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
   };
 
   const exportOpenFeedbackCSV = () => {
-    const data = openFeedbackData.map(r => ({
+    // Only export responses for ACTIVE open feedback questions
+    const activeQuestionIds = Object.keys(questionData);
+    const filteredData = openFeedbackData.filter(r => activeQuestionIds.includes(r.question_id));
+    
+    const data = filteredData.map(r => ({
       SessionID: r.session_id,
       QuestionID: r.question_id,
       Question: questionData[r.question_id]?.question_text || r.question_id,
@@ -321,6 +337,9 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
 
   const exportAllData = async () => {
     try {
+      // Get active questions to filter responses
+      const activeQuestionIds = Object.keys(questionData);
+      
       let sessionQuery = supabase.from('study_sessions').select('*');
       if (startDate) {
         sessionQuery = sessionQuery.gte('created_at', startOfDay(startDate).toISOString());
@@ -362,20 +381,27 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       }
       const { data: dialogues } = await dialoguesQuery;
 
+      // Filter responses to only include active questions
+      const filteredDemographics = demographics?.filter(r => activeQuestionIds.includes(r.question_id)) || [];
+      const filteredPreTest = preTest?.filter(r => activeQuestionIds.includes(r.question_id)) || [];
+      const filteredPostTest = postTest?.filter(r => activeQuestionIds.includes(r.question_id)) || [];
+
       const exportData = {
         sessions,
-        demographicResponses: demographics,
-        preTestResponses: preTest,
-        postTestResponses: postTest,
+        demographicResponses: filteredDemographics,
+        preTestResponses: filteredPreTest,
+        postTestResponses: filteredPostTest,
         scenarios,
         dialogueTurns: dialogues,
+        activeQuestions: Object.values(questionData), // Include active question definitions
         filters: {
           dateRange: {
             start: startDate?.toISOString() || 'all',
             end: endDate?.toISOString() || 'all'
           },
           status: statusFilter,
-          mode: modeFilter
+          mode: modeFilter,
+          hiddenQuestionsExcluded: true
         },
         exportedAt: new Date().toISOString()
       };

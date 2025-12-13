@@ -138,18 +138,12 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         const contentChunk = event.content || '';
         const trimmed = contentChunk.trim();
 
-        // Ignore system-event payloads, silent acknowledgments, and any JSON code
-        if (trimmed.startsWith('[SYSTEM_EVENT') || 
+        // Ignore context updates and system messages from transcript
+        if (trimmed.startsWith('[Context update') || 
+            trimmed.startsWith('[SYSTEM_EVENT') ||
             trimmed.startsWith('[SILENT_CONTEXT_UPDATE') ||
-            trimmed.includes('[ACKNOWLEDGED]') ||
-            trimmed.includes('[DO_NOT_SPEAK]') ||
-            // Filter out JSON-like content that shouldn't be in transcript
-            trimmed.startsWith('{"') ||
-            trimmed.includes('"state":') ||
-            trimmed.includes('"toggleCount":') ||
-            trimmed.includes('"responseHint":') ||
-            trimmed.includes('"title":') && trimmed.includes('"keyPoints":')) {
-          console.log('Skipping system/JSON content from transcript:', trimmed.substring(0, 50));
+            trimmed.includes('[DO_NOT_SPEAK]')) {
+          console.log('Skipping context message from transcript');
           return;
         }
 
@@ -225,31 +219,38 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
   }, [state.isConnected]);
 
-  // System event sender - sends SILENT context updates to avatar
+  // System event sender - for camera/mic we just LOG, for slides we send natural text
   const sendSystemEvent = useCallback(async (eventType: string, data: Record<string, any> = {}) => {
     if (!clientRef.current || !state.isConnected) return;
 
-    // Format as a silent context update that the avatar should NOT respond to
-    const eventMessage = `[SILENT_CONTEXT_UPDATE:${eventType}] ${JSON.stringify(data)} [DO_NOT_SPEAK]`;
-    console.log('Sending silent context update:', eventMessage);
-
-    try {
-      await clientRef.current.talk(eventMessage);
-    } catch (error) {
-      console.error('Error sending context update:', error);
+    // For camera and mic toggles - DON'T send via talk(), just log internally
+    // Sending these via talk() confuses the LLM
+    if (eventType === 'CAMERA_TOGGLE' || eventType === 'MIC_TOGGLE') {
+      console.log('System event (not sent to avatar):', eventType, data);
+      return;
     }
+
+    // For slide changes - send a NATURAL message (no JSON!)
+    if (eventType === 'SLIDE_CHANGE' && data.title) {
+      const slideTitle = data.title;
+      const naturalMessage = `[Context update: The learner is now viewing the slide titled "${slideTitle}". Remember this for when they ask questions.]`;
+      console.log('Sending slide context:', naturalMessage);
+      
+      try {
+        await clientRef.current.talk(naturalMessage);
+      } catch (error) {
+        console.error('Error sending slide context:', error);
+      }
+      return;
+    }
+
+    console.log('Unhandled system event:', eventType, data);
   }, [state.isConnected]);
 
   const notifySlideChange = useCallback(async (slide: Slide) => {
     console.log('Slide changed to:', slide.title);
-
-    // Send a hidden system event so Alex always knows which slide
-    // the learner is currently viewing.
     await sendSystemEvent('SLIDE_CHANGE', {
-      id: slide.id,
       title: slide.title,
-      keyPoints: slide.keyPoints,
-      systemPromptContext: slide.systemPromptContext,
     });
   }, [sendSystemEvent]);
 

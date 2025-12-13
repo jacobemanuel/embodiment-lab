@@ -39,43 +39,32 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     onTranscriptUpdate?.(transcriptMessages);
   }, [transcriptMessages, onTranscriptUpdate]);
 
-  // Add transcript message with deduplication and filtering
+  // Add transcript message – keep EXACT text (no noise filtering)
   const addTranscriptMessage = useCallback((role: 'user' | 'avatar', content: string, isFinal: boolean = true) => {
-    // Skip empty or very short meaningless messages
-    if (!content || content.trim().length < 2) return;
-    
-    // Filter out noise/garbage transcriptions (random words, filler sounds)
-    const trimmed = content.trim().toLowerCase();
-    const noisePatterns = ['uh', 'um', 'ah', 'hmm', 'hm', 'okay', 'ok', 'like', 'so', 'and', 'the', 'a', 'is'];
-    if (trimmed.length < 4 && noisePatterns.includes(trimmed)) return;
-    
+    if (!content || !content.trim()) return;
+
     setTranscriptMessages(prev => {
-      // Check if we already have this exact final message
-      const exists = prev.some(msg => 
-        msg.role === role && 
-        msg.content.trim().toLowerCase() === content.trim().toLowerCase() &&
-        msg.isFinal
-      );
-      
-      if (exists && isFinal) {
-        return prev;
-      }
-      
       const lastMessage = prev[prev.length - 1];
-      
-      // Update existing non-final message from same role
+
+      // If we are still streaming the same utterance for this role, update it
       if (lastMessage && lastMessage.role === role && !lastMessage.isFinal) {
-        return [...prev.slice(0, -1), { ...lastMessage, content, isFinal }];
+        return [
+          ...prev.slice(0, -1),
+          { ...lastMessage, content, isFinal }
+        ];
       }
-      
-      // Add new message
-      return [...prev, {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        role,
-        content,
-        timestamp: Date.now(),
-        isFinal
-      }];
+
+      // Otherwise append a new message
+      return [
+        ...prev,
+        {
+          id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          role,
+          content,
+          timestamp: Date.now(),
+          isFinal,
+        },
+      ];
     });
   }, []);
 
@@ -207,34 +196,17 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     console.log('Slide changed to:', slide.title);
   }, []);
 
-  // Push-to-talk: control Anam microphone directly
+  // Push-to-talk UI only – Anam manages mic internally to avoid breaking audio
   const startListening = useCallback(() => {
-    if (!clientRef.current) return;
-    try {
-      const state = clientRef.current.unmuteInputAudio();
-      console.log('startListening – unmuted Anam mic, state:', state);
-    } catch (e) {
-      console.error('Error unmuting Anam mic:', e);
-    }
+    console.log('startListening (UI only) – Anam mic state unchanged');
   }, []);
 
   const stopListening = useCallback(() => {
-    if (!clientRef.current) return;
-    try {
-      const state = clientRef.current.muteInputAudio();
-      console.log('stopListening – muted Anam mic, state:', state);
-    } catch (e) {
-      console.error('Error muting Anam mic:', e);
-    }
+    console.log('stopListening (UI only) – Anam mic state unchanged');
   }, []);
 
   const disconnect = useCallback(() => {
     if (clientRef.current) {
-      try {
-        clientRef.current.muteInputAudio();
-      } catch (e) {
-        console.warn('Error muting Anam mic on disconnect:', e);
-      }
       clientRef.current.stopStreaming();
       clientRef.current = null;
     }

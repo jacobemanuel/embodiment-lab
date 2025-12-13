@@ -105,7 +105,13 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       console.log('Creating Anam client with token...');
       const client = createClient(sessionToken);
 
-      // Anam manages microphone input state internally – we do NOT mute here
+      // Start with microphone HARD-muted so Alex cannot hear the user
+      try {
+        const audioState = (client as any).muteInputAudio?.();
+        console.log('Initial Anam input audio state (after mute):', audioState);
+      } catch (err) {
+        console.warn('Unable to mute Anam input audio on init:', err);
+      }
 
       // Set up event listeners
       client.addListener(AnamEvent.CONNECTION_ESTABLISHED, () => {
@@ -129,6 +135,13 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
 
         const isFinal = event.endOfSpeech === undefined ? true : event.endOfSpeech;
         const contentChunk = event.content || '';
+        const trimmed = contentChunk.trim();
+
+        // Ignore low-level system-event payloads that we send as hidden context
+        if (trimmed.startsWith('[SYSTEM_EVENT')) {
+          console.log('Skipping system-event chunk from transcript');
+          return;
+        }
 
         // Avatar (persona) speaking – show as "Tutor"
         if (event.role === MessageRole.PERSONA || event.role === 'assistant' || event.role === 'persona') {
@@ -278,13 +291,25 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
   }, [sendSystemEvent]);
 
-  // Push-to-talk UI only – Anam manages mic internally to avoid breaking audio
+  // Push-to-talk actually controls Anam microphone input
   const startListening = useCallback(() => {
-    console.log('startListening (UI only) – Anam mic state unchanged');
+    if (!clientRef.current) return;
+    try {
+      const audioState = (clientRef.current as any).unmuteInputAudio?.();
+      console.log('startListening – mic UNMUTED, state:', audioState);
+    } catch (err) {
+      console.error('Error unmuting Anam mic:', err);
+    }
   }, []);
 
   const stopListening = useCallback(() => {
-    console.log('stopListening (UI only) – Anam mic state unchanged');
+    if (!clientRef.current) return;
+    try {
+      const audioState = (clientRef.current as any).muteInputAudio?.();
+      console.log('stopListening – mic MUTED, state:', audioState);
+    } catch (err) {
+      console.error('Error muting Anam mic:', err);
+    }
   }, []);
 
   const disconnect = useCallback(() => {

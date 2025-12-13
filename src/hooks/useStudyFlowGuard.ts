@@ -58,14 +58,18 @@ export function useStudyFlowGuard(
   const { showToast = true } = options;
 
   useEffect(() => {
-    // Small delay to ensure sessionStorage has been updated from previous page
-    // This fixes the race condition when navigating from Consent to Demographics
-    const timeoutId = setTimeout(() => {
+    // Use polling to wait for sessionStorage to be populated
+    // This handles the race condition when navigating from Consent to Demographics
+    // where the session creation might still be in progress
+    let attempts = 0;
+    const maxAttempts = 10; // Max 2 seconds of waiting (10 * 200ms)
+    
+    const checkRequirements = () => {
       // If study was completed, just redirect to home gracefully (no cheating message)
       const studyCompleted = sessionStorage.getItem('studyCompleted');
       if (studyCompleted === 'true' && currentStep !== 'completion') {
         navigate('/', { replace: true });
-        return;
+        return true; // Stop polling
       }
       
       const requirements = STEP_REQUIREMENTS[currentStep];
@@ -78,7 +82,20 @@ export function useStudyFlowGuard(
         }
       }
 
-      if (missingRequirements.length > 0) {
+      // If all requirements are met, we're good
+      if (missingRequirements.length === 0) {
+        return true; // Stop polling
+      }
+
+      // For demographics step, give more time for session creation
+      // Only redirect after multiple failed attempts
+      attempts++;
+      if (attempts < maxAttempts && currentStep === 'demographics' && missingRequirements.includes('sessionId')) {
+        return false; // Keep polling
+      }
+
+      // Max attempts reached or not demographics step - redirect
+      if (attempts >= maxAttempts || currentStep !== 'demographics') {
         // Find the earliest step that's missing
         let redirectStep: StudyStep = 'consent';
         
@@ -106,10 +123,25 @@ export function useStudyFlowGuard(
         }
 
         navigate(STEP_REDIRECT[redirectStep], { replace: true });
+        return true; // Stop polling
       }
-    }, 100);
 
-    return () => clearTimeout(timeoutId);
+      return false; // Keep polling
+    };
+
+    // Initial check
+    if (checkRequirements()) {
+      return;
+    }
+
+    // Set up polling interval
+    const intervalId = setInterval(() => {
+      if (checkRequirements()) {
+        clearInterval(intervalId);
+      }
+    }, 200);
+
+    return () => clearInterval(intervalId);
   }, [currentStep, navigate, showToast]);
 
   /**

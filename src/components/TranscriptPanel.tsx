@@ -14,12 +14,14 @@ interface TranscriptPanelProps {
   messages: TranscriptMessage[];
   className?: string;
   isListening?: boolean;
+  isSpeaking?: boolean;
 }
 
 export const TranscriptPanel = ({ 
   messages, 
   className,
-  isListening = false 
+  isListening = false,
+  isSpeaking = false
 }: TranscriptPanelProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +82,7 @@ export const TranscriptPanel = ({
               ))}
               
               {/* Show typing indicator while avatar is speaking */}
-              {messages.some(msg => msg.role === 'avatar' && msg.isFinal === false) && (
+              {isSpeaking && (
                 <div className="flex justify-start">
                   <div className="bg-primary/10 border border-primary/20 text-foreground rounded-2xl rounded-bl-md px-4 py-2 shadow-sm">
                     <div className="flex items-center gap-2">

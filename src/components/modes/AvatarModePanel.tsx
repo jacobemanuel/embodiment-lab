@@ -262,7 +262,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
 
       {/* Transcript - chat bubbles style */}
       <div className="flex-1 overflow-hidden min-h-[150px]">
-        <TranscriptPanel messages={transcriptMessages} isListening={isListening} />
+        <TranscriptPanel messages={transcriptMessages} isListening={isListening} isSpeaking={isTalking} />
       </div>
 
       {/* Text Input - alternative to voice */}

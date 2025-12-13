@@ -65,30 +65,42 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   }, []);
 
   // Auto-start user camera once avatar is connected (to match mockup UX)
+  // Also re-attach stream to video element when reconnecting after slide change
   useEffect(() => {
-    const startCamera = async () => {
-      if (!isConnected || isCameraOn || hasAutoStartedCameraRef.current) return;
-      try {
-        console.log('Auto-starting user camera after avatar connect');
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480, facingMode: 'user' },
-          audio: false,
-        });
-        userStreamRef.current = stream;
-        if (userVideoRef.current) {
-          userVideoRef.current.srcObject = stream;
+    const startOrReattachCamera = async () => {
+      if (!isConnected) return;
+      
+      // If camera is already on and stream exists, just re-attach to video element
+      if (isCameraOn && userStreamRef.current && userVideoRef.current) {
+        console.log('Re-attaching existing camera stream after reconnect');
+        userVideoRef.current.srcObject = userStreamRef.current;
+        return;
+      }
+      
+      // First time auto-start
+      if (!hasAutoStartedCameraRef.current) {
+        try {
+          console.log('Auto-starting user camera after avatar connect');
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 640, height: 480, facingMode: 'user' },
+            audio: false,
+          });
+          userStreamRef.current = stream;
+          if (userVideoRef.current) {
+            userVideoRef.current.srcObject = stream;
+          }
+          setIsCameraOn(true);
+          setCameraError(null);
+          hasAutoStartedCameraRef.current = true;
+        } catch (err) {
+          console.error('Camera auto-start error:', err);
+          setCameraError('Camera access denied');
+          setIsCameraOn(false);
         }
-        setIsCameraOn(true);
-        setCameraError(null);
-        hasAutoStartedCameraRef.current = true;
-      } catch (err) {
-        console.error('Camera auto-start error:', err);
-        setCameraError('Camera access denied');
-        setIsCameraOn(false);
       }
     };
 
-    void startCamera();
+    void startOrReattachCamera();
   }, [isConnected, isCameraOn]);
 
   const handleSend = () => {

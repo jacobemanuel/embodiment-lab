@@ -1244,7 +1244,52 @@ const AdminOverview = () => {
       doc.setLineDashPattern([], 0);
     }
     
-    // Draw points
+    // Calculate linear regression for trend line
+    let slope = 0;
+    let intercept = 0;
+    let r = 0;
+    
+    if (data.length >= 2) {
+      const n = data.length;
+      const sumX = xValues.reduce((a, b) => a + b, 0);
+      const sumY = yValues.reduce((a, b) => a + b, 0);
+      const sumXY = data.reduce((a, d) => a + d.x * d.y, 0);
+      const sumX2 = xValues.reduce((a, b) => a + b * b, 0);
+      const sumY2 = yValues.reduce((a, b) => a + b * b, 0);
+      
+      // Calculate slope and intercept
+      const denomSlope = n * sumX2 - sumX * sumX;
+      if (denomSlope !== 0) {
+        slope = (n * sumXY - sumX * sumY) / denomSlope;
+        intercept = (sumY - slope * sumX) / n;
+      }
+      
+      // Calculate correlation coefficient
+      const numerator = n * sumXY - sumX * sumY;
+      const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+      r = denominator !== 0 ? numerator / denominator : 0;
+      
+      // Draw trend line
+      const trendY1 = slope * minX + intercept;
+      const trendY2 = slope * maxX + intercept;
+      
+      // Clamp to plot area
+      const clampedY1 = Math.max(minY, Math.min(maxY, trendY1));
+      const clampedY2 = Math.max(minY, Math.min(maxY, trendY2));
+      
+      const lineX1 = plotX + ((minX - minX) / xRange) * plotWidth;
+      const lineY1 = plotY + plotHeight - ((clampedY1 - minY) / yRange) * plotHeight;
+      const lineX2 = plotX + ((maxX - minX) / xRange) * plotWidth;
+      const lineY2 = plotY + plotHeight - ((clampedY2 - minY) / yRange) * plotHeight;
+      
+      // Draw trend line in red
+      doc.setDrawColor(239, 68, 68);
+      doc.setLineWidth(1);
+      doc.line(lineX1, lineY1, lineX2, lineY2);
+      doc.setLineWidth(0.5);
+    }
+    
+    // Draw points (after trend line so they appear on top)
     data.forEach(point => {
       const px = plotX + ((point.x - minX) / xRange) * plotWidth;
       const py = plotY + plotHeight - ((point.y - minY) / yRange) * plotHeight;
@@ -1265,29 +1310,23 @@ const AdminOverview = () => {
     doc.setFontSize(7);
     const legendY = plotY + 5;
     doc.setFillColor(59, 130, 246);
-    doc.circle(plotX + plotWidth - 40, legendY, 2, 'F');
+    doc.circle(plotX + plotWidth - 55, legendY, 2, 'F');
     doc.setTextColor(60);
-    doc.text('Text', plotX + plotWidth - 35, legendY + 1);
+    doc.text('Text', plotX + plotWidth - 50, legendY + 1);
     doc.setFillColor(139, 92, 246);
-    doc.circle(plotX + plotWidth - 18, legendY, 2, 'F');
-    doc.text('Avatar', plotX + plotWidth - 13, legendY + 1);
+    doc.circle(plotX + plotWidth - 33, legendY, 2, 'F');
+    doc.text('Avatar', plotX + plotWidth - 28, legendY + 1);
+    // Trend line legend
+    doc.setDrawColor(239, 68, 68);
+    doc.setLineWidth(1);
+    doc.line(plotX + plotWidth - 12, legendY, plotX + plotWidth - 2, legendY);
+    doc.setLineWidth(0.5);
     
-    // Calculate and show correlation coefficient
-    if (data.length >= 3) {
-      const n = data.length;
-      const sumX = xValues.reduce((a, b) => a + b, 0);
-      const sumY = yValues.reduce((a, b) => a + b, 0);
-      const sumXY = data.reduce((a, d) => a + d.x * d.y, 0);
-      const sumX2 = xValues.reduce((a, b) => a + b * b, 0);
-      const sumY2 = yValues.reduce((a, b) => a + b * b, 0);
-      
-      const numerator = n * sumXY - sumX * sumY;
-      const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-      const r = denominator !== 0 ? numerator / denominator : 0;
-      
+    // Show correlation coefficient and regression equation
+    if (data.length >= 2) {
       doc.setFontSize(8);
       doc.setTextColor(0);
-      doc.text(`r = ${r.toFixed(3)} (n=${n})`, plotX, plotY + plotHeight + 18);
+      doc.text(`r = ${r.toFixed(3)} | y = ${slope.toFixed(2)}x + ${intercept.toFixed(1)} | n=${data.length}`, plotX, plotY + plotHeight + 18);
     }
     
     return startY + plotHeight + 25;
@@ -1533,6 +1572,51 @@ const AdminOverview = () => {
         const interpretation = Math.abs(r) >= 0.7 ? 'strong' : Math.abs(r) >= 0.4 ? 'moderate' : Math.abs(r) >= 0.2 ? 'weak' : 'negligible';
         const direction = r > 0 ? 'positive' : r < 0 ? 'negative' : 'no';
         doc.text(`Interpretation: ${interpretation} ${direction} correlation between avatar interaction time and learning outcomes.`, 14, yPos);
+        yPos += 8;
+      }
+    }
+
+    // Session Duration vs Knowledge Gain Scatter Plot
+    if (stats.correlations.sessionTimeVsGain.length > 0) {
+      // Check page break
+      if (yPos > 180) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      yPos = drawScatterPlot(
+        doc, 
+        stats.correlations.sessionTimeVsGain, 
+        14, 
+        yPos, 
+        180, 
+        70, 
+        'Session Duration vs Knowledge Gain', 
+        'Session Duration (minutes)', 
+        'Knowledge Gain (%)'
+      );
+      
+      // Add interpretation
+      if (stats.correlations.sessionTimeVsGain.length >= 3) {
+        const xValues = stats.correlations.sessionTimeVsGain.map(d => d.x);
+        const yValues = stats.correlations.sessionTimeVsGain.map(d => d.y);
+        const n = stats.correlations.sessionTimeVsGain.length;
+        const sumX = xValues.reduce((a, b) => a + b, 0);
+        const sumY = yValues.reduce((a, b) => a + b, 0);
+        const sumXY = stats.correlations.sessionTimeVsGain.reduce((a, d) => a + d.x * d.y, 0);
+        const sumX2 = xValues.reduce((a, b) => a + b * b, 0);
+        const sumY2 = yValues.reduce((a, b) => a + b * b, 0);
+        
+        const numerator = n * sumXY - sumX * sumY;
+        const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+        const r = denominator !== 0 ? numerator / denominator : 0;
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(80);
+        const interpretation = Math.abs(r) >= 0.7 ? 'strong' : Math.abs(r) >= 0.4 ? 'moderate' : Math.abs(r) >= 0.2 ? 'weak' : 'negligible';
+        const direction = r > 0 ? 'positive' : r < 0 ? 'negative' : 'no';
+        doc.text(`Interpretation: ${interpretation} ${direction} correlation between session duration and learning outcomes.`, 14, yPos);
         yPos += 8;
       }
     }

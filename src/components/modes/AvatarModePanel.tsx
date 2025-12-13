@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Mic, MicOff } from "lucide-react";
+import { Send, Loader2, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { Slide } from "@/data/slides";
 import { useAnamClient } from "@/hooks/useAnamClient";
 import { TranscriptPanel, TranscriptMessage } from "@/components/TranscriptPanel";
@@ -16,7 +16,11 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   const [input, setInput] = useState("");
   const [transcriptMessages, setTranscriptMessages] = useState<TranscriptMessage[]>([]);
   const [isListening, setIsListening] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const userVideoRef = useRef<HTMLVideoElement>(null);
+  const userStreamRef = useRef<MediaStream | null>(null);
   const prevSlideRef = useRef<string>(currentSlide.id);
 
   const {
@@ -48,6 +52,15 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
     }
   }, [currentSlide, isConnected, notifySlideChange]);
 
+  // Cleanup camera on unmount
+  useEffect(() => {
+    return () => {
+      if (userStreamRef.current) {
+        userStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
   const handleSend = () => {
     if (input.trim() && isConnected) {
       sendMessage(input);
@@ -65,17 +78,50 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
     }
   };
 
+  const handleToggleCamera = async () => {
+    if (isCameraOn) {
+      // Turn off camera
+      if (userStreamRef.current) {
+        userStreamRef.current.getTracks().forEach(track => track.stop());
+        userStreamRef.current = null;
+      }
+      if (userVideoRef.current) {
+        userVideoRef.current.srcObject = null;
+      }
+      setIsCameraOn(false);
+      setCameraError(null);
+    } else {
+      // Turn on camera
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 200, height: 150, facingMode: 'user' },
+          audio: false
+        });
+        userStreamRef.current = stream;
+        if (userVideoRef.current) {
+          userVideoRef.current.srcObject = stream;
+        }
+        setIsCameraOn(true);
+        setCameraError(null);
+      } catch (err) {
+        console.error('Camera access error:', err);
+        setCameraError('Camera access denied');
+        setIsCameraOn(false);
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Avatar Video - BIGGER */}
-      <div className="relative bg-gradient-to-br from-card to-muted border-b border-border" style={{ minHeight: '320px' }}>
+      <div className="relative bg-gradient-to-br from-card to-muted border-b border-border" style={{ minHeight: '280px' }}>
         <video
           id="anam-video"
           ref={videoRef}
           autoPlay
           playsInline
           className="w-full h-full object-cover"
-          style={{ minHeight: '320px' }}
+          style={{ minHeight: '280px' }}
         />
         
         {/* Status overlay */}
@@ -103,9 +149,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
           </div>
         )}
 
-        {/* Push-to-talk button
-            Logic: isListening=false (muted) -> RED with MicOff icon (crossed out)
-                   isListening=true (listening) -> BLUE with Mic icon (active) */}
+        {/* Push-to-talk button */}
         {isConnected && (
           <div className="absolute bottom-3 right-3">
             <Button
@@ -133,8 +177,53 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
         )}
       </div>
 
+      {/* User Camera Section */}
+      {isConnected && (
+        <div className="border-b border-border bg-muted/30 p-2">
+          <div className="flex items-center gap-3">
+            {/* Camera toggle button */}
+            <Button
+              size="sm"
+              variant={isCameraOn ? "default" : "outline"}
+              className="gap-2"
+              onClick={handleToggleCamera}
+            >
+              {isCameraOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+              {isCameraOn ? "Camera On" : "Enable Camera"}
+            </Button>
+
+            {/* User video feed */}
+            {isCameraOn && (
+              <div className="relative rounded-lg overflow-hidden border border-border shadow-sm">
+                <video
+                  ref={userVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-[120px] h-[90px] object-cover bg-black"
+                  style={{ transform: 'scaleX(-1)' }}
+                />
+                <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
+                  You
+                </div>
+              </div>
+            )}
+
+            {cameraError && (
+              <span className="text-xs text-destructive">{cameraError}</span>
+            )}
+
+            {isCameraOn && (
+              <span className="text-xs text-muted-foreground">
+                Avatar can see you
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Transcript - chat bubbles style */}
-      <div className="flex-1 overflow-hidden min-h-[180px]">
+      <div className="flex-1 overflow-hidden min-h-[150px]">
         <TranscriptPanel messages={transcriptMessages} isListening={isListening} />
       </div>
 

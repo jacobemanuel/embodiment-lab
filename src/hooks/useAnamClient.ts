@@ -216,18 +216,15 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
   }, [state.isConnected]);
 
-  // System event sender - sends invisible context to avatar
+  // System event sender - currently NO-OP to avoid confusing the avatar LLM
+  // We'll re-enable this once Anam officially supports out-of-band UI events.
   const sendSystemEvent = useCallback(async (eventType: string, data: Record<string, any> = {}) => {
     if (!clientRef.current || !state.isConnected) return;
-    
-    const eventMessage = `[SYSTEM_EVENT: ${eventType}] ${JSON.stringify(data)}`;
-    console.log('Sending system event:', eventMessage);
-    
-    try {
-      await clientRef.current.talk(eventMessage);
-    } catch (error) {
-      console.error('Error sending system event:', error);
-    }
+
+    console.log('System event (disabled talk):', eventType, data);
+    // IMPORTANT: Do NOT call client.talk() here for now.
+    // Sending hidden metadata as text was causing the LLM to reply with
+    // extra "ghost" messages that did not match spoken audio.
   }, [state.isConnected]);
 
   const notifySlideChange = useCallback(async (slide: Slide) => {

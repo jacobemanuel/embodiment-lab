@@ -104,9 +104,10 @@ const Learning = () => {
                 showFinishProminent && "bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/50 animate-pulse"
               )}
             >
-              <LogOut className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4" />
               <span className={showFinishProminent ? "inline" : "hidden sm:inline"}>Finish</span>
             </Button>
+            <div className="w-px h-6 bg-border mx-1" />
             <ExitStudyButton showLabel={false} />
           </div>
         </div>

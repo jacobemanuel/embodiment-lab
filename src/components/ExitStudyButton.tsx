@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut } from "lucide-react";
+import { XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -78,8 +78,9 @@ const ExitStudyButton = ({
         size={size}
         onClick={() => setShowConfirmDialog(true)}
         className={`text-muted-foreground hover:text-destructive ${className}`}
+        title="Exit and withdraw from study"
       >
-        <LogOut className="w-4 h-4" />
+        <XCircle className="w-4 h-4" />
         {showLabel && <span className="ml-2">Exit Study</span>}
       </Button>
 

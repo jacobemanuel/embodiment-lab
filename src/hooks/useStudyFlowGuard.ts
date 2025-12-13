@@ -58,6 +58,13 @@ export function useStudyFlowGuard(
   const { showToast = true } = options;
 
   useEffect(() => {
+    // If study was completed, just redirect to home gracefully (no cheating message)
+    const studyCompleted = sessionStorage.getItem('studyCompleted');
+    if (studyCompleted === 'true' && currentStep !== 'completion') {
+      navigate('/', { replace: true });
+      return;
+    }
+    
     const requirements = STEP_REQUIREMENTS[currentStep];
     const missingRequirements: string[] = [];
 
@@ -147,6 +154,7 @@ export function clearStudySession() {
     'postTestPage1',
     'postTestPage2',
     'postTestPage3',
+    'studyCompleted',
   ];
   
   keysToRemove.forEach(key => sessionStorage.removeItem(key));

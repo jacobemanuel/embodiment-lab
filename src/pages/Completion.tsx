@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import logo from "@/assets/logo-white.png";
@@ -5,6 +7,27 @@ import { preTestQuestions } from "@/data/questions";
 import { postTestQuestions } from "@/data/postTestQuestions";
 
 const Completion = () => {
+  const navigate = useNavigate();
+  
+  // Mark that user has completed the study - so back button doesn't trigger cheating detection
+  useEffect(() => {
+    sessionStorage.setItem('studyCompleted', 'true');
+    
+    // Handle browser back button - redirect to home gracefully
+    const handlePopState = () => {
+      // User already completed, just take them home without cheating flag
+      navigate('/', { replace: true });
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    
+    // Push a state so back button triggers our handler
+    window.history.pushState(null, '', window.location.href);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigate]);
   const handleDownloadData = () => {
     try {
       // Gather all data from sessionStorage

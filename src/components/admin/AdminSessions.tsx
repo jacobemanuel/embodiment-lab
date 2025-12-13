@@ -10,6 +10,14 @@ import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw } from "luc
 import { format, startOfDay, endOfDay } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import DateRangeFilter from "./DateRangeFilter";
+import { getPermissions } from "@/lib/permissions";
+
+interface AdminSessionsProps {
+  userEmail?: string;
+}
+
+const AdminSessions = ({ userEmail = '' }: AdminSessionsProps) => {
+  const permissions = getPermissions(userEmail);
 
 interface Session {
   id: string;
@@ -30,7 +38,7 @@ interface SessionDetails {
   dialogueTurns: any[];
 }
 
-const AdminSessions = () => {
+
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -222,10 +230,12 @@ const AdminSessions = () => {
                 Browse and analyze individual study sessions ({filteredSessions.length} total)
               </CardDescription>
             </div>
-            <Button onClick={exportToCSV} variant="outline" className="border-slate-600">
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
+            {permissions.canExportData && (
+              <Button onClick={exportToCSV} variant="outline" className="border-slate-600">
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

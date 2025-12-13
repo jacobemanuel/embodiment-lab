@@ -103,7 +103,7 @@ export const getPermissions = (email: string): PermissionConfig => {
       canEditApiKeys: false,
       
       canViewSessions: true, // Can view sessions
-      canExportData: true, // Can export data for evaluation
+      canExportData: false, // NO export - view only
       canViewAuditLog: false, // No audit log access
       
       canDeleteSessions: false,

@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Clock, Download, Timer, TrendingUp, FileSpreadsheet, AlertTriangle, Filter, Info, RefreshCw, BarChart2 } from "lucide-react";
+import { CheckCircle, Clock, Download, Timer, TrendingUp, FileSpreadsheet, AlertTriangle, Filter, Info, RefreshCw, BarChart2, FileText } from "lucide-react";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Cell, Legend, ScatterChart, Scatter, ZAxis, LineChart, Line } from "recharts";
 import DateRangeFilter from "./DateRangeFilter";
 import { format, parseISO, startOfDay, endOfDay } from "date-fns";
@@ -1107,8 +1109,8 @@ const AdminOverview = () => {
     if (!stats) return;
     const data: any[] = [];
     
-    ['text', 'avatar', 'both'].forEach(mode => {
-      const modeData = stats.likertByMode[mode as 'text' | 'avatar' | 'both'];
+    ['text', 'avatar'].forEach(mode => {
+      const modeData = stats.likertByMode[mode as 'text' | 'avatar'];
       modeData.forEach(l => {
         data.push({
           Mode: mode.charAt(0).toUpperCase() + mode.slice(1),
@@ -1130,14 +1132,9 @@ const AdminOverview = () => {
     downloadCSV(data, 'likert_by_mode');
   };
 
-  // Publication-ready summary report export
+  // Publication-ready PDF report export
   const exportPublicationReport = async () => {
     if (!stats) return;
-
-    const { data: questions } = await supabase
-      .from('study_questions')
-      .select('question_id, question_text, correct_answer, question_type')
-      .eq('is_active', true);
 
     const dateRange = startDate && endDate 
       ? `${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}` 
@@ -1146,157 +1143,169 @@ const AdminOverview = () => {
     const textKG = stats.knowledgeGain.filter(k => k.mode === 'text');
     const avatarKG = stats.knowledgeGain.filter(k => k.mode === 'avatar');
 
-    const report = {
-      metadata: {
-        title: 'AI Image Generation Learning Study - Summary Report',
-        generatedAt: new Date().toISOString(),
-        dateRange,
-        statusFilter,
-        totalSessions: stats.rawSessions.length,
-        sessionsWithScores: stats.knowledgeGain.length,
-      },
-      sampleCharacteristics: {
-        totalParticipants: stats.rawSessions.length,
-        completed: stats.totalCompleted,
-        incomplete: stats.totalIncomplete,
-        modeDistribution: {
-          textMode: { n: stats.textModeCompleted, percentage: Math.round((stats.textModeCompleted / stats.rawSessions.length) * 100) || 0 },
-          avatarMode: { n: stats.avatarModeCompleted, percentage: Math.round((stats.avatarModeCompleted / stats.rawSessions.length) * 100) || 0 },
-          bothModes: { n: stats.bothModesCompleted, percentage: Math.round((stats.bothModesCompleted / stats.rawSessions.length) * 100) || 0, note: 'Requires manual review - participants should use single mode' },
-        },
-        demographics: {
-          ageDistribution: stats.demographicBreakdown,
-          educationDistribution: stats.educationBreakdown,
-          experienceDistribution: stats.experienceBreakdown,
-        },
-      },
-      learningOutcomes: {
-        overall: {
-          preTestMean: stats.avgPreScore,
-          postTestMean: stats.avgPostScore,
-          knowledgeGain: stats.avgGain,
-          n: stats.knowledgeGain.length,
-        },
-        byMode: {
-          textMode: {
-            preTestMean: stats.textModePreScore,
-            postTestMean: stats.textModePostScore,
-            knowledgeGain: stats.textModeGain,
-            n: textKG.length,
-            stdDev: stats.statisticalTests?.textVsAvatar.textStd || 0,
-          },
-          avatarMode: {
-            preTestMean: stats.avatarModePreScore,
-            postTestMean: stats.avatarModePostScore,
-            knowledgeGain: stats.avatarModeGain,
-            n: avatarKG.length,
-            stdDev: stats.statisticalTests?.textVsAvatar.avatarStd || 0,
-          },
-        },
-      },
-      statisticalAnalysis: stats.statisticalTests ? {
-        textVsAvatar: {
-          comparison: 'Text Mode vs Avatar Mode',
-          textMean: stats.statisticalTests.textVsAvatar.textMean,
-          textStdDev: stats.statisticalTests.textVsAvatar.textStd,
-          avatarMean: stats.statisticalTests.textVsAvatar.avatarMean,
-          avatarStdDev: stats.statisticalTests.textVsAvatar.avatarStd,
-          tStatistic: stats.statisticalTests.textVsAvatar.tStatistic,
-          pValue: stats.statisticalTests.textVsAvatar.pValue,
-          significant: stats.statisticalTests.textVsAvatar.significant,
-          cohensD: stats.statisticalTests.textVsAvatar.cohensD,
-          effectSize: stats.statisticalTests.textVsAvatar.effectSize,
-          confidenceInterval95: {
-            lower: stats.statisticalTests.textVsAvatar.ci95Lower,
-            upper: stats.statisticalTests.textVsAvatar.ci95Upper,
-          },
-          textN: stats.statisticalTests.textVsAvatar.textN,
-          avatarN: stats.statisticalTests.textVsAvatar.avatarN,
-          interpretation: stats.statisticalTests.textVsAvatar.significant 
-            ? `Statistically significant difference with ${stats.statisticalTests.textVsAvatar.effectSize} effect size (Cohen's d = ${stats.statisticalTests.textVsAvatar.cohensD})`
-            : 'No statistically significant difference between learning modes',
-        },
-      } : null,
-      perceptionAnalysis: {
-        overall: {
-          trust: {
-            mean: stats.likertAnalysis.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'trust').length, 1),
-            questions: stats.likertAnalysis.filter(l => l.category === 'trust').map(l => ({
-              question: l.questionText,
-              mean: l.mean,
-              median: l.median,
-              std: l.std,
-              n: l.totalResponses,
-            })),
-          },
-          engagement: {
-            mean: stats.likertAnalysis.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'engagement').length, 1),
-            questions: stats.likertAnalysis.filter(l => l.category === 'engagement').map(l => ({
-              question: l.questionText,
-              mean: l.mean,
-              median: l.median,
-              std: l.std,
-              n: l.totalResponses,
-            })),
-          },
-          satisfaction: {
-            mean: stats.likertAnalysis.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'satisfaction').length, 1),
-            questions: stats.likertAnalysis.filter(l => l.category === 'satisfaction').map(l => ({
-              question: l.questionText,
-              mean: l.mean,
-              median: l.median,
-              std: l.std,
-              n: l.totalResponses,
-            })),
-          },
-        },
-        byMode: {
-          textMode: {
-            trust: stats.likertByMode.text.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.text.filter(l => l.category === 'trust').length, 1),
-            engagement: stats.likertByMode.text.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.text.filter(l => l.category === 'engagement').length, 1),
-            satisfaction: stats.likertByMode.text.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.text.filter(l => l.category === 'satisfaction').length, 1),
-          },
-          avatarMode: {
-            trust: stats.likertByMode.avatar.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.avatar.filter(l => l.category === 'trust').length, 1),
-            engagement: stats.likertByMode.avatar.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.avatar.filter(l => l.category === 'engagement').length, 1),
-            satisfaction: stats.likertByMode.avatar.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.avatar.filter(l => l.category === 'satisfaction').length, 1),
-          },
-        },
-      },
-      questionPerformance: {
-        preTest: stats.preTestQuestionAnalysis.map(q => ({
-          questionId: q.questionId,
-          question: q.questionText,
-          correctRate: q.correctRate,
-          n: q.totalResponses,
-        })),
-        postTest: stats.postTestQuestionAnalysis.map(q => ({
-          questionId: q.questionId,
-          question: q.questionText,
-          correctRate: q.correctRate,
-          n: q.totalResponses,
-        })),
-      },
-      sessionMetrics: {
-        avgDurationMinutes: stats.avgSessionDuration,
-        avgAvatarTimeMinutes: Math.round(stats.avgAvatarTime / 60),
-        totalAvatarTimeMinutes: Math.round(stats.totalAvatarTime / 60),
-        avatarTimeBySlide: stats.avatarTimeBySlide.map(s => ({
-          slide: s.slide,
-          avgTimeSeconds: s.avgTime,
-          totalTimeSeconds: s.totalTime,
-          sessions: s.count,
-        })),
-      },
-    };
+    // Create PDF
+    const doc = new jsPDF();
+    let yPos = 20;
 
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `publication_summary_report_${format(new Date(), 'yyyy-MM-dd')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // Title
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('AI Image Generation Learning Study', 105, yPos, { align: 'center' });
+    yPos += 8;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Summary Report', 105, yPos, { align: 'center' });
+    yPos += 10;
+    
+    // Metadata
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated: ${format(new Date(), 'yyyy-MM-dd HH:mm')}  |  Date Range: ${dateRange}  |  Status: ${statusFilter}`, 105, yPos, { align: 'center' });
+    yPos += 15;
+    doc.setTextColor(0);
+
+    // Sample Characteristics
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('1. Sample Characteristics', 14, yPos);
+    yPos += 8;
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    autoTable(doc, {
+      startY: yPos,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Total Participants', stats.rawSessions.length.toString()],
+        ['Completed Sessions', stats.totalCompleted.toString()],
+        ['Text Mode Participants', `${stats.textModeCompleted} (${Math.round((stats.textModeCompleted / stats.rawSessions.length) * 100) || 0}%)`],
+        ['Avatar Mode Participants', `${stats.avatarModeCompleted} (${Math.round((stats.avatarModeCompleted / stats.rawSessions.length) * 100) || 0}%)`],
+        ['Avg Session Duration', `${stats.avgSessionDuration} min`],
+        ['Avg Avatar Interaction', `${Math.round(stats.avgAvatarTime / 60)} min`],
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246] },
+      margin: { left: 14, right: 14 },
+    });
+    yPos = (doc as any).lastAutoTable.finalY + 15;
+
+    // Learning Outcomes
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('2. Learning Outcomes', 14, yPos);
+    yPos += 8;
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [['Mode', 'Pre-Test %', 'Post-Test %', 'Knowledge Gain', 'n']],
+      body: [
+        ['Overall', `${stats.avgPreScore}%`, `${stats.avgPostScore}%`, `${stats.avgGain >= 0 ? '+' : ''}${stats.avgGain}%`, stats.knowledgeGain.length.toString()],
+        ['Text Mode', `${stats.textModePreScore}%`, `${stats.textModePostScore}%`, `${stats.textModeGain >= 0 ? '+' : ''}${stats.textModeGain}%`, textKG.length.toString()],
+        ['Avatar Mode', `${stats.avatarModePreScore}%`, `${stats.avatarModePostScore}%`, `${stats.avatarModeGain >= 0 ? '+' : ''}${stats.avatarModeGain}%`, avatarKG.length.toString()],
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [16, 185, 129] },
+      margin: { left: 14, right: 14 },
+    });
+    yPos = (doc as any).lastAutoTable.finalY + 15;
+
+    // Statistical Analysis
+    if (stats.statisticalTests) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('3. Statistical Analysis (Text vs Avatar)', 14, yPos);
+      yPos += 8;
+
+      const significant = stats.statisticalTests.textVsAvatar.significant;
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Statistic', 'Value', 'Interpretation']],
+        body: [
+          ['t-statistic', stats.statisticalTests.textVsAvatar.tStatistic.toString(), ''],
+          ['p-value', stats.statisticalTests.textVsAvatar.pValue < 0.001 ? '<0.001' : stats.statisticalTests.textVsAvatar.pValue.toString(), significant ? 'Significant (p < 0.05)' : 'Not significant'],
+          ["Cohen's d", stats.statisticalTests.textVsAvatar.cohensD.toString(), `${stats.statisticalTests.textVsAvatar.effectSize} effect size`],
+          ['95% CI', `[${stats.statisticalTests.textVsAvatar.ci95Lower}, ${stats.statisticalTests.textVsAvatar.ci95Upper}]`, ''],
+          ['Text Mean (SD)', `${stats.statisticalTests.textVsAvatar.textMean}% (±${stats.statisticalTests.textVsAvatar.textStd})`, `n=${stats.statisticalTests.textVsAvatar.textN}`],
+          ['Avatar Mean (SD)', `${stats.statisticalTests.textVsAvatar.avatarMean}% (±${stats.statisticalTests.textVsAvatar.avatarStd})`, `n=${stats.statisticalTests.textVsAvatar.avatarN}`],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [139, 92, 246] },
+        margin: { left: 14, right: 14 },
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // Perception Analysis
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('4. Perception Analysis (Likert 1-5)', 14, yPos);
+    yPos += 8;
+
+    const trustAvg = stats.likertAnalysis.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'trust').length, 1);
+    const engagementAvg = stats.likertAnalysis.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'engagement').length, 1);
+    const satisfactionAvg = stats.likertAnalysis.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertAnalysis.filter(l => l.category === 'satisfaction').length, 1);
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [['Category', 'Overall Mean', 'Text Mode', 'Avatar Mode']],
+      body: [
+        ['Trust', trustAvg.toFixed(2), 
+          (stats.likertByMode.text.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.text.filter(l => l.category === 'trust').length, 1)).toFixed(2),
+          (stats.likertByMode.avatar.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.avatar.filter(l => l.category === 'trust').length, 1)).toFixed(2)
+        ],
+        ['Engagement', engagementAvg.toFixed(2),
+          (stats.likertByMode.text.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.text.filter(l => l.category === 'engagement').length, 1)).toFixed(2),
+          (stats.likertByMode.avatar.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.avatar.filter(l => l.category === 'engagement').length, 1)).toFixed(2)
+        ],
+        ['Satisfaction', satisfactionAvg.toFixed(2),
+          (stats.likertByMode.text.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.text.filter(l => l.category === 'satisfaction').length, 1)).toFixed(2),
+          (stats.likertByMode.avatar.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(stats.likertByMode.avatar.filter(l => l.category === 'satisfaction').length, 1)).toFixed(2)
+        ],
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [236, 72, 153] },
+      margin: { left: 14, right: 14 },
+    });
+    yPos = (doc as any).lastAutoTable.finalY + 15;
+
+    // Check if we need a new page
+    if (yPos > 250) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Question Performance
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('5. Question Performance', 14, yPos);
+    yPos += 8;
+
+    const questionData = [
+      ...stats.preTestQuestionAnalysis.slice(0, 5).map(q => ['Pre-Test', q.questionText.slice(0, 50) + '...', `${q.correctRate}%`, q.totalResponses.toString()]),
+      ...stats.postTestQuestionAnalysis.slice(0, 5).map(q => ['Post-Test', q.questionText.slice(0, 50) + '...', `${q.correctRate}%`, q.totalResponses.toString()]),
+    ];
+
+    if (questionData.length > 0) {
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Test', 'Question (truncated)', 'Correct %', 'n']],
+        body: questionData,
+        theme: 'striped',
+        headStyles: { fillColor: [245, 158, 11] },
+        margin: { left: 14, right: 14 },
+        columnStyles: {
+          1: { cellWidth: 80 },
+        },
+      });
+    }
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text('Generated by AI Image Generation Learning Study Dashboard', 105, 285, { align: 'center' });
+
+    // Save PDF
+    doc.save(`publication_report_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
   };
 
   if (isLoading) {
@@ -1317,9 +1326,8 @@ const AdminOverview = () => {
   ];
 
   const modeGainData = [
-    { name: 'Text Only', gain: stats.textModeGain, preScore: stats.textModePreScore, postScore: stats.textModePostScore, count: stats.textModeCompleted },
-    { name: 'Avatar Only', gain: stats.avatarModeGain, preScore: stats.avatarModePreScore, postScore: stats.avatarModePostScore, count: stats.avatarModeCompleted },
-    { name: 'Both Modes', gain: stats.bothModesGain, preScore: stats.bothModesPreScore, postScore: stats.bothModesPostScore, count: stats.bothModesCompleted },
+    { name: 'Text Mode', gain: stats.textModeGain, preScore: stats.textModePreScore, postScore: stats.textModePostScore, count: stats.textModeCompleted },
+    { name: 'Avatar Mode', gain: stats.avatarModeGain, preScore: stats.avatarModePreScore, postScore: stats.avatarModePostScore, count: stats.avatarModeCompleted },
   ];
 
   return (
@@ -1367,8 +1375,8 @@ const AdminOverview = () => {
               Full JSON
             </Button>
             <Button variant="default" size="sm" onClick={exportPublicationReport} className="gap-2 h-8 text-xs bg-emerald-600 hover:bg-emerald-700">
-              <FileSpreadsheet className="w-3 h-3" />
-              Publication Report
+              <FileText className="w-3 h-3" />
+              PDF Report
             </Button>
             <Badge variant="secondary" className="ml-auto">
               {stats.rawSessions.length} sessions • {stats.knowledgeGain.length} with scores
@@ -1452,10 +1460,6 @@ const AdminOverview = () => {
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between"><span className="text-blue-400">Text:</span><span>{stats.textModeCompleted}</span></div>
                 <div className="flex justify-between"><span className="text-purple-400">Avatar:</span><span>{stats.avatarModeCompleted}</span></div>
-                <div className="flex justify-between opacity-50"><span className="text-cyan-400">Both:</span><span>{stats.bothModesCompleted}</span></div>
-                {stats.bothModesCompleted > 0 && (
-                  <div className="text-[8px] text-amber-400 mt-1">⚠ Needs review</div>
-                )}
               </div>
             </div>
           </div>
@@ -1491,14 +1495,14 @@ const AdminOverview = () => {
         <CardContent>
           {stats.knowledgeGain.length > 0 ? (
             <div className="space-y-6">
-              {/* Mode-specific breakdown */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Text Only */}
+              {/* Mode-specific breakdown - Only Text and Avatar */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Text Mode */}
                 <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
                   <div className="text-sm font-medium text-blue-400 mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-blue-400" />
-                      Text Only
+                      Text Mode
                     </div>
                     <span className="text-slate-500 text-xs">n={stats.knowledgeGain.filter(k => k.mode === 'text').length}</span>
                   </div>
@@ -1520,12 +1524,12 @@ const AdminOverview = () => {
                   </div>
                 </div>
 
-                {/* Avatar Only */}
+                {/* Avatar Mode */}
                 <div className="bg-purple-900/20 border border-purple-700/50 rounded-lg p-4">
                   <div className="text-sm font-medium text-purple-400 mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-purple-400" />
-                      Avatar Only
+                      Avatar Mode
                     </div>
                     <span className="text-slate-500 text-xs">n={stats.knowledgeGain.filter(k => k.mode === 'avatar').length}</span>
                   </div>
@@ -1544,48 +1548,6 @@ const AdminOverview = () => {
                         {stats.avatarModeGain >= 0 ? '+' : ''}{stats.avatarModeGain}%
                       </span>
                     </div>
-                  </div>
-                </div>
-
-                {/* Both Modes - Grayed out with warning */}
-                <div className="bg-slate-700/30 border border-slate-600 rounded-lg p-4 opacity-60 relative">
-                  <div className="absolute top-2 right-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <AlertTriangle className="w-4 h-4 text-amber-400 cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">Participants should use only one mode. These sessions require manual review.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <div className="text-sm font-medium text-cyan-400/60 mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-cyan-400/60" />
-                      Both Modes
-                    </div>
-                    <span className="text-slate-500 text-xs">n={stats.knowledgeGain.filter(k => k.mode === 'both').length}</span>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Pre-Test:</span>
-                      <span className="text-red-400/60">{stats.bothModesPreScore}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Post-Test:</span>
-                      <span className="text-green-400/60">{stats.bothModesPostScore}%</span>
-                    </div>
-                    <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
-                      <span className="text-slate-300 font-medium">Gain:</span>
-                      <span className={`font-bold ${stats.bothModesGain >= 0 ? 'text-green-400/60' : 'text-red-400/60'}`}>
-                        {stats.bothModesGain >= 0 ? '+' : ''}{stats.bothModesGain}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-[10px] text-amber-400/80 bg-amber-900/20 rounded px-2 py-1">
-                    ⚠ Requires manual review
                   </div>
                 </div>
               </div>
@@ -1710,53 +1672,6 @@ const AdminOverview = () => {
                       {stats.statisticalTests.textVsAvatar.significant 
                         ? `✓ Significant (p < 0.05) with ${stats.statisticalTests.textVsAvatar.effectSize} effect size` 
                         : 'Not statistically significant'}
-                    </div>
-                  </div>
-                  
-                  {/* Secondary comparisons (grayed out as Both Modes requires review) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-60">
-                    {/* Text vs Both */}
-                    <div className="rounded-lg p-3 border bg-slate-700/30 border-slate-600">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs font-medium text-slate-300">Text vs Both Modes</div>
-                        <AlertTriangle className="w-3 h-3 text-amber-400" />
-                      </div>
-                      <div className="space-y-1 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">p-value:</span>
-                          <span className="text-slate-300">{stats.statisticalTests.textVsBoth.pValue < 0.001 ? '<0.001' : stats.statisticalTests.textVsBoth.pValue}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Cohen's d:</span>
-                          <span className="text-slate-300">{stats.statisticalTests.textVsBoth.cohensD} ({stats.statisticalTests.textVsBoth.effectSize})</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Sample:</span>
-                          <span className="text-slate-400">n={stats.statisticalTests.textVsBoth.textN} vs n={stats.statisticalTests.textVsBoth.bothN}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Avatar vs Both */}
-                    <div className="rounded-lg p-3 border bg-slate-700/30 border-slate-600">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs font-medium text-slate-300">Avatar vs Both Modes</div>
-                        <AlertTriangle className="w-3 h-3 text-amber-400" />
-                      </div>
-                      <div className="space-y-1 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">p-value:</span>
-                          <span className="text-slate-300">{stats.statisticalTests.avatarVsBoth.pValue < 0.001 ? '<0.001' : stats.statisticalTests.avatarVsBoth.pValue}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Cohen's d:</span>
-                          <span className="text-slate-300">{stats.statisticalTests.avatarVsBoth.cohensD} ({stats.statisticalTests.avatarVsBoth.effectSize})</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Sample:</span>
-                          <span className="text-slate-400">n={stats.statisticalTests.avatarVsBoth.avatarN} vs n={stats.statisticalTests.avatarVsBoth.bothN}</span>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -1956,8 +1871,8 @@ const AdminOverview = () => {
                     </Tooltip>
                   </TooltipProvider>
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {(['text', 'avatar', 'both'] as const).map(mode => {
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(['text', 'avatar'] as const).map(mode => {
                     const modeData = stats.likertByMode[mode];
                     const trustAvg = modeData.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(modeData.filter(l => l.category === 'trust').length, 1);
                     const engagementAvg = modeData.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(modeData.filter(l => l.category === 'engagement').length, 1);
@@ -1967,17 +1882,13 @@ const AdminOverview = () => {
                     const modeColors = {
                       text: 'border-blue-600',
                       avatar: 'border-purple-600',
-                      both: 'border-cyan-600',
                     };
 
-                    const isBothMode = mode === 'both';
-
                     return (
-                      <div key={mode} className={`bg-slate-700/30 rounded-lg p-4 border-l-4 ${modeColors[mode]} ${isBothMode ? 'opacity-60' : ''}`}>
+                      <div key={mode} className={`bg-slate-700/30 rounded-lg p-4 border-l-4 ${modeColors[mode]}`}>
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-slate-200 capitalize">{mode === 'both' ? 'Both Modes' : `${mode} Mode`}</span>
-                            {isBothMode && <AlertTriangle className="w-3 h-3 text-amber-400" />}
+                            <span className="text-sm font-medium text-slate-200 capitalize">{mode} Mode</span>
                           </div>
                           <span className="text-slate-500 text-xs">n={sampleSize}</span>
                         </div>

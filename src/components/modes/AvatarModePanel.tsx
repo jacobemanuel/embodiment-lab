@@ -105,8 +105,10 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   };
 
   const handleToggleCamera = async () => {
+    console.log('Toggle camera clicked, current state:', isCameraOn);
     if (isCameraOn) {
       // Turn off camera
+      console.log('Turning camera OFF');
       if (userStreamRef.current) {
         userStreamRef.current.getTracks().forEach(track => track.stop());
         userStreamRef.current = null;
@@ -118,6 +120,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
       setCameraError(null);
     } else {
       // Turn on camera
+      console.log('Turning camera ON');
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 200, height: 150, facingMode: 'user' },

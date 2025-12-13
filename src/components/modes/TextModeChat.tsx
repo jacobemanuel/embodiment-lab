@@ -17,23 +17,36 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
   const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const prevSlideRef = useRef<string>(currentSlide.id);
+  const prevSlideRef = useRef<string | null>(null);
+  const isFirstSlide = currentSlide.id === 'intro' || currentSlide.id === 'slide-1';
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Add welcome message when slide changes
+  // Add greeting on first slide, context update on subsequent slides
   useEffect(() => {
     if (prevSlideRef.current !== currentSlide.id) {
+      const isInitialLoad = prevSlideRef.current === null;
       prevSlideRef.current = currentSlide.id;
-      setMessages(prev => [...prev, {
-        role: 'ai',
-        content: `You're now viewing: **${currentSlide.title}**. Feel free to ask me any questions about this topic!`,
-        timestamp: Date.now()
-      }]);
+      
+      if (isInitialLoad && isFirstSlide) {
+        // First slide greeting - like Avatar
+        setMessages([{
+          role: 'ai',
+          content: `Hey! Nice to see you! 👋 I'm Alex, your AI tutor for learning about AI image generation. We're starting with "${currentSlide.title}" - feel free to ask me anything!`,
+          timestamp: Date.now()
+        }]);
+      } else if (!isInitialLoad) {
+        // Subsequent slides - context continuation like Avatar
+        setMessages(prev => [...prev, {
+          role: 'ai',
+          content: `Alright, now we're on "${currentSlide.title}". Need help understanding anything here?`,
+          timestamp: Date.now()
+        }]);
+      }
     }
-  }, [currentSlide]);
+  }, [currentSlide, isFirstSlide]);
 
   const handleSend = async () => {
     if (!input.trim() || isStreaming) return;
@@ -47,10 +60,15 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
 
     let aiResponse = "";
 
-    // Build message history for the AI - include system context as first AI message
+    // Build message history for the AI - include slide context with priority like Avatar mode
     const systemContext: Message = {
       role: 'ai',
-      content: `[System: You are an AI tutor teaching about AI Image Generation. Current slide: "${currentSlide.title}". ${currentSlide.systemPromptContext}. Keep answers concise and helpful.]`,
+      content: `[PRIORITY #1 - CURRENT SLIDE CONTEXT]
+You are currently teaching slide: "${currentSlide.title}"
+Slide content context: ${currentSlide.systemPromptContext}
+Key points to cover: ${currentSlide.keyPoints?.join(', ') || 'See slide content'}
+
+IMPORTANT: Focus your responses on this specific slide topic. If the user asks what slide they're on, tell them "${currentSlide.title}".`,
       timestamp: Date.now() - 1
     };
 

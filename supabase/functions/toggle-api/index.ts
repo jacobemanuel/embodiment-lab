@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Only this email can toggle API
+// Owner has full control, admins can only toggle Anam
 const OWNER_EMAIL = 'jakub.majewski@tum.de';
 
 serve(async (req) => {
@@ -39,42 +39,89 @@ serve(async (req) => {
       );
     }
 
-    // Check if user is the owner
-    if (user.email !== OWNER_EMAIL) {
+    // Check if user has researcher role (admin access)
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    const isResearcher = roleData?.role === 'researcher' || roleData?.role === 'admin';
+    const isOwner = user.email === OWNER_EMAIL;
+
+    if (!isResearcher && !isOwner) {
       console.log(`Unauthorized attempt by ${user.email}`);
       return new Response(
-        JSON.stringify({ error: 'Only the owner can toggle API status' }),
+        JSON.stringify({ error: 'Only admins can access API controls' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const { action } = await req.json();
+    const { action, apiType, newApiKey } = await req.json();
 
+    // ACTION: get - fetch all API statuses
     if (action === 'get') {
-      // Get current status
       const { data, error } = await supabase
         .from('app_settings')
-        .select('value')
-        .eq('key', 'api_enabled')
-        .single();
+        .select('key, value, updated_at, updated_by')
+        .in('key', ['api_enabled', 'openai_api_enabled', 'anam_api_enabled', 'anam_api_key']);
 
       if (error) {
-        console.error('Error fetching setting:', error);
+        console.error('Error fetching settings:', error);
         throw error;
       }
 
+      const settings: Record<string, any> = {};
+      for (const row of data || []) {
+        settings[row.key] = {
+          ...row.value,
+          updated_at: row.updated_at,
+          updated_by: row.updated_by
+        };
+      }
+
+      // For non-owners, hide the actual API key value
+      if (!isOwner && settings.anam_api_key) {
+        const keyValue = settings.anam_api_key.key || '';
+        settings.anam_api_key.key = keyValue ? `***${keyValue.slice(-4)}` : '';
+      }
+
       return new Response(
-        JSON.stringify({ enabled: data?.value?.enabled ?? false }),
+        JSON.stringify({ 
+          settings,
+          isOwner,
+          userEmail: user.email
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // ACTION: toggle - toggle a specific API
     if (action === 'toggle') {
+      // Validate apiType
+      const validTypes = ['openai', 'anam', 'master'];
+      if (!validTypes.includes(apiType)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid API type' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Only owner can toggle OpenAI or master switch
+      if ((apiType === 'openai' || apiType === 'master') && !isOwner) {
+        return new Response(
+          JSON.stringify({ error: 'Only owner can toggle OpenAI or master switch' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const settingKey = apiType === 'master' ? 'api_enabled' : `${apiType}_api_enabled`;
+
       // Get current status
       const { data: current, error: fetchError } = await supabase
         .from('app_settings')
         .select('value')
-        .eq('key', 'api_enabled')
+        .eq('key', settingKey)
         .single();
 
       if (fetchError) {
@@ -93,17 +140,92 @@ serve(async (req) => {
           updated_at: new Date().toISOString(),
           updated_by: user.email
         })
-        .eq('key', 'api_enabled');
+        .eq('key', settingKey);
 
       if (updateError) {
         console.error('Error updating setting:', updateError);
         throw updateError;
       }
 
-      console.log(`API toggled to ${newEnabled ? 'ENABLED' : 'DISABLED'} by ${user.email}`);
+      // Log to audit
+      await supabase.from('admin_audit_log').insert({
+        admin_email: user.email,
+        action_type: 'toggle',
+        entity_type: 'api_setting',
+        entity_id: settingKey,
+        entity_name: `${apiType.toUpperCase()} API`,
+        changes: { from: currentEnabled, to: newEnabled }
+      });
+
+      console.log(`${apiType.toUpperCase()} API toggled to ${newEnabled ? 'ENABLED' : 'DISABLED'} by ${user.email}`);
 
       return new Response(
-        JSON.stringify({ enabled: newEnabled, message: `API ${newEnabled ? 'enabled' : 'disabled'} successfully` }),
+        JSON.stringify({ 
+          enabled: newEnabled, 
+          message: `${apiType.toUpperCase()} API ${newEnabled ? 'enabled' : 'disabled'} successfully`,
+          apiType
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ACTION: update_key - update Anam API key (owner only)
+    if (action === 'update_key') {
+      if (!isOwner) {
+        return new Response(
+          JSON.stringify({ error: 'Only owner can update API keys' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!newApiKey || typeof newApiKey !== 'string') {
+        return new Response(
+          JSON.stringify({ error: 'Invalid API key' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get old key for audit (just last 4 chars)
+      const { data: oldData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'anam_api_key')
+        .single();
+
+      const oldKeyPreview = oldData?.value?.key ? `***${oldData.value.key.slice(-4)}` : 'none';
+
+      // Update the key
+      const { error: updateError } = await supabase
+        .from('app_settings')
+        .update({ 
+          value: { key: newApiKey },
+          updated_at: new Date().toISOString(),
+          updated_by: user.email
+        })
+        .eq('key', 'anam_api_key');
+
+      if (updateError) {
+        console.error('Error updating API key:', updateError);
+        throw updateError;
+      }
+
+      // Log to audit
+      await supabase.from('admin_audit_log').insert({
+        admin_email: user.email,
+        action_type: 'update',
+        entity_type: 'api_key',
+        entity_id: 'anam_api_key',
+        entity_name: 'ANAM API Key',
+        changes: { from: oldKeyPreview, to: `***${newApiKey.slice(-4)}` }
+      });
+
+      console.log(`ANAM API key updated by ${user.email}`);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'ANAM API key updated successfully'
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

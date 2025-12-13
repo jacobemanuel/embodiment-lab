@@ -16,7 +16,7 @@ const chatRequestSchema = z.object({
   preTestData: z.record(z.string()).optional().nullable(),
 });
 
-// Check if API is enabled from database
+// Check if API is enabled from database (master switch + openai-specific)
 async function isApiEnabled(): Promise<boolean> {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -25,16 +25,24 @@ async function isApiEnabled(): Promise<boolean> {
     
     const { data, error } = await supabase
       .from('app_settings')
-      .select('value')
-      .eq('key', 'api_enabled')
-      .single();
+      .select('key, value')
+      .in('key', ['api_enabled', 'openai_api_enabled']);
     
     if (error) {
       console.error('Error checking API status:', error);
       return false; // Default to disabled if error
     }
     
-    return data?.value?.enabled ?? false;
+    const settings: Record<string, any> = {};
+    for (const row of data || []) {
+      settings[row.key] = row.value;
+    }
+    
+    // API is enabled if BOTH master switch AND openai switch are enabled
+    const masterEnabled = settings.api_enabled?.enabled ?? false;
+    const openaiEnabled = settings.openai_api_enabled?.enabled ?? true; // Default true for backwards compat
+    
+    return masterEnabled && openaiEnabled;
   } catch (e) {
     console.error('Error in isApiEnabled:', e);
     return false;

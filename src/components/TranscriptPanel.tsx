@@ -49,8 +49,8 @@ export const TranscriptPanel = ({
             </p>
           ) : (
             <>
-              {/* Show only final messages */}
-              {messages.filter(msg => msg.isFinal !== false).map((msg) => (
+              {/* Render all messages so user speech is always visible */}
+              {messages.map((msg) => (
                 <div
                   key={msg.id}
                   className={cn(
@@ -73,13 +73,16 @@ export const TranscriptPanel = ({
                       )}>
                         {msg.role === 'avatar' ? 'Tutor' : 'You'}
                       </span>
+                      {msg.isFinal === false && (
+                        <span className="text-[10px] text-muted-foreground">listening...</span>
+                      )}
                     </div>
                     <p className="leading-relaxed">{msg.content}</p>
                   </div>
                 </div>
               ))}
               
-              {/* Show typing indicator if there's a non-final message */}
+              {/* Typing indicator if any non-final message is in progress */}
               {messages.some(msg => msg.isFinal === false) && (
                 <div className="flex justify-start">
                   <div className="bg-primary/10 border border-primary/20 text-foreground rounded-2xl rounded-bl-md px-4 py-2 shadow-sm">

@@ -112,17 +112,22 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   }, [currentSlide]);
 
   // Auto-start user camera once avatar is connected (to match mockup UX)
-  // Also re-attach stream to video element when reconnecting after slide change
+  // ALSO: Re-attach existing stream to video element after slide changes / reconnects
+  // The key is to NOT stop the stream when slides change - keep it running
   useEffect(() => {
     const startOrReattachCamera = async () => {
-      if (!isConnected) return;
-      
-      // If camera is already on and stream exists, just re-attach to video element
-      if (isCameraOn && userStreamRef.current && userVideoRef.current) {
-        console.log('Re-attaching existing camera stream after reconnect');
-        userVideoRef.current.srcObject = userStreamRef.current;
-        return;
+      // Always try to re-attach if stream exists and video element is available
+      if (userStreamRef.current && userVideoRef.current && isCameraOn) {
+        // Check if stream is still active
+        const tracks = userStreamRef.current.getVideoTracks();
+        if (tracks.length > 0 && tracks[0].readyState === 'live') {
+          console.log('Re-attaching existing camera stream to video element');
+          userVideoRef.current.srcObject = userStreamRef.current;
+          return;
+        }
       }
+      
+      if (!isConnected) return;
       
       // First time auto-start
       if (!hasAutoStartedCameraRef.current) {
@@ -149,6 +154,26 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
 
     void startOrReattachCamera();
   }, [isConnected, isCameraOn]);
+  
+  // Periodically check if camera stream is still attached (handles slide change disconnects)
+  useEffect(() => {
+    if (!isCameraOn || !userStreamRef.current) return;
+    
+    const checkInterval = setInterval(() => {
+      if (userVideoRef.current && userStreamRef.current) {
+        const tracks = userStreamRef.current.getVideoTracks();
+        if (tracks.length > 0 && tracks[0].readyState === 'live') {
+          // Stream is alive, make sure it's attached
+          if (userVideoRef.current.srcObject !== userStreamRef.current) {
+            console.log('Re-attaching camera stream (detected detachment)');
+            userVideoRef.current.srcObject = userStreamRef.current;
+          }
+        }
+      }
+    }, 500);
+    
+    return () => clearInterval(checkInterval);
+  }, [isCameraOn]);
 
   const handleSend = () => {
     if (input.trim() && isConnected) {

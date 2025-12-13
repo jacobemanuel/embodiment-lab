@@ -416,14 +416,25 @@ interface SessionDetails {
                                     ⚠️ Score: {session.suspicion_score || 0}
                                   </Badge>
                                 </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  <p className="font-semibold mb-1">Suspicious Flags:</p>
-                                  <ul className="text-xs space-y-1">
-                                    {suspiciousFlags.map((flag, i) => (
-                                      <li key={i}>• {String(flag).replace(/_/g, ' ')}</li>
-                                    ))}
-                                    {suspiciousFlags.length === 0 && <li>No specific flags</li>}
-                                  </ul>
+                                <TooltipContent className="max-w-md bg-slate-900 border-slate-700 p-3">
+                                  <p className="font-semibold mb-2 text-white">Suspicion Score Explanation</p>
+                                  <div className="text-xs space-y-2 text-slate-300">
+                                    <p><strong>Score {session.suspicion_score || 0}/100</strong> - Higher = more suspicious</p>
+                                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+                                      <span>0-19: Normal</span><span className="text-green-400">✓ Valid</span>
+                                      <span>20-39: Low risk</span><span className="text-yellow-400">⚠ Minor flags</span>
+                                      <span>40-59: Medium risk</span><span className="text-orange-400">⚠ Review needed</span>
+                                      <span>60+: High risk</span><span className="text-red-400">⚠ Likely bot/inattentive</span>
+                                    </div>
+                                    <hr className="border-slate-700 my-2" />
+                                    <p className="font-semibold text-white">Detected Issues:</p>
+                                    <ul className="space-y-1">
+                                      {suspiciousFlags.map((flag, i) => (
+                                        <li key={i}>• {String(flag).replace(/_/g, ' ')}</li>
+                                      ))}
+                                      {suspiciousFlags.length === 0 && <li className="italic">Score based on overall timing patterns</li>}
+                                    </ul>
+                                  </div>
                                 </TooltipContent>
                               </Tooltip>
                             )}

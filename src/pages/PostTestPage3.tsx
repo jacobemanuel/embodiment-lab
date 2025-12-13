@@ -235,9 +235,13 @@ const PostTestPage3 = () => {
                   className={`glass-card rounded-2xl p-6 space-y-4 transition-all duration-300 ${isSkipped ? 'opacity-60' : 'hover:shadow-ai-glow'}`}
                 >
                   <div className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-ai-primary to-ai-accent text-white flex items-center justify-center font-semibold text-sm">
+                    <button
+                      type="button"
+                      onClick={() => scrollToQuestion(index)}
+                      className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-ai-primary to-ai-accent text-white flex items-center justify-center font-semibold text-sm cursor-pointer hover:scale-110 transition-transform"
+                    >
                       {index + 1}
-                    </span>
+                    </button>
                     <Label className="font-semibold pt-1 text-base">{question.text}</Label>
                   </div>
                   

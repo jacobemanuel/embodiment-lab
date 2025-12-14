@@ -51,6 +51,18 @@ const AdminAuditLog = () => {
     fetchLogs();
   }, []);
 
+  // Real-time subscription for audit logs
+  useEffect(() => {
+    const channel = supabase
+      .channel('audit-log-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_audit_log' }, () => fetchLogs())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'create': return <Plus className="w-4 h-4 text-green-400" />;

@@ -237,6 +237,22 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
     fetchAllResponses();
   }, [fetchAllResponses]);
 
+  // Real-time subscription for responses
+  useEffect(() => {
+    const channel = supabase
+      .channel('responses-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_sessions' }, () => fetchAllResponses())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'demographic_responses' }, () => fetchAllResponses())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pre_test_responses' }, () => fetchAllResponses())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'post_test_responses' }, () => fetchAllResponses())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_questions' }, () => fetchQuestionData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchAllResponses]);
+
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(() => {

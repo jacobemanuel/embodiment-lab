@@ -882,6 +882,23 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
     fetchStats();
   }, [fetchStats]);
 
+  // Real-time subscription for all relevant tables
+  useEffect(() => {
+    const channel = supabase
+      .channel('overview-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_sessions' }, () => fetchStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'demographic_responses' }, () => fetchStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pre_test_responses' }, () => fetchStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'post_test_responses' }, () => fetchStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_questions' }, () => fetchStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avatar_time_tracking' }, () => fetchStats())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchStats]);
+
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(fetchStats, 30000);

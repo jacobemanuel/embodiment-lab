@@ -149,6 +149,24 @@ interface SessionDataStatus {
     fetchSessions();
   }, [fetchSessions]);
 
+  // Real-time subscription for sessions
+  useEffect(() => {
+    const channel = supabase
+      .channel('sessions-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'study_sessions' },
+        () => {
+          fetchSessions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchSessions]);
+
   // Auto-refresh every 30 seconds if enabled
   useEffect(() => {
     if (!autoRefresh) return;
@@ -378,6 +396,36 @@ interface SessionDataStatus {
     } catch (error) {
       console.error('Error hiding sessions:', error);
       toast.error('Failed to hide sessions');
+    }
+  };
+
+  // Restore session(s) to pending status
+  const restoreSelectedSessions = async () => {
+    if (selectedSessionIds.size === 0) {
+      toast.error('No sessions selected');
+      return;
+    }
+
+    try {
+      const sessionIdsArray = Array.from(selectedSessionIds);
+      
+      const { data, error } = await supabase.functions.invoke('update-session-validation', {
+        body: { sessionIds: sessionIdsArray, status: 'pending' }
+      });
+
+      if (error) throw error;
+
+      setSessions(prev => prev.map(s => 
+        selectedSessionIds.has(s.id)
+          ? { ...s, validation_status: 'pending', validated_by: userEmail, validated_at: new Date().toISOString() }
+          : s
+      ));
+      
+      setSelectedSessionIds(new Set());
+      toast.success(`${sessionIdsArray.length} session(s) restored to pending`);
+    } catch (error) {
+      console.error('Error restoring sessions:', error);
+      toast.error('Failed to restore sessions');
     }
   };
 
@@ -771,6 +819,15 @@ interface SessionDataStatus {
                 >
                   <EyeOff className="w-4 h-4 mr-1" />
                   Hide from Stats
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="border-blue-600 text-blue-500 hover:bg-blue-600/10"
+                  onClick={restoreSelectedSessions}
+                >
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                  Restore to Pending
                 </Button>
                 {permissions.canDeleteSessions && (
                   <Button 

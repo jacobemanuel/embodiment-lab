@@ -67,6 +67,18 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
     fetchSlides();
   }, []);
 
+  // Real-time subscription for slides
+  useEffect(() => {
+    const channel = supabase
+      .channel('slides-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_slides' }, () => fetchSlides())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const startEditing = (slide: StudySlide) => {
     setEditingSlide(slide.id);
     setEditedData({

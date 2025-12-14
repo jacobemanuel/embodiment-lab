@@ -469,7 +469,13 @@ interface SessionDataStatus {
 
   const filteredSessions = sessions.filter(session => {
     const matchesSearch = session.session_id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesMode = modeFilter === "all" || session.mode === modeFilter;
+    const modesUsed = session.modes_used && session.modes_used.length > 0 ? session.modes_used : [session.mode];
+    const sessionMode: string = modesUsed.includes('text') && modesUsed.includes('avatar')
+      ? 'both'
+      : modesUsed.includes('avatar')
+        ? 'avatar'
+        : 'text';
+    const matchesMode = modeFilter === "all" || sessionMode === modeFilter;
     
     // Enhanced status filter
     let matchesStatus = false;

@@ -28,7 +28,7 @@ interface QuestionData {
   category: string | null;
 }
 
-type ModeFilter = 'all' | 'text' | 'avatar' | 'both';
+type ModeFilter = 'all' | 'text' | 'avatar';
 type StatusFilter = 'all' | 'completed' | 'incomplete' | 'reset';
 
 import { getPermissions } from "@/lib/permissions";
@@ -104,13 +104,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       }) || [];
       const resetSessions = sessions?.filter(s => s.status === 'reset') || [];
       
-      // Count sessions by status (only valid sessions)
-      const completedCount = validSessions.filter(s => s.completed_at).length;
-      const incompleteCount = validSessions.filter(s => !s.completed_at).length;
-      const resetCount = resetSessions.length;
-      setSessionCount({ total: validSessions.length, completed: completedCount, incomplete: incompleteCount });
-      
-      // Filter sessions by status
+      // Count sessions by status using CURRENT filters (status + mode)
       let filteredSessions = validSessions;
       if (statusFilter === 'completed') {
         filteredSessions = validSessions.filter(s => s.completed_at);
@@ -120,22 +114,26 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
         filteredSessions = resetSessions;
       }
       
-      // Filter sessions by mode
+      // Filter sessions by mode (historical "both" sessions are included in All Modes only)
       if (modeFilter !== 'all') {
         filteredSessions = filteredSessions.filter(s => {
           const modesUsed = s.modes_used && s.modes_used.length > 0 ? s.modes_used : [s.mode];
           if (modeFilter === 'text') {
-            return modesUsed.length === 1 && modesUsed.includes('text');
-          } else if (modeFilter === 'avatar') {
-            return modesUsed.length === 1 && modesUsed.includes('avatar');
-          } else if (modeFilter === 'both') {
-            return modesUsed.includes('text') && modesUsed.includes('avatar');
+            return modesUsed.includes('text');
+          }
+          if (modeFilter === 'avatar') {
+            return modesUsed.includes('avatar');
           }
           return true;
         });
       }
       
       const sessionIds = filteredSessions.map(s => s.id);
+
+      // Update session counts based on filtered sessions
+      const completedCount = filteredSessions.filter(s => s.completed_at).length;
+      const incompleteCount = filteredSessions.filter(s => !s.completed_at).length;
+      setSessionCount({ total: filteredSessions.length, completed: completedCount, incomplete: incompleteCount });
 
       // Build queries with date filter
       let preTestQuery = supabase.from('pre_test_responses').select('question_id, answer, session_id');
@@ -158,16 +156,31 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
         return;
       }
 
-      const { data: preTest } = await preTestQuery;
-      const { data: postTest } = await postTestQuery;
-      const { data: demographics } = await demoQuery;
+      const { data: preTestRaw } = await preTestQuery;
+      const { data: postTestRaw } = await postTestQuery;
+      const { data: demographicsRaw } = await demoQuery;
+
+      // Deduplicate responses per session/question to avoid double-counting
+      const dedupeResponses = (rows: any[] | null | undefined) => {
+        if (!rows) return [] as any[];
+        const map = new Map<string, any>();
+        rows.forEach(r => {
+          const key = `${r.session_id}:${r.question_id}`;
+          map.set(key, r);
+        });
+        return Array.from(map.values());
+      };
+
+      const preTest = dedupeResponses(preTestRaw);
+      const postTest = dedupeResponses(postTestRaw);
+      const demographics = dedupeResponses(demographicsRaw);
 
       // Store raw responses for CSV export
       setRawResponses({ pre: preTest || [], post: postTest || [], demo: demographics || [] });
 
       // Aggregate pre-test responses
       const preTestAggregated: Record<string, ResponseData[]> = {};
-      preTest?.forEach(r => {
+      preTest.forEach(r => {
         if (!preTestAggregated[r.question_id]) {
           preTestAggregated[r.question_id] = [];
         }
@@ -181,7 +194,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
 
       // Aggregate post-test responses
       const postTestAggregated: Record<string, ResponseData[]> = {};
-      postTest?.forEach(r => {
+      postTest.forEach(r => {
         if (!postTestAggregated[r.question_id]) {
           postTestAggregated[r.question_id] = [];
         }
@@ -195,7 +208,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
 
       // Aggregate demographic responses
       const demoAggregated: Record<string, ResponseData[]> = {};
-      demographics?.forEach(r => {
+      demographics.forEach(r => {
         if (!demoAggregated[r.question_id]) {
           demoAggregated[r.question_id] = [];
         }
@@ -602,7 +615,6 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
                   <SelectItem value="all">All Modes</SelectItem>
                   <SelectItem value="text">Text Only</SelectItem>
                   <SelectItem value="avatar">Avatar Only</SelectItem>
-                  <SelectItem value="both">Both Modes</SelectItem>
                 </SelectContent>
               </Select>
             </div>

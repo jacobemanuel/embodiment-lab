@@ -60,6 +60,39 @@ const AdminDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Real-time notifications for admin changes by other admins
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const channel = supabase
+      .channel('admin-notifications')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'admin_audit_log' },
+        (payload) => {
+          const newLog = payload.new as { admin_email: string; action_type: string; entity_type: string; entity_name: string | null };
+          
+          // Only show notification if it's from a different admin
+          if (newLog.admin_email && newLog.admin_email !== userEmail) {
+            const actionVerb = newLog.action_type === 'create' ? 'created' : 
+                              newLog.action_type === 'update' ? 'updated' : 
+                              newLog.action_type === 'delete' ? 'deleted' : 'modified';
+            const entityName = newLog.entity_name || newLog.entity_type;
+            
+            toast.info(`${newLog.admin_email.split('@')[0]} ${actionVerb} ${newLog.entity_type}: ${entityName}`, {
+              duration: 5000,
+              description: 'Data has been refreshed automatically',
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userEmail]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/admin/login');

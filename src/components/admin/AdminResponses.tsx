@@ -646,7 +646,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
 
         <TabsContent value="demographics" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-sm text-slate-400">Demographic responses ({rawResponses.demo.length} total)</h3>
+            <h3 className="text-sm text-slate-400">Demographic responses ({sessionCount.completed} completed participants)</h3>
             {permissions.canExportData && (
               <Button onClick={exportDemographicsCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
                 <FileSpreadsheet className="w-3 h-3" /> Export CSV
@@ -656,8 +656,45 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {Object.entries(demographicsData).map(([questionId, responses]) => {
               const questionText = getQuestionText(questionId);
-              const chartData = responses.map(r => ({ name: r.answer, value: r.count }));
-              const totalResponses = responses.reduce((sum, r) => sum + r.count, 0);
+              
+              // Group age responses into 10-year ranges for demo-age question
+              let chartData: { name: string; value: number }[];
+              if (questionId === 'demo-age') {
+                const ageGroups: Record<string, number> = {};
+                const AGE_ORDER = ['18-24', '25-34', '35-44', '45-54', '55-64', '65-69', '70+', 'Prefer not to say'];
+                
+                responses.forEach(r => {
+                  const age = r.answer;
+                  if (age) {
+                    if (age.toLowerCase().includes('prefer') || age === 'Prefer not to say') {
+                      ageGroups['Prefer not to say'] = (ageGroups['Prefer not to say'] || 0) + r.count;
+                    } else {
+                      const ageNum = parseInt(age, 10);
+                      let ageRange = age;
+                      if (!isNaN(ageNum)) {
+                        if (ageNum < 18) ageRange = 'Under 18';
+                        else if (ageNum <= 24) ageRange = '18-24';
+                        else if (ageNum <= 34) ageRange = '25-34';
+                        else if (ageNum <= 44) ageRange = '35-44';
+                        else if (ageNum <= 54) ageRange = '45-54';
+                        else if (ageNum <= 64) ageRange = '55-64';
+                        else if (ageNum <= 69) ageRange = '65-69';
+                        else ageRange = '70+';
+                      }
+                      ageGroups[ageRange] = (ageGroups[ageRange] || 0) + r.count;
+                    }
+                  }
+                });
+                
+                // Sort by AGE_ORDER
+                chartData = AGE_ORDER
+                  .filter(range => ageGroups[range] > 0)
+                  .map(range => ({ name: range, value: ageGroups[range] }));
+              } else {
+                chartData = responses.map(r => ({ name: r.answer, value: r.count }));
+              }
+              
+              const totalResponses = chartData.reduce((sum, r) => sum + r.value, 0);
               
               return (
                 <Card key={questionId} className="bg-slate-800 border-slate-700">
@@ -700,7 +737,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
 
         <TabsContent value="pretest" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-sm text-slate-400">Pre-test responses ({rawResponses.pre.length} total)</h3>
+            <h3 className="text-sm text-slate-400">Pre-test responses ({sessionCount.completed} completed participants)</h3>
             {permissions.canExportData && (
               <Button onClick={exportPreTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
                 <FileSpreadsheet className="w-3 h-3" /> Export CSV
@@ -732,7 +769,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Brain className="w-4 h-4 text-purple-400" />
-              <h3 className="text-sm text-slate-400">Knowledge Check Questions ({knowledgeQuestions.reduce((sum, [, r]) => sum + r.reduce((s, x) => s + x.count, 0), 0)} responses)</h3>
+              <h3 className="text-sm text-slate-400">Knowledge Check Questions ({sessionCount.completed} completed participants)</h3>
             </div>
             {permissions.canExportData && (
               <Button onClick={exportPostTestKnowledgeCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
@@ -768,7 +805,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <ThumbsUp className="w-4 h-4 text-blue-400" />
-              <h3 className="text-sm text-slate-400">Perception & Experience Questions ({perceptionQuestions.reduce((sum, [, r]) => sum + r.reduce((s, x) => s + x.count, 0), 0)} responses)</h3>
+              <h3 className="text-sm text-slate-400">Perception & Experience Questions ({sessionCount.completed} completed participants)</h3>
             </div>
             {permissions.canExportData && (
               <Button onClick={exportPostTestPerceptionCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
@@ -835,7 +872,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
 
         <TabsContent value="openfeedback" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-sm text-slate-400">Open feedback ({openFeedbackData.length} total)</h3>
+            <h3 className="text-sm text-slate-400">Open feedback ({sessionCount.completed} completed participants)</h3>
             {permissions.canExportData && (
               <Button onClick={exportOpenFeedbackCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
                 <FileSpreadsheet className="w-3 h-3" /> Export CSV

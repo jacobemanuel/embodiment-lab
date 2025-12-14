@@ -160,7 +160,7 @@ const Consent = () => {
                   htmlFor="consent"
                   className="text-sm leading-relaxed cursor-pointer"
                 >
-                  I have read and understood the information above. I voluntarily agree to participate in this research study. I understand my responses will be anonymous and I can withdraw at any time.
+                  I confirm that I am 18 years of age or older. I have read and understood the information above. I voluntarily agree to participate in this research study. I understand my responses will be anonymous and I can withdraw at any time.
                 </label>
               </div>
             </div>

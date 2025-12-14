@@ -82,6 +82,18 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
     fetchQuestions();
   }, []);
 
+  // Real-time subscription for questions
+  useEffect(() => {
+    const channel = supabase
+      .channel('questions-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_questions' }, () => fetchQuestions())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const startEditing = (question: StudyQuestion) => {
     setEditingQuestion(question.id);
     setEditedData({

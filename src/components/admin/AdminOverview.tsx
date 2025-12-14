@@ -87,6 +87,7 @@ interface StudyStats {
   textModeCompleted: number;
   avatarModeCompleted: number;
   bothModesCompleted: number;
+  noModeCount: number;
   avgSessionDuration: number;
   avgAvatarTime: number;
   totalAvatarTime: number;
@@ -272,17 +273,20 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       const missingPreTest = preTestQuestions.filter(q => !q.correct_answer).length;
       const missingPostTest = postTestKnowledgeQuestions.filter(q => !q.correct_answer).length;
 
-      // Calculate mode distribution
-      const getSessionMode = (s: any): 'text' | 'avatar' | 'both' => {
-        const modesUsed = s.modes_used && s.modes_used.length > 0 ? s.modes_used : [s.mode];
+      // Calculate mode distribution - properly handle sessions with no mode
+      const getSessionMode = (s: any): 'text' | 'avatar' | 'both' | 'none' => {
+        const modesUsed = s.modes_used && s.modes_used.length > 0 ? s.modes_used : (s.mode ? [s.mode] : []);
+        if (modesUsed.length === 0) return 'none';
         if (modesUsed.includes('text') && modesUsed.includes('avatar')) return 'both';
         if (modesUsed.includes('avatar')) return 'avatar';
-        return 'text';
+        if (modesUsed.includes('text')) return 'text';
+        return 'none';
       };
       
       const textModeCompleted = sessionsToAnalyze.filter(s => getSessionMode(s) === 'text').length;
       const avatarModeCompleted = sessionsToAnalyze.filter(s => getSessionMode(s) === 'avatar').length;
       const bothModesCompleted = sessionsToAnalyze.filter(s => getSessionMode(s) === 'both').length;
+      const noModeCount = sessionsToAnalyze.filter(s => getSessionMode(s) === 'none').length;
 
       // Average session duration
       let avgDuration = 0;
@@ -446,9 +450,12 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           const mode = getSessionMode(s);
           const avatarTime = avatarTimeBySession[s.id] || 0;
           
+          // Skip sessions with no mode for knowledge gain analysis
+          if (mode === 'none') return;
+          
           knowledgeGain.push({
             sessionId: s.session_id,
-            mode,
+            mode: mode as 'text' | 'avatar' | 'both',
             preScore: Math.round(preScore),
             postScore: Math.round(postScore),
             gain: Math.round(postScore - preScore),
@@ -822,6 +829,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         textModeCompleted,
         avatarModeCompleted,
         bothModesCompleted,
+        noModeCount,
         avgSessionDuration: avgDuration,
         avgAvatarTime,
         totalAvatarTime,
@@ -833,6 +841,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           { name: 'Text Only', count: textModeCompleted },
           { name: 'Avatar Only', count: avatarModeCompleted },
           { name: 'Both Modes', count: bothModesCompleted },
+          { name: 'No Mode', count: noModeCount },
         ],
         avatarTimeBySlide,
         avatarTimeData,
@@ -2165,6 +2174,12 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between"><span className="text-blue-400">Text:</span><span>{stats.textModeCompleted}</span></div>
                 <div className="flex justify-between"><span className="text-purple-400">Avatar:</span><span>{stats.avatarModeCompleted}</span></div>
+                {stats.bothModesCompleted > 0 && (
+                  <div className="flex justify-between"><span className="text-green-400">Both:</span><span>{stats.bothModesCompleted}</span></div>
+                )}
+                {stats.noModeCount > 0 && (
+                  <div className="flex justify-between"><span className="text-slate-400">No Mode:</span><span>{stats.noModeCount}</span></div>
+                )}
               </div>
             </div>
           </div>

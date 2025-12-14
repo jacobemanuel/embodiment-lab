@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw, CheckCircle, XCircle, AlertTriangle, Info, Clock, CheckSquare, Square, FileText } from "lucide-react";
+import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw, CheckCircle, XCircle, AlertTriangle, Info, Clock, CheckSquare, Square, FileText, Trash2, EyeOff, Database } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import jsPDF from "jspdf";
 import { format, startOfDay, endOfDay } from "date-fns";
@@ -48,14 +48,24 @@ interface SessionDetails {
   dialogueTurns: any[];
 }
 
+interface SessionDataStatus {
+  hasDemographics: boolean;
+  hasPreTest: boolean;
+  hasPostTest: boolean;
+  hasDialogue: boolean;
+  isComplete: boolean;
+}
+
 
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessionDataStatuses, setSessionDataStatuses] = useState<Map<string, SessionDataStatus>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [modeFilter, setModeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [validationFilter, setValidationFilter] = useState<string>("all");
+  const [dataFilter, setDataFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
@@ -64,6 +74,7 @@ interface SessionDetails {
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
   const itemsPerPage = 10;
 
   const fetchSessions = useCallback(async () => {
@@ -85,6 +96,11 @@ interface SessionDetails {
 
       if (error) throw error;
       setSessions(data || []);
+      
+      // Fetch data completeness for all sessions
+      if (data && data.length > 0) {
+        await fetchDataStatuses(data.map(s => s.id));
+      }
     } catch (error) {
       console.error('Error fetching sessions:', error);
     } finally {
@@ -92,6 +108,42 @@ interface SessionDetails {
       setIsRefreshing(false);
     }
   }, [startDate, endDate]);
+
+  // Fetch data completeness for sessions
+  const fetchDataStatuses = async (sessionIds: string[]) => {
+    try {
+      // Fetch counts for each data type
+      const [demoRes, preRes, postRes, scenarioRes] = await Promise.all([
+        supabase.from('demographic_responses').select('session_id').in('session_id', sessionIds),
+        supabase.from('pre_test_responses').select('session_id').in('session_id', sessionIds),
+        supabase.from('post_test_responses').select('session_id').in('session_id', sessionIds),
+        supabase.from('scenarios').select('session_id').in('session_id', sessionIds),
+      ]);
+
+      const demoSessions = new Set((demoRes.data || []).map(d => d.session_id));
+      const preSessions = new Set((preRes.data || []).map(d => d.session_id));
+      const postSessions = new Set((postRes.data || []).map(d => d.session_id));
+      const scenarioSessions = new Set((scenarioRes.data || []).map(d => d.session_id));
+
+      const statusMap = new Map<string, SessionDataStatus>();
+      sessionIds.forEach(id => {
+        const hasDemographics = demoSessions.has(id);
+        const hasPreTest = preSessions.has(id);
+        const hasPostTest = postSessions.has(id);
+        const hasDialogue = scenarioSessions.has(id);
+        statusMap.set(id, {
+          hasDemographics,
+          hasPreTest,
+          hasPostTest,
+          hasDialogue,
+          isComplete: hasDemographics && hasPreTest && hasPostTest,
+        });
+      });
+      setSessionDataStatuses(statusMap);
+    } catch (error) {
+      console.error('Error fetching data statuses:', error);
+    }
+  };
 
   useEffect(() => {
     fetchSessions();
@@ -278,27 +330,92 @@ interface SessionDetails {
     });
   };
 
-  // Select all flagged sessions on current page
-  const selectAllFlagged = () => {
-    const flaggedOnPage = paginatedSessions.filter(s => 
-      (s.suspicion_score || 0) >= 40 || (Array.isArray(s.suspicious_flags) && s.suspicious_flags.length > 0)
-    );
-    const allSelected = flaggedOnPage.every(s => selectedSessionIds.has(s.id));
+  // Select all sessions on current page
+  const selectAllOnPage = () => {
+    const allSelected = paginatedSessions.every(s => selectedSessionIds.has(s.id));
     
     if (allSelected) {
       // Deselect all
       setSelectedSessionIds(prev => {
         const next = new Set(prev);
-        flaggedOnPage.forEach(s => next.delete(s.id));
+        paginatedSessions.forEach(s => next.delete(s.id));
         return next;
       });
     } else {
       // Select all
       setSelectedSessionIds(prev => {
         const next = new Set(prev);
-        flaggedOnPage.forEach(s => next.add(s.id));
+        paginatedSessions.forEach(s => next.add(s.id));
         return next;
       });
+    }
+  };
+
+  // Hide session(s) from statistics (set validation_status to 'ignored')
+  const hideSelectedSessions = async () => {
+    if (selectedSessionIds.size === 0) {
+      toast.error('No sessions selected');
+      return;
+    }
+
+    try {
+      const sessionIdsArray = Array.from(selectedSessionIds);
+      
+      const { data, error } = await supabase.functions.invoke('update-session-validation', {
+        body: { sessionIds: sessionIdsArray, status: 'ignored' }
+      });
+
+      if (error) throw error;
+
+      setSessions(prev => prev.map(s => 
+        selectedSessionIds.has(s.id)
+          ? { ...s, validation_status: 'ignored', validated_by: userEmail, validated_at: new Date().toISOString() }
+          : s
+      ));
+      
+      setSelectedSessionIds(new Set());
+      toast.success(`${sessionIdsArray.length} session(s) hidden from statistics`);
+    } catch (error) {
+      console.error('Error hiding sessions:', error);
+      toast.error('Failed to hide sessions');
+    }
+  };
+
+  // Delete session(s) permanently (owner only)
+  const deleteSelectedSessions = async () => {
+    if (!permissions.canDeleteSessions) {
+      toast.error('Only owner can delete sessions');
+      return;
+    }
+    
+    if (selectedSessionIds.size === 0) {
+      toast.error('No sessions selected');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to permanently delete ${selectedSessionIds.size} session(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const sessionIdsArray = Array.from(selectedSessionIds);
+      
+      const { data, error } = await supabase.functions.invoke('update-session-validation', {
+        body: { sessionIds: sessionIdsArray, action: 'delete' }
+      });
+
+      if (error) throw error;
+
+      // Remove deleted sessions from local state
+      setSessions(prev => prev.filter(s => !selectedSessionIds.has(s.id)));
+      setSelectedSessionIds(new Set());
+      toast.success(`${sessionIdsArray.length} session(s) permanently deleted`);
+    } catch (error) {
+      console.error('Error deleting sessions:', error);
+      toast.error('Failed to delete sessions');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -350,8 +467,31 @@ interface SessionDetails {
       default:
         matchesValidation = true;
     }
+
+    // Data completeness filter
+    let matchesData = true;
+    const dataStatus = sessionDataStatuses.get(session.id);
+    if (dataFilter !== 'all' && dataStatus) {
+      switch (dataFilter) {
+        case 'complete':
+          matchesData = dataStatus.isComplete;
+          break;
+        case 'missing':
+          matchesData = !dataStatus.isComplete;
+          break;
+        case 'no_demographics':
+          matchesData = !dataStatus.hasDemographics;
+          break;
+        case 'no_pretest':
+          matchesData = !dataStatus.hasPreTest;
+          break;
+        case 'no_posttest':
+          matchesData = !dataStatus.hasPostTest;
+          break;
+      }
+    }
     
-    return matchesSearch && matchesMode && matchesStatus && matchesValidation;
+    return matchesSearch && matchesMode && matchesStatus && matchesValidation && matchesData;
   });
 
   const totalPages = Math.ceil(filteredSessions.length / itemsPerPage);
@@ -592,6 +732,19 @@ interface SessionDetails {
                 <SelectItem value="ignored">Ignored</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={dataFilter} onValueChange={setDataFilter}>
+              <SelectTrigger className="w-[180px] bg-slate-900 border-slate-600">
+                <SelectValue placeholder="Data" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Data</SelectItem>
+                <SelectItem value="complete">Complete Data</SelectItem>
+                <SelectItem value="missing">Missing Data</SelectItem>
+                <SelectItem value="no_demographics">No Demographics</SelectItem>
+                <SelectItem value="no_pretest">No Pre-test</SelectItem>
+                <SelectItem value="no_posttest">No Post-test</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Bulk Actions */}
@@ -600,7 +753,7 @@ interface SessionDetails {
               <span className="text-sm text-slate-300">
                 {selectedSessionIds.size} session(s) selected
               </span>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button 
                   size="sm" 
                   variant="outline" 
@@ -608,24 +761,36 @@ interface SessionDetails {
                   onClick={() => bulkUpdateValidation('accepted')}
                 >
                   <CheckCircle className="w-4 h-4 mr-1" />
-                  {permissions.canValidateSessionsDirectly ? 'Accept All' : 'Request Accept'}
+                  {permissions.canValidateSessionsDirectly ? 'Accept' : 'Request Accept'}
                 </Button>
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="border-red-600 text-red-500 hover:bg-red-600/10"
-                  onClick={() => bulkUpdateValidation('ignored')}
+                  className="border-yellow-600 text-yellow-500 hover:bg-yellow-600/10"
+                  onClick={hideSelectedSessions}
                 >
-                  <XCircle className="w-4 h-4 mr-1" />
-                  {permissions.canValidateSessionsDirectly ? 'Ignore All' : 'Request Ignore'}
+                  <EyeOff className="w-4 h-4 mr-1" />
+                  Hide from Stats
                 </Button>
+                {permissions.canDeleteSessions && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="border-red-600 text-red-500 hover:bg-red-600/10"
+                    onClick={deleteSelectedSessions}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    {isDeleting ? 'Deleting...' : 'Delete Permanently'}
+                  </Button>
+                )}
                 <Button 
                   size="sm" 
                   variant="ghost" 
                   className="text-slate-400"
                   onClick={() => setSelectedSessionIds(new Set())}
                 >
-                  Clear Selection
+                  Clear
                 </Button>
               </div>
             </div>
@@ -644,25 +809,22 @@ interface SessionDetails {
                             size="sm" 
                             variant="ghost" 
                             className="h-6 w-6 p-0"
-                            onClick={selectAllFlagged}
+                            onClick={selectAllOnPage}
                           >
-                            {paginatedSessions.filter(s => 
-                              (s.suspicion_score || 0) >= 40 || (Array.isArray(s.suspicious_flags) && s.suspicious_flags.length > 0)
-                            ).every(s => selectedSessionIds.has(s.id)) && paginatedSessions.some(s => 
-                              (s.suspicion_score || 0) >= 40 || (Array.isArray(s.suspicious_flags) && s.suspicious_flags.length > 0)
-                            ) ? (
+                            {paginatedSessions.length > 0 && paginatedSessions.every(s => selectedSessionIds.has(s.id)) ? (
                               <CheckSquare className="w-4 h-4 text-primary" />
                             ) : (
                               <Square className="w-4 h-4 text-slate-500" />
                             )}
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Select all flagged sessions on this page</TooltipContent>
+                        <TooltipContent>Select all sessions on this page</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </TableHead>
                   <TableHead className="text-slate-400">Session ID</TableHead>
                   <TableHead className="text-slate-400">Mode</TableHead>
+                  <TableHead className="text-slate-400">Data</TableHead>
                   <TableHead className="text-slate-400">Started</TableHead>
                   <TableHead className="text-slate-400">Completed</TableHead>
                   <TableHead className="text-slate-400">Duration</TableHead>
@@ -694,21 +856,20 @@ interface SessionDetails {
                     statusBadge = <Badge variant="outline" className="border-orange-500 text-orange-500">Incomplete</Badge>;
                   }
 
+                  // Get data status for this session
+                  const dataStatus = sessionDataStatuses.get(session.id);
+
                   return (
                     <TableRow
                       key={session.id}
                       className={`border-slate-700 hover:bg-slate-700/50 ${isReset ? 'opacity-40' : isCompleted ? '' : 'opacity-50'} ${selectedSessionIds.has(session.id) ? 'bg-slate-700/30' : ''}`}
                     >
                       <TableCell>
-                        {isSuspicious ? (
-                          <Checkbox
-                            checked={selectedSessionIds.has(session.id)}
-                            onCheckedChange={() => toggleSessionSelection(session.id)}
-                            className="border-slate-500"
-                          />
-                        ) : (
-                          <span className="text-slate-600">-</span>
-                        )}
+                        <Checkbox
+                          checked={selectedSessionIds.has(session.id)}
+                          onCheckedChange={() => toggleSessionSelection(session.id)}
+                          className="border-slate-500"
+                        />
                       </TableCell>
                       <TableCell className="font-mono text-sm text-slate-300">
                         {session.session_id.slice(0, 8)}...
@@ -724,6 +885,47 @@ interface SessionDetails {
                             </Badge>
                           ))}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex gap-1">
+                                {dataStatus ? (
+                                  <>
+                                    <span className={`text-xs ${dataStatus.hasDemographics ? 'text-green-500' : 'text-red-500'}`}>
+                                      D{dataStatus.hasDemographics ? '✓' : '✗'}
+                                    </span>
+                                    <span className={`text-xs ${dataStatus.hasPreTest ? 'text-green-500' : 'text-red-500'}`}>
+                                      P{dataStatus.hasPreTest ? '✓' : '✗'}
+                                    </span>
+                                    <span className={`text-xs ${dataStatus.hasPostTest ? 'text-green-500' : 'text-red-500'}`}>
+                                      T{dataStatus.hasPostTest ? '✓' : '✗'}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-xs text-slate-500">...</span>
+                                )}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-slate-900 border-slate-700">
+                              <div className="text-xs space-y-1">
+                                <p className={dataStatus?.hasDemographics ? 'text-green-400' : 'text-red-400'}>
+                                  Demographics: {dataStatus?.hasDemographics ? 'Yes' : 'Missing'}
+                                </p>
+                                <p className={dataStatus?.hasPreTest ? 'text-green-400' : 'text-red-400'}>
+                                  Pre-test: {dataStatus?.hasPreTest ? 'Yes' : 'Missing'}
+                                </p>
+                                <p className={dataStatus?.hasPostTest ? 'text-green-400' : 'text-red-400'}>
+                                  Post-test: {dataStatus?.hasPostTest ? 'Yes' : 'Missing'}
+                                </p>
+                                <p className={dataStatus?.hasDialogue ? 'text-green-400' : 'text-yellow-400'}>
+                                  Dialogue: {dataStatus?.hasDialogue ? 'Yes' : 'None'}
+                                </p>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="text-slate-300">
                         {format(new Date(session.started_at), 'dd MMM yyyy HH:mm')}

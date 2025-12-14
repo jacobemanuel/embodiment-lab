@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { sessionId, sessionIds, status, approve } = await req.json();
+    const { sessionId, sessionIds, status, approve, action } = await req.json();
     const isOwner = user.email === OWNER_EMAIL;
     
     console.log("Update validation request:", { 
@@ -65,8 +65,70 @@ Deno.serve(async (req) => {
       sessionId, 
       sessionIds,
       status, 
-      approve 
+      approve,
+      action 
     });
+
+    // Handle delete action (owner only)
+    if (action === 'delete') {
+      if (!isOwner) {
+        return new Response(JSON.stringify({ error: "Only owner can delete sessions" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const idsToDelete = sessionIds || (sessionId ? [sessionId] : []);
+      if (idsToDelete.length === 0) {
+        return new Response(JSON.stringify({ error: "No sessions to delete" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Delete related data first (cascade doesn't work through all tables)
+      // Delete in order: dialogue_turns -> scenarios, then other responses, then session
+      const { data: scenarios } = await supabaseClient
+        .from("scenarios")
+        .select("id")
+        .in("session_id", idsToDelete);
+
+      if (scenarios && scenarios.length > 0) {
+        const scenarioIds = scenarios.map(s => s.id);
+        await supabaseClient.from("dialogue_turns").delete().in("scenario_id", scenarioIds);
+        await supabaseClient.from("scenarios").delete().in("session_id", idsToDelete);
+      }
+
+      // Delete other related data
+      await Promise.all([
+        supabaseClient.from("demographic_responses").delete().in("session_id", idsToDelete),
+        supabaseClient.from("demographics").delete().in("session_id", idsToDelete),
+        supabaseClient.from("pre_test_responses").delete().in("session_id", idsToDelete),
+        supabaseClient.from("post_test_responses").delete().in("session_id", idsToDelete),
+        supabaseClient.from("avatar_time_tracking").delete().in("session_id", idsToDelete),
+      ]);
+
+      // Finally delete the sessions
+      const { error } = await supabaseClient
+        .from("study_sessions")
+        .delete()
+        .in("id", idsToDelete);
+
+      if (error) {
+        console.error("Delete error:", error);
+        throw error;
+      }
+
+      console.log("Sessions deleted successfully:", idsToDelete);
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        deletedCount: idsToDelete.length,
+        message: `${idsToDelete.length} session(s) permanently deleted` 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Handle bulk updates
     if (sessionIds && Array.isArray(sessionIds)) {

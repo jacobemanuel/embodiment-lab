@@ -141,7 +141,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 type StatusFilter = 'completed' | 'all' | 'incomplete' | 'reset';
 
 // Sorting helpers
-const AGE_ORDER = ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
+const AGE_ORDER = ['18-24', '25-34', '35-44', '45-54', '55-64', '65-69', '70+', 'Prefer not to say'];
 const EXPERIENCE_ORDER = ['1 - No Experience', '2 - Limited Experience', '3 - Moderate Experience', '4 - Good Experience', '5 - Extensive Experience'];
 const EDUCATION_ORDER = ['High school or less', 'Some college', "Bachelor's degree", "Master's degree", 'Doctoral degree'];
 
@@ -339,25 +339,31 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         count: sessionsByDay[date]
       }));
 
-      // Demographics breakdown - Age
+      // Demographics breakdown - Age (10-year ranges, 70+ for elderly, include "Prefer not to say")
       const ageBreakdown: Record<string, number> = {};
       demographicResponses
         .filter(r => r.question_id === 'demo-age')
         .forEach(r => {
           const age = r.answer;
-          if (age && age !== 'Prefer not to say') {
-            const ageNum = parseInt(age, 10);
-            let ageRange = age;
-            if (!isNaN(ageNum)) {
-              if (ageNum < 18) ageRange = 'Under 18';
-              else if (ageNum <= 24) ageRange = '18-24';
-              else if (ageNum <= 34) ageRange = '25-34';
-              else if (ageNum <= 44) ageRange = '35-44';
-              else if (ageNum <= 54) ageRange = '45-54';
-              else if (ageNum <= 64) ageRange = '55-64';
-              else ageRange = '65+';
+          if (age) {
+            // Handle "Prefer not to say" explicitly
+            if (age.toLowerCase().includes('prefer') || age === 'Prefer not to say') {
+              ageBreakdown['Prefer not to say'] = (ageBreakdown['Prefer not to say'] || 0) + 1;
+            } else {
+              const ageNum = parseInt(age, 10);
+              let ageRange = age;
+              if (!isNaN(ageNum)) {
+                if (ageNum < 18) ageRange = 'Under 18'; // Should not happen (blocked at demographics)
+                else if (ageNum <= 24) ageRange = '18-24';
+                else if (ageNum <= 34) ageRange = '25-34';
+                else if (ageNum <= 44) ageRange = '35-44';
+                else if (ageNum <= 54) ageRange = '45-54';
+                else if (ageNum <= 64) ageRange = '55-64';
+                else if (ageNum <= 69) ageRange = '65-69';
+                else ageRange = '70+';
+              }
+              ageBreakdown[ageRange] = (ageBreakdown[ageRange] || 0) + 1;
             }
-            ageBreakdown[ageRange] = (ageBreakdown[ageRange] || 0) + 1;
           }
         });
 

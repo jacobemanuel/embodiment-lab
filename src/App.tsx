@@ -20,6 +20,7 @@ import Completion from "./pages/Completion";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import StudyEntry from "./pages/StudyEntry";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +41,7 @@ const App = () => (
           <SessionProvider>
             <Routes>
               <Route path="/" element={<Welcome />} />
+              <Route path="/study/:mode" element={<StudyEntry />} />
               <Route path="/consent" element={<Consent />} />
               <Route path="/demographics" element={<Demographics />} />
               <Route path="/pre-test" element={<PreTest />} />
@@ -47,7 +49,7 @@ const App = () => (
               <Route path="/learning/:mode" element={<Learning />} />
               <Route path="/scenario/:mode/:scenarioId" element={<Scenario />} />
               <Route path="/scenario/:mode/:scenarioId/feedback" element={<ScenarioFeedback />} />
-              <Route path="/post-test" element={<PostTestPage1 />} />
+              <Route path="/post-test-1" element={<PostTestPage1 />} />
               <Route path="/post-test-2" element={<PostTestPage2 />} />
               <Route path="/post-test-3" element={<PostTestPage3 />} />
               <Route path="/completion" element={<Completion />} />

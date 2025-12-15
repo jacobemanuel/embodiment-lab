@@ -1,21 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import logo from "@/assets/logo-white.png";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
 import { savePostTestResponses, completeStudySession } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MessageSquare, SkipForward, ChevronLeft } from "lucide-react";
+import { Loader2, MessageSquare, ChevronLeft } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import ExitStudyButton from "@/components/ExitStudyButton";
 
-const MAX_CHARS = 200;
-const SKIP_VALUE = '__SKIPPED__';
+const MIN_CHARS = 10;
+const MAX_CHARS = 50;
 
 const PostTestPage3 = () => {
   const navigate = useNavigate();
@@ -55,32 +54,21 @@ const PostTestPage3 = () => {
   // Filter open feedback questions
   const openFeedbackQuestions = postTestQuestions.filter(q => q.category === 'open_feedback');
   
-  // Count answered OR skipped questions
+  // Check if answer meets minimum length requirement
+  const isValidAnswer = (text: string) => text.trim().length >= MIN_CHARS;
+  
+  // Count valid answered questions (minimum 10 chars)
   const answeredQuestionsCount = openFeedbackQuestions.filter(q => 
-    responses[q.id] && responses[q.id].trim() !== ''
+    responses[q.id] && isValidAnswer(responses[q.id])
   ).length;
   
-  // All questions are "handled" if answered or skipped
+  // All questions are "handled" if answered with minimum chars
   const allQuestionsHandled = openFeedbackQuestions.length > 0 && 
-    openFeedbackQuestions.every(q => responses[q.id] && responses[q.id].trim() !== '');
+    openFeedbackQuestions.every(q => responses[q.id] && isValidAnswer(responses[q.id]));
   
   const progress = openFeedbackQuestions.length > 0 
     ? answeredQuestionsCount / openFeedbackQuestions.length * 100 
     : 0;
-
-  const handleSkipToggle = (questionId: string) => {
-    setResponses(prev => {
-      const current = prev[questionId];
-      if (current === SKIP_VALUE) {
-        // Uncheck - remove the skip
-        const { [questionId]: _, ...rest } = prev;
-        return rest;
-      } else {
-        // Check - set to skip value
-        return { ...prev, [questionId]: SKIP_VALUE };
-      }
-    });
-  };
 
   const handleTextChange = (questionId: string, value: string) => {
     // Enforce max chars
@@ -201,7 +189,7 @@ const PostTestPage3 = () => {
               </h1>
             </div>
             <p className="text-muted-foreground mb-6 text-justify">
-              Almost done! Share your thoughts about your learning experience. You can skip any question if you prefer.
+              Almost done! Share your thoughts about your learning experience. Each answer should be between 10-50 characters.
             </p>
             
             {/* Progress bar */}
@@ -224,57 +212,46 @@ const PostTestPage3 = () => {
           <div className="space-y-6 stagger-fade-in">
             {openFeedbackQuestions.map((question, index) => {
               const currentValue = responses[question.id] || '';
-              const isSkipped = currentValue === SKIP_VALUE;
-              const displayValue = isSkipped ? '' : currentValue;
-              const charsRemaining = MAX_CHARS - displayValue.length;
+              const charCount = currentValue.trim().length;
+              const charsRemaining = MAX_CHARS - currentValue.length;
+              const isTooShort = charCount > 0 && charCount < MIN_CHARS;
+              const isValid = charCount >= MIN_CHARS;
               
               return (
                 <div 
                   key={question.id} 
                   ref={el => questionRefs.current[index] = el}
-                  className={`glass-card rounded-2xl p-6 space-y-4 transition-all duration-300 ${isSkipped ? 'opacity-60' : 'hover:shadow-ai-glow'}`}
+                  className={`glass-card rounded-2xl p-6 space-y-4 transition-all duration-300 ${isValid ? 'ring-2 ring-ai-primary/30' : 'hover:shadow-ai-glow'}`}
                 >
                   <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => scrollToQuestion(index)}
-                      className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-ai-primary to-ai-accent text-white flex items-center justify-center font-semibold text-sm cursor-pointer hover:scale-110 transition-transform"
+                      className={`flex-shrink-0 w-8 h-8 rounded-full text-white flex items-center justify-center font-semibold text-sm cursor-pointer hover:scale-110 transition-transform ${isValid ? 'bg-green-500' : 'bg-gradient-to-r from-ai-primary to-ai-accent'}`}
                     >
-                      {index + 1}
+                      {isValid ? '✓' : index + 1}
                     </button>
                     <Label className="font-semibold pt-1 text-base">{question.text}</Label>
                   </div>
                   
                   <div className="pl-11 space-y-3">
                     <Textarea 
-                      value={displayValue}
+                      value={currentValue}
                       onChange={(e) => handleTextChange(question.id, e.target.value)}
-                      placeholder="Type your answer here..."
-                      className="min-h-[100px] resize-none bg-background/50 border-border/50 focus:border-ai-primary transition-colors"
+                      placeholder="Type your answer here (10-50 characters)..."
+                      className={`min-h-[80px] resize-none bg-background/50 border-border/50 focus:border-ai-primary transition-colors ${isTooShort ? 'border-amber-500' : ''}`}
                       maxLength={MAX_CHARS}
-                      disabled={isSkipped}
                     />
                     <div className="flex items-center justify-between">
-                      <label 
-                        htmlFor={`skip-${question.id}`}
-                        className="flex items-center gap-2 cursor-pointer group"
-                      >
-                        <Checkbox 
-                          checked={isSkipped}
-                          onCheckedChange={() => handleSkipToggle(question.id)}
-                          id={`skip-${question.id}`}
-                          className="cursor-pointer"
-                        />
-                        <span className="text-sm text-muted-foreground cursor-pointer group-hover:text-foreground transition-colors flex items-center gap-1">
-                          <SkipForward className="w-3 h-3" />
-                          Skip this question
-                        </span>
-                      </label>
-                      {!isSkipped && (
-                        <div className={`text-xs ${charsRemaining < 20 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                          {charsRemaining} characters remaining
-                        </div>
-                      )}
+                      <div className={`text-xs ${isTooShort ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                        {charCount < MIN_CHARS 
+                          ? `${MIN_CHARS - charCount} more characters needed`
+                          : `${charsRemaining} characters remaining`
+                        }
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {charCount}/{MAX_CHARS}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -293,7 +270,7 @@ const PostTestPage3 = () => {
                 ? "Saving..." 
                 : allQuestionsHandled 
                   ? "Complete Study" 
-                  : `Answer or skip all questions (${answeredQuestionsCount}/${openFeedbackQuestions.length})`
+                  : `Answer all questions (${answeredQuestionsCount}/${openFeedbackQuestions.length})`
               }
             </Button>
           </div>

@@ -19,6 +19,8 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   const [isListening, setIsListening] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(true);
+  const [isFirstSlide, setIsFirstSlide] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const userVideoRef = useRef<HTMLVideoElement>(null);
   const userStreamRef = useRef<MediaStream | null>(null);
@@ -26,6 +28,8 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   const hasAutoStartedCameraRef = useRef(false);
   const slideStartTimeRef = useRef<Date>(new Date());
   const sessionIdRef = useRef<string | null>(null);
+  const cameraHideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const firstSlideIdRef = useRef<string>(currentSlide.id);
 
   // Get session ID from sessionStorage
   useEffect(() => {
@@ -94,12 +98,38 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
       slideStartTimeRef.current = new Date();
       prevSlideRef.current = currentSlide.id;
       notifySlideChange(currentSlide);
+      
+      // After first slide, hide camera immediately on subsequent slides
+      if (currentSlide.id !== firstSlideIdRef.current) {
+        setIsFirstSlide(false);
+        setShowCamera(false);
+      }
     }
   }, [currentSlide, isConnected, notifySlideChange]);
+
+  // Hide camera after 45 seconds on first slide only
+  useEffect(() => {
+    if (isFirstSlide && isCameraOn) {
+      cameraHideTimerRef.current = setTimeout(() => {
+        setShowCamera(false);
+      }, 45000); // 45 seconds
+      
+      return () => {
+        if (cameraHideTimerRef.current) {
+          clearTimeout(cameraHideTimerRef.current);
+        }
+      };
+    }
+  }, [isFirstSlide, isCameraOn]);
 
   // Cleanup camera on unmount AND save final slide time
   useEffect(() => {
     return () => {
+      // Clear camera hide timer
+      if (cameraHideTimerRef.current) {
+        clearTimeout(cameraHideTimerRef.current);
+      }
+      
       // Save time for current slide when leaving avatar mode
       if (sessionIdRef.current && currentSlide) {
         saveSlideTime(currentSlide.id, currentSlide.title, slideStartTimeRef.current);
@@ -321,7 +351,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
         )}
       </div>
 
-      {isConnected && (
+      {isConnected && showCamera && (
         <div className="border-b border-border bg-card/80">
           <div className="flex items-center justify-start px-4 py-3 gap-4">
             {/* Left side: controls and labels */}
@@ -373,8 +403,8 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
         </div>
       )}
 
-      {/* Transcript - chat bubbles style */}
-      <div className="flex-1 overflow-hidden min-h-[150px]">
+      {/* Transcript - chat bubbles style - expands when camera is hidden */}
+      <div className={`flex-1 overflow-hidden ${showCamera ? 'min-h-[150px]' : 'min-h-[250px]'}`}>
         <TranscriptPanel messages={transcriptMessages} isListening={isListening} isSpeaking={isTalking} />
       </div>
 

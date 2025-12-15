@@ -404,6 +404,7 @@ export type Database = {
           created_by: string | null
           id: string
           is_active: boolean
+          mode_specific: string | null
           options: Json
           pending_changes: Json | null
           question_id: string
@@ -422,6 +423,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean
+          mode_specific?: string | null
           options?: Json
           pending_changes?: Json | null
           question_id: string
@@ -440,6 +442,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean
+          mode_specific?: string | null
           options?: Json
           pending_changes?: Json | null
           question_id?: string

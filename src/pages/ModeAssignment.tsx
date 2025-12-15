@@ -17,12 +17,20 @@ const ModeAssignment = () => {
   // Guard: Ensure user completed pre-test
   useStudyFlowGuard('mode-assignment');
 
-  // Check if mode was already selected - if so, redirect back to learning
-  // Mode is LOCKED after first selection to ensure clean research data
+  // Check if mode was pre-assigned from study entry link or already selected
   useEffect(() => {
     const existingMode = sessionStorage.getItem('studyMode') as StudyMode | null;
+    const preAssignedMode = sessionStorage.getItem('preAssignedMode') as StudyMode | null;
     const existingSessionId = sessionStorage.getItem('sessionId');
     
+    // If mode was pre-assigned from /study/:mode link, auto-select it
+    if (preAssignedMode && existingSessionId && !existingMode) {
+      sessionStorage.removeItem('preAssignedMode'); // Clear after use
+      handleModeSelect(preAssignedMode);
+      return;
+    }
+    
+    // If mode already selected, redirect back to learning
     if (existingMode && existingSessionId) {
       navigate(`/learning/${existingMode}`, { replace: true });
     }

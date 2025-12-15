@@ -116,6 +116,10 @@ const Consent = () => {
                   <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
                   Compliant with GDPR and privacy regulations
                 </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                  <strong>No video recording</strong> - if you use Avatar Mode, your camera feed is used only for real-time interaction and is never stored or saved
+                </li>
               </ul>
             </section>
 

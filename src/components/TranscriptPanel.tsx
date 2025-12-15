@@ -24,11 +24,11 @@ export const TranscriptPanel = ({
   isSpeaking = false
 }: TranscriptPanelProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   return (
@@ -96,6 +96,8 @@ export const TranscriptPanel = ({
                   </div>
                 </div>
               )}
+              {/* Invisible element to scroll to */}
+              <div ref={messagesEndRef} />
             </>
           )}
         </div>

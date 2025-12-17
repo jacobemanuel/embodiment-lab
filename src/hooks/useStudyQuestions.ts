@@ -10,6 +10,8 @@ export interface Question {
   category?: string;
   type?: string;
   allowMultiple?: boolean; // Flag to indicate if multiple answers are allowed
+  modeSpecific?: string; // 'text', 'avatar', or 'both'
+  placeholder?: string; // Placeholder text for input fields
 }
 
 export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demographic', includeCorrectAnswers: boolean = false) => {
@@ -62,10 +64,20 @@ export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demo
             .order('sort_order');
 
           if (error) throw error;
+          
+          // Fetch mode_specific separately from main table (it's safe to expose)
+          const { data: modeData } = await supabase
+            .from('study_questions')
+            .select('question_id, mode_specific')
+            .eq('question_type', questionType)
+            .eq('is_active', true);
+          
+          const modeMap = new Map((modeData || []).map((m: any) => [m.question_id, m.mode_specific]));
 
           const transformedQuestions: Question[] = (data || []).map((q: any) => {
             const meta = q.question_meta as Record<string, Json> | null;
             const questionTypeFromMeta = meta?.type as string | undefined;
+            const placeholder = meta?.placeholder as string | undefined;
             
             return {
               id: q.question_id,
@@ -74,6 +86,8 @@ export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demo
               category: q.category || undefined,
               type: questionTypeFromMeta || 'multiple-choice',
               allowMultiple: q.allow_multiple || false,
+              modeSpecific: modeMap.get(q.question_id) || 'both',
+              placeholder,
             };
           });
 

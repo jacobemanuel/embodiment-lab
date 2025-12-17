@@ -27,6 +27,34 @@ const STEP_REQUIREMENTS: Record<StudyStep, string[]> = {
   'completion': ['sessionId', 'demographics', 'preTest', 'studyMode', 'postTestPage1', 'postTestPage2', 'postTestPage3'],
 };
 
+// Steps that, once completed, cannot be revisited
+const STEP_COMPLETION_MARKERS: Record<StudyStep, string> = {
+  'welcome': '',
+  'consent': 'sessionId', // Once session created, consent is done
+  'demographics': 'demographics',
+  'pretest': 'preTest',
+  'mode-assignment': 'studyMode',
+  'learning': 'postTestPage1', // Once post-test starts, learning is done
+  'posttest1': 'postTestPage1',
+  'posttest2': 'postTestPage2',
+  'posttest3': 'postTestPage3',
+  'completion': 'studyCompleted',
+};
+
+// Forward redirect when trying to go back to completed step
+const STEP_FORWARD_REDIRECT: Record<StudyStep, string> = {
+  'welcome': '/consent',
+  'consent': '/demographics',
+  'demographics': '/pre-test',
+  'pretest': '/mode-assignment',
+  'mode-assignment': '/learning/text', // Will be adjusted based on mode
+  'learning': '/post-test-1',
+  'posttest1': '/post-test-2',
+  'posttest2': '/post-test-3',
+  'posttest3': '/completion',
+  'completion': '/completion',
+};
+
 const STEP_REDIRECT: Record<StudyStep, string> = {
   'welcome': '/',
   'consent': '/consent',
@@ -70,6 +98,47 @@ export function useStudyFlowGuard(
       if (studyCompleted === 'true' && currentStep !== 'completion') {
         navigate('/', { replace: true });
         return true; // Stop polling
+      }
+      
+      // First check: prevent going back to already completed steps
+      // For test pages, check if the next step's data is already saved
+      const completionMarker = STEP_COMPLETION_MARKERS[currentStep];
+      if (completionMarker && currentStep !== 'completion') {
+        // Check if the NEXT step's completion marker exists
+        const stepOrder: StudyStep[] = ['consent', 'demographics', 'pretest', 'mode-assignment', 'learning', 'posttest1', 'posttest2', 'posttest3', 'completion'];
+        const currentIndex = stepOrder.indexOf(currentStep);
+        
+        // For test steps, check if we've moved past them
+        if (currentStep === 'pretest' && sessionStorage.getItem('studyMode')) {
+          // Pre-test completed and mode assigned - can't go back to pre-test
+          const mode = sessionStorage.getItem('studyMode');
+          toast.warning('You have already completed the pre-test.', {
+            description: 'You cannot go back to completed sections.',
+            duration: 3000,
+          });
+          navigate(mode === 'avatar' ? '/learning/avatar' : '/learning/text', { replace: true });
+          return true;
+        }
+        
+        if (currentStep === 'posttest1' && sessionStorage.getItem('postTestPage1')) {
+          // Post-test page 1 completed - can't go back
+          toast.warning('You have already completed this section.', {
+            description: 'You cannot go back to completed sections.',
+            duration: 3000,
+          });
+          navigate('/post-test-2', { replace: true });
+          return true;
+        }
+        
+        if (currentStep === 'posttest2' && sessionStorage.getItem('postTestPage2')) {
+          // Post-test page 2 completed - can't go back
+          toast.warning('You have already completed this section.', {
+            description: 'You cannot go back to completed sections.',
+            duration: 3000,
+          });
+          navigate('/post-test-3', { replace: true });
+          return true;
+        }
       }
       
       const requirements = STEP_REQUIREMENTS[currentStep];

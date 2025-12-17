@@ -26,6 +26,7 @@ interface StudyQuestion {
   question_meta: Record<string, any>;
   sort_order: number;
   is_active: boolean;
+  mode_specific: string | null; // 'text', 'avatar', or 'both'
 }
 
 // Helper to parse correct answers (supports multiple via ||| separator)
@@ -101,6 +102,8 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
       options: [...question.options],
       correct_answer: question.correct_answer, // Keep as string, will parse when needed
       category: question.category,
+      mode_specific: question.mode_specific || 'both',
+      question_meta: { ...question.question_meta },
     });
   };
 
@@ -114,9 +117,16 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
     try {
       // Determine the question meta type based on category
       let metaType = 'multiple-choice';
-      if (['trust', 'engagement', 'satisfaction'].includes(editedData.category || '')) {
+      if (['trust', 'engagement', 'satisfaction', 'expectations', 'avatar-qualities', 'realism'].includes(editedData.category || '')) {
         metaType = 'likert';
       }
+
+      // Merge question_meta with updated values
+      const updatedMeta = { 
+        ...question.question_meta, 
+        type: metaType,
+        placeholder: editedData.question_meta?.placeholder || question.question_meta?.placeholder,
+      };
 
       const { error } = await supabase
         .from('study_questions')
@@ -125,7 +135,8 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
           options: editedData.options,
           correct_answer: editedData.correct_answer,
           category: editedData.category,
-          question_meta: { ...question.question_meta, type: metaType },
+          mode_specific: editedData.mode_specific || 'both',
+          question_meta: updatedMeta,
         })
         .eq('id', questionId);
 
@@ -379,6 +390,47 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                   <SelectItem value="knowledge">Knowledge</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {/* Mode Specific - for post-test perception questions */}
+          {question.question_type === 'post_test' && ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'].includes(question.category || '') && (
+            <div>
+              <Label className="text-slate-300">Show for Mode</Label>
+              <p className="text-slate-500 text-xs mt-1 mb-2">
+                Control which participants see this question based on their learning mode.
+              </p>
+              <Select
+                value={isEditing ? (editedData.mode_specific || 'both') : (question.mode_specific || 'both')}
+                onValueChange={(value) => isEditing && setEditedData({ ...editedData, mode_specific: value })}
+                disabled={!isEditing}
+              >
+                <SelectTrigger className="bg-slate-900 border-slate-600">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="both">Both Modes</SelectItem>
+                  <SelectItem value="text">Text Mode Only</SelectItem>
+                  <SelectItem value="avatar">Avatar Mode Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Placeholder text for demographic questions */}
+          {question.question_type === 'demographic' && (
+            <div>
+              <Label className="text-slate-300">Placeholder Text</Label>
+              <Input
+                value={isEditing ? (editedData.question_meta?.placeholder || '') : (question.question_meta?.placeholder || '')}
+                onChange={(e) => isEditing && setEditedData({ 
+                  ...editedData, 
+                  question_meta: { ...editedData.question_meta, placeholder: e.target.value } 
+                })}
+                placeholder="e.g., Enter your answer..."
+                className="mt-1 bg-slate-900 border-slate-600"
+                disabled={!isEditing}
+              />
             </div>
           )}
 

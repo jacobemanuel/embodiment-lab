@@ -31,6 +31,9 @@ const PostTestPage1 = () => {
   const { questions: postTestQuestions, isLoading: questionsLoading, error } = useStudyQuestions('post_test');
   const [responses, setResponses] = useState<Record<string, string>>({});
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
+  
+  // Get current study mode
+  const studyMode = sessionStorage.getItem('studyMode') || 'text';
 
   const scrollToQuestion = (index: number) => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -51,8 +54,29 @@ const PostTestPage1 = () => {
     }
   }, [responses]);
 
+  // Filter questions based on mode_specific field and study mode
+  // Also replace "avatar" with "AI chatbot" for text mode users
+  const filteredQuestions = postTestQuestions
+    .filter(q => {
+      const modeSpecific = q.modeSpecific || 'both';
+      return modeSpecific === 'both' || modeSpecific === studyMode;
+    })
+    .map(q => {
+      // For text mode, replace avatar-related text with AI chatbot
+      if (studyMode === 'text') {
+        return {
+          ...q,
+          text: q.text
+            .replace(/\bavatar\b/gi, 'AI chatbot')
+            .replace(/\bthe avatar\b/gi, 'the AI chatbot')
+            .replace(/\bthis avatar\b/gi, 'this AI chatbot')
+        };
+      }
+      return q;
+    });
+
   // Filter for likert questions with all perception-related categories (exclude knowledge and open_feedback)
-  const likertQuestions = postTestQuestions.filter(q => 
+  const likertQuestions = filteredQuestions.filter(q => 
     q.type === 'likert' && 
     ['trust', 'engagement', 'satisfaction', 'expectations', 'avatar-qualities', 'realism'].includes(q.category || '')
   );
@@ -89,13 +113,16 @@ const PostTestPage1 = () => {
     );
   }
 
-  // Group questions by category
-  const expectationsQuestions = postTestQuestions.filter(q => q.category === 'expectations' && q.type === 'likert');
-  const avatarQualitiesQuestions = postTestQuestions.filter(q => q.category === 'avatar-qualities' && q.type === 'likert');
-  const realismQuestions = postTestQuestions.filter(q => q.category === 'realism' && q.type === 'likert');
-  const trustQuestions = postTestQuestions.filter(q => q.category === 'trust' && q.type === 'likert');
-  const engagementQuestions = postTestQuestions.filter(q => q.category === 'engagement' && q.type === 'likert');
-  const satisfactionQuestions = postTestQuestions.filter(q => q.category === 'satisfaction' && q.type === 'likert');
+  // Group questions by category from filtered questions
+  const expectationsQuestions = filteredQuestions.filter(q => q.category === 'expectations' && q.type === 'likert');
+  const avatarQualitiesQuestions = filteredQuestions.filter(q => q.category === 'avatar-qualities' && q.type === 'likert');
+  const realismQuestions = filteredQuestions.filter(q => q.category === 'realism' && q.type === 'likert');
+  const trustQuestions = filteredQuestions.filter(q => q.category === 'trust' && q.type === 'likert');
+  const engagementQuestions = filteredQuestions.filter(q => q.category === 'engagement' && q.type === 'likert');
+  const satisfactionQuestions = filteredQuestions.filter(q => q.category === 'satisfaction' && q.type === 'likert');
+  
+  // Update section header for text mode
+  const avatarSectionTitle = studyMode === 'text' ? 'AI Chatbot Experience' : 'Avatar Experience';
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -164,7 +191,7 @@ const PostTestPage1 = () => {
             {/* Avatar Qualities Section */}
             {avatarQualitiesQuestions.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">Avatar Experience</h2>
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-ai-primary to-ai-accent bg-clip-text text-transparent">{avatarSectionTitle}</h2>
                 {avatarQualitiesQuestions.map((question, idx) => (
                   <div 
                     key={question.id} 

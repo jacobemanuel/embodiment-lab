@@ -1,21 +1,53 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate, useParams } from "react-router-dom";
-import { Clock, Sparkles, MousePointerClick, ShieldCheck } from "lucide-react";
+import { Clock, Sparkles, MousePointerClick, ShieldCheck, AlertTriangle } from "lucide-react";
 import logo from "@/assets/logo-white.png";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const StudyEntry = () => {
   const navigate = useNavigate();
   const { mode } = useParams<{ mode: 'text' | 'avatar' }>();
+  const [invalidMode, setInvalidMode] = useState(false);
 
   // Validate mode on mount
   useEffect(() => {
     if (mode !== 'text' && mode !== 'avatar') {
-      navigate('/', { replace: true });
+      setInvalidMode(true);
     }
-  }, [mode, navigate]);
+  }, [mode]);
 
   const modeLabel = mode === 'avatar' ? 'Avatar Mode' : 'Text Mode';
+
+  // Show error for invalid mode
+  if (invalidMode) {
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        <div className="fixed inset-0 gradient-mesh opacity-60" />
+        <div className="fixed inset-0 bg-gradient-to-br from-background via-background/95 to-background/90" />
+        <div className="relative z-10 flex flex-col min-h-screen">
+          <header className="glass-card border-b">
+            <div className="container mx-auto px-6 py-4">
+              <img src={logo} alt="TUM Logo" className="h-8" />
+            </div>
+          </header>
+          <main className="flex-1 flex items-center justify-center p-6">
+            <div className="glass-card rounded-3xl p-8 md:p-10 space-y-6 max-w-md text-center">
+              <div className="w-16 h-16 mx-auto rounded-full bg-destructive/20 flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-destructive" />
+              </div>
+              <h1 className="text-2xl font-bold">Invalid Study Link</h1>
+              <p className="text-muted-foreground">
+                This study link is not valid. Please use the link provided by the research team to access the study.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                If you believe this is an error, please contact the research team.
+              </p>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden">

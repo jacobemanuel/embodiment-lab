@@ -12,6 +12,7 @@ export interface Question {
   allowMultiple?: boolean; // Flag to indicate if multiple answers are allowed
   modeSpecific?: string; // 'text', 'avatar', or 'both'
   placeholder?: string; // Placeholder text for input fields
+  preferNotToSay?: boolean; // For demographic input questions
 }
 
 export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demographic', includeCorrectAnswers: boolean = false) => {
@@ -78,7 +79,8 @@ export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demo
             const meta = q.question_meta as Record<string, Json> | null;
             const questionTypeFromMeta = meta?.type as string | undefined;
             const placeholder = meta?.placeholder as string | undefined;
-            
+            const preferNotToSay = (meta?.prefer_not_to_say ?? meta?.preferNotToSay) as boolean | undefined;
+
             return {
               id: q.question_id,
               text: q.question_text,
@@ -88,6 +90,7 @@ export const useStudyQuestions = (questionType: 'pre_test' | 'post_test' | 'demo
               allowMultiple: q.allow_multiple || false,
               modeSpecific: modeMap.get(q.question_id) || 'both',
               placeholder,
+              preferNotToSay,
             };
           });
 

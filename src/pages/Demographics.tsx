@@ -93,10 +93,14 @@ const Demographics = () => {
     }
   };
 
-  // Check if a question should use text input (for age-type questions)
-  const isTextInputQuestion = (questionText: string) => {
-    const lowerText = questionText.toLowerCase();
-    return lowerText.includes('age') || lowerText.includes('wiek');
+  // Check if a question should use text input (for age question only)
+  // IMPORTANT: avoid matching words like "generation" (contains "age")
+  const isAgeQuestion = (questionId: string, questionText: string) => {
+    if (questionId === 'demo-age') return true;
+    const t = questionText.toLowerCase();
+    const hasAgeWord = /\bage\b/.test(t) || /\bwiek\b/.test(t);
+    const isGenerationContext = t.includes('generation');
+    return hasAgeWord && !isGenerationContext;
   };
 
   // Handle age input change (just update value, no validation yet)
@@ -217,12 +221,12 @@ const Demographics = () => {
                   <h3 className="font-semibold pt-1">{question.text}</h3>
                 </div>
                 
-                {/* Text input for age-type questions, radio for others */}
-                {isTextInputQuestion(question.text) ? (
+                {/* Text input for age question, radio for others */}
+                {isAgeQuestion(question.id, question.text) ? (
                   <div className="pl-11 space-y-3">
                     <Input
                       type="number"
-                      placeholder="Enter your age"
+                      placeholder={question.placeholder || "Enter your age"}
                       value={responses[question.id] || ""}
                       onChange={(e) => handleAgeChange(question.id, e.target.value)}
                       onBlur={(e) => handleAgeBlur(e.target.value)}
@@ -230,35 +234,38 @@ const Demographics = () => {
                       min="1"
                       max="150"
                     />
-                    <div className="flex items-center space-x-3">
-                      <Checkbox
-                        id={`prefer-not-${question.id}`}
-                        checked={responses[question.id] === "Prefer not to say"}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setResponses(prev => ({ ...prev, [question.id]: "Prefer not to say" }));
-                            setIsUnderAge(false);
-                          } else {
-                            setResponses(prev => ({ ...prev, [question.id]: "" }));
-                          }
-                        }}
-                      />
-                      <Label htmlFor={`prefer-not-${question.id}`} className="cursor-pointer">
-                        Prefer not to say
-                      </Label>
-                    </div>
+
+                    {(question.preferNotToSay ?? true) && (
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id={`prefer-not-${question.id}`}
+                          checked={responses[question.id] === "Prefer not to say"}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setResponses((prev) => ({ ...prev, [question.id]: "Prefer not to say" }));
+                              setIsUnderAge(false);
+                            } else {
+                              setResponses((prev) => ({ ...prev, [question.id]: "" }));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`prefer-not-${question.id}`} className="cursor-pointer">
+                          Prefer not to say
+                        </Label>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <RadioGroup
                     value={responses[question.id] || ""}
-                    onValueChange={(value) => setResponses(prev => ({ ...prev, [question.id]: value }))}
+                    onValueChange={(value) => setResponses((prev) => ({ ...prev, [question.id]: value }))}
                     className="pl-11"
                   >
                     <div className="space-y-3">
                       {question.options.map((option) => (
                         <div key={option} className="flex items-center space-x-3 group">
                           <RadioGroupItem value={option} id={`${question.id}-${option}`} />
-                          <Label 
+                          <Label
                             htmlFor={`${question.id}-${option}`}
                             className="cursor-pointer flex-1 leading-relaxed group-hover:text-foreground transition-colors"
                           >

@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, CheckCircle, XCircle, RefreshCw, Edit2, Lock } from "lucide-react";
+import { Plus, Trash2, CheckCircle, XCircle, RefreshCw, Edit2, Lock } from "lucide-react";
 import { logAdminAction, computeChanges } from "@/lib/auditLog";
 import { getPermissions } from "@/lib/permissions";
 
@@ -122,10 +123,11 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
       }
 
       // Merge question_meta with updated values
-      const updatedMeta = { 
-        ...question.question_meta, 
+      const updatedMeta = {
+        ...question.question_meta,
+        ...(editedData.question_meta || {}),
         type: metaType,
-        placeholder: editedData.question_meta?.placeholder || question.question_meta?.placeholder,
+        placeholder: editedData.question_meta?.placeholder ?? question.question_meta?.placeholder,
       };
 
       const { error } = await supabase
@@ -211,20 +213,18 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
 
   // Toggle correct answer (supports multiple)
   const toggleCorrectAnswer = (option: string) => {
-    const currentCorrect = parseCorrectAnswers(editedData.correct_answer || null);
-    let newCorrect: string[];
-    
-    if (currentCorrect.includes(option)) {
-      // Remove from correct answers
-      newCorrect = currentCorrect.filter(a => a !== option);
-    } else {
-      // Add to correct answers
-      newCorrect = [...currentCorrect, option];
-    }
-    
-    setEditedData({
-      ...editedData,
-      correct_answer: serializeCorrectAnswers(newCorrect),
+    setEditedData((prev) => {
+      const currentCorrect = parseCorrectAnswers((prev as any).correct_answer || null);
+      const existing = currentCorrect.find((a) => a.trim() === option.trim());
+
+      const newCorrect = existing
+        ? currentCorrect.filter((a) => a !== existing)
+        : [...currentCorrect, option];
+
+      return {
+        ...prev,
+        correct_answer: serializeCorrectAnswers(newCorrect),
+      };
     });
   };
 
@@ -417,20 +417,50 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
             </div>
           )}
 
-          {/* Placeholder text for demographic questions */}
+          {/* Placeholder / extra settings for demographic questions */}
           {question.question_type === 'demographic' && (
-            <div>
-              <Label className="text-slate-300">Placeholder Text</Label>
-              <Input
-                value={isEditing ? (editedData.question_meta?.placeholder || '') : (question.question_meta?.placeholder || '')}
-                onChange={(e) => isEditing && setEditedData({ 
-                  ...editedData, 
-                  question_meta: { ...editedData.question_meta, placeholder: e.target.value } 
-                })}
-                placeholder="e.g., Enter your answer..."
-                className="mt-1 bg-slate-900 border-slate-600"
-                disabled={!isEditing}
-              />
+            <div className="space-y-3">
+              <div>
+                <Label className="text-slate-300">Placeholder Text</Label>
+                <Input
+                  value={isEditing ? (editedData.question_meta?.placeholder || '') : (question.question_meta?.placeholder || '')}
+                  onChange={(e) =>
+                    isEditing &&
+                    setEditedData({
+                      ...editedData,
+                      question_meta: { ...editedData.question_meta, placeholder: e.target.value },
+                    })
+                  }
+                  placeholder="e.g., Enter your answer..."
+                  className="mt-1 bg-slate-900 border-slate-600"
+                  disabled={!isEditing}
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id={`prefer-not-to-say-${question.id}`}
+                  checked={
+                    isEditing
+                      ? (editedData.question_meta?.prefer_not_to_say ?? true)
+                      : (question.question_meta?.prefer_not_to_say ?? true)
+                  }
+                  onCheckedChange={(checked) => {
+                    if (!isEditing) return;
+                    setEditedData({
+                      ...editedData,
+                      question_meta: {
+                        ...editedData.question_meta,
+                        prefer_not_to_say: Boolean(checked),
+                      },
+                    });
+                  }}
+                  disabled={!isEditing}
+                />
+                <Label htmlFor={`prefer-not-to-say-${question.id}`} className="text-slate-300">
+                  Show “Prefer not to say”
+                </Label>
+              </div>
             </div>
           )}
 
@@ -443,8 +473,10 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
               <div className="space-y-2 mt-2">
                 {(isEditing ? data.options || [] : question.options).map((option, oIndex) => {
                   const correctAnswers = parseCorrectAnswers(isEditing ? data.correct_answer || null : question.correct_answer);
-                  const isCorrect = correctAnswers.includes(option);
-                  
+                  const isCorrect =
+                    correctAnswers.includes(option) ||
+                    correctAnswers.some((a) => a.trim() === option.trim());
+
                   return (
                     <div key={oIndex} className="flex items-center gap-2">
                       <Input
@@ -455,9 +487,15 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                       />
                       {question.correct_answer !== undefined && (
                         <Button
+                          type="button"
                           size="sm"
                           variant={isCorrect ? "default" : "outline"}
-                          onClick={() => isEditing && toggleCorrectAnswer(option)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!isEditing) return;
+                            toggleCorrectAnswer(option);
+                          }}
                           className={isCorrect ? 'bg-green-600' : 'border-slate-600'}
                           disabled={!isEditing}
                         >
@@ -616,11 +654,11 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="pretest" className="space-y-6">
+      <Tabs defaultValue="demographics" className="space-y-6">
         <TabsList className="bg-slate-800 border border-slate-700">
+          <TabsTrigger value="demographics">Demographics ({demographicQuestions.length})</TabsTrigger>
           <TabsTrigger value="pretest">Pre-test ({preTestQuestions.length})</TabsTrigger>
           <TabsTrigger value="posttest">Post-test ({postTestQuestions.length})</TabsTrigger>
-          <TabsTrigger value="demographics">Demographics ({demographicQuestions.length})</TabsTrigger>
         </TabsList>
 
         {/* Pre-test Questions */}

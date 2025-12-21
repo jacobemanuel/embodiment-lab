@@ -123,7 +123,7 @@ const PostTestPage2 = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/post-test')}
+              onClick={() => navigate('/post-test-1')}
               className="gap-1 text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="w-4 h-4" />

@@ -98,7 +98,7 @@ const Learning = () => {
             <Button 
               variant={showFinishProminent ? "default" : "outline"} 
               size="sm" 
-              onClick={() => navigate('/post-test')} 
+              onClick={() => navigate('/post-test-1')} 
               className={cn(
                 "gap-2 transition-all",
                 showFinishProminent && "bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/50 animate-pulse"

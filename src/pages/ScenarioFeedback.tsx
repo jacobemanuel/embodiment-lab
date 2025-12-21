@@ -47,7 +47,7 @@ const ScenarioFeedback = () => {
       
       // Navigate to next scenario or post-test
       if (isLastScenario) {
-        navigate("/post-test");
+        navigate("/post-test-1");
       } else {
         const nextScenario = scenarios[scenarioIndex + 1];
         navigate(`/scenario/${mode}/${nextScenario.id}`);

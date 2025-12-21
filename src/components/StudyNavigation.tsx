@@ -13,8 +13,8 @@ interface StudyNavigationProps {
 const NAVIGATION_RULES: Record<string, { canGoBack: boolean; backTo?: string }> = {
   '/demographics': { canGoBack: false },
   '/pre-test': { canGoBack: true, backTo: '/demographics' },
-  '/post-test': { canGoBack: false }, // Cannot go back from post-test to learning
-  '/post-test-2': { canGoBack: true, backTo: '/post-test' },
+  '/post-test-1': { canGoBack: false }, // Cannot go back from post-test to learning
+  '/post-test-2': { canGoBack: true, backTo: '/post-test-1' },
   '/post-test-3': { canGoBack: true, backTo: '/post-test-2' },
 };
 

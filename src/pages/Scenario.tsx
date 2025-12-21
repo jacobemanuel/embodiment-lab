@@ -178,7 +178,7 @@ const Scenario = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            <Button variant="outline" size="sm" onClick={() => navigate('/post-test')} className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate('/post-test-1')} className="gap-2">
               <LogOut className="w-4 h-4" />
               Finish
             </Button>

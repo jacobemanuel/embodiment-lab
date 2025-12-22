@@ -37,6 +37,7 @@ const Demographics = () => {
   
   const { questions: demographicQuestions, isLoading: questionsLoading, error } = useStudyQuestions('demographic');
   const [responses, setResponses] = useState<Record<string, string>>({});
+  const [otherTextInputs, setOtherTextInputs] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isUnderAge, setIsUnderAge] = useState(false);
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -55,8 +56,31 @@ const Demographics = () => {
   // Check if all questions are answered
   const allQuestionsAnswered = demographicQuestions.length > 0 && demographicQuestions.every(q => {
     const answer = responses[q.id];
-    return answer && answer.trim() !== "";
+    if (!answer || answer.trim() === "") return false;
+    // If answer is "Other" or starts with "Other", check if we have additional text input
+    if (answer.toLowerCase().startsWith('other') && needsOtherTextInput(q.id, q.text)) {
+      const otherText = otherTextInputs[q.id];
+      return otherText && otherText.trim() !== "";
+    }
+    // If answer is "Yes" and question needs follow-up, check for additional text
+    if (answer.toLowerCase() === 'yes' && needsYesFollowUp(q.id, q.text)) {
+      const followUpText = otherTextInputs[q.id];
+      return followUpText && followUpText.trim() !== "";
+    }
+    return true;
   });
+
+  // Check if a question needs "Other" text input (language-related questions)
+  const needsOtherTextInput = (questionId: string, questionText: string) => {
+    const t = questionText.toLowerCase();
+    return t.includes('language') || t.includes('język') || questionId.includes('language');
+  };
+
+  // Check if a question needs follow-up when "Yes" is selected (accessibility needs)
+  const needsYesFollowUp = (questionId: string, questionText: string) => {
+    const t = questionText.toLowerCase();
+    return t.includes('accessibility') || t.includes('dostęp') || questionId.includes('accessibility');
+  };
 
   const handleContinue = async () => {
     if (allQuestionsAnswered) {
@@ -78,8 +102,21 @@ const Demographics = () => {
         }
         
         // Send responses using question IDs as keys
-        await saveDemographics(sessionId, responses);
-        sessionStorage.setItem('demographics', JSON.stringify(responses));
+        // For "Other" or "Yes" answers with follow-up, combine with the text input
+        const finalResponses: Record<string, string> = {};
+        for (const [qId, answer] of Object.entries(responses)) {
+          const question = demographicQuestions.find(q => q.id === qId);
+          if (answer.toLowerCase().startsWith('other') && otherTextInputs[qId]) {
+            finalResponses[qId] = `Other: ${otherTextInputs[qId]}`;
+          } else if (answer.toLowerCase() === 'yes' && question && needsYesFollowUp(question.id, question.text) && otherTextInputs[qId]) {
+            finalResponses[qId] = `Yes: ${otherTextInputs[qId]}`;
+          } else {
+            finalResponses[qId] = answer;
+          }
+        }
+        
+        await saveDemographics(sessionId, finalResponses);
+        sessionStorage.setItem('demographics', JSON.stringify(finalResponses));
         navigate("/pre-test");
       } catch (error) {
         console.error('Error saving demographics:', error);
@@ -256,25 +293,77 @@ const Demographics = () => {
                     )}
                   </div>
                 ) : (
-                  <RadioGroup
-                    value={responses[question.id] || ""}
-                    onValueChange={(value) => setResponses((prev) => ({ ...prev, [question.id]: value }))}
-                    className="pl-11"
-                  >
-                    <div className="space-y-3">
-                      {question.options.map((option) => (
-                        <div key={option} className="flex items-center space-x-3 group">
-                          <RadioGroupItem value={option} id={`${question.id}-${option}`} />
-                          <Label
-                            htmlFor={`${question.id}-${option}`}
-                            className="cursor-pointer flex-1 leading-relaxed group-hover:text-foreground transition-colors"
-                          >
-                            {option}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </RadioGroup>
+                  <div className="pl-11 space-y-3">
+                    <RadioGroup
+                      value={responses[question.id] || ""}
+                      onValueChange={(value) => {
+                        setResponses((prev) => ({ ...prev, [question.id]: value }));
+                        // Clear text input if not selecting "Other" or "Yes" (for follow-up questions)
+                        const needsClear = !value.toLowerCase().startsWith('other') && value.toLowerCase() !== 'yes';
+                        if (needsClear) {
+                          setOtherTextInputs((prev) => {
+                            const next = { ...prev };
+                            delete next[question.id];
+                            return next;
+                          });
+                        }
+                      }}
+                    >
+                      <div className="space-y-3">
+                        {question.options.map((option) => (
+                          <div key={option} className="flex items-center space-x-3 group">
+                            <RadioGroupItem value={option} id={`${question.id}-${option}`} />
+                            <Label
+                              htmlFor={`${question.id}-${option}`}
+                              className="cursor-pointer flex-1 leading-relaxed group-hover:text-foreground transition-colors"
+                            >
+                              {option}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </RadioGroup>
+                    
+                    {/* Show text input when "Other" is selected for language questions */}
+                    {responses[question.id]?.toLowerCase().startsWith('other') && needsOtherTextInput(question.id, question.text) && (
+                      <div className="mt-3 animate-fade-in">
+                        <Input
+                          type="text"
+                          placeholder="Please specify (max 50 characters)"
+                          value={otherTextInputs[question.id] || ""}
+                          onChange={(e) => {
+                            const value = e.target.value.slice(0, 50);
+                            setOtherTextInputs((prev) => ({ ...prev, [question.id]: value }));
+                          }}
+                          maxLength={50}
+                          className="max-w-xs"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {otherTextInputs[question.id]?.length || 0}/50 characters
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Show text input when "Yes" is selected for accessibility questions */}
+                    {responses[question.id]?.toLowerCase() === 'yes' && needsYesFollowUp(question.id, question.text) && (
+                      <div className="mt-3 animate-fade-in">
+                        <Input
+                          type="text"
+                          placeholder="Please describe your accessibility needs (max 50 characters)"
+                          value={otherTextInputs[question.id] || ""}
+                          onChange={(e) => {
+                            const value = e.target.value.slice(0, 50);
+                            setOtherTextInputs((prev) => ({ ...prev, [question.id]: value }));
+                          }}
+                          maxLength={50}
+                          className="max-w-xs"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {otherTextInputs[question.id]?.length || 0}/50 characters
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             ))}

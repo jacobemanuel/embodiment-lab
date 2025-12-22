@@ -72,7 +72,7 @@ const Consent = () => {
                 </li>
                 <li className="flex gap-3">
                   <span className="text-primary font-medium">2.</span>
-                  <span>Learn AI image generation basics through interactive slides (~10 minutes)</span>
+                  <span>Learn AI image generation basics through interactive slides (~25 minutes)</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-primary font-medium">3.</span>
@@ -132,7 +132,7 @@ const Consent = () => {
               </div>
               <div className="pl-11 space-y-2">
                 <p className="text-muted-foreground leading-relaxed text-justify">
-                  <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the approximately 10-minute session.
+                  <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the approximately 25-minute session.
                 </p>
                 <p className="text-muted-foreground leading-relaxed text-justify">
                   <strong className="text-foreground">Benefits:</strong> You will learn fundamental concepts of AI image generation, including prompt engineering and creative techniques. Your participation contributes to research on trustworthy AI-powered educational systems and helps inform the design of engaging AI learning companions.

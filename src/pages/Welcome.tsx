@@ -57,7 +57,7 @@ const Welcome = () => {
                     <Clock className="w-5 h-5 text-ai-primary" />
                   </div>
                   <div>
-                    <strong className="text-foreground">~10 minutes</strong>
+                    <strong className="text-foreground">~25 minutes</strong>
                     <p className="text-sm text-muted-foreground">Complete at your own pace</p>
                   </div>
                 </div>

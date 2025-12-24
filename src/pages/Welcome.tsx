@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Clock, Sparkles, MousePointerClick, ShieldCheck } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 import { useEffect, useState } from "react";
+import ParticipantFooter from "@/components/ParticipantFooter";
 
 const Welcome = () => {
   const navigate = useNavigate();
@@ -170,6 +171,7 @@ const Welcome = () => {
             </p>
           </div>
         </main>
+        <ParticipantFooter />
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { scenarios } from "@/data/scenarios";
 import logo from "@/assets/logo-white.png";
 import { saveScenarioData } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
+import ParticipantFooter from "@/components/ParticipantFooter";
 
 const ScenarioFeedback = () => {
   const { mode, scenarioId } = useParams();
@@ -141,6 +142,7 @@ const ScenarioFeedback = () => {
           </p>
         </div>
       </main>
+      <ParticipantFooter />
     </div>
   );
 };

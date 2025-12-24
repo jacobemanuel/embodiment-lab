@@ -8,6 +8,7 @@ import logo from "@/assets/logo-white.png";
 import { toast } from "sonner";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import ExitStudyButton from "@/components/ExitStudyButton";
+import ParticipantFooter from "@/components/ParticipantFooter";
 
 const ModeAssignment = () => {
   const navigate = useNavigate();
@@ -194,6 +195,7 @@ const ModeAssignment = () => {
           </div>
         </div>
       </div>
+      <ParticipantFooter />
     </div>
   );
 };

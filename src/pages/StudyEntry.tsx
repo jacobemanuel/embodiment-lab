@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Clock, Sparkles, MousePointerClick, ShieldCheck, AlertTriangle } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 import { useEffect, useState } from "react";
+import ParticipantFooter from "@/components/ParticipantFooter";
 
 const StudyEntry = () => {
   const navigate = useNavigate();
@@ -76,6 +77,7 @@ const StudyEntry = () => {
               </p>
             </div>
           </main>
+          <ParticipantFooter />
         </div>
       </div>
     );
@@ -226,6 +228,7 @@ const StudyEntry = () => {
             </p>
           </div>
         </main>
+        <ParticipantFooter />
       </div>
     </div>
   );

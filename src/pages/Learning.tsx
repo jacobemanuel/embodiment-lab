@@ -12,6 +12,7 @@ import { AvatarModePanel } from "@/components/modes/AvatarModePanel";
 import { cn } from "@/lib/utils";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import ExitStudyButton from "@/components/ExitStudyButton";
+import ParticipantFooter from "@/components/ParticipantFooter";
 
 const Learning = () => {
   const { mode } = useParams<{ mode: StudyMode }>();
@@ -81,7 +82,7 @@ const Learning = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-md px-4 py-3 flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -114,7 +115,7 @@ const Learning = () => {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden flex relative">
+      <div className="flex-1 min-h-0 overflow-hidden flex relative">
         {/* Slide Viewer - Center */}
         <div className={`${isPlaygroundVisible ? 'md:w-1/2' : 'md:w-2/3'} w-full transition-all duration-300 border-r border-border`}>
           <SlideViewer 
@@ -169,6 +170,7 @@ const Learning = () => {
           )}
         </div>
       </div>
+      <ParticipantFooter />
     </div>
   );
 };

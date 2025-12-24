@@ -12,6 +12,7 @@ import { VerticalProgressBar } from "@/components/VerticalProgressBar";
 import ConsentSidebar from "@/components/ConsentSidebar";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import ExitStudyButton from "@/components/ExitStudyButton";
+import ParticipantFooter from "@/components/ParticipantFooter";
 
 const MIN_CHARS = 10;
 const MAX_CHARS = 50;
@@ -288,6 +289,7 @@ const PostTestPage3 = () => {
           </div>
         </div>
       </main>
+      <ParticipantFooter />
     </div>
   );
 };

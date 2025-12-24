@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 import { preTestQuestions } from "@/data/questions";
 import { postTestQuestions } from "@/data/postTestQuestions";
+import ParticipantFooter from "@/components/ParticipantFooter";
 
 const Completion = () => {
   const navigate = useNavigate();
@@ -176,6 +177,7 @@ const Completion = () => {
           </div>
         </div>
       </main>
+      <ParticipantFooter />
     </div>
   );
 };

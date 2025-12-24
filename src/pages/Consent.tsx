@@ -7,6 +7,7 @@ import logo from "@/assets/logo-white.png";
 import { createStudySession } from "@/lib/studyData";
 import { toast } from "sonner";
 import ExitStudyButton from "@/components/ExitStudyButton";
+import ParticipantFooter from "@/components/ParticipantFooter";
 
 const Consent = () => {
   const navigate = useNavigate();
@@ -197,6 +198,7 @@ const Consent = () => {
           </div>
         </div>
       </main>
+      <ParticipantFooter />
     </div>
   );
 };

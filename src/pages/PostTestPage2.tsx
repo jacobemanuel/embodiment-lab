@@ -11,6 +11,7 @@ import ConsentSidebar from "@/components/ConsentSidebar";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection";
 import ExitStudyButton from "@/components/ExitStudyButton";
+import ParticipantFooter from "@/components/ParticipantFooter";
 
 const PostTestPage2 = () => {
   const navigate = useNavigate();
@@ -228,6 +229,7 @@ const PostTestPage2 = () => {
           </div>
         </div>
       </main>
+      <ParticipantFooter />
     </div>
   );
 };

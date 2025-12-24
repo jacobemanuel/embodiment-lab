@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import DateRangeFilter from "./DateRangeFilter";
 import { getPermissions } from "@/lib/permissions";
-import { describeSuspicionFlag, SUSPICION_RULES, SUSPICION_SCORE_BANDS } from "@/lib/suspicion";
+import { describeSuspicionFlag, SUSPICION_REQUIREMENTS } from "@/lib/suspicion";
 import { toast } from "sonner";
 
 interface AdminSessionsProps {
@@ -574,9 +574,10 @@ interface SessionDataStatus {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+  const selectedFlags = Array.isArray(selectedSession?.suspicious_flags) ? selectedSession?.suspicious_flags : [];
 
   const exportToCSV = () => {
-    const headers = ['Session ID', 'Mode', 'Started', 'Completed', 'Duration (min)', 'Status', 'Suspicion Score', 'Flags'];
+    const headers = ['Session ID', 'Mode', 'Started', 'Completed', 'Duration (min)', 'Status', 'Flags'];
     const rows = filteredSessions.map(s => {
       const duration = s.completed_at 
         ? Math.round((new Date(s.completed_at).getTime() - new Date(s.started_at).getTime()) / 1000 / 60)
@@ -590,7 +591,6 @@ interface SessionDataStatus {
         s.completed_at || '',
         duration,
         status,
-        s.suspicion_score || 0,
         flags
       ];
     });
@@ -612,6 +612,7 @@ interface SessionDataStatus {
     const lineHeight = 7;
     const margin = 15;
     const maxWidth = pageWidth - margin * 2;
+    const flagList = Array.isArray(session.suspicious_flags) ? session.suspicious_flags : [];
 
     // Helper to add text with word wrap
     const addText = (text: string, fontSize: number = 10, isBold: boolean = false) => {
@@ -652,9 +653,7 @@ interface SessionDataStatus {
       y += lineHeight;
     }
 
-    if ((session.suspicion_score || 0) > 0) {
-      doc.text(`Suspicion Score: ${session.suspicion_score}/100`, margin, y);
-      y += lineHeight;
+    if (flagList.length > 0) {
       doc.text(`Validation Status: ${session.validation_status || 'pending'}`, margin, y);
       y += lineHeight;
     }
@@ -699,6 +698,31 @@ interface SessionDataStatus {
     } else {
       addText('No responses');
     }
+    y += 5;
+
+    // Data quality flags
+    addText('DATA QUALITY FLAGS', 12, true);
+    y += 2;
+    if (flagList.length > 0) {
+      flagList.forEach((flag) => {
+        const details = describeSuspicionFlag(String(flag));
+        const label = String(details.flag).replace(/_/g, ' ');
+        addText(`- ${label}`);
+        if (details.reason) {
+          addText(`  ${details.reason}`);
+        }
+      });
+    } else {
+      addText('No flags');
+    }
+    y += 5;
+
+    // Data quality requirements
+    addText('DATA QUALITY REQUIREMENTS', 12, true);
+    y += 2;
+    SUSPICION_REQUIREMENTS.forEach((req) => {
+      addText(`- ${req.label}`);
+    });
     y += 5;
 
     // Dialogue
@@ -936,6 +960,7 @@ interface SessionDataStatus {
                   const isReset = session.status === 'reset';
                   const isSuspicious = (session.suspicion_score || 0) >= 40 || (Array.isArray(session.suspicious_flags) && session.suspicious_flags.length > 0);
                   const suspiciousFlags = Array.isArray(session.suspicious_flags) ? session.suspicious_flags : [];
+                  const showFlags = isSuspicious || suspiciousFlags.length > 0;
                   const validationStatus = session.validation_status || 'pending';
 
                   // Determine status display
@@ -1040,80 +1065,46 @@ interface SessionDataStatus {
                       <TableCell>
                         <TooltipProvider>
                           <div className="flex flex-col gap-1">
-                            {isSuspicious && (
+                            {showFlags && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Badge variant="destructive" className="text-xs cursor-help">
-                                    ⚠️ Score: {session.suspicion_score || 0}
+                                    ⚠️ {suspiciousFlags.length > 0 ? `Flags: ${suspiciousFlags.length}` : 'Flagged'}
                                   </Badge>
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-md bg-slate-900 border-slate-700 p-3">
-                                  <p className="font-semibold mb-2 text-white">Suspicion Score Explanation</p>
+                                  <p className="font-semibold mb-2 text-white">Flag Reasons</p>
                                   <div className="text-xs space-y-2 text-slate-300">
-                                    <p><strong>Score {session.suspicion_score || 0}/100</strong> - Higher = more suspicious</p>
-                                    <hr className="border-slate-700 my-2" />
-                                    <p className="font-semibold text-white">How Score is Calculated:</p>
-                                    <ul className="space-y-1 text-[11px]">
-                                      {SUSPICION_RULES.map((rule) => (
-                                        <li key={rule.id}>• +{rule.points} pts - {rule.summary}</li>
-                                      ))}
+                                    <ul className="space-y-1">
+                                      {suspiciousFlags.length > 0 ? (
+                                        suspiciousFlags.map((flag, i) => {
+                                          const details = describeSuspicionFlag(String(flag));
+                                          const label = String(details.flag).replace(/_/g, ' ');
+                                          return (
+                                            <li key={i}>
+                                              <div>• {label}</div>
+                                              {details.reason && (
+                                                <div className="text-[11px] text-slate-500 ml-3">{details.reason}</div>
+                                              )}
+                                            </li>
+                                          );
+                                        })
+                                      ) : (
+                                        <li className="italic">No detailed flags recorded</li>
+                                      )}
                                     </ul>
                                     <hr className="border-slate-700 my-2" />
-                                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-                                      {SUSPICION_SCORE_BANDS.map((band) => (
-                                        <Fragment key={band.range}>
-                                          <span>{band.range}: {band.label}</span>
-                                          <span className={
-                                            band.label === 'Normal'
-                                              ? 'text-green-400'
-                                              : band.label === 'Low risk'
-                                                ? 'text-yellow-400'
-                                                : band.label === 'Medium risk'
-                                                  ? 'text-orange-400'
-                                                  : 'text-red-400'
-                                          }>
-                                            {band.note}
-                                          </span>
-                                        </Fragment>
+                                    <p className="font-semibold text-white">Requirements to avoid flags:</p>
+                                    <ul className="space-y-1 text-[11px]">
+                                      {SUSPICION_REQUIREMENTS.map((req) => (
+                                        <li key={req.id}>• {req.label}</li>
                                       ))}
-                                    </div>
-                                    <hr className="border-slate-700 my-2" />
-                                    <p className="font-semibold text-white">Detected Issues:</p>
-                                    <ul className="space-y-1">
-                                      {suspiciousFlags.map((flag, i) => {
-                                        const details = describeSuspicionFlag(String(flag));
-                                        return (
-                                          <li key={i}>
-                                            <div>• {details.points ? `+${details.points} pts - ` : ''}{String(flag).replace(/_/g, ' ')}</div>
-                                            {details.reason && (
-                                              <div className="text-[11px] text-slate-500 ml-3">{details.reason}</div>
-                                            )}
-                                          </li>
-                                        );
-                                      })}
-                                      {suspiciousFlags.length === 0 && <li className="italic">Score based on overall timing patterns</li>}
                                     </ul>
                                   </div>
                                 </TooltipContent>
                               </Tooltip>
                             )}
-                            {!isSuspicious && suspiciousFlags.length > 0 && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="text-xs text-yellow-500 cursor-help">
-                                    {suspiciousFlags.length} flag{suspiciousFlags.length > 1 ? 's' : ''}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  <ul className="text-xs space-y-1">
-                                    {suspiciousFlags.map((flag, i) => (
-                                      <li key={i}>• {String(flag).replace(/_/g, ' ')}</li>
-                                    ))}
-                                  </ul>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                            {!isSuspicious && suspiciousFlags.length === 0 && (
+                            {!showFlags && (
                               <span className="text-xs text-slate-500">-</span>
                             )}
                           </div>
@@ -1346,20 +1337,42 @@ interface SessionDataStatus {
                         : '-'}
                     </span>
                   </div>
-                  {(selectedSession?.suspicion_score || 0) > 0 && (
-                    <>
-                      <div>
-                        <span className="text-slate-400 block">Suspicion Score</span>
-                        <span className="text-orange-400">{selectedSession?.suspicion_score}/100</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block">Validation</span>
-                        <span className="text-white capitalize">{selectedSession?.validation_status || 'pending'}</span>
-                      </div>
-                    </>
+                  {selectedFlags.length > 0 && (
+                    <div>
+                      <span className="text-slate-400 block">Validation</span>
+                      <span className="text-white capitalize">{selectedSession?.validation_status || 'pending'}</span>
+                    </div>
                   )}
                 </div>
               </div>
+
+              {selectedFlags.length > 0 && (
+                <div className="bg-slate-900 p-4 rounded">
+                  <h3 className="text-lg font-semibold text-white mb-3">Data Quality Flags</h3>
+                  <div className="space-y-2 text-sm text-slate-300">
+                    {selectedFlags.map((flag, i) => {
+                      const details = describeSuspicionFlag(String(flag));
+                      const label = String(details.flag).replace(/_/g, ' ');
+                      return (
+                        <div key={i}>
+                          <div>• {label}</div>
+                          {details.reason && (
+                            <div className="text-xs text-slate-500 ml-3">{details.reason}</div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 text-xs text-slate-400">
+                    <div className="font-semibold text-slate-300 mb-1">Requirements to avoid flags:</div>
+                    <ul className="space-y-1">
+                      {SUSPICION_REQUIREMENTS.map((req) => (
+                        <li key={req.id}>• {req.label}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
 
               {/* Demographics */}
               <div>

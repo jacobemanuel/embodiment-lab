@@ -1,13 +1,17 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { SUSPICION_THRESHOLDS } from '@/lib/suspicion';
 
-// Minimum expected times (in milliseconds) for various actions
-const MIN_TIME_PER_QUESTION = 3000; // 3 seconds minimum per question
-const MIN_TIME_FOR_PAGE = 5000; // 5 seconds minimum per page
-const MIN_TIME_FOR_READING_SLIDE = 8000; // 8 seconds minimum to read a slide
-const MIN_TIME_FOR_DEMOGRAPHICS = 15000; // 15 seconds for demographics page
-const MIN_TIME_FOR_PRETEST = 30000; // 30 seconds for pre-test (multiple questions)
-const MIN_TIME_FOR_POSTTEST = 45000; // 45 seconds for post-test pages
+const {
+  minTimePerQuestionMs,
+  minTimeForReadingSlideMs,
+  minTimeForDemographicsMs,
+  minTimeForPretestMs,
+  minTimeForPosttestMs,
+  minLearningSlides,
+  maxFastAnswerRatio,
+  minAverageAnswerTimeMs,
+} = SUSPICION_THRESHOLDS;
 
 // Suspicion levels
 type SuspicionLevel = 'none' | 'low' | 'medium' | 'high';
@@ -63,7 +67,7 @@ export function useBotDetection(options: UseBotDetectionOptions) {
       const answerTime = Date.now() - startTime;
       timingData.current.totalAnswerTime += answerTime;
       
-      if (answerTime < MIN_TIME_PER_QUESTION) {
+      if (answerTime < minTimePerQuestionMs) {
         timingData.current.fastAnswerCount++;
       }
     }
@@ -82,10 +86,10 @@ export function useBotDetection(options: UseBotDetectionOptions) {
 
     const timeOnPage = Date.now() - data.pageEnterTime;
     const minTimeForPage = {
-      'demographics': MIN_TIME_FOR_DEMOGRAPHICS,
-      'pretest': MIN_TIME_FOR_PRETEST,
-      'posttest': MIN_TIME_FOR_POSTTEST,
-      'learning': MIN_TIME_FOR_READING_SLIDE * 3, // At least 3 slides worth
+      'demographics': minTimeForDemographicsMs,
+      'pretest': minTimeForPretestMs,
+      'posttest': minTimeForPosttestMs,
+      'learning': minTimeForReadingSlideMs * minLearningSlides,
     }[pageType];
 
     // Check if page was completed too quickly
@@ -98,7 +102,7 @@ export function useBotDetection(options: UseBotDetectionOptions) {
     const totalQuestions = Object.keys(data.questionTimes).length;
     if (totalQuestions > 0) {
       const fastAnswerRatio = data.fastAnswerCount / totalQuestions;
-      if (fastAnswerRatio > 0.5) {
+      if (fastAnswerRatio > maxFastAnswerRatio) {
         flags.push(`${Math.round(fastAnswerRatio * 100)}% of answers were suspiciously fast`);
         score += 25;
       }
@@ -107,7 +111,7 @@ export function useBotDetection(options: UseBotDetectionOptions) {
     // Check average answer time
     if (totalQuestions > 0 && data.totalAnswerTime > 0) {
       const avgAnswerTime = data.totalAnswerTime / totalQuestions;
-      if (avgAnswerTime < MIN_TIME_PER_QUESTION / 2) {
+      if (avgAnswerTime < minAverageAnswerTimeMs) {
         flags.push(`Average answer time: ${Math.round(avgAnswerTime / 1000)}s (very fast)`);
         score += 20;
       }
@@ -120,7 +124,7 @@ export function useBotDetection(options: UseBotDetectionOptions) {
         ? slideViews.reduce((a, b) => a + b, 0) / slideViews.length 
         : 0;
       
-      if (avgSlideTime < MIN_TIME_FOR_READING_SLIDE && slideViews.length > 0) {
+      if (avgSlideTime < minTimeForReadingSlideMs && slideViews.length > 0) {
         flags.push(`Average slide view time: ${Math.round(avgSlideTime / 1000)}s (too fast to read)`);
         score += 25;
       }

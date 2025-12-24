@@ -6,6 +6,57 @@ export type SuspicionRule = {
   match: (flag: string) => boolean;
 };
 
+export const SUSPICION_THRESHOLDS = {
+  minTimePerQuestionMs: 3000,
+  minTimeForReadingSlideMs: 8000,
+  minTimeForDemographicsMs: 15000,
+  minTimeForPretestMs: 30000,
+  minTimeForPosttestMs: 45000,
+  minLearningSlides: 3,
+  maxFastAnswerRatio: 0.5,
+  minAverageAnswerTimeMs: 1500,
+} as const;
+
+const msToSeconds = (ms: number) => Math.round(ms / 1000);
+
+export type SuspicionRequirement = {
+  id: string;
+  label: string;
+  details?: string;
+};
+
+export const SUSPICION_REQUIREMENTS: SuspicionRequirement[] = [
+  {
+    id: 'demographics',
+    label: `Demographics page time >= ${msToSeconds(SUSPICION_THRESHOLDS.minTimeForDemographicsMs)}s`,
+  },
+  {
+    id: 'pretest',
+    label: `Pre-test page time >= ${msToSeconds(SUSPICION_THRESHOLDS.minTimeForPretestMs)}s`,
+  },
+  {
+    id: 'posttest',
+    label: `Post-test page time >= ${msToSeconds(SUSPICION_THRESHOLDS.minTimeForPosttestMs)}s`,
+  },
+  {
+    id: 'learning',
+    label: `Learning page time >= ${msToSeconds(SUSPICION_THRESHOLDS.minTimeForReadingSlideMs * SUSPICION_THRESHOLDS.minLearningSlides)}s`,
+    details: `Based on ${SUSPICION_THRESHOLDS.minLearningSlides} slides x ${msToSeconds(SUSPICION_THRESHOLDS.minTimeForReadingSlideMs)}s minimum.`,
+  },
+  {
+    id: 'slide-view',
+    label: `Average slide view time >= ${msToSeconds(SUSPICION_THRESHOLDS.minTimeForReadingSlideMs)}s`,
+  },
+  {
+    id: 'fast-answers',
+    label: `Fast answers (<${msToSeconds(SUSPICION_THRESHOLDS.minTimePerQuestionMs)}s) < ${Math.round(SUSPICION_THRESHOLDS.maxFastAnswerRatio * 100)}%`,
+  },
+  {
+    id: 'avg-answer',
+    label: `Average answer time >= ${msToSeconds(SUSPICION_THRESHOLDS.minAverageAnswerTimeMs)}s`,
+  },
+];
+
 export const SUSPICION_RULES: SuspicionRule[] = [
   {
     id: 'page_fast',
@@ -39,7 +90,6 @@ export const SUSPICION_RULES: SuspicionRule[] = [
 
 export type SuspicionFlagDetails = {
   flag: string;
-  points?: number;
   summary?: string;
   reason?: string;
 };
@@ -51,7 +101,6 @@ export const describeSuspicionFlag = (flag: string): SuspicionFlagDetails => {
   }
   return {
     flag,
-    points: rule.points,
     summary: rule.summary,
     reason: rule.reason,
   };

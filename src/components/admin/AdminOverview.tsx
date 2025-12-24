@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import QuestionPerformanceByMode from "./QuestionPerformanceByMode";
-import { describeSuspicionFlag, SUSPICION_RULES, SUSPICION_SCORE_BANDS } from "@/lib/suspicion";
+import { describeSuspicionFlag, SUSPICION_REQUIREMENTS } from "@/lib/suspicion";
 
 interface AvatarTimeData {
   session_id: string;
@@ -2210,20 +2210,12 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
                       <div className="text-xs space-y-2">
-                        <p className="font-semibold">How the score is calculated</p>
+                        <p className="font-semibold">Requirements to avoid flags</p>
                         <ul className="space-y-1">
-                          {SUSPICION_RULES.map((rule) => (
-                            <li key={rule.id}>• +{rule.points} pts - {rule.summary}</li>
+                          {SUSPICION_REQUIREMENTS.map((req) => (
+                            <li key={req.id}>• {req.label}</li>
                           ))}
                         </ul>
-                        <div className="pt-2 border-t border-slate-700/50 space-y-1">
-                          {SUSPICION_SCORE_BANDS.map((band) => (
-                            <div key={band.range} className="flex justify-between">
-                              <span>{band.range}: {band.label}</span>
-                              <span className="text-slate-400">{band.note}</span>
-                            </div>
-                          ))}
-                        </div>
                       </div>
                     </TooltipContent>
                   </Tooltip>
@@ -2286,8 +2278,8 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                           <TooltipContent className="max-w-xs">
                             <div className="text-xs space-y-1">
                               <p className="font-medium">{f.flag.replace(/_/g, ' ')}</p>
-                              {details.points && (
-                                <p className="text-slate-300">+{details.points} pts - {details.summary}</p>
+                              {details.summary && (
+                                <p className="text-slate-300">{details.summary}</p>
                               )}
                               {details.reason && (
                                 <p className="text-slate-400">{details.reason}</p>

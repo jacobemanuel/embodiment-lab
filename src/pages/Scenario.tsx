@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Message, StudyMode, ScenarioData } from "@/types/study";
 import { scenarios } from "@/data/scenarios";
 import { TextMode } from "@/components/modes/TextMode";
@@ -25,6 +25,7 @@ const Scenario = () => {
   
   const [currentMode, setCurrentMode] = useState<StudyMode>(urlMode || 'text');
   const [messages, setMessages] = useState<Message[]>([]);
+  const messagesRef = useRef<Message[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaygroundVisible, setIsPlaygroundVisible] = useState(false);
@@ -44,11 +45,26 @@ const Scenario = () => {
   const scenario = scenarios.find(s => s.id === scenarioId);
   const scenarioIndex = scenarios.findIndex(s => s.id === scenarioId);
 
+  const persistMessages = (nextMessages: Message[]) => {
+    messagesRef.current = nextMessages;
+    if (scenarioId) {
+      sessionStorage.setItem(`scenario-${scenarioId}`, JSON.stringify(nextMessages));
+    }
+  };
+
+  const setMessagesAndPersist = (updater: (prev: Message[]) => Message[]) => {
+    setMessages(prev => {
+      const next = updater(prev);
+      persistMessages(next);
+      return next;
+    });
+  };
+
   useEffect(() => {
     if (scenario && messages.length === 0) {
       // Start with first AI message
       const firstTurn = scenario.dialogue[0];
-      setMessages([{
+      setMessagesAndPersist(() => [{
         role: 'ai',
         content: firstTurn.aiMessage,
         timestamp: Date.now()
@@ -62,7 +78,7 @@ const Scenario = () => {
     // Handle AI streaming response marker
     if (content.startsWith('__AI_RESPONSE__')) {
       const aiContent = content.replace('__AI_RESPONSE__', '');
-      setMessages(prev => {
+      setMessagesAndPersist(prev => {
         const lastMsg = prev[prev.length - 1];
         if (lastMsg?.role === 'ai') {
           // Update existing AI message
@@ -81,7 +97,7 @@ const Scenario = () => {
       content,
       timestamp: Date.now()
     };
-    setMessages(prev => [...prev, userMessage]);
+    setMessagesAndPersist(prev => [...prev, userMessage]);
 
     // Check if we've completed the dialogue
     const nextIndex = currentTurnIndex + 1;
@@ -97,8 +113,8 @@ const Scenario = () => {
 
 
   const saveScenarioData = () => {
-    // Save messages to sessionStorage temporarily
-    sessionStorage.setItem(`scenario-${scenarioId}`, JSON.stringify(messages));
+    // Save the latest messages to sessionStorage temporarily
+    persistMessages(messagesRef.current);
   };
 
   const handleModeChange = (newMode: StudyMode) => {

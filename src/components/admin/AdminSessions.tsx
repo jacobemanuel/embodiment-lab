@@ -705,7 +705,13 @@ interface SessionDataStatus {
     addText('DIALOGUE', 12, true);
     y += 2;
     if (details.dialogueTurns.length > 0) {
+      let currentScenario: string | null = null;
       details.dialogueTurns.forEach((turn) => {
+        const scenarioLabel = turn.scenario_name ? String(turn.scenario_name).replace(/_/g, ' ') : '';
+        if (scenarioLabel && scenarioLabel !== currentScenario) {
+          currentScenario = scenarioLabel;
+          addText(`Scenario: ${currentScenario}`, 11, true);
+        }
         const role = turn.role === 'user' ? 'User' : 'AI';
         addText(`[${role}]: ${turn.content}`);
       });

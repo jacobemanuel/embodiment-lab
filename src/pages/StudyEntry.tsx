@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Clock, Sparkles, MousePointerClick, ShieldCheck, AlertTriangle } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 import { useEffect, useState } from "react";
@@ -8,6 +8,23 @@ const StudyEntry = () => {
   const navigate = useNavigate();
   const { mode } = useParams<{ mode: 'text' | 'avatar' }>();
   const [invalidMode, setInvalidMode] = useState(false);
+  const [studyLocked, setStudyLocked] = useState(false);
+  const location = useLocation();
+
+  const resetStudyState = () => {
+    sessionStorage.removeItem('sessionId');
+    sessionStorage.removeItem('studyMode');
+    sessionStorage.removeItem('demographics');
+    sessionStorage.removeItem('preTest');
+    sessionStorage.removeItem('postTestPage1');
+    sessionStorage.removeItem('postTestPage2');
+    sessionStorage.removeItem('postTestPage3');
+    sessionStorage.removeItem('postTest1');
+    sessionStorage.removeItem('currentSlide');
+    sessionStorage.removeItem('preAssignedMode');
+    sessionStorage.removeItem('studyCompleted');
+    localStorage.removeItem('studyCompleted');
+  };
 
   // Validate mode on mount
   useEffect(() => {
@@ -15,6 +32,21 @@ const StudyEntry = () => {
       setInvalidMode(true);
     }
   }, [mode]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('reset') === '1') {
+      resetStudyState();
+      setStudyLocked(false);
+      if (mode === 'text' || mode === 'avatar') {
+        navigate(`/study/${mode}`, { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+      return;
+    }
+    setStudyLocked(localStorage.getItem('studyCompleted') === 'true');
+  }, [location.search, mode, navigate]);
 
   const modeLabel = mode === 'avatar' ? 'Avatar Mode' : 'Text Mode';
 
@@ -159,19 +191,19 @@ const StudyEntry = () => {
                 </div>
               </div>
 
+              {/* Lock Notice */}
+              {studyLocked && (
+                <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
+                  This device already completed the study. To protect data quality, repeat participation is blocked.
+                </div>
+              )}
+
               {/* CTA Button */}
               <div className="pt-2">
               <Button 
                 onClick={() => {
                   // Start a completely fresh study session with pre-assigned mode
-                  sessionStorage.removeItem('sessionId');
-                  sessionStorage.removeItem('studyMode');
-                  sessionStorage.removeItem('demographics');
-                  sessionStorage.removeItem('preTest');
-                  sessionStorage.removeItem('postTestPage1');
-                  sessionStorage.removeItem('postTestPage2');
-                  sessionStorage.removeItem('postTest1');
-                  sessionStorage.removeItem('postTestPage3');
+                  resetStudyState();
                   
                   // Pre-assign the mode from URL
                   if (mode === 'text' || mode === 'avatar') {
@@ -181,7 +213,8 @@ const StudyEntry = () => {
                   navigate("/consent");
                 }}
                 size="lg"
-                className="w-full text-lg h-16 rounded-2xl gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02] font-semibold"
+                disabled={studyLocked}
+                className="w-full text-lg h-16 rounded-2xl gradient-ai hover:shadow-ai-glow transition-all duration-300 hover:scale-[1.02] font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Continue to Consent Form →
               </Button>

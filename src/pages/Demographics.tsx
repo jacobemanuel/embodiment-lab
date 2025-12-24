@@ -42,12 +42,15 @@ const Demographics = () => {
   const [isUnderAge, setIsUnderAge] = useState(false);
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Track when questions are viewed
+  // Track when questions are viewed - use ref to avoid recreation on each render
   useEffect(() => {
-    demographicQuestions.forEach(q => {
-      recordQuestionStart(q.id);
-    });
-  }, [demographicQuestions, recordQuestionStart]);
+    if (demographicQuestions.length > 0) {
+      demographicQuestions.forEach(q => {
+        recordQuestionStart(q.id);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demographicQuestions.length]);
 
   const scrollToQuestion = (index: number) => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });

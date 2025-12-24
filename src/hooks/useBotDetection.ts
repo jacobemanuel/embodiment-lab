@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Minimum expected times (in milliseconds) for various actions
 const MIN_TIME_PER_QUESTION = 3000; // 3 seconds minimum per question
@@ -189,9 +190,6 @@ export async function logSuspiciousActivity(
   pageType: string
 ) {
   try {
-    // Import supabase client dynamically to avoid circular dependencies
-    const { supabase } = await import('@/integrations/supabase/client');
-    
     await supabase.functions.invoke('save-study-data', {
       body: {
         action: 'report_suspicious',

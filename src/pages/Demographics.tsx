@@ -88,6 +88,23 @@ const Demographics = () => {
     return true;
   };
 
+  const handleRadioSelect = (questionId: string, questionText: string, value: string) => {
+    recordQuestionAnswer(questionId);
+    setResponses((prev) => ({ ...prev, [questionId]: value }));
+
+    // Clear follow-up text if it's no longer relevant
+    const needsOther = value.toLowerCase().startsWith('other') && needsOtherTextInput(questionId, questionText);
+    const needsYesFollowUpText = value.toLowerCase() === 'yes' && needsYesFollowUp(questionId, questionText);
+    if (!needsOther && !needsYesFollowUpText) {
+      setOtherTextInputs((prev) => {
+        if (!prev[questionId]) return prev;
+        const next = { ...prev };
+        delete next[questionId];
+        return next;
+      });
+    }
+  };
+
   const completedQuestionsCount =
     demographicQuestions.length > 0
       ? demographicQuestions.filter((q) => isQuestionComplete(q.id, q.text)).length
@@ -315,22 +332,15 @@ const Demographics = () => {
                   <div className="pl-11 space-y-3">
                     <RadioGroup
                       value={responses[question.id] || ""}
-                      onValueChange={(value) => {
-                        setResponses((prev) => ({ ...prev, [question.id]: value }));
-                        // Clear text input if not selecting "Other" or "Yes" (for follow-up questions)
-                        const needsClear = !value.toLowerCase().startsWith('other') && value.toLowerCase() !== 'yes';
-                        if (needsClear) {
-                          setOtherTextInputs((prev) => {
-                            const next = { ...prev };
-                            delete next[question.id];
-                            return next;
-                          });
-                        }
-                      }}
+                      onValueChange={(value) => handleRadioSelect(question.id, question.text, value)}
                     >
                       <div className="space-y-3">
                         {question.options.map((option) => (
-                          <div key={option} className="flex items-center space-x-3 group">
+                          <div
+                            key={option}
+                            className="flex items-center space-x-3 group cursor-pointer"
+                            onClick={() => handleRadioSelect(question.id, question.text, option)}
+                          >
                             <RadioGroupItem value={option} id={`${question.id}-${option}`} />
                             <Label
                               htmlFor={`${question.id}-${option}`}

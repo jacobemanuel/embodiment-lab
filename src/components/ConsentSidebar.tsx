@@ -46,7 +46,7 @@ const ConsentSidebar = () => {
                 </li>
                 <li className="flex gap-2">
                   <span>2.</span>
-                  <span>Learn AI image generation basics through interactive slides (~25 minutes)</span>
+                  <span>Learn AI image generation basics through interactive slides (~20 minutes)</span>
                 </li>
                 <li className="flex gap-2">
                   <span>3.</span>
@@ -76,7 +76,7 @@ const ConsentSidebar = () => {
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Risks & Benefits</h2>
               <p className="text-muted-foreground text-sm leading-relaxed text-justify">
-                <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the approximately 25-minute session.
+                <strong className="text-foreground">Risks:</strong> Minimal. Some participants may experience mild fatigue during the approximately 20-minute session.
               </p>
               <p className="text-muted-foreground text-sm leading-relaxed text-justify">
                 <strong className="text-foreground">Benefits:</strong> You will learn fundamental concepts of AI image generation, including prompt engineering and creative techniques. Your participation contributes to research on trustworthy AI-powered educational systems.

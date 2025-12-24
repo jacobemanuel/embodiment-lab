@@ -29,6 +29,8 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [isSavingKey, setIsSavingKey] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [isTestingKey, setIsTestingKey] = useState(false);
+  const [lastKeyTest, setLastKeyTest] = useState<{ status: 'success' | 'error'; at: string } | null>(null);
 
   const fetchStatus = async () => {
     try {
@@ -130,6 +132,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
       }));
       
       setNewApiKey('');
+      setLastKeyTest(null);
       toast.success(data.message);
     } catch (error) {
       console.error('Error updating API key:', error);
@@ -139,11 +142,40 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
     }
   };
 
+  const handleTestApiKey = async () => {
+    setIsTestingKey(true);
+    try {
+      const { error } = await supabase.functions.invoke('anam-session', {
+        body: {
+          slideContext: {
+            id: 'api-key-check',
+            title: 'API Key Check',
+            keyPoints: ['Connectivity check'],
+            systemPromptContext: 'This is a connectivity test for the Anam API key.',
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      setLastKeyTest({ status: 'success', at: new Date().toISOString() });
+      toast.success('Anam API key verified successfully');
+    } catch (error) {
+      console.error('Error testing API key:', error);
+      setLastKeyTest({ status: 'error', at: new Date().toISOString() });
+      toast.error('Anam API key test failed');
+    } finally {
+      setIsTestingKey(false);
+    }
+  };
+
   const masterEnabled = settings.api_enabled?.enabled ?? false;
   const openaiEnabled = settings.openai_api_enabled?.enabled ?? false;
   const anamEnabled = settings.anam_api_enabled?.enabled ?? false;
   const currentAnamKey = settings.anam_api_key?.key || '';
   const hasCustomKey = currentAnamKey && currentAnamKey !== 'Not set' && currentAnamKey.length > 0;
+  const keyOwner = hasCustomKey ? (settings.anam_api_key?.updated_by || 'unknown') : 'system default';
+  const keyUpdatedAt = settings.anam_api_key?.updated_at ? new Date(settings.anam_api_key.updated_at).toLocaleString() : '';
 
   // Anam is usable if master ON + anam ON (we assume system fallback key exists if no custom key)
   // Status shows: Active = master ON + anam ON, Inactive = otherwise
@@ -193,6 +225,11 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                     ? 'Master switch is OFF — all APIs are blocked'
                     : 'Anam API is disabled — toggle it ON below'}
               </p>
+              {anamUsable && (
+                <p className="text-xs text-slate-400 mt-1">
+                  Active key owner: {keyOwner}{keyUpdatedAt ? ` • Updated ${keyUpdatedAt}` : ''}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -390,6 +427,9 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                 </span>
               )}
             </div>
+            <div className="text-xs text-slate-500 mb-3">
+              Active key owner: {keyOwner}{keyUpdatedAt ? ` • Updated ${keyUpdatedAt}` : ''}
+            </div>
 
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -424,10 +464,27 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                   </>
                 )}
               </Button>
+              <Button
+                variant="outline"
+                onClick={handleTestApiKey}
+                disabled={isTestingKey || (!masterEnabled && !isOwner) || !anamEnabled}
+                className="border-slate-600"
+              >
+                {isTestingKey ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Test'
+                )}
+              </Button>
             </div>
+            {lastKeyTest && (
+              <p className={`text-xs mt-2 ${lastKeyTest.status === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                Last test: {lastKeyTest.status === 'success' ? 'Success' : 'Failed'} • {new Date(lastKeyTest.at).toLocaleString()}
+              </p>
+            )}
             <p className="text-xs text-slate-500 mt-2">
               {masterEnabled || isOwner 
-                ? 'Add your own Anam API key from your free account. This will override the system default key.'
+                ? 'Add your own Anam API key from your free account. This will override the system default key. Test creates a temporary session token.'
                 : 'API key changes are locked while the system is disabled.'}
             </p>
           </div>

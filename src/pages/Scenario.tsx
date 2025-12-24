@@ -10,7 +10,6 @@ import { ModuleNavigation } from "@/components/ModuleNavigation";
 import logo from "@/assets/logo-white.png";
 import { Button } from "@/components/ui/button";
 import { HelpCircle, LogOut, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
-import ParticipantFooter from "@/components/ParticipantFooter";
 import {
   Dialog,
   DialogContent,
@@ -144,7 +143,7 @@ const Scenario = () => {
   const ModeComponent = currentMode === 'text' ? TextMode : AvatarMode;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-md px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
@@ -209,7 +208,7 @@ const Scenario = () => {
       </header>
 
       {/* Main Content Area - Split View on desktop, Full view on mobile */}
-      <div className="flex-1 min-h-0 overflow-hidden flex relative">
+      <div className="flex-1 overflow-hidden flex relative">
         {/* Learning Content - Full width on mobile, half width on desktop when playground is open */}
         <div className={`${isPlaygroundVisible ? 'md:w-1/2 w-full' : 'w-full'} transition-all duration-300 md:border-r border-border`}>
           <ModeComponent
@@ -290,7 +289,6 @@ const Scenario = () => {
           {isPlaygroundVisible ? <ChevronRight className="w-6 h-6" /> : <ChevronLeft className="w-6 h-6" />}
         </Button>
       </div>
-      <ParticipantFooter />
     </div>
   );
 };

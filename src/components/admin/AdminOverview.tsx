@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import QuestionPerformanceByMode from "./QuestionPerformanceByMode";
+import { describeSuspicionFlag, SUSPICION_RULES, SUSPICION_SCORE_BANDS } from "@/lib/suspicion";
 
 interface AvatarTimeData {
   session_id: string;
@@ -2202,6 +2203,31 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <AlertTriangle className={`w-5 h-5 ${hasUnresolvedAlerts ? 'text-amber-400' : 'text-slate-500'}`} />
                 Data Quality Alerts
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <div className="text-xs space-y-2">
+                        <p className="font-semibold">How the score is calculated</p>
+                        <ul className="space-y-1">
+                          {SUSPICION_RULES.map((rule) => (
+                            <li key={rule.id}>• +{rule.points} pts - {rule.summary}</li>
+                          ))}
+                        </ul>
+                        <div className="pt-2 border-t border-slate-700/50 space-y-1">
+                          {SUSPICION_SCORE_BANDS.map((band) => (
+                            <div key={band.range} className="flex justify-between">
+                              <span>{band.range}: {band.label}</span>
+                              <span className="text-slate-400">{band.note}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 {hasUnresolvedAlerts && (
                   <Badge variant="destructive" className="ml-2 animate-pulse bg-red-600">
                     {stats.pendingCount + stats.awaitingApprovalCount} New
@@ -2246,7 +2272,9 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 <div className="bg-slate-800/50 rounded-lg p-4">
                   <div className="text-xs text-slate-400 mb-2">Top Flags</div>
                   <div className="space-y-1 text-xs max-h-16 overflow-y-auto">
-                    {stats.suspiciousFlags.slice(0, 3).map(f => (
+                    {stats.suspiciousFlags.slice(0, 3).map(f => {
+                      const details = describeSuspicionFlag(f.flag);
+                      return (
                       <TooltipProvider key={f.flag}>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -2256,11 +2284,20 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                             </div>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
-                            <p className="text-xs">{f.flag.replace(/_/g, ' ')}</p>
+                            <div className="text-xs space-y-1">
+                              <p className="font-medium">{f.flag.replace(/_/g, ' ')}</p>
+                              {details.points && (
+                                <p className="text-slate-300">+{details.points} pts - {details.summary}</p>
+                              )}
+                              {details.reason && (
+                                <p className="text-slate-400">{details.reason}</p>
+                              )}
+                            </div>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                    ))}
+                      );
+                    })}
                     {stats.suspiciousFlags.length === 0 && (
                       <div className="text-slate-500">No flags</div>
                     )}

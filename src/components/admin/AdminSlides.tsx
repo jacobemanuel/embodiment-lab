@@ -341,7 +341,7 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
                   <span><code className="text-blue-400">1. item</code> → Numbered list</span>
                   <span><code className="text-blue-400">- item</code> → Bullet point</span>
                   <span><code className="text-blue-400">* item</code> → Bullet point</span>
-                  <span><code className="text-blue-400">> quote</code> → Callout quote</span>
+                  <span><code className="text-blue-400">{'>'} quote</code> → Callout quote</span>
                   <span><code className="text-blue-400">A {'->'} B</code> → Flow diagram</span>
                   <span><code className="text-blue-400">| Col1 | Col2 |</code> → Table</span>
                   <span><code className="text-blue-400">---</code> → Divider line</span>

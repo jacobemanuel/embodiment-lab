@@ -26,6 +26,7 @@ interface QuestionData {
   correct_answer: string | null;
   question_type: string;
   category: string | null;
+  question_meta?: Record<string, any> | null;
 }
 
 type ModeFilter = 'all' | 'text' | 'avatar';
@@ -59,17 +60,19 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       // Only fetch ACTIVE questions - hidden/disabled questions should not appear in stats
       const { data } = await supabase
         .from('study_questions')
-        .select('question_id, question_text, correct_answer, question_type, category, is_active')
+        .select('question_id, question_text, correct_answer, question_type, category, question_meta, is_active')
         .eq('is_active', true);
       
       const questions: Record<string, QuestionData> = {};
       data?.forEach(q => {
+        const meta = typeof q.question_meta === 'string' ? JSON.parse(q.question_meta) : q.question_meta || {};
         questions[q.question_id] = {
           question_id: q.question_id,
           question_text: q.question_text,
           correct_answer: q.correct_answer,
           question_type: q.question_type,
-          category: q.category
+          category: q.category,
+          question_meta: meta
         };
       });
       setQuestionData(questions);
@@ -221,9 +224,13 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       });
 
       // Filter open feedback from post-test responses
-      const openFeedback = (postTest || []).filter(r => 
-        r.question_id.startsWith('open_')
-      ).map(r => ({
+      const openFeedback = (postTest || []).filter(r => {
+        const question = questionData[r.question_id];
+        if (question?.category === 'open_feedback') return true;
+        const metaType = question?.question_meta?.type;
+        if (metaType === 'open_feedback' || metaType === 'open' || metaType === 'text') return true;
+        return r.question_id.startsWith('open_');
+      }).map(r => ({
         session_id: r.session_id,
         question_id: r.question_id,
         answer: r.answer,
@@ -240,7 +247,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [startDate, endDate, modeFilter, statusFilter]);
+  }, [startDate, endDate, modeFilter, statusFilter, questionData]);
 
   useEffect(() => {
     fetchQuestionData();

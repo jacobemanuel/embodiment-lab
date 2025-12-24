@@ -53,6 +53,7 @@ const PostTestPage3 = () => {
 
   // Filter open feedback questions
   const openFeedbackQuestions = postTestQuestions.filter(q => q.category === 'open_feedback');
+  const hasOpenFeedback = openFeedbackQuestions.length > 0;
   
   // Check if answer meets minimum length requirement
   const isValidAnswer = (text: string) => text.trim().length >= MIN_CHARS;
@@ -63,12 +64,13 @@ const PostTestPage3 = () => {
   ).length;
   
   // All questions are "handled" if answered with minimum chars
-  const allQuestionsHandled = openFeedbackQuestions.length > 0 && 
-    openFeedbackQuestions.every(q => responses[q.id] && isValidAnswer(responses[q.id]));
+  const allQuestionsHandled = hasOpenFeedback
+    ? openFeedbackQuestions.every(q => responses[q.id] && isValidAnswer(responses[q.id]))
+    : true;
   
-  const progress = openFeedbackQuestions.length > 0 
+  const progress = hasOpenFeedback
     ? answeredQuestionsCount / openFeedbackQuestions.length * 100 
-    : 0;
+    : 100;
 
   const handleTextChange = (questionId: string, value: string) => {
     // Enforce max chars
@@ -142,7 +144,7 @@ const PostTestPage3 = () => {
     );
   }
 
-  if (error || openFeedbackQuestions.length === 0) {
+  if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -172,7 +174,9 @@ const PostTestPage3 = () => {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-sm text-muted-foreground">
-              Page 3 of 3 • {answeredQuestionsCount} of {openFeedbackQuestions.length} answered
+              {hasOpenFeedback
+                ? `Page 3 of 3 • ${answeredQuestionsCount} of ${openFeedbackQuestions.length} answered`
+                : 'Page 3 of 3 • No open feedback questions configured'}
             </div>
             <ExitStudyButton />
           </div>
@@ -201,62 +205,70 @@ const PostTestPage3 = () => {
             </div>
           </div>
 
-          <VerticalProgressBar
-            totalQuestions={openFeedbackQuestions.length}
-            answeredQuestions={answeredQuestionsCount}
-            questionIds={openFeedbackQuestions.map(q => q.id)}
-            responses={responses}
-            onQuestionClick={scrollToQuestion}
-          />
+          {hasOpenFeedback && (
+            <VerticalProgressBar
+              totalQuestions={openFeedbackQuestions.length}
+              answeredQuestions={answeredQuestionsCount}
+              questionIds={openFeedbackQuestions.map(q => q.id)}
+              responses={responses}
+              onQuestionClick={scrollToQuestion}
+            />
+          )}
 
           <div className="space-y-6 stagger-fade-in">
-            {openFeedbackQuestions.map((question, index) => {
-              const currentValue = responses[question.id] || '';
-              const charCount = currentValue.trim().length;
-              const charsRemaining = MAX_CHARS - currentValue.length;
-              const isTooShort = charCount > 0 && charCount < MIN_CHARS;
-              const isValid = charCount >= MIN_CHARS;
-              
-              return (
-                <div 
-                  key={question.id} 
-                  ref={el => questionRefs.current[index] = el}
-                  className={`glass-card rounded-2xl p-6 space-y-4 transition-all duration-300 ${isValid ? 'ring-2 ring-ai-primary/30' : 'hover:shadow-ai-glow'}`}
-                >
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => scrollToQuestion(index)}
-                      className={`flex-shrink-0 w-8 h-8 rounded-full text-white flex items-center justify-center font-semibold text-sm cursor-pointer hover:scale-110 transition-transform ${isValid ? 'bg-green-500' : 'bg-gradient-to-r from-ai-primary to-ai-accent'}`}
-                    >
-                      {isValid ? '✓' : index + 1}
-                    </button>
-                    <Label className="font-semibold pt-1 text-base">{question.text}</Label>
-                  </div>
-                  
-                  <div className="pl-11 space-y-3">
-                    <Textarea 
-                      value={currentValue}
-                      onChange={(e) => handleTextChange(question.id, e.target.value)}
-                      placeholder="Type your answer here (10-50 characters)..."
-                      className={`min-h-[80px] resize-none bg-background/50 border-border/50 focus:border-ai-primary transition-colors ${isTooShort ? 'border-amber-500' : ''}`}
-                      maxLength={MAX_CHARS}
-                    />
-                    <div className="flex items-center justify-between">
-                      <div className={`text-xs ${isTooShort ? 'text-amber-500' : 'text-muted-foreground'}`}>
-                        {charCount < MIN_CHARS 
-                          ? `${MIN_CHARS - charCount} more characters needed`
-                          : `${charsRemaining} characters remaining`
-                        }
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {charCount}/{MAX_CHARS}
+            {hasOpenFeedback ? (
+              openFeedbackQuestions.map((question, index) => {
+                const currentValue = responses[question.id] || '';
+                const charCount = currentValue.trim().length;
+                const charsRemaining = MAX_CHARS - currentValue.length;
+                const isTooShort = charCount > 0 && charCount < MIN_CHARS;
+                const isValid = charCount >= MIN_CHARS;
+                
+                return (
+                  <div 
+                    key={question.id} 
+                    ref={el => questionRefs.current[index] = el}
+                    className={`glass-card rounded-2xl p-6 space-y-4 transition-all duration-300 ${isValid ? 'ring-2 ring-ai-primary/30' : 'hover:shadow-ai-glow'}`}
+                  >
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => scrollToQuestion(index)}
+                        className={`flex-shrink-0 w-8 h-8 rounded-full text-white flex items-center justify-center font-semibold text-sm cursor-pointer hover:scale-110 transition-transform ${isValid ? 'bg-green-500' : 'bg-gradient-to-r from-ai-primary to-ai-accent'}`}
+                      >
+                        {isValid ? '✓' : index + 1}
+                      </button>
+                      <Label className="font-semibold pt-1 text-base">{question.text}</Label>
+                    </div>
+                    
+                    <div className="pl-11 space-y-3">
+                      <Textarea 
+                        value={currentValue}
+                        onChange={(e) => handleTextChange(question.id, e.target.value)}
+                        placeholder="Type your answer here (10-50 characters)..."
+                        className={`min-h-[80px] resize-none bg-background/50 border-border/50 focus:border-ai-primary transition-colors ${isTooShort ? 'border-amber-500' : ''}`}
+                        maxLength={MAX_CHARS}
+                      />
+                      <div className="flex items-center justify-between">
+                        <div className={`text-xs ${isTooShort ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                          {charCount < MIN_CHARS 
+                            ? `${MIN_CHARS - charCount} more characters needed`
+                            : `${charsRemaining} characters remaining`
+                          }
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {charCount}/{MAX_CHARS}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="glass-card rounded-2xl p-6 text-muted-foreground text-sm">
+                Open feedback is not configured for this study. You can finish now.
+              </div>
+            )}
           </div>
 
           <div className="sticky bottom-6 glass-card rounded-2xl p-4 shadow-medium">

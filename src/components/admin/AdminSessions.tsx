@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import DateRangeFilter from "./DateRangeFilter";
 import { getPermissions } from "@/lib/permissions";
+import { describeSuspicionFlag, SUSPICION_RULES, SUSPICION_SCORE_BANDS } from "@/lib/suspicion";
 import { toast } from "sonner";
 
 interface AdminSessionsProps {
@@ -1047,24 +1048,43 @@ interface SessionDataStatus {
                                     <hr className="border-slate-700 my-2" />
                                     <p className="font-semibold text-white">How Score is Calculated:</p>
                                     <ul className="space-y-1 text-[11px]">
-                                      <li>• +20 pts if question answered in &lt;2 seconds</li>
-                                      <li>• +15 pts if page completed in &lt;5 seconds</li>
-                                      <li>• +25 pts if total study completed in &lt;3 minutes</li>
-                                      <li>• +10 pts for each unusually fast interaction</li>
+                                      {SUSPICION_RULES.map((rule) => (
+                                        <li key={rule.id}>• +{rule.points} pts - {rule.summary}</li>
+                                      ))}
                                     </ul>
                                     <hr className="border-slate-700 my-2" />
                                     <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-                                      <span>0-19: Normal</span><span className="text-green-400">✓ Valid data</span>
-                                      <span>20-39: Low risk</span><span className="text-yellow-400">⚠ Minor flags</span>
-                                      <span>40-59: Medium risk</span><span className="text-orange-400">⚠ Review needed</span>
-                                      <span>60+: High risk</span><span className="text-red-400">⚠ Likely invalid</span>
+                                      {SUSPICION_SCORE_BANDS.map((band) => (
+                                        <Fragment key={band.range}>
+                                          <span>{band.range}: {band.label}</span>
+                                          <span className={
+                                            band.label === 'Normal'
+                                              ? 'text-green-400'
+                                              : band.label === 'Low risk'
+                                                ? 'text-yellow-400'
+                                                : band.label === 'Medium risk'
+                                                  ? 'text-orange-400'
+                                                  : 'text-red-400'
+                                          }>
+                                            {band.note}
+                                          </span>
+                                        </Fragment>
+                                      ))}
                                     </div>
                                     <hr className="border-slate-700 my-2" />
                                     <p className="font-semibold text-white">Detected Issues:</p>
                                     <ul className="space-y-1">
-                                      {suspiciousFlags.map((flag, i) => (
-                                        <li key={i}>• {String(flag).replace(/_/g, ' ')}</li>
-                                      ))}
+                                      {suspiciousFlags.map((flag, i) => {
+                                        const details = describeSuspicionFlag(String(flag));
+                                        return (
+                                          <li key={i}>
+                                            <div>• {details.points ? `+${details.points} pts - ` : ''}{String(flag).replace(/_/g, ' ')}</div>
+                                            {details.reason && (
+                                              <div className="text-[11px] text-slate-500 ml-3">{details.reason}</div>
+                                            )}
+                                          </li>
+                                        );
+                                      })}
                                       {suspiciousFlags.length === 0 && <li className="italic">Score based on overall timing patterns</li>}
                                     </ul>
                                   </div>

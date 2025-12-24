@@ -94,7 +94,7 @@ export function useStudyFlowGuard(
     
     const checkRequirements = () => {
       // If study was completed, just redirect to home gracefully (no cheating message)
-      const studyCompleted = sessionStorage.getItem('studyCompleted');
+      const studyCompleted = sessionStorage.getItem('studyCompleted') || localStorage.getItem('studyCompleted');
       if (studyCompleted === 'true' && currentStep !== 'completion') {
         navigate('/', { replace: true });
         return true; // Stop polling

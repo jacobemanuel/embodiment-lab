@@ -12,6 +12,7 @@ const Completion = () => {
   // Mark that user has completed the study - so back button doesn't trigger cheating detection
   useEffect(() => {
     sessionStorage.setItem('studyCompleted', 'true');
+    localStorage.setItem('studyCompleted', 'true');
     
     // Handle browser back button - redirect to home gracefully
     const handlePopState = () => {
@@ -34,8 +35,10 @@ const Completion = () => {
       const sessionId = sessionStorage.getItem('sessionId') || 'unknown';
       const demographics = JSON.parse(sessionStorage.getItem('demographics') || '{}');
       const preTest = JSON.parse(sessionStorage.getItem('preTest') || '{}');
-      const postTest1 = JSON.parse(sessionStorage.getItem('postTest1') || '{}');
-      const postTest2 = JSON.parse(sessionStorage.getItem('postTest2') || '{}');
+      const postTestPage1 = JSON.parse(sessionStorage.getItem('postTestPage1') || '{}');
+      const postTestPage2 = JSON.parse(sessionStorage.getItem('postTestPage2') || '{}');
+      const postTestPage3 = JSON.parse(sessionStorage.getItem('postTestPage3') || '{}');
+      const postTest = { ...postTestPage1, ...postTestPage2, ...postTestPage3 };
       const mode = sessionStorage.getItem('studyMode') || 'unknown';
       
       // Create CSV content
@@ -62,7 +65,7 @@ const Completion = () => {
       // Add post-test responses (Likert)
       const likertQuestions = postTestQuestions.filter(q => q.type === 'likert');
       likertQuestions.forEach(q => {
-        const answer = postTest1[q.id] || '';
+        const answer = postTest[q.id] || '';
         csvContent += `Post-Test (Likert),"${q.text.replace(/"/g, '""')}",${answer}\n`;
       });
       csvContent += '\n';
@@ -70,9 +73,30 @@ const Completion = () => {
       // Add post-test responses (Knowledge)
       const knowledgeQuestions = postTestQuestions.filter(q => q.category === 'knowledge');
       knowledgeQuestions.forEach(q => {
-        const answer = postTest2[q.id] || '';
+        const answer = postTest[q.id] || '';
         csvContent += `Post-Test (Knowledge),"${q.text.replace(/"/g, '""')}","${answer.replace(/"/g, '""')}"\n`;
       });
+
+      // Add open feedback or other post-test responses not in the static list
+      const knownPostTestIds = new Set(postTestQuestions.map(q => q.id));
+      const openFeedbackIds = Object.keys(postTestPage3 || {});
+      const otherPostTestIds = Object.keys(postTest || {}).filter(id => !knownPostTestIds.has(id) && !openFeedbackIds.includes(id));
+
+      if (openFeedbackIds.length > 0) {
+        csvContent += '\n';
+        openFeedbackIds.forEach((id) => {
+          const answer = postTest[id] || '';
+          csvContent += `Post-Test (Open Feedback),"${id}","${String(answer).replace(/"/g, '""')}"\n`;
+        });
+      }
+
+      if (otherPostTestIds.length > 0) {
+        csvContent += '\n';
+        otherPostTestIds.forEach((id) => {
+          const answer = postTest[id] || '';
+          csvContent += `Post-Test (Other),"${id}","${String(answer).replace(/"/g, '""')}"\n`;
+        });
+      }
       
       // Create and download file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

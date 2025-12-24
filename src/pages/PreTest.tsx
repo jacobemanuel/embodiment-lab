@@ -37,12 +37,15 @@ const PreTest = () => {
   const [isLoading, setIsLoading] = useState(false);
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Track when questions are viewed
+  // Track when questions are viewed - use stable ref to avoid recreation
   useEffect(() => {
-    preTestQuestions.forEach(q => {
-      recordQuestionStart(q.id);
-    });
-  }, [preTestQuestions, recordQuestionStart]);
+    if (preTestQuestions.length > 0) {
+      preTestQuestions.forEach(q => {
+        recordQuestionStart(q.id);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preTestQuestions.length]);
 
   const scrollToQuestion = (index: number) => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });

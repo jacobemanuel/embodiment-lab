@@ -56,34 +56,39 @@ const Demographics = () => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  // Check if all questions are answered
-  const allQuestionsAnswered = demographicQuestions.length > 0 && demographicQuestions.every(q => {
-    const answer = responses[q.id];
-    if (!answer || answer.trim() === "") return false;
-    // If answer is "Other" or starts with "Other", check if we have additional text input
-    if (answer.toLowerCase().startsWith('other') && needsOtherTextInput(q.id, q.text)) {
-      const otherText = otherTextInputs[q.id];
-      return otherText && otherText.trim() !== "";
-    }
-    // If answer is "Yes" and question needs follow-up, check for additional text
-    if (answer.toLowerCase() === 'yes' && needsYesFollowUp(q.id, q.text)) {
-      const followUpText = otherTextInputs[q.id];
-      return followUpText && followUpText.trim() !== "";
-    }
-    return true;
-  });
-
-  // Check if a question needs "Other" text input (language-related questions)
+  // Helpers used in render/validation
+  // NOTE: these must be declared BEFORE they are referenced to avoid TDZ ReferenceErrors
   const needsOtherTextInput = (questionId: string, questionText: string) => {
     const t = questionText.toLowerCase();
-    return t.includes('language') || t.includes('język') || questionId.includes('language');
+    return t.includes('language') || t.includes('język') || questionId.toLowerCase().includes('language');
   };
 
-  // Check if a question needs follow-up when "Yes" is selected (accessibility needs)
   const needsYesFollowUp = (questionId: string, questionText: string) => {
     const t = questionText.toLowerCase();
-    return t.includes('accessibility') || t.includes('dostęp') || questionId.includes('accessibility');
+    return t.includes('accessibility') || t.includes('dostęp') || questionId.toLowerCase().includes('accessibility');
   };
+
+  // Check if all questions are answered
+  const allQuestionsAnswered =
+    demographicQuestions.length > 0 &&
+    demographicQuestions.every((q) => {
+      const answer = responses[q.id];
+      if (!answer || answer.trim() === "") return false;
+
+      // If answer is "Other" or starts with "Other", check if we have additional text input
+      if (answer.toLowerCase().startsWith('other') && needsOtherTextInput(q.id, q.text)) {
+        const otherText = otherTextInputs[q.id];
+        return !!otherText && otherText.trim() !== "";
+      }
+
+      // If answer is "Yes" and question needs follow-up, check for additional text
+      if (answer.toLowerCase() === 'yes' && needsYesFollowUp(q.id, q.text)) {
+        const followUpText = otherTextInputs[q.id];
+        return !!followUpText && followUpText.trim() !== "";
+      }
+
+      return true;
+    });
 
   const handleContinue = async () => {
     if (allQuestionsAnswered) {

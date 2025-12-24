@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 const OWNER_EMAIL = "jakub.majewski@tum.de";
+const VIEWER_EMAILS = ["efe.bozkir@tum.de"];
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -38,6 +39,16 @@ Deno.serve(async (req) => {
       console.error("Auth error:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const isViewer = VIEWER_EMAILS.includes(user.email?.toLowerCase() || "");
+
+    // Block viewers from any validation actions
+    if (isViewer) {
+      return new Response(JSON.stringify({ error: "View-only account" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -138,8 +149,14 @@ Deno.serve(async (req) => {
         // Owner can directly set status
         actualStatus = status;
       } else {
-        // Admin can only request (pending_accepted or pending_ignored)
-        actualStatus = status === 'accepted' ? 'pending_accepted' : 'pending_ignored';
+        // Admin can only request accept/ignore; pending stays pending
+        if (status === 'accepted') {
+          actualStatus = 'pending_accepted';
+        } else if (status === 'ignored') {
+          actualStatus = 'pending_ignored';
+        } else {
+          actualStatus = 'pending';
+        }
       }
 
       const { error } = await supabaseClient
@@ -219,8 +236,14 @@ Deno.serve(async (req) => {
       // Owner can directly set status
       actualStatus = status;
     } else {
-      // Admin can only request (pending_accepted or pending_ignored)
-      actualStatus = status === 'accepted' ? 'pending_accepted' : 'pending_ignored';
+      // Admin can only request accept/ignore; pending stays pending
+      if (status === 'accepted') {
+        actualStatus = 'pending_accepted';
+      } else if (status === 'ignored') {
+        actualStatus = 'pending_ignored';
+      } else {
+        actualStatus = 'pending';
+      }
     }
 
     const { error } = await supabaseClient

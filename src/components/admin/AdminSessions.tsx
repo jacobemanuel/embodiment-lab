@@ -22,6 +22,7 @@ interface AdminSessionsProps {
 
 const AdminSessions = ({ userEmail = '' }: AdminSessionsProps) => {
   const permissions = getPermissions(userEmail);
+  const canManageValidation = permissions.canValidateSessionsDirectly || permissions.canRequestValidation;
 
 interface Session {
   id: string;
@@ -244,6 +245,10 @@ interface SessionDataStatus {
   // Update session validation status via edge function
   // Owner can directly accept/ignore, Admin can only request (goes to 'pending_approval')
   const updateValidationStatus = async (sessionId: string, status: 'accepted' | 'ignored') => {
+    if (!canManageValidation) {
+      toast.error('You do not have permission to manage validation');
+      return;
+    }
     try {
       console.log('updateValidationStatus called:', { sessionId, status });
       
@@ -304,6 +309,10 @@ interface SessionDataStatus {
 
   // Bulk validation for multiple sessions via edge function
   const bulkUpdateValidation = async (status: 'accepted' | 'ignored') => {
+    if (!canManageValidation) {
+      toast.error('You do not have permission to manage validation');
+      return;
+    }
     if (selectedSessionIds.size === 0) {
       toast.error('No sessions selected');
       return;
@@ -350,6 +359,9 @@ interface SessionDataStatus {
 
   // Select all sessions on current page
   const selectAllOnPage = () => {
+    if (!canManageValidation) {
+      return;
+    }
     const allSelected = paginatedSessions.every(s => selectedSessionIds.has(s.id));
     
     if (allSelected) {
@@ -371,6 +383,10 @@ interface SessionDataStatus {
 
   // Hide session(s) from statistics (set validation_status to 'ignored')
   const hideSelectedSessions = async () => {
+    if (!canManageValidation) {
+      toast.error('You do not have permission to manage validation');
+      return;
+    }
     if (selectedSessionIds.size === 0) {
       toast.error('No sessions selected');
       return;
@@ -387,12 +403,12 @@ interface SessionDataStatus {
 
       setSessions(prev => prev.map(s => 
         selectedSessionIds.has(s.id)
-          ? { ...s, validation_status: 'ignored', validated_by: userEmail, validated_at: new Date().toISOString() }
+          ? { ...s, validation_status: data.actualStatus, validated_by: userEmail, validated_at: new Date().toISOString() }
           : s
       ));
       
       setSelectedSessionIds(new Set());
-      toast.success(`${sessionIdsArray.length} session(s) hidden from statistics`);
+      toast.success(data.message);
     } catch (error) {
       console.error('Error hiding sessions:', error);
       toast.error('Failed to hide sessions');
@@ -401,6 +417,10 @@ interface SessionDataStatus {
 
   // Restore session(s) to pending status
   const restoreSelectedSessions = async () => {
+    if (!canManageValidation) {
+      toast.error('You do not have permission to manage validation');
+      return;
+    }
     if (selectedSessionIds.size === 0) {
       toast.error('No sessions selected');
       return;
@@ -417,12 +437,12 @@ interface SessionDataStatus {
 
       setSessions(prev => prev.map(s => 
         selectedSessionIds.has(s.id)
-          ? { ...s, validation_status: 'pending', validated_by: userEmail, validated_at: new Date().toISOString() }
+          ? { ...s, validation_status: data.actualStatus, validated_by: userEmail, validated_at: new Date().toISOString() }
           : s
       ));
       
       setSelectedSessionIds(new Set());
-      toast.success(`${sessionIdsArray.length} session(s) restored to pending`);
+      toast.success(data.message);
     } catch (error) {
       console.error('Error restoring sessions:', error);
       toast.error('Failed to restore sessions');
@@ -802,7 +822,7 @@ interface SessionDataStatus {
           </div>
 
           {/* Bulk Actions */}
-          {selectedSessionIds.size > 0 && (
+          {selectedSessionIds.size > 0 && canManageValidation && (
             <div className="flex items-center gap-4 p-3 bg-slate-900/50 border border-slate-700 rounded-lg">
               <span className="text-sm text-slate-300">
                 {selectedSessionIds.size} session(s) selected
@@ -865,25 +885,27 @@ interface SessionDataStatus {
               <TableHeader>
                 <TableRow className="border-slate-700 hover:bg-slate-700/50">
                   <TableHead className="text-slate-400 w-10">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-6 w-6 p-0"
-                            onClick={selectAllOnPage}
-                          >
-                            {paginatedSessions.length > 0 && paginatedSessions.every(s => selectedSessionIds.has(s.id)) ? (
-                              <CheckSquare className="w-4 h-4 text-primary" />
-                            ) : (
-                              <Square className="w-4 h-4 text-slate-500" />
-                            )}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Select all sessions on this page</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    {canManageValidation && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-6 w-6 p-0"
+                              onClick={selectAllOnPage}
+                            >
+                              {paginatedSessions.length > 0 && paginatedSessions.every(s => selectedSessionIds.has(s.id)) ? (
+                                <CheckSquare className="w-4 h-4 text-primary" />
+                              ) : (
+                                <Square className="w-4 h-4 text-slate-500" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Select all sessions on this page</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </TableHead>
                   <TableHead className="text-slate-400">Session ID</TableHead>
                   <TableHead className="text-slate-400">Mode</TableHead>
@@ -928,11 +950,15 @@ interface SessionDataStatus {
                       className={`border-slate-700 hover:bg-slate-700/50 ${isReset ? 'opacity-40' : isCompleted ? '' : 'opacity-50'} ${selectedSessionIds.has(session.id) ? 'bg-slate-700/30' : ''}`}
                     >
                       <TableCell>
-                        <Checkbox
-                          checked={selectedSessionIds.has(session.id)}
-                          onCheckedChange={() => toggleSessionSelection(session.id)}
-                          className="border-slate-500"
-                        />
+                        {canManageValidation ? (
+                          <Checkbox
+                            checked={selectedSessionIds.has(session.id)}
+                            onCheckedChange={() => toggleSessionSelection(session.id)}
+                            className="border-slate-500"
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-600">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="font-mono text-sm text-slate-300">
                         {session.session_id.slice(0, 8)}...

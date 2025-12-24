@@ -336,14 +336,19 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
               <div className="mt-2 mb-2 p-3 bg-slate-900/50 rounded-lg border border-slate-700 text-xs text-slate-400">
                 <p className="font-medium text-slate-300 mb-1">Formatting Tips:</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                  <span><code className="text-blue-400"># Title</code> → Big section header</span>
                   <span><code className="text-blue-400">## Title</code> → Section header</span>
-                  <span><code className="text-blue-400">- item</code> → Bullet point</span>
                   <span><code className="text-blue-400">1. item</code> → Numbered list</span>
-                  <span><code className="text-blue-400">**bold**</code> → Bold text</span>
-                  <span><code className="text-blue-400">`code`</code> → Inline code</span>
+                  <span><code className="text-blue-400">- item</code> → Bullet point</span>
+                  <span><code className="text-blue-400">* item</code> → Bullet point</span>
+                  <span><code className="text-blue-400">> quote</code> → Callout quote</span>
                   <span><code className="text-blue-400">A {'->'} B</code> → Flow diagram</span>
                   <span><code className="text-blue-400">| Col1 | Col2 |</code> → Table</span>
+                  <span><code className="text-blue-400">---</code> → Divider line</span>
+                  <span><code className="text-blue-400">**bold**</code> → Bold text</span>
+                  <span><code className="text-blue-400">`code`</code> → Inline code</span>
                   <span><code className="text-blue-400">"quote"</code> → Highlighted</span>
+                  <span><code className="text-blue-400">(empty line)</code> → Extra spacing</span>
                 </div>
               </div>
             )}

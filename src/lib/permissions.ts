@@ -115,8 +115,8 @@ export const getPermissions = (email: string): PermissionConfig => {
       canValidateSessionsDirectly: false,
       canRequestValidation: false,
       
-      canViewSlides: true, // Can view slides (read-only)
-      canViewQuestions: true, // Can view questions (read-only)
+      canViewSlides: false, // View-only: hide slide content
+      canViewQuestions: false, // View-only: hide question content
       canViewPermissionsTab: false, // Hide permissions tab
     };
   }

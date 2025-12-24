@@ -8,6 +8,7 @@ const corsHeaders = {
 
 // Owner has full control, admins can only toggle Anam
 const OWNER_EMAIL = 'jakub.majewski@tum.de';
+const VIEWER_EMAILS = ['efe.bozkir@tum.de'];
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -36,6 +37,15 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const isViewer = VIEWER_EMAILS.includes(user.email?.toLowerCase() || '');
+
+    if (isViewer) {
+      return new Response(
+        JSON.stringify({ error: 'View-only account' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

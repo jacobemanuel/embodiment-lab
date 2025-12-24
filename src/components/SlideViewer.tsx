@@ -42,7 +42,7 @@ export const SlideViewer = ({
     <div className={cn("flex flex-col h-full bg-background", className)}>
       {/* Slide Content - PowerPoint Style */}
       <div className={cn(
-        "flex-1 overflow-y-auto flex items-center justify-center",
+        "flex-1 overflow-y-auto flex items-start justify-center",
         compact ? "p-4" : "p-6 md:p-10"
       )}>
         <div className="w-full max-w-4xl mx-auto">
@@ -163,11 +163,18 @@ export const SlideViewer = ({
 function renderSlideContent(content: string) {
   const sections: React.ReactNode[] = [];
   const lines = content.split('\n');
-  let currentSection: { title?: string; items: string[]; type: 'list' | 'table' | 'text' | 'code' | 'numbered' } | null = null;
+  let currentSection: { title?: string; items: string[]; type: 'list' | 'table' | 'text' | 'code' | 'numbered'; headingLevel?: 1 | 2 | 3 } | null = null;
   let inCodeBlock = false;
   let codeContent = '';
   let tableData: string[][] = [];
   let inTable = false;
+  let lastWasBlank = false;
+
+  const headingClass = (level?: 1 | 2 | 3) => {
+    if (level === 1) return "text-lg md:text-xl";
+    if (level === 2) return "text-base md:text-lg";
+    return "text-base";
+  };
 
   const flushSection = () => {
     if (!currentSection) return;
@@ -178,7 +185,7 @@ function renderSlideContent(content: string) {
       sections.push(
         <div key={key} className="bg-muted/30 rounded-xl p-5 border border-border/50">
           {currentSection.title && (
-            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2 text-base">
+            <h3 className={`font-semibold text-foreground mb-4 flex items-center gap-2 ${headingClass(currentSection.headingLevel)}`}>
               <span className="w-1.5 h-6 bg-primary rounded-full"></span>
               {currentSection.title}
             </h3>
@@ -203,7 +210,7 @@ function renderSlideContent(content: string) {
       sections.push(
         <div key={key} className="text-muted-foreground leading-relaxed space-y-3">
           {currentSection.title && (
-            <h3 className="font-semibold text-foreground flex items-center gap-2 text-base">
+            <h3 className={`font-semibold text-foreground flex items-center gap-2 ${headingClass(currentSection.headingLevel)}`}>
               <span className="w-1.5 h-6 bg-primary rounded-full"></span>
               {currentSection.title}
             </h3>
@@ -216,7 +223,7 @@ function renderSlideContent(content: string) {
     } else if (currentSection.title && currentSection.items.length === 0) {
       sections.push(
         <div key={key} className="text-foreground">
-          <h3 className="font-semibold flex items-center gap-2 text-base">
+          <h3 className={`font-semibold flex items-center gap-2 ${headingClass(currentSection.headingLevel)}`}>
             <span className="w-1.5 h-6 bg-primary rounded-full"></span>
             {currentSection.title}
           </h3>
@@ -228,8 +235,7 @@ function renderSlideContent(content: string) {
   };
 
   lines.forEach((line, idx) => {
-    // Skip the main title (we show it in header)
-    if (line.startsWith('# ')) return;
+    const trimmed = line.trim();
 
     // Code blocks
     if (line.startsWith('```')) {
@@ -249,6 +255,16 @@ function renderSlideContent(content: string) {
       codeContent += line + '\n';
       return;
     }
+
+    if (!inTable && trimmed === '') {
+      flushSection();
+      if (!lastWasBlank) {
+        sections.push(<div key={`spacer-${idx}`} className="h-3" />);
+      }
+      lastWasBlank = true;
+      return;
+    }
+    lastWasBlank = false;
 
     // Table detection
     if (line.startsWith('|')) {
@@ -290,16 +306,40 @@ function renderSlideContent(content: string) {
       inTable = false;
     }
 
+    // Horizontal rule
+    if (trimmed === '---' || trimmed === '***') {
+      flushSection();
+      sections.push(<hr key={`hr-${idx}`} className="border-border/60" />);
+      return;
+    }
+
+    // Blockquote
+    if (line.startsWith('> ')) {
+      flushSection();
+      sections.push(
+        <div key={`quote-${idx}`} className="border-l-4 border-primary/50 bg-primary/5 rounded-r-lg p-4 text-muted-foreground">
+          <p className="text-base" dangerouslySetInnerHTML={{ __html: formatText(line.replace(/^>\s*/, '')) }} />
+        </div>
+      );
+      return;
+    }
+
     // Section headers
+    if (line.startsWith('# ')) {
+      flushSection();
+      currentSection = { title: line.replace('# ', ''), items: [], type: 'text', headingLevel: 1 };
+      return;
+    }
+
     if (line.startsWith('## ')) {
       flushSection();
-      currentSection = { title: line.replace('## ', ''), items: [], type: 'text' };
+      currentSection = { title: line.replace('## ', ''), items: [], type: 'text', headingLevel: 2 };
       return;
     }
 
     if (line.startsWith('### ')) {
       flushSection();
-      currentSection = { title: line.replace('### ', ''), items: [], type: 'text' };
+      currentSection = { title: line.replace('### ', ''), items: [], type: 'text', headingLevel: 3 };
       return;
     }
 
@@ -364,7 +404,7 @@ function renderSlideContent(content: string) {
     }
 
     // Regular text
-    if (line.trim()) {
+    if (trimmed) {
       if (!currentSection || currentSection.type !== 'text') {
         flushSection();
         currentSection = { items: [], type: 'text' };

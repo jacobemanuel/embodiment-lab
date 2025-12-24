@@ -193,7 +193,7 @@ const PostTestPage3 = () => {
               </h1>
             </div>
             <p className="text-muted-foreground mb-6 text-justify">
-              Almost done! Share your thoughts about your learning experience. Each answer should be between 10-50 characters.
+              Almost done! Share your thoughts about your learning experience.
             </p>
             
             {/* Progress bar */}

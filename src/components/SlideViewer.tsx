@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DOMPurify from "dompurify";
+import { useEffect, useRef } from "react";
 
 interface SlideViewerProps {
   slides: Slide[];
@@ -21,6 +22,12 @@ export const SlideViewer = ({
 }: SlideViewerProps) => {
   const currentIndex = slides.findIndex(s => s.id === currentSlide.id);
   const totalSlides = slides.length;
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!scrollContainerRef.current) return;
+    scrollContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentSlide.id]);
 
   const goToNext = () => {
     if (currentIndex < slides.length - 1) {
@@ -41,10 +48,13 @@ export const SlideViewer = ({
   return (
     <div className={cn("flex flex-col h-full bg-background", className)}>
       {/* Slide Content - PowerPoint Style */}
-      <div className={cn(
-        "flex-1 overflow-y-auto flex items-start justify-center",
-        compact ? "p-4" : "p-6 md:p-10"
-      )}>
+      <div
+        ref={scrollContainerRef}
+        className={cn(
+          "flex-1 overflow-y-auto flex items-start justify-center",
+          compact ? "p-4" : "p-6 md:p-10"
+        )}
+      >
         <div className="w-full max-w-4xl mx-auto">
           {/* Slide Card - Distinctive presentation look */}
           <div 

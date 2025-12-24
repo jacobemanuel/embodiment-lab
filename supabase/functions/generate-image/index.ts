@@ -10,7 +10,7 @@ const corsHeaders = {
 const generateImageSchema = z.object({
   prompt: z.string().min(1).max(1000),
   negativePrompt: z.string().max(500).optional(),
-  cfgScale: z.number().min(1).max(20).optional(),
+  cfgScale: z.number().min(1).max(15).optional(),
   steps: z.number().min(1).max(100).optional(),
   seed: z.number().optional(),
   width: z.number().min(256).max(2048).optional(),

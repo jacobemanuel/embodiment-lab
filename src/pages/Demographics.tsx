@@ -68,27 +68,33 @@ const Demographics = () => {
     return t.includes('accessibility') || t.includes('dostęp') || questionId.toLowerCase().includes('accessibility');
   };
 
+  const isQuestionComplete = (questionId: string, questionText: string) => {
+    const answer = responses[questionId];
+    if (!answer || answer.trim() === "") return false;
+
+    // If answer is "Other" or starts with "Other", check if we have additional text input
+    if (answer.toLowerCase().startsWith('other') && needsOtherTextInput(questionId, questionText)) {
+      const otherText = otherTextInputs[questionId];
+      return !!otherText && otherText.trim() !== "";
+    }
+
+    // If answer is "Yes" and question needs follow-up, check for additional text
+    if (answer.toLowerCase() === 'yes' && needsYesFollowUp(questionId, questionText)) {
+      const followUpText = otherTextInputs[questionId];
+      return !!followUpText && followUpText.trim() !== "";
+    }
+
+    return true;
+  };
+
+  const completedQuestionsCount =
+    demographicQuestions.length > 0
+      ? demographicQuestions.filter((q) => isQuestionComplete(q.id, q.text)).length
+      : 0;
+
   // Check if all questions are answered
   const allQuestionsAnswered =
-    demographicQuestions.length > 0 &&
-    demographicQuestions.every((q) => {
-      const answer = responses[q.id];
-      if (!answer || answer.trim() === "") return false;
-
-      // If answer is "Other" or starts with "Other", check if we have additional text input
-      if (answer.toLowerCase().startsWith('other') && needsOtherTextInput(q.id, q.text)) {
-        const otherText = otherTextInputs[q.id];
-        return !!otherText && otherText.trim() !== "";
-      }
-
-      // If answer is "Yes" and question needs follow-up, check for additional text
-      if (answer.toLowerCase() === 'yes' && needsYesFollowUp(q.id, q.text)) {
-        const followUpText = otherTextInputs[q.id];
-        return !!followUpText && followUpText.trim() !== "";
-      }
-
-      return true;
-    });
+    demographicQuestions.length > 0 && completedQuestionsCount === demographicQuestions.length;
 
   const handleContinue = async () => {
     if (allQuestionsAnswered) {
@@ -239,16 +245,20 @@ const Demographics = () => {
             <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-ai-primary to-ai-accent transition-all duration-300"
-                style={{ width: `${demographicQuestions.length > 0 ? (Object.keys(responses).filter(k => responses[k]?.trim()).length / demographicQuestions.length * 100) : 0}%` }}
+                style={{ width: `${demographicQuestions.length > 0 ? (completedQuestionsCount / demographicQuestions.length * 100) : 0}%` }}
               />
             </div>
           </div>
 
           <VerticalProgressBar
             totalQuestions={demographicQuestions.length}
-            answeredQuestions={Object.keys(responses).filter(k => responses[k]?.trim()).length}
+            answeredQuestions={completedQuestionsCount}
             questionIds={demographicQuestions.map(q => q.id)}
             responses={responses}
+            isQuestionComplete={(questionId) => {
+              const question = demographicQuestions.find(q => q.id === questionId);
+              return question ? isQuestionComplete(question.id, question.text) : false;
+            }}
             onQuestionClick={scrollToQuestion}
           />
 
@@ -344,11 +354,18 @@ const Demographics = () => {
                             setOtherTextInputs((prev) => ({ ...prev, [question.id]: value }));
                           }}
                           maxLength={50}
-                          className="max-w-xs"
+                          className={`max-w-xs ${
+                            !otherTextInputs[question.id]?.trim() ? "border-destructive" : ""
+                          }`}
                         />
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className={`text-xs mt-1 ${
+                          !otherTextInputs[question.id]?.trim() ? "text-destructive" : "text-muted-foreground"
+                        }`}>
                           {otherTextInputs[question.id]?.length || 0}/50 characters
                         </p>
+                        {!otherTextInputs[question.id]?.trim() && (
+                          <p className="text-xs text-destructive mt-1">Please specify to continue.</p>
+                        )}
                       </div>
                     )}
                     
@@ -364,11 +381,18 @@ const Demographics = () => {
                             setOtherTextInputs((prev) => ({ ...prev, [question.id]: value }));
                           }}
                           maxLength={50}
-                          className="max-w-xs"
+                          className={`max-w-xs ${
+                            !otherTextInputs[question.id]?.trim() ? "border-destructive" : ""
+                          }`}
                         />
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className={`text-xs mt-1 ${
+                          !otherTextInputs[question.id]?.trim() ? "text-destructive" : "text-muted-foreground"
+                        }`}>
                           {otherTextInputs[question.id]?.length || 0}/50 characters
                         </p>
+                        {!otherTextInputs[question.id]?.trim() && (
+                          <p className="text-xs text-destructive mt-1">Please add details to continue.</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -388,7 +412,7 @@ const Demographics = () => {
                 ? "Saving..." 
                 : allQuestionsAnswered 
                   ? "Continue to Pre-Test" 
-                  : `Answer all questions to continue (${Object.keys(responses).filter(k => responses[k]?.trim()).length}/${demographicQuestions.length})`
+                  : `Answer all questions to continue (${completedQuestionsCount}/${demographicQuestions.length})`
               }
             </Button>
           </div>

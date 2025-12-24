@@ -202,9 +202,24 @@ function renderSlideContent(content: string) {
     } else if (currentSection.type === 'text' && currentSection.items.length > 0) {
       sections.push(
         <div key={key} className="text-muted-foreground leading-relaxed space-y-3">
+          {currentSection.title && (
+            <h3 className="font-semibold text-foreground flex items-center gap-2 text-base">
+              <span className="w-1.5 h-6 bg-primary rounded-full"></span>
+              {currentSection.title}
+            </h3>
+          )}
           {currentSection.items.map((text, i) => (
             <p key={i} className="text-base" dangerouslySetInnerHTML={{ __html: formatText(text) }} />
           ))}
+        </div>
+      );
+    } else if (currentSection.title && currentSection.items.length === 0) {
+      sections.push(
+        <div key={key} className="text-foreground">
+          <h3 className="font-semibold flex items-center gap-2 text-base">
+            <span className="w-1.5 h-6 bg-primary rounded-full"></span>
+            {currentSection.title}
+          </h3>
         </div>
       );
     }
@@ -278,21 +293,25 @@ function renderSlideContent(content: string) {
     // Section headers
     if (line.startsWith('## ')) {
       flushSection();
-      currentSection = { title: line.replace('## ', ''), items: [], type: 'list' };
+      currentSection = { title: line.replace('## ', ''), items: [], type: 'text' };
       return;
     }
 
     if (line.startsWith('### ')) {
       flushSection();
-      currentSection = { title: line.replace('### ', ''), items: [], type: 'list' };
+      currentSection = { title: line.replace('### ', ''), items: [], type: 'text' };
       return;
     }
 
     // Numbered list items (1. 2. 3. etc.)
     if (/^\d+\.\s/.test(line)) {
       if (!currentSection || currentSection.type !== 'numbered') {
-        flushSection();
-        currentSection = { items: [], type: 'numbered' };
+        if (currentSection && currentSection.type === 'text' && currentSection.title && currentSection.items.length === 0) {
+          currentSection = { ...currentSection, type: 'numbered' };
+        } else {
+          flushSection();
+          currentSection = { items: [], type: 'numbered' };
+        }
       }
       const text = line.replace(/^\d+\.\s/, '');
       currentSection.items.push(text);
@@ -300,12 +319,16 @@ function renderSlideContent(content: string) {
     }
 
     // Bullet list items
-    if (line.startsWith('- ') || line.startsWith('✅ ') || line.startsWith('❌ ')) {
+    if (line.startsWith('- ') || line.startsWith('* ') || line.startsWith('• ') || line.startsWith('✅ ') || line.startsWith('❌ ')) {
       if (!currentSection || currentSection.type !== 'list') {
-        flushSection();
-        currentSection = { items: [], type: 'list' };
+        if (currentSection && currentSection.type === 'text' && currentSection.title && currentSection.items.length === 0) {
+          currentSection = { ...currentSection, type: 'list' };
+        } else {
+          flushSection();
+          currentSection = { items: [], type: 'list' };
+        }
       }
-      const text = line.replace(/^[-✅❌]\s/, '');
+      const text = line.replace(/^[-*•✅❌]\s+/, '');
       currentSection.items.push(line.startsWith('✅') ? `✅ ${text}` : line.startsWith('❌') ? `❌ ${text}` : text);
       return;
     }

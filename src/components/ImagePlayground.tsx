@@ -174,8 +174,8 @@ const PlaygroundContent = () => {
               <Label className="text-sm">CFG Scale (Prompt Guidance)</Label>
               <span className="text-sm font-medium">{cfgScale[0]}</span>
             </div>
-            <Slider value={cfgScale} onValueChange={setCfgScale} min={1} max={20} step={0.5} className="py-4" />
-            <p className="text-xs text-muted-foreground">Higher = follows prompt more closely (7-12 recommended)</p>
+            <Slider value={cfgScale} onValueChange={setCfgScale} min={1} max={15} step={0.5} className="py-4" />
+            <p className="text-xs text-muted-foreground">Higher = follows prompt more closely (7-12 recommended, max 15)</p>
           </div>
 
           {/* Steps */}

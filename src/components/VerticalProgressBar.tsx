@@ -6,6 +6,7 @@ interface VerticalProgressBarProps {
   answeredQuestions: number;
   questionIds: string[];
   responses: Record<string, string>;
+  isQuestionComplete?: (questionId: string) => boolean;
   onQuestionClick?: (index: number) => void;
 }
 
@@ -14,12 +15,15 @@ export const VerticalProgressBar = ({
   answeredQuestions,
   questionIds,
   responses,
+  isQuestionComplete,
   onQuestionClick
 }: VerticalProgressBarProps) => {
   if (totalQuestions === 0) return null;
 
   // Find first unanswered question index
-  const firstUnansweredIndex = questionIds.findIndex(id => !responses[id]);
+  const firstUnansweredIndex = questionIds.findIndex(id =>
+    isQuestionComplete ? !isQuestionComplete(id) : !responses[id]
+  );
   const hasUnanswered = firstUnansweredIndex !== -1;
 
   return (
@@ -37,7 +41,7 @@ export const VerticalProgressBar = ({
         />
         
         {questionIds.map((id, index) => {
-          const isAnswered = !!responses[id];
+          const isAnswered = isQuestionComplete ? isQuestionComplete(id) : !!responses[id];
           const isFirstUnanswered = index === firstUnansweredIndex;
           
           return (

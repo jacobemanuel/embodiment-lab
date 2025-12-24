@@ -53,6 +53,19 @@ const Demographics = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [demographicQuestions.length]);
 
+  useEffect(() => {
+    if (demographicQuestions.length === 0) return;
+    if (sessionStorage.getItem('demographicQuestionsSnapshot')) return;
+    const snapshot = demographicQuestions.map((q) => ({
+      id: q.id,
+      text: q.text,
+      category: q.category,
+      type: q.type,
+      options: q.options,
+    }));
+    sessionStorage.setItem('demographicQuestionsSnapshot', JSON.stringify(snapshot));
+  }, [demographicQuestions]);
+
   const scrollToQuestion = (index: number) => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };

@@ -29,6 +29,19 @@ const PostTestPage3 = () => {
   const [isLoading, setIsLoading] = useState(false);
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  useEffect(() => {
+    if (postTestQuestions.length === 0) return;
+    if (sessionStorage.getItem('postTestQuestionsSnapshot')) return;
+    const snapshot = postTestQuestions.map((q) => ({
+      id: q.id,
+      text: q.text,
+      category: q.category,
+      type: q.type,
+      options: q.options,
+    }));
+    sessionStorage.setItem('postTestQuestionsSnapshot', JSON.stringify(snapshot));
+  }, [postTestQuestions]);
+
   const scrollToQuestion = (index: number) => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };

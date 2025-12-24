@@ -282,6 +282,56 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
   }, [autoRefresh, fetchAllResponses]);
 
   // CSV Export helpers
+  const resolveQuestionInfo = async (questionIds: string[]) => {
+    const info: Record<string, QuestionData> = {};
+    questionIds.forEach((id) => {
+      if (questionData[id]) {
+        info[id] = questionData[id];
+      }
+    });
+
+    const missingIds = questionIds.filter((id) => !info[id]);
+    if (missingIds.length > 0) {
+      const { data } = await supabase
+        .from('study_questions')
+        .select('question_id, question_text, correct_answer, question_type, category, question_meta')
+        .in('question_id', missingIds);
+
+      data?.forEach((q) => {
+        const meta = typeof q.question_meta === 'string' ? JSON.parse(q.question_meta) : q.question_meta || {};
+        info[q.question_id] = {
+          question_id: q.question_id,
+          question_text: q.question_text,
+          correct_answer: q.correct_answer,
+          question_type: q.question_type,
+          category: q.category,
+          question_meta: meta,
+        };
+      });
+    }
+
+    return info;
+  };
+
+  const normalizeAnswer = (answer: string) =>
+    String(answer || '')
+      .split('|||')
+      .map((a) => a.trim().toLowerCase())
+      .filter(Boolean);
+
+  const isAnswerCorrectWithInfo = (question: QuestionData | undefined, answer: string) => {
+    if (!question?.correct_answer) return false;
+    const correctAnswers = normalizeAnswer(question.correct_answer);
+    const userAnswers = normalizeAnswer(answer);
+    if (correctAnswers.length <= 1) {
+      return userAnswers.some(a => correctAnswers.includes(a));
+    }
+    return (
+      correctAnswers.every((a) => userAnswers.includes(a)) &&
+      userAnswers.every((a) => correctAnswers.includes(a))
+    );
+  };
+
   const downloadCSV = (data: any[], filename: string) => {
     if (!data.length) return;
     const headers = Object.keys(data[0]);
@@ -298,83 +348,93 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
     URL.revokeObjectURL(url);
   };
 
-  const exportDemographicsCSV = () => {
-    // Only export responses for ACTIVE questions
-    const activeQuestionIds = Object.keys(questionData);
-    const filteredData = rawResponses.demo.filter(r => activeQuestionIds.includes(r.question_id));
-    
-    const data = filteredData.map(r => ({
+  const exportDemographicsCSV = async () => {
+    const questionIds = rawResponses.demo.map(r => r.question_id);
+    const questionInfo = await resolveQuestionInfo(questionIds);
+    const data = rawResponses.demo.map(r => ({
       SessionID: r.session_id,
       QuestionID: r.question_id,
-      Question: questionData[r.question_id]?.question_text || r.question_id,
+      Question: questionInfo[r.question_id]?.question_text || r.question_id,
       Answer: r.answer
     }));
     downloadCSV(data, 'demographics_responses');
   };
 
-  const exportPreTestCSV = () => {
-    // Only export responses for ACTIVE questions
-    const activeQuestionIds = Object.keys(questionData);
-    const filteredData = rawResponses.pre.filter(r => activeQuestionIds.includes(r.question_id));
-    
-    const data = filteredData.map(r => ({
-      SessionID: r.session_id,
-      QuestionID: r.question_id,
-      Question: questionData[r.question_id]?.question_text || r.question_id,
-      Answer: r.answer,
-      CorrectAnswer: questionData[r.question_id]?.correct_answer || '',
-      IsCorrect: isAnswerCorrect(r.question_id, r.answer) ? 'Yes' : 'No'
-    }));
+  const exportPreTestCSV = async () => {
+    const questionIds = rawResponses.pre.map(r => r.question_id);
+    const questionInfo = await resolveQuestionInfo(questionIds);
+    const data = rawResponses.pre.map(r => {
+      const question = questionInfo[r.question_id];
+      const correctAnswer = question?.correct_answer || '';
+      return {
+        SessionID: r.session_id,
+        QuestionID: r.question_id,
+        Question: question?.question_text || r.question_id,
+        Answer: r.answer,
+        CorrectAnswer: correctAnswer,
+        IsCorrect: correctAnswer ? (isAnswerCorrectWithInfo(question, r.answer) ? 'Yes' : 'No') : ''
+      };
+    });
     downloadCSV(data, 'pretest_responses');
   };
 
-  const exportPostTestKnowledgeCSV = () => {
-    // Only export responses for ACTIVE knowledge questions
-    const activeQuestionIds = Object.keys(questionData);
+  const exportPostTestKnowledgeCSV = async () => {
+    const questionIds = rawResponses.post.map(r => r.question_id);
+    const questionInfo = await resolveQuestionInfo(questionIds);
     const knowledgeResponses = rawResponses.post.filter(r => {
-      if (!activeQuestionIds.includes(r.question_id)) return false;
-      return r.question_id.startsWith('knowledge-') || 
-        (questionData[r.question_id]?.category === 'knowledge' && questionData[r.question_id]?.correct_answer);
+      const question = questionInfo[r.question_id];
+      if (question?.category === 'knowledge') return true;
+      if (question?.correct_answer) return true;
+      return r.question_id.startsWith('knowledge-');
     });
-    const data = knowledgeResponses.map(r => ({
-      SessionID: r.session_id,
-      QuestionID: r.question_id,
-      Question: questionData[r.question_id]?.question_text || r.question_id,
-      Answer: r.answer,
-      CorrectAnswer: questionData[r.question_id]?.correct_answer || '',
-      IsCorrect: isAnswerCorrect(r.question_id, r.answer) ? 'Yes' : 'No'
-    }));
+    const data = knowledgeResponses.map(r => {
+      const question = questionInfo[r.question_id];
+      const correctAnswer = question?.correct_answer || '';
+      return {
+        SessionID: r.session_id,
+        QuestionID: r.question_id,
+        Question: question?.question_text || r.question_id,
+        Answer: r.answer,
+        CorrectAnswer: correctAnswer,
+        IsCorrect: correctAnswer ? (isAnswerCorrectWithInfo(question, r.answer) ? 'Yes' : 'No') : ''
+      };
+    });
     downloadCSV(data, 'posttest_knowledge_responses');
   };
 
-  const exportPostTestPerceptionCSV = () => {
-    // Only export responses for ACTIVE perception questions
-    const activeQuestionIds = Object.keys(questionData);
+  const exportPostTestPerceptionCSV = async () => {
+    const questionIds = rawResponses.post.map(r => r.question_id);
+    const questionInfo = await resolveQuestionInfo(questionIds);
     const perceptionCategories = ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'];
     const perceptionResponses = rawResponses.post.filter(r => {
-      if (!activeQuestionIds.includes(r.question_id)) return false;
-      const category = questionData[r.question_id]?.category;
+      const category = questionInfo[r.question_id]?.category;
       return category && perceptionCategories.includes(category);
     });
     const data = perceptionResponses.map(r => ({
       SessionID: r.session_id,
       QuestionID: r.question_id,
-      Category: questionData[r.question_id]?.category || '',
-      Question: questionData[r.question_id]?.question_text || r.question_id,
+      Category: questionInfo[r.question_id]?.category || '',
+      Question: questionInfo[r.question_id]?.question_text || r.question_id,
       Answer: r.answer
     }));
     downloadCSV(data, 'posttest_perception_responses');
   };
 
-  const exportOpenFeedbackCSV = () => {
-    // Only export responses for ACTIVE open feedback questions
-    const activeQuestionIds = Object.keys(questionData);
-    const filteredData = openFeedbackData.filter(r => activeQuestionIds.includes(r.question_id));
-    
+  const exportOpenFeedbackCSV = async () => {
+    const questionIds = rawResponses.post.map(r => r.question_id);
+    const questionInfo = await resolveQuestionInfo(questionIds);
+    const filteredData = rawResponses.post.filter(r => {
+      const question = questionInfo[r.question_id];
+      const metaType = question?.question_meta?.type;
+      if (question?.category === 'open_feedback') return true;
+      if (metaType === 'open_feedback' || metaType === 'open' || metaType === 'text') return true;
+      return r.question_id.startsWith('open_');
+    });
+
     const data = filteredData.map(r => ({
       SessionID: r.session_id,
       QuestionID: r.question_id,
-      Question: questionData[r.question_id]?.question_text || r.question_id,
+      Question: questionInfo[r.question_id]?.question_text || r.question_id,
       Answer: r.answer
     }));
     downloadCSV(data, 'open_feedback');
@@ -382,9 +442,6 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
 
   const exportAllData = async () => {
     try {
-      // Get active questions to filter responses
-      const activeQuestionIds = Object.keys(questionData);
-      
       let sessionQuery = supabase.from('study_sessions').select('*');
       if (startDate) {
         sessionQuery = sessionQuery.gte('created_at', startOfDay(startDate).toISOString());
@@ -437,20 +494,21 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
         dialoguesQuery = dialoguesQuery.in('scenario_id', scenarioIds);
       }
       const { data: dialogues } = await dialoguesQuery;
-
-      // Filter responses to only include active questions
-      const filteredDemographics = demographics?.filter(r => activeQuestionIds.includes(r.question_id)) || [];
-      const filteredPreTest = preTest?.filter(r => activeQuestionIds.includes(r.question_id)) || [];
-      const filteredPostTest = postTest?.filter(r => activeQuestionIds.includes(r.question_id)) || [];
+      const questionIds = Array.from(new Set([
+        ...(demographics || []).map(r => r.question_id),
+        ...(preTest || []).map(r => r.question_id),
+        ...(postTest || []).map(r => r.question_id),
+      ]));
+      const questionInfo = await resolveQuestionInfo(questionIds);
 
       const exportData = {
         sessions,
-        demographicResponses: filteredDemographics,
-        preTestResponses: filteredPreTest,
-        postTestResponses: filteredPostTest,
+        demographicResponses: demographics || [],
+        preTestResponses: preTest || [],
+        postTestResponses: postTest || [],
         scenarios,
         dialogueTurns: dialogues,
-        activeQuestions: Object.values(questionData), // Include active question definitions
+        questionDefinitions: Object.values(questionInfo),
         filters: {
           dateRange: {
             start: startDate?.toISOString() || 'all',
@@ -458,7 +516,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
           },
           status: statusFilter,
           mode: modeFilter,
-          hiddenQuestionsExcluded: true
+          hiddenQuestionsExcluded: false
         },
         exportedAt: new Date().toISOString()
       };

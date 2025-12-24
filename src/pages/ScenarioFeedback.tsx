@@ -32,6 +32,41 @@ const ScenarioFeedback = () => {
       
       // Get messages from sessionStorage
       const scenarioMessages = JSON.parse(sessionStorage.getItem(`scenario-${scenarioId}`) || '[]');
+
+      // Persist dialogue and feedback locally for completion CSV export
+      const dialogueLog = JSON.parse(sessionStorage.getItem('dialogueLog') || '[]') as Array<{
+        scenarioId: string;
+        scenarioTitle?: string;
+        messages: Array<{ role: string; content: string; timestamp: number }>;
+      }>;
+      const updatedDialogueLog = [
+        ...dialogueLog.filter(entry => entry.scenarioId !== scenarioId),
+        {
+          scenarioId: scenarioId!,
+          scenarioTitle: scenario.title,
+          messages: scenarioMessages,
+        },
+      ];
+      sessionStorage.setItem('dialogueLog', JSON.stringify(updatedDialogueLog));
+
+      const feedbackLog = JSON.parse(sessionStorage.getItem('scenarioFeedback') || '[]') as Array<{
+        scenarioId: string;
+        scenarioTitle?: string;
+        confidenceRating: number;
+        trustRating: number;
+        engagementRating: boolean;
+      }>;
+      const updatedFeedbackLog = [
+        ...feedbackLog.filter(entry => entry.scenarioId !== scenarioId),
+        {
+          scenarioId: scenarioId!,
+          scenarioTitle: scenario.title,
+          confidenceRating,
+          trustRating,
+          engagementRating: wasEngaging,
+        },
+      ];
+      sessionStorage.setItem('scenarioFeedback', JSON.stringify(updatedFeedbackLog));
       
       // Save to database
       await saveScenarioData(

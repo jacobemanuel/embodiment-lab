@@ -605,7 +605,7 @@ interface SessionDataStatus {
   };
 
   // Export individual session to PDF
-  const exportSessionToPDF = (session: Session, details: SessionDetails) => {
+  const exportSessionToPDF = async (session: Session, details: SessionDetails) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let y = 20;
@@ -613,6 +613,24 @@ interface SessionDataStatus {
     const margin = 15;
     const maxWidth = pageWidth - margin * 2;
     const flagList = Array.isArray(session.suspicious_flags) ? session.suspicious_flags : [];
+    const questionTextMap: Record<string, string> = {};
+
+    const questionIds = Array.from(new Set([
+      ...details.demographicResponses.map(r => r.question_id),
+      ...details.preTest.map(r => r.question_id),
+      ...details.postTest.map(r => r.question_id),
+    ]));
+
+    if (questionIds.length > 0) {
+      const { data: questionRows } = await supabase
+        .from('study_questions')
+        .select('question_id, question_text')
+        .in('question_id', questionIds);
+
+      questionRows?.forEach((row) => {
+        questionTextMap[row.question_id] = row.question_text;
+      });
+    }
 
     // Helper to add text with word wrap
     const addText = (text: string, fontSize: number = 10, isBold: boolean = false) => {
@@ -665,7 +683,7 @@ interface SessionDataStatus {
     y += 2;
     if (details.demographicResponses.length > 0) {
       details.demographicResponses.forEach((r) => {
-        addText(`${r.question_id}: ${r.answer}`);
+        addText(`${questionTextMap[r.question_id] || r.question_id}: ${r.answer}`);
       });
     } else if (details.demographics) {
       addText(`Age: ${details.demographics.age_range || '-'}`);
@@ -681,7 +699,7 @@ interface SessionDataStatus {
     y += 2;
     if (details.preTest.length > 0) {
       details.preTest.forEach((r) => {
-        addText(`${r.question_id}: ${r.answer}`);
+        addText(`${questionTextMap[r.question_id] || r.question_id}: ${r.answer}`);
       });
     } else {
       addText('No responses');
@@ -693,7 +711,7 @@ interface SessionDataStatus {
     y += 2;
     if (details.postTest.length > 0) {
       details.postTest.forEach((r) => {
-        addText(`${r.question_id}: ${r.answer}`);
+        addText(`${questionTextMap[r.question_id] || r.question_id}: ${r.answer}`);
       });
     } else {
       addText('No responses');

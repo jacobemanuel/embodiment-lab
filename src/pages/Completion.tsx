@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import logo from "@/assets/logo-white.png";
-import { preTestQuestions } from "@/data/questions";
-import { postTestQuestions } from "@/data/postTestQuestions";
 import ParticipantFooter from "@/components/ParticipantFooter";
+import { supabase } from "@/integrations/supabase/client";
 
 const Completion = () => {
   const navigate = useNavigate();
@@ -30,7 +29,7 @@ const Completion = () => {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [navigate]);
-  const handleDownloadData = () => {
+  const handleDownloadData = async () => {
     try {
       // Gather all data from sessionStorage
       const sessionId = sessionStorage.getItem('sessionId') || 'unknown';
@@ -41,62 +40,136 @@ const Completion = () => {
       const postTestPage3 = JSON.parse(sessionStorage.getItem('postTestPage3') || '{}');
       const postTest = { ...postTestPage1, ...postTestPage2, ...postTestPage3 };
       const mode = sessionStorage.getItem('studyMode') || 'unknown';
+      const scenarioFeedback = JSON.parse(sessionStorage.getItem('scenarioFeedback') || '[]');
+      const dialogueLog = JSON.parse(sessionStorage.getItem('dialogueLog') || '[]');
+
+      const demographicSnapshot = JSON.parse(sessionStorage.getItem('demographicQuestionsSnapshot') || '[]');
+      const preTestSnapshot = JSON.parse(sessionStorage.getItem('preTestQuestionsSnapshot') || '[]');
+      const postTestSnapshot = JSON.parse(sessionStorage.getItem('postTestQuestionsSnapshot') || '[]');
+
+      const questionTextMap: Record<string, string> = {};
+      const questionMetaMap: Record<string, { category?: string; type?: string }> = {};
+
+      const registerSnapshot = (snapshot: Array<{ id: string; text: string; category?: string; type?: string }>) => {
+        snapshot.forEach((q) => {
+          questionTextMap[q.id] = q.text;
+          questionMetaMap[q.id] = { category: q.category, type: q.type };
+        });
+      };
+
+      registerSnapshot(demographicSnapshot);
+      registerSnapshot(preTestSnapshot);
+      registerSnapshot(postTestSnapshot);
+
+      const allQuestionIds = Array.from(new Set([
+        ...Object.keys(demographics || {}),
+        ...Object.keys(preTest || {}),
+        ...Object.keys(postTest || {}),
+      ]));
+
+      const missingQuestionIds = allQuestionIds.filter((id) => !questionTextMap[id]);
+      if (missingQuestionIds.length > 0) {
+        const { data: questionRows } = await supabase
+          .from('study_questions_public' as any)
+          .select('question_id, question_text, category, question_meta')
+          .in('question_id', missingQuestionIds);
+
+        questionRows?.forEach((row) => {
+          questionTextMap[row.question_id] = row.question_text;
+          const meta = typeof row.question_meta === 'string' ? JSON.parse(row.question_meta) : row.question_meta || {};
+          questionMetaMap[row.question_id] = {
+            category: row.category || meta?.category,
+            type: meta?.type,
+          };
+        });
+      }
+
+      const escapeCsv = (value: string) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+      const formatAnswer = (answer: string) => String(answer || '').split('|||').join('; ');
+      const addRow = (category: string, question: string, response: string | number | boolean) => {
+        csvContent += [
+          escapeCsv(category),
+          escapeCsv(question),
+          escapeCsv(String(response ?? '')),
+        ].join(',') + '\n';
+      };
       
       // Create CSV content
       let csvContent = 'Category,Question,Response\n';
       
       // Add session info
-      csvContent += `Session Info,Session ID,${sessionId}\n`;
-      csvContent += `Session Info,Mode,${mode}\n`;
+      addRow('Session Info', 'Session ID', sessionId);
+      addRow('Session Info', 'Mode', mode);
       csvContent += '\n';
       
       // Add demographics
-      csvContent += 'Demographics,Age Range,' + (demographics['demo-age'] || '') + '\n';
-      csvContent += 'Demographics,Education,' + (demographics['demo-education'] || '') + '\n';
-      csvContent += 'Demographics,Tax Experience,' + (demographics['demo-tax-experience'] || '') + '\n';
+      const demographicOrder = demographicSnapshot.length > 0
+        ? demographicSnapshot
+        : Object.keys(demographics || {}).map((id) => ({ id, text: questionTextMap[id] || id }));
+      demographicOrder.forEach((q) => {
+        const answer = demographics[q.id] ?? '';
+        addRow('Demographics', questionTextMap[q.id] || q.text || q.id, formatAnswer(answer));
+      });
       csvContent += '\n';
       
       // Add pre-test responses
-      preTestQuestions.forEach(q => {
-        const answer = preTest[q.id] || '';
-        csvContent += `Pre-Test,"${q.text.replace(/"/g, '""')}","${answer.replace(/"/g, '""')}"\n`;
+      const preTestOrder = preTestSnapshot.length > 0
+        ? preTestSnapshot
+        : Object.keys(preTest || {}).map((id) => ({ id, text: questionTextMap[id] || id }));
+      preTestOrder.forEach((q) => {
+        const answer = preTest[q.id] ?? '';
+        addRow('Pre-Test', questionTextMap[q.id] || q.text || q.id, formatAnswer(answer));
       });
       csvContent += '\n';
       
-      // Add post-test responses (Likert)
-      const likertQuestions = postTestQuestions.filter(q => q.type === 'likert');
-      likertQuestions.forEach(q => {
-        const answer = postTest[q.id] || '';
-        csvContent += `Post-Test (Likert),"${q.text.replace(/"/g, '""')}",${answer}\n`;
-      });
-      csvContent += '\n';
-      
-      // Add post-test responses (Knowledge)
-      const knowledgeQuestions = postTestQuestions.filter(q => q.category === 'knowledge');
-      knowledgeQuestions.forEach(q => {
-        const answer = postTest[q.id] || '';
-        csvContent += `Post-Test (Knowledge),"${q.text.replace(/"/g, '""')}","${answer.replace(/"/g, '""')}"\n`;
+      const postTestOrder = postTestSnapshot.length > 0
+        ? postTestSnapshot
+        : Object.keys(postTest || {}).map((id) => ({ id, text: questionTextMap[id] || id }));
+      const perceptionCategories = ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'];
+      const categorizePostTest = (questionId: string) => {
+        const meta = questionMetaMap[questionId] || {};
+        if (meta.category === 'knowledge' || questionId.startsWith('knowledge-')) return 'Post-Test (Knowledge)';
+        if (
+          meta.category === 'open_feedback' ||
+          meta.type === 'open_feedback' ||
+          meta.type === 'open' ||
+          meta.type === 'text' ||
+          questionId.startsWith('open_')
+        ) {
+          return 'Post-Test (Open Feedback)';
+        }
+        if (meta.type === 'likert' || (meta.category && perceptionCategories.includes(meta.category))) {
+          return 'Post-Test (Likert)';
+        }
+        return 'Post-Test (Other)';
+      };
+      postTestOrder.forEach((q) => {
+        const answer = postTest[q.id] ?? '';
+        addRow(categorizePostTest(q.id), questionTextMap[q.id] || q.text || q.id, formatAnswer(answer));
       });
 
-      // Add open feedback or other post-test responses not in the static list
-      const knownPostTestIds = new Set(postTestQuestions.map(q => q.id));
-      const openFeedbackIds = Object.keys(postTestPage3 || {});
-      const otherPostTestIds = Object.keys(postTest || {}).filter(id => !knownPostTestIds.has(id) && !openFeedbackIds.includes(id));
-
-      if (openFeedbackIds.length > 0) {
+      if (scenarioFeedback.length > 0) {
         csvContent += '\n';
-        openFeedbackIds.forEach((id) => {
-          const answer = postTest[id] || '';
-          csvContent += `Post-Test (Open Feedback),"${id}","${String(answer).replace(/"/g, '""')}"\n`;
+        scenarioFeedback.forEach((entry: any) => {
+          const label = entry.scenarioTitle || entry.scenarioId || 'Scenario';
+          addRow('Scenario Feedback', `${label} - Confidence`, entry.confidenceRating ?? '');
+          addRow('Scenario Feedback', `${label} - Trust`, entry.trustRating ?? '');
+          addRow('Scenario Feedback', `${label} - Engagement`, entry.engagementRating ? 'Yes' : 'No');
         });
       }
 
-      if (otherPostTestIds.length > 0) {
-        csvContent += '\n';
-        otherPostTestIds.forEach((id) => {
-          const answer = postTest[id] || '';
-          csvContent += `Post-Test (Other),"${id}","${String(answer).replace(/"/g, '""')}"\n`;
+      csvContent += '\n';
+      if (dialogueLog.length > 0) {
+        dialogueLog.forEach((entry: any) => {
+          const label = entry.scenarioTitle || entry.scenarioId || 'Scenario';
+          const messages = Array.isArray(entry.messages) ? entry.messages : [];
+          messages.forEach((message: any) => {
+            const role = message.role === 'user' ? 'User' : 'AI';
+            addRow('Dialogue', `${label} (${role})`, message.content || '');
+          });
         });
+      } else {
+        addRow('Dialogue', 'No dialogues recorded', '');
       }
       
       // Create and download file

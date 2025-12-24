@@ -76,6 +76,19 @@ const PostTestPage1 = () => {
       return q;
     });
 
+  useEffect(() => {
+    if (filteredQuestions.length === 0) return;
+    if (sessionStorage.getItem('postTestQuestionsSnapshot')) return;
+    const snapshot = filteredQuestions.map((q) => ({
+      id: q.id,
+      text: q.text,
+      category: q.category,
+      type: q.type,
+      options: q.options,
+    }));
+    sessionStorage.setItem('postTestQuestionsSnapshot', JSON.stringify(snapshot));
+  }, [filteredQuestions]);
+
   // Filter for likert questions with all perception-related categories (exclude knowledge and open_feedback)
   const likertQuestions = filteredQuestions.filter(q => 
     q.type === 'likert' && 

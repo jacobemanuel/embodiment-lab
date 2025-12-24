@@ -48,6 +48,19 @@ const PreTest = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preTestQuestions.length]);
 
+  useEffect(() => {
+    if (preTestQuestions.length === 0) return;
+    if (sessionStorage.getItem('preTestQuestionsSnapshot')) return;
+    const snapshot = preTestQuestions.map((q) => ({
+      id: q.id,
+      text: q.text,
+      category: q.category,
+      type: q.type,
+      options: q.options,
+    }));
+    sessionStorage.setItem('preTestQuestionsSnapshot', JSON.stringify(snapshot));
+  }, [preTestQuestions]);
+
   const scrollToQuestion = (index: number) => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };

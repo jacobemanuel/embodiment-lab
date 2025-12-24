@@ -24,6 +24,11 @@ const StudyEntry = () => {
     sessionStorage.removeItem('currentSlide');
     sessionStorage.removeItem('preAssignedMode');
     sessionStorage.removeItem('studyCompleted');
+    sessionStorage.removeItem('demographicQuestionsSnapshot');
+    sessionStorage.removeItem('preTestQuestionsSnapshot');
+    sessionStorage.removeItem('postTestQuestionsSnapshot');
+    sessionStorage.removeItem('dialogueLog');
+    sessionStorage.removeItem('scenarioFeedback');
     localStorage.removeItem('studyCompleted');
   };
 

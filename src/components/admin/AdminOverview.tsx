@@ -936,22 +936,30 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
   const exportComprehensiveCSV = async () => {
     if (!stats) return;
 
-    const { data: questions } = await supabase
-      .from('study_questions')
-      .select('question_id, question_text, correct_answer, question_type')
-      .eq('is_active', true)
-      .order('sort_order');
-    
+    const demoQuestionIds = [...new Set(stats.rawDemographics.map(r => r.question_id))].sort();
+    const preTestQuestionIds = [...new Set(stats.rawPreTest.map(r => r.question_id))].sort();
+    const postTestQuestionIds = [...new Set(stats.rawPostTest.map(r => r.question_id))].sort();
+
+    const allQuestionIds = Array.from(new Set([
+      ...demoQuestionIds,
+      ...preTestQuestionIds,
+      ...postTestQuestionIds,
+    ]));
+
+    const { data: questions } = allQuestionIds.length > 0
+      ? await supabase
+          .from('study_questions')
+          .select('question_id, question_text, correct_answer, question_type')
+          .in('question_id', allQuestionIds)
+          .order('sort_order')
+      : { data: [] };
+
     const questionTextMap: Record<string, string> = {};
     const correctAnswerMap: Record<string, string> = {};
     questions?.forEach(q => {
       questionTextMap[q.question_id] = q.question_text;
       correctAnswerMap[q.question_id] = q.correct_answer || '';
     });
-
-    const demoQuestionIds = [...new Set(stats.rawDemographics.map(r => r.question_id))].sort();
-    const preTestQuestionIds = [...new Set(stats.rawPreTest.map(r => r.question_id))].sort();
-    const postTestQuestionIds = [...new Set(stats.rawPostTest.map(r => r.question_id))].sort();
 
     let csv = '';
     
@@ -1053,10 +1061,22 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
   const exportComprehensiveJSON = async () => {
     if (!stats) return;
 
-    const { data: questions } = await supabase
-      .from('study_questions')
-      .select('*')
-      .eq('is_active', true);
+    const demoQuestionIds = [...new Set(stats.rawDemographics.map(r => r.question_id))].sort();
+    const preTestQuestionIds = [...new Set(stats.rawPreTest.map(r => r.question_id))].sort();
+    const postTestQuestionIds = [...new Set(stats.rawPostTest.map(r => r.question_id))].sort();
+
+    const allQuestionIds = Array.from(new Set([
+      ...demoQuestionIds,
+      ...preTestQuestionIds,
+      ...postTestQuestionIds,
+    ]));
+
+    const { data: questions } = allQuestionIds.length > 0
+      ? await supabase
+          .from('study_questions')
+          .select('*')
+          .in('question_id', allQuestionIds)
+      : { data: [] };
 
     const exportData = {
       exportedAt: new Date().toISOString(),

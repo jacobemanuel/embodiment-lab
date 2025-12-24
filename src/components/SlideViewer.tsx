@@ -461,15 +461,35 @@ function formatFlowText(text: string) {
     .trim();
 }
 
+function highlightQuotesOutsideTags(text: string) {
+  const parts = text.split(/(<[^>]+>)/g);
+  return parts.map((part) => {
+    if (part.startsWith('<')) return part;
+    return part.replace(/"([^"]+)"/g, '<span class="text-primary/90">"$1"</span>');
+  }).join('');
+}
+
 function formatText(text: string) {
-  const formatted = text
+  const codeTokens: string[] = [];
+  const withoutCode = text.replace(/`([^`]+)`/g, (_, code) => {
+    const token = `__CODE_TOKEN_${codeTokens.length}__`;
+    codeTokens.push(code);
+    return token;
+  });
+
+  let formatted = withoutCode
     .replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code class="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-sm font-mono">$1</code>')
-    .replace(/"([^"]+)"/g, '<span class="text-primary/90">"$1"</span>');
-  
+    .replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  formatted = highlightQuotesOutsideTags(formatted);
+
+  const withCode = formatted.replace(/__CODE_TOKEN_(\d+)__/g, (_, idx) => {
+    const value = codeTokens[Number(idx)] ?? '';
+    return `<code class="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-sm font-mono">${value}</code>`;
+  });
+
   // Sanitize HTML to prevent XSS attacks
-  return DOMPurify.sanitize(formatted, {
+  return DOMPurify.sanitize(withCode, {
     ALLOWED_TAGS: ['strong', 'em', 'code', 'span'],
     ALLOWED_ATTR: ['class']
   });

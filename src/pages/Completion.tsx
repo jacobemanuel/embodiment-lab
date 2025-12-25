@@ -70,18 +70,20 @@ const Completion = () => {
       const missingQuestionIds = allQuestionIds.filter((id) => !questionTextMap[id]);
       if (missingQuestionIds.length > 0) {
         const { data: questionRows } = await supabase
-          .from('study_questions_public' as any)
+          .from('study_questions_public')
           .select('question_id, question_text, category, question_meta')
           .in('question_id', missingQuestionIds);
 
-        questionRows?.forEach((row) => {
-          questionTextMap[row.question_id] = row.question_text;
-          const meta = typeof row.question_meta === 'string' ? JSON.parse(row.question_meta) : row.question_meta || {};
-          questionMetaMap[row.question_id] = {
-            category: row.category || meta?.category,
-            type: meta?.type,
-          };
-        });
+        if (questionRows && Array.isArray(questionRows)) {
+          questionRows.forEach((row: any) => {
+            questionTextMap[row.question_id] = row.question_text;
+            const meta = typeof row.question_meta === 'string' ? JSON.parse(row.question_meta) : row.question_meta || {};
+            questionMetaMap[row.question_id] = {
+              category: row.category || meta?.category,
+              type: meta?.type,
+            };
+          });
+        }
       }
 
       const escapeCsv = (value: string) => `"${String(value ?? '').replace(/"/g, '""')}"`;

@@ -93,7 +93,16 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
 
     if (error) {
       console.error('Error getting Anam session:', error);
+      // Check if it's a service unavailable error (API disabled)
+      if (error.message?.includes('503') || error.message?.includes('Service Unavailable')) {
+        throw new Error('Avatar service is currently disabled by administrator');
+      }
       throw new Error('Service temporarily unavailable');
+    }
+
+    if (data?.error) {
+      console.error('Anam session error:', data.error);
+      throw new Error(data.error);
     }
 
     console.log('Got session token:', data.sessionToken ? 'YES' : 'NO');
@@ -196,11 +205,24 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         console.error('Error applying initial hard mute:', err);
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error initializing Anam client:', error);
+      
+      // Parse specific error types for better user messaging
+      let errorMessage = 'Service temporarily unavailable';
+      const errorStr = error?.message || error?.toString() || '';
+      
+      if (errorStr.includes('429') || errorStr.includes('Usage limit') || errorStr.includes('upgrade your plan')) {
+        errorMessage = 'Avatar usage limit reached. Please try again later or contact administrator.';
+      } else if (errorStr.includes('disabled') || errorStr.includes('administrator')) {
+        errorMessage = error.message;
+      } else if (errorStr.includes('API key') || errorStr.includes('Unauthorized') || errorStr.includes('401')) {
+        errorMessage = 'Avatar API configuration error. Contact administrator.';
+      }
+      
       setState(prev => ({ 
         ...prev, 
-        error: 'Service temporarily unavailable'
+        error: errorMessage
       }));
     } finally {
       isInitializingRef.current = false;

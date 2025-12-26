@@ -7,7 +7,6 @@ const corsHeaders = {
 
 const OWNER_EMAIL = "jakub.majewski@tum.de";
 const MIN_EDIT_DATE = new Date("2025-12-24T00:00:00Z");
-const OWNER_EDIT_ENABLED = Deno.env.get("OWNER_EDIT_ENABLED") === "true";
 
 const pickFields = (source: Record<string, unknown>, fields: string[]) => {
   return fields.reduce<Record<string, unknown>>((acc, field) => {
@@ -79,13 +78,6 @@ Deno.serve(async (req) => {
 
     if (user.email !== OWNER_EMAIL) {
       return new Response(JSON.stringify({ error: "Owner access required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (!OWNER_EDIT_ENABLED) {
-      return new Response(JSON.stringify({ error: "Owner editor disabled" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -25,7 +25,6 @@ interface AdminSessionsProps {
 const OWNER_EDIT_MIN_DATE = new Date("2025-12-24T00:00:00Z");
 const MAX_AVATAR_SLIDE_SECONDS = 180;
 
-const OWNER_EDITOR_ENABLED = import.meta.env.VITE_OWNER_EDITOR_ENABLED === 'true';
 
 const AdminSessions = ({ userEmail = '' }: AdminSessionsProps) => {
   const permissions = getPermissions(userEmail);
@@ -466,10 +465,6 @@ interface SessionEditDraft {
 
   const openEditDialog = () => {
     if (!selectedSession || !sessionDetails) return;
-    if (!OWNER_EDITOR_ENABLED) {
-      toast.error('Owner editor is disabled');
-      return;
-    }
     if (new Date(selectedSession.created_at) < OWNER_EDIT_MIN_DATE) {
       toast.error('Editing is only enabled for sessions from 24 Dec 2025');
       return;
@@ -841,7 +836,6 @@ interface SessionEditDraft {
   };
 
   const canEditSelectedSession = Boolean(
-    OWNER_EDITOR_ENABLED &&
     isOwner &&
     selectedSession &&
     sessionDetails &&
@@ -1705,7 +1699,7 @@ interface SessionEditDraft {
                 Session Details: {selectedSession?.session_id.slice(0, 12)}...
               </DialogTitle>
               <div className="flex items-center gap-2">
-                {isOwner && OWNER_EDITOR_ENABLED && selectedSession && (
+                {isOwner && selectedSession && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -1960,7 +1954,7 @@ interface SessionEditDraft {
         </DialogContent>
       </Dialog>
 
-      {isOwner && OWNER_EDITOR_ENABLED && (
+      {isOwner && (
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
           <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto bg-slate-900 border-slate-700">
             <DialogHeader>

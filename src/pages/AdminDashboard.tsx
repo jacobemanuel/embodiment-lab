@@ -154,7 +154,7 @@ const AdminDashboard = () => {
                       onClick={() => {
                         try {
                           generateSystemDocumentationPDF();
-                          toast.success("System documentation PDF generated!");
+                          toast.success("System documentation download started.");
                         } catch (error) {
                           console.error('PDF generation error:', error);
                           toast.error("Failed to generate PDF. Check console for details.");

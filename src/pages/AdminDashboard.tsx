@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, BarChart3, FileText, Settings, Users, Presentation, Clock, Cog, Shield, Info, FileDown } from "lucide-react";
+import { LogOut, BarChart3, FileText, Settings, Users, Presentation, Clock, Cog, Shield, Info, FileDown, BookOpen } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminSessions from "@/components/admin/AdminSessions";
@@ -16,7 +16,7 @@ import ApiToggle from "@/components/admin/ApiToggle";
 import PermissionsInfo from "@/components/admin/PermissionsInfo";
 import { PermissionBadge } from "@/components/admin/PermissionGuard";
 import { getPermissions, getPermissionLevel, OWNER_EMAIL } from "@/lib/permissions";
-import { generateSystemDocumentationPDF } from "@/utils/generateSystemDocumentation";
+import { generateSystemDocumentationPDF, generateSystemWorkflowGuidePDF } from "@/utils/generateSystemDocumentation";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -146,30 +146,56 @@ const AdminDashboard = () => {
             </div>
             {getPermissionLevel(userEmail) === 'owner' && (
               <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => {
-                        try {
-                          generateSystemDocumentationPDF();
-                          toast.success("System documentation download started.");
-                        } catch (error) {
-                          console.error('PDF generation error:', error);
-                          toast.error("Failed to generate PDF. Check console for details.");
-                        }
-                      }}
-                      className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                    >
-                      <FileDown className="w-4 h-4 md:mr-2" />
-                      <span className="hidden md:inline">System Docs</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600">
-                    <p className="text-sm">Download complete system documentation PDF</p>
-                  </TooltipContent>
-                </Tooltip>
+                <div className="flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                          try {
+                            generateSystemDocumentationPDF();
+                            toast.success("System documentation download started.");
+                          } catch (error) {
+                            console.error('PDF generation error:', error);
+                            toast.error("Failed to generate PDF. Check console for details.");
+                          }
+                        }}
+                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                      >
+                        <FileDown className="w-4 h-4 md:mr-2" />
+                        <span className="hidden md:inline">System Docs</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600">
+                      <p className="text-sm">Download complete system documentation PDF</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                          try {
+                            generateSystemWorkflowGuidePDF();
+                            toast.success("Workflow guide download started.");
+                          } catch (error) {
+                            console.error('PDF generation error:', error);
+                            toast.error("Failed to generate PDF. Check console for details.");
+                          }
+                        }}
+                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                      >
+                        <BookOpen className="w-4 h-4 md:mr-2" />
+                        <span className="hidden md:inline">Workflow Guide</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600">
+                      <p className="text-sm">Download narrative workflow and user journey guide</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </TooltipProvider>
             )}
             <Button 

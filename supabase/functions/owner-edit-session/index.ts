@@ -159,6 +159,19 @@ Deno.serve(async (req) => {
       "engagement_rating",
       "completed_at",
     ]);
+    if (updates?.avatarTimeTracking) {
+      updates.avatarTimeTracking = updates.avatarTimeTracking.map((entry: Record<string, unknown>) => {
+        const rawDuration = entry.duration_seconds;
+        if (typeof rawDuration === "number") {
+          return {
+            ...entry,
+            duration_seconds: Math.min(Math.max(rawDuration, 0), 180),
+          };
+        }
+        return entry;
+      });
+    }
+
     await updateRows(supabase, "avatar_time_tracking", updates?.avatarTimeTracking, ["duration_seconds"]);
     await updateRows(supabase, "tutor_dialogue_turns", updates?.tutorDialogueTurns, ["content"]);
     await updateRows(supabase, "dialogue_turns", updates?.dialogueTurns, ["content"]);

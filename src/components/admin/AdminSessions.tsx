@@ -23,6 +23,7 @@ interface AdminSessionsProps {
 }
 
 const OWNER_EDIT_MIN_DATE = new Date("2025-12-24T00:00:00Z");
+const MAX_AVATAR_SLIDE_SECONDS = 180;
 
 const AdminSessions = ({ userEmail = '' }: AdminSessionsProps) => {
   const permissions = getPermissions(userEmail);
@@ -143,6 +144,7 @@ interface SessionEditDraft {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editDraft, setEditDraft] = useState<SessionEditDraft | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [autoDistributeSlides, setAutoDistributeSlides] = useState(false);
   const itemsPerPage = 10;
 
   const fetchSessions = useCallback(async () => {
@@ -390,6 +392,54 @@ interface SessionEditDraft {
     return list.map((item, i) => (i === index ? { ...item, ...patch } : item));
   };
 
+  const isValidDateValue = (value: string | null) => {
+    if (!value) return true;
+    return !Number.isNaN(Date.parse(value));
+  };
+
+  const getSessionDurationSeconds = (draft: SessionEditDraft | null) => {
+    if (!draft?.session.started_at || !draft.session.completed_at) return null;
+    const started = Date.parse(draft.session.started_at);
+    const completed = Date.parse(draft.session.completed_at);
+    if (Number.isNaN(started) || Number.isNaN(completed)) return null;
+    return Math.max(0, Math.round((completed - started) / 1000));
+  };
+
+  const distributeAvatarTime = (draft: SessionEditDraft) => {
+    const totalSeconds = getSessionDurationSeconds(draft);
+    if (!totalSeconds) return draft;
+    if (draft.avatarTimeTracking.length === 0) return draft;
+
+    const slideCount = draft.avatarTimeTracking.length;
+    const maxTotal = slideCount * MAX_AVATAR_SLIDE_SECONDS;
+    const targetTotal = Math.min(totalSeconds, maxTotal);
+    if (targetTotal <= 0) {
+      return {
+        ...draft,
+        avatarTimeTracking: draft.avatarTimeTracking.map((entry) => ({
+          ...entry,
+          duration_seconds: 0,
+        })),
+      };
+    }
+
+    const base = Math.floor(targetTotal / slideCount);
+    let remainder = targetTotal - base * slideCount;
+    const durations = draft.avatarTimeTracking.map(() => {
+      const extra = remainder > 0 ? 1 : 0;
+      if (remainder > 0) remainder -= 1;
+      return Math.min(MAX_AVATAR_SLIDE_SECONDS, base + extra);
+    });
+
+    return {
+      ...draft,
+      avatarTimeTracking: draft.avatarTimeTracking.map((entry, index) => ({
+        ...entry,
+        duration_seconds: durations[index],
+      })),
+    };
+  };
+
   const openEditDialog = () => {
     if (!selectedSession || !sessionDetails) return;
     if (new Date(selectedSession.created_at) < OWNER_EDIT_MIN_DATE) {
@@ -400,8 +450,39 @@ interface SessionEditDraft {
     setIsEditOpen(true);
   };
 
+  useEffect(() => {
+    if (!autoDistributeSlides || !editDraft) return;
+    setEditDraft((prev) => {
+      if (!prev) return prev;
+      const updated = distributeAvatarTime(prev);
+      const unchanged = prev.avatarTimeTracking.every((entry, index) => {
+        return entry.duration_seconds === updated.avatarTimeTracking[index]?.duration_seconds;
+      });
+      return unchanged ? prev : updated;
+    });
+  }, [autoDistributeSlides, editDraft?.session.started_at, editDraft?.session.completed_at]);
+
   const saveOwnerEdits = async () => {
     if (!selectedSession || !editDraft) return;
+
+    if (!isValidDateValue(editDraft.session.started_at) || !isValidDateValue(editDraft.session.completed_at)) {
+      toast.error('Invalid date format. Use ISO like 2025-12-26T20:29:00Z');
+      return;
+    }
+
+    if (editDraft.session.last_activity_at && !isValidDateValue(editDraft.session.last_activity_at)) {
+      toast.error('Invalid last activity date. Use ISO like 2025-12-26T20:29:00Z');
+      return;
+    }
+
+    if (editDraft.session.started_at && editDraft.session.completed_at) {
+      const started = Date.parse(editDraft.session.started_at);
+      const completed = Date.parse(editDraft.session.completed_at);
+      if (!Number.isNaN(started) && !Number.isNaN(completed) && completed < started) {
+        toast.error('Completed time cannot be earlier than started time.');
+        return;
+      }
+    }
 
     setIsSavingEdit(true);
     try {
@@ -476,7 +557,11 @@ interface SessionEditDraft {
       setIsEditOpen(false);
     } catch (error) {
       console.error('Owner edit failed:', error);
-      toast.error('Failed to update session data');
+      let message = error instanceof Error ? error.message : 'Failed to update session data';
+      if (message && message.toLowerCase().includes('404')) {
+        message = 'owner-edit-session function not deployed';
+      }
+      toast.error(message || 'Failed to update session data');
     } finally {
       setIsSavingEdit(false);
     }
@@ -1054,6 +1139,8 @@ interface SessionEditDraft {
       </div>
     );
   }
+
+  const sessionDurationSeconds = editDraft ? getSessionDurationSeconds(editDraft) : null;
 
   return (
     <div className="space-y-6">
@@ -2130,6 +2217,53 @@ interface SessionEditDraft {
 
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-white">Avatar Slide Time</h3>
+                  <div className="bg-slate-800/60 p-3 rounded flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div className="text-sm text-slate-300">
+                      <div>
+                        Session duration:{' '}
+                        <span className="text-white">
+                          {sessionDurationSeconds !== null
+                            ? `${Math.round(sessionDurationSeconds / 60)} min`
+                            : '—'}
+                        </span>
+                      </div>
+                      <div>
+                        Avatar total:{' '}
+                        <span className="text-white">
+                          {Math.round(
+                            editDraft.avatarTimeTracking.reduce(
+                              (sum, entry) => sum + (entry.duration_seconds || 0),
+                              0
+                            ) / 60
+                          )}{' '}
+                          min
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        Auto-distribution caps each slide at {MAX_AVATAR_SLIDE_SECONDS}s.
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-start gap-2">
+                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <Checkbox
+                          checked={autoDistributeSlides}
+                          onCheckedChange={(checked) => setAutoDistributeSlides(Boolean(checked))}
+                        />
+                        <span>Auto-distribute when time changes</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-slate-600"
+                        disabled={!sessionDurationSeconds}
+                        onClick={() =>
+                          setEditDraft((prev) => (prev ? distributeAvatarTime(prev) : prev))
+                        }
+                      >
+                        Auto-distribute slide time
+                      </Button>
+                    </div>
+                  </div>
                   {editDraft.avatarTimeTracking.length === 0 ? (
                     <p className="text-slate-500 text-sm">No avatar slide timing recorded.</p>
                   ) : (
@@ -2148,7 +2282,9 @@ interface SessionEditDraft {
                                     ? {
                                         ...prev,
                                         avatarTimeTracking: updateListItem(prev.avatarTimeTracking, index, {
-                                          duration_seconds: e.target.value ? Number(e.target.value) : null,
+                                          duration_seconds: e.target.value
+                                            ? Math.min(MAX_AVATAR_SLIDE_SECONDS, Number(e.target.value))
+                                            : null,
                                         }),
                                       }
                                     : prev

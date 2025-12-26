@@ -14,7 +14,7 @@ const avatarTimeSchema = z.object({
   slideTitle: z.string().max(500).optional(),
   startedAt: z.string().datetime().optional(),
   endedAt: z.string().datetime().optional(),
-  durationSeconds: z.number().min(0).max(7200).optional() // Max 2 hours per slide
+  durationSeconds: z.number().min(0).max(7200).optional() // Clamp to 3 minutes per slide on save
 });
 
 serve(async (req) => {
@@ -35,7 +35,11 @@ serve(async (req) => {
       );
     }
 
-    const { sessionId, slideId, slideTitle, startedAt, endedAt, durationSeconds } = validationResult.data;
+    const { sessionId, slideId, slideTitle, startedAt, endedAt } = validationResult.data;
+    let durationSeconds = validationResult.data.durationSeconds;
+    if (typeof durationSeconds === 'number') {
+      durationSeconds = Math.min(Math.max(durationSeconds, 0), 180);
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;

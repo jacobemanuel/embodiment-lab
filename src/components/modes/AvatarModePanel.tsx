@@ -64,7 +64,10 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
     if (!sessionIdRef.current) return;
     
     const endTime = new Date();
-    const durationSeconds = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
+    const durationSeconds = Math.min(
+      Math.round((endTime.getTime() - startTime.getTime()) / 1000),
+      180
+    );
     
     // Only save if duration > 2 seconds (filter out quick navigation)
     if (durationSeconds < 2) return;

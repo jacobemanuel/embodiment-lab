@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.save-avatar-time]
 verify_jwt = false
+
+[functions.owner-edit-session]
+verify_jwt = true

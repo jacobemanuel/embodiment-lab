@@ -117,6 +117,7 @@ Deno.serve(async (req) => {
         supabaseClient.from("pre_test_responses").delete().in("session_id", idsToDelete),
         supabaseClient.from("post_test_responses").delete().in("session_id", idsToDelete),
         supabaseClient.from("avatar_time_tracking").delete().in("session_id", idsToDelete),
+        supabaseClient.from("tutor_dialogue_turns").delete().in("session_id", idsToDelete),
       ]);
 
       // Finally delete the sessions

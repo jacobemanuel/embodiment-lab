@@ -80,6 +80,19 @@ const reportSuspiciousSchema = z.object({
   pageType: z.string().max(50),
 });
 
+const tutorDialogueSchema = z.object({
+  action: z.literal('save_tutor_dialogue'),
+  sessionId: z.string().min(10).max(100),
+  mode: modeSchema,
+  messages: z.array(z.object({
+    role: z.enum(['ai', 'user']),
+    content: z.string().max(10000),
+    slideId: z.string().max(100).optional(),
+    slideTitle: z.string().max(300).optional(),
+    timestamp: z.number().optional(),
+  })).max(500),
+});
+
 // Rate limiting
 const rateLimitMap = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW = 60000;
@@ -371,6 +384,67 @@ serve(async (req) => {
 
         if (insertError) {
           console.error('Failed to save post-test:', insertError);
+          return new Response(
+            JSON.stringify({ error: "Unable to save data. Please try again." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'save_tutor_dialogue': {
+        let validated;
+        try {
+          validated = tutorDialogueSchema.parse(body);
+        } catch (error) {
+          console.error('Validation error:', error);
+          return new Response(
+            JSON.stringify({ error: "Invalid request data" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (!validated.messages || validated.messages.length === 0) {
+          return new Response(
+            JSON.stringify({ success: true }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { data: session, error: sessionError } = await supabase
+          .from('study_sessions')
+          .select('id')
+          .eq('session_id', validated.sessionId)
+          .single();
+
+        if (sessionError || !session) {
+          console.error('Session not found:', sessionError);
+          return new Response(
+            JSON.stringify({ error: "Unable to save data. Please try again." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const dialogueData = validated.messages.map((msg) => ({
+          session_id: session.id,
+          mode: validated.mode,
+          role: msg.role,
+          content: msg.content,
+          slide_id: msg.slideId || null,
+          slide_title: msg.slideTitle || null,
+          timestamp: msg.timestamp ? new Date(msg.timestamp).toISOString() : new Date().toISOString(),
+        }));
+
+        const { error: insertError } = await supabase
+          .from('tutor_dialogue_turns')
+          .insert(dialogueData);
+
+        if (insertError) {
+          console.error('Failed to save tutor dialogue turns:', insertError);
           return new Response(
             JSON.stringify({ error: "Unable to save data. Please try again." }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

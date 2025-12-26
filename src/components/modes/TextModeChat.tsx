@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
 import { Slide } from "@/data/slides";
 import { Message } from "@/types/study";
+import { appendTutorDialogue } from "@/lib/tutorDialogue";
 
 interface TextModeChatProps {
   currentSlide: Slide;
@@ -32,18 +33,36 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
       
       if (isInitialLoad && isFirstSlide) {
         // First slide greeting - like Avatar
+        const greeting = `Hey! Nice to see you! 👋 I'm Alex, your AI tutor for learning about AI image generation. We're starting with \"${currentSlide.title}\" - feel free to ask me anything!`;
         setMessages([{
           role: 'ai',
-          content: `Hey! Nice to see you! 👋 I'm Alex, your AI tutor for learning about AI image generation. We're starting with "${currentSlide.title}" - feel free to ask me anything!`,
+          content: greeting,
           timestamp: Date.now()
         }]);
+        appendTutorDialogue({
+          role: 'ai',
+          content: greeting,
+          timestamp: Date.now(),
+          slideId: currentSlide.id,
+          slideTitle: currentSlide.title,
+          mode: 'text',
+        });
       } else if (!isInitialLoad) {
         // Subsequent slides - context continuation like Avatar
+        const updateMessage = `Alright, now we're on \"${currentSlide.title}\". Need help understanding anything here?`;
         setMessages(prev => [...prev, {
           role: 'ai',
-          content: `Alright, now we're on "${currentSlide.title}". Need help understanding anything here?`,
+          content: updateMessage,
           timestamp: Date.now()
         }]);
+        appendTutorDialogue({
+          role: 'ai',
+          content: updateMessage,
+          timestamp: Date.now(),
+          slideId: currentSlide.id,
+          slideTitle: currentSlide.title,
+          mode: 'text',
+        });
       }
     }
   }, [currentSlide, isFirstSlide]);
@@ -56,6 +75,14 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
     
     const userMsg: Message = { role: 'user', content: userMessage, timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
+    appendTutorDialogue({
+      role: 'user',
+      content: userMessage,
+      timestamp: userMsg.timestamp,
+      slideId: currentSlide.id,
+      slideTitle: currentSlide.title,
+      mode: 'text',
+    });
     setIsStreaming(true);
 
     let aiResponse = "";
@@ -85,7 +112,19 @@ IMPORTANT: Focus your responses on this specific slide topic. If the user asks w
             return [...prev, { role: 'ai' as const, content: aiResponse, timestamp: Date.now() }];
           });
         },
-        onDone: () => setIsStreaming(false),
+        onDone: () => {
+          if (aiResponse.trim()) {
+            appendTutorDialogue({
+              role: 'ai',
+              content: aiResponse,
+              timestamp: Date.now(),
+              slideId: currentSlide.id,
+              slideTitle: currentSlide.title,
+              mode: 'text',
+            });
+          }
+          setIsStreaming(false);
+        },
         onError: (error) => {
           console.error("AI error:", error);
           toast({ title: "Error", description: "Failed to get response", variant: "destructive" });

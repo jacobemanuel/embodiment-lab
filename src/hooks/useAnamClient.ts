@@ -4,6 +4,7 @@ import type { AnamClient } from '@anam-ai/js-sdk';
 import { Slide } from '@/data/slides';
 import { TranscriptMessage } from '@/components/TranscriptPanel';
 import { supabase } from '@/integrations/supabase/client';
+import { appendTutorDialogue } from '@/lib/tutorDialogue';
 
 interface UseAnamClientProps {
   onTranscriptUpdate?: (messages: TranscriptMessage[]) => void;
@@ -77,6 +78,18 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         },
       ];
     });
+
+    if (isFinal) {
+      const mappedRole = role === 'avatar' ? 'ai' : 'user';
+      appendTutorDialogue({
+        role: mappedRole,
+        content,
+        timestamp: Date.now(),
+        slideId: currentSlideRef.current.id,
+        slideTitle: currentSlideRef.current.title,
+        mode: 'avatar',
+      });
+    }
   }, []);
 
   const getSessionToken = useCallback(async (): Promise<string> => {

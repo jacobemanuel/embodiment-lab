@@ -99,3 +99,28 @@ export const completeStudySession = async (sessionId: string) => {
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
 };
+
+export const saveTutorDialogue = async (
+  sessionId: string,
+  mode: StudyMode,
+  messages: Array<{
+    role: 'ai' | 'user';
+    content: string;
+    timestamp?: number;
+    slideId?: string;
+    slideTitle?: string;
+  }>
+) => {
+  if (!messages || messages.length === 0) return;
+  const { data, error } = await supabase.functions.invoke('save-study-data', {
+    body: {
+      action: 'save_tutor_dialogue',
+      sessionId,
+      mode,
+      messages,
+    }
+  });
+
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+};

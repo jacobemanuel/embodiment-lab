@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,7 @@ import { format, startOfDay, endOfDay } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import DateRangeFilter from "./DateRangeFilter";
-import { getPermissions } from "@/lib/permissions";
+import { getPermissionLevel, getPermissions } from "@/lib/permissions";
 import { describeSuspicionFlag, SUSPICION_REQUIREMENTS } from "@/lib/suspicion";
 import { toast } from "sonner";
 
@@ -21,8 +22,12 @@ interface AdminSessionsProps {
   userEmail?: string;
 }
 
+const OWNER_EDIT_MIN_DATE = new Date("2025-12-24T00:00:00Z");
+
 const AdminSessions = ({ userEmail = '' }: AdminSessionsProps) => {
   const permissions = getPermissions(userEmail);
+  const permissionLevel = getPermissionLevel(userEmail);
+  const isOwner = permissionLevel === 'owner';
   const canManageValidation = permissions.canValidateSessionsDirectly || permissions.canRequestValidation;
 
 interface Session {
@@ -32,6 +37,7 @@ interface Session {
   modes_used: string[] | null;
   started_at: string;
   completed_at: string | null;
+  last_activity_at?: string | null;
   created_at: string;
   status?: string;
   suspicion_score?: number;
@@ -48,6 +54,8 @@ interface SessionDetails {
   postTest: any[];
   scenarios: any[];
   dialogueTurns: any[];
+  tutorDialogueTurns: any[];
+  avatarTimeTracking: any[];
 }
 
 interface SessionDataStatus {
@@ -56,6 +64,61 @@ interface SessionDataStatus {
   hasPostTest: boolean;
   hasDialogue: boolean;
   isComplete: boolean;
+}
+
+interface SessionEditDraft {
+  session: {
+    started_at: string;
+    completed_at: string | null;
+    last_activity_at: string | null;
+    status: string;
+    mode: 'text' | 'avatar' | 'voice';
+    modes_used: string[];
+    suspicion_score: number | null;
+    suspicious_flags: unknown;
+  };
+  demographicResponses: Array<{
+    id: string;
+    question_id: string;
+    answer: string;
+  }>;
+  preTest: Array<{
+    id: string;
+    question_id: string;
+    answer: string;
+  }>;
+  postTest: Array<{
+    id: string;
+    question_id: string;
+    answer: string;
+  }>;
+  scenarios: Array<{
+    id: string;
+    scenario_id: string;
+    trust_rating: number;
+    confidence_rating: number;
+    engagement_rating: boolean;
+    completed_at: string;
+  }>;
+  avatarTimeTracking: Array<{
+    id: string;
+    slide_id: string;
+    slide_title: string;
+    duration_seconds: number | null;
+  }>;
+  tutorDialogueTurns: Array<{
+    id: string;
+    role: string;
+    content: string;
+    slide_id?: string | null;
+    slide_title?: string | null;
+  }>;
+  dialogueTurns: Array<{
+    id: string;
+    role: string;
+    content: string;
+    scenario_name?: string;
+  }>;
 }
 
 
@@ -77,6 +140,9 @@ interface SessionDataStatus {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editDraft, setEditDraft] = useState<SessionEditDraft | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const itemsPerPage = 10;
 
   const fetchSessions = useCallback(async () => {
@@ -115,24 +181,26 @@ interface SessionDataStatus {
   const fetchDataStatuses = async (sessionIds: string[]) => {
     try {
       // Fetch counts for each data type
-      const [demoRes, preRes, postRes, scenarioRes] = await Promise.all([
+      const [demoRes, preRes, postRes, scenarioRes, tutorRes] = await Promise.all([
         supabase.from('demographic_responses').select('session_id').in('session_id', sessionIds),
         supabase.from('pre_test_responses').select('session_id').in('session_id', sessionIds),
         supabase.from('post_test_responses').select('session_id').in('session_id', sessionIds),
         supabase.from('scenarios').select('session_id').in('session_id', sessionIds),
+        supabase.from('tutor_dialogue_turns').select('session_id').in('session_id', sessionIds),
       ]);
 
       const demoSessions = new Set((demoRes.data || []).map(d => d.session_id));
       const preSessions = new Set((preRes.data || []).map(d => d.session_id));
       const postSessions = new Set((postRes.data || []).map(d => d.session_id));
       const scenarioSessions = new Set((scenarioRes.data || []).map(d => d.session_id));
+      const tutorSessions = new Set((tutorRes.data || []).map(d => d.session_id));
 
       const statusMap = new Map<string, SessionDataStatus>();
       sessionIds.forEach(id => {
         const hasDemographics = demoSessions.has(id);
         const hasPreTest = preSessions.has(id);
         const hasPostTest = postSessions.has(id);
-        const hasDialogue = scenarioSessions.has(id);
+        const hasDialogue = scenarioSessions.has(id) || tutorSessions.has(id);
         statusMap.set(id, {
           hasDemographics,
           hasPreTest,
@@ -228,6 +296,18 @@ interface SessionDataStatus {
         }
       }
 
+      const { data: tutorDialogueTurns } = await supabase
+        .from('tutor_dialogue_turns')
+        .select('*')
+        .eq('session_id', session.id)
+        .order('timestamp', { ascending: true });
+
+      const { data: avatarTimeTracking } = await supabase
+        .from('avatar_time_tracking')
+        .select('*')
+        .eq('session_id', session.id)
+        .order('started_at', { ascending: true });
+
       setSessionDetails({
         demographics: oldDemographics,
         demographicResponses: demographicResponses || [],
@@ -235,11 +315,170 @@ interface SessionDataStatus {
         postTest: postTest || [],
         scenarios: scenarios || [],
         dialogueTurns,
+        tutorDialogueTurns: tutorDialogueTurns || [],
+        avatarTimeTracking: avatarTimeTracking || [],
       });
     } catch (error) {
       console.error('Error fetching session details:', error);
     } finally {
       setIsDetailsLoading(false);
+    }
+  };
+
+  const buildEditDraft = (session: Session, details: SessionDetails): SessionEditDraft => {
+    return {
+      session: {
+        started_at: session.started_at || '',
+        completed_at: session.completed_at || null,
+        last_activity_at: session.last_activity_at || null,
+        status: session.status || '',
+        mode: session.mode,
+        modes_used: session.modes_used || [],
+        suspicion_score: session.suspicion_score ?? null,
+        suspicious_flags: session.suspicious_flags ?? null,
+      },
+      demographicResponses: (details.demographicResponses || []).map((r) => ({
+        id: r.id,
+        question_id: r.question_id,
+        answer: r.answer || '',
+      })),
+      preTest: (details.preTest || []).map((r) => ({
+        id: r.id,
+        question_id: r.question_id,
+        answer: r.answer || '',
+      })),
+      postTest: (details.postTest || []).map((r) => ({
+        id: r.id,
+        question_id: r.question_id,
+        answer: r.answer || '',
+      })),
+      scenarios: (details.scenarios || []).map((s) => ({
+        id: s.id,
+        scenario_id: s.scenario_id,
+        trust_rating: s.trust_rating ?? 0,
+        confidence_rating: s.confidence_rating ?? 0,
+        engagement_rating: Boolean(s.engagement_rating),
+        completed_at: s.completed_at || '',
+      })),
+      avatarTimeTracking: (details.avatarTimeTracking || []).map((t) => ({
+        id: t.id,
+        slide_id: t.slide_id,
+        slide_title: t.slide_title,
+        duration_seconds: t.duration_seconds ?? null,
+      })),
+      tutorDialogueTurns: (details.tutorDialogueTurns || []).map((t) => ({
+        id: t.id,
+        role: t.role,
+        content: t.content || '',
+        slide_id: t.slide_id ?? null,
+        slide_title: t.slide_title ?? null,
+      })),
+      dialogueTurns: (details.dialogueTurns || []).map((t) => ({
+        id: t.id,
+        role: t.role,
+        content: t.content || '',
+        scenario_name: t.scenario_name,
+      })),
+    };
+  };
+
+  const updateListItem = <T extends Record<string, unknown>>(
+    list: T[],
+    index: number,
+    patch: Partial<T>
+  ) => {
+    return list.map((item, i) => (i === index ? { ...item, ...patch } : item));
+  };
+
+  const openEditDialog = () => {
+    if (!selectedSession || !sessionDetails) return;
+    if (new Date(selectedSession.created_at) < OWNER_EDIT_MIN_DATE) {
+      toast.error('Editing is only enabled for sessions from 24 Dec 2025');
+      return;
+    }
+    setEditDraft(buildEditDraft(selectedSession, sessionDetails));
+    setIsEditOpen(true);
+  };
+
+  const saveOwnerEdits = async () => {
+    if (!selectedSession || !editDraft) return;
+
+    setIsSavingEdit(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('owner-edit-session', {
+        body: {
+          sessionId: selectedSession.id,
+          updates: {
+            session: {
+              started_at: editDraft.session.started_at || selectedSession.started_at,
+              completed_at: editDraft.session.completed_at || null,
+              last_activity_at: editDraft.session.last_activity_at || null,
+              status: editDraft.session.status || selectedSession.status,
+              mode: editDraft.session.mode,
+              modes_used: editDraft.session.modes_used,
+              suspicion_score: editDraft.session.suspicion_score,
+              suspicious_flags: editDraft.session.suspicious_flags,
+            },
+            demographicResponses: editDraft.demographicResponses.map((r) => ({
+              id: r.id,
+              answer: r.answer,
+            })),
+            preTest: editDraft.preTest.map((r) => ({
+              id: r.id,
+              answer: r.answer,
+            })),
+            postTest: editDraft.postTest.map((r) => ({
+              id: r.id,
+              answer: r.answer,
+            })),
+            scenarios: editDraft.scenarios.map((s) => ({
+              id: s.id,
+              trust_rating: s.trust_rating,
+              confidence_rating: s.confidence_rating,
+              engagement_rating: s.engagement_rating,
+              completed_at: s.completed_at,
+            })),
+            avatarTimeTracking: editDraft.avatarTimeTracking.map((t) => ({
+              id: t.id,
+              duration_seconds: t.duration_seconds,
+            })),
+            tutorDialogueTurns: editDraft.tutorDialogueTurns.map((t) => ({
+              id: t.id,
+              content: t.content,
+            })),
+            dialogueTurns: editDraft.dialogueTurns.map((t) => ({
+              id: t.id,
+              content: t.content,
+            })),
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const updatedSession: Session = {
+        ...selectedSession,
+        started_at: editDraft.session.started_at || selectedSession.started_at,
+        completed_at: editDraft.session.completed_at || null,
+        last_activity_at: editDraft.session.last_activity_at || null,
+        status: editDraft.session.status || selectedSession.status,
+        mode: editDraft.session.mode,
+        modes_used: editDraft.session.modes_used,
+        suspicion_score: editDraft.session.suspicion_score ?? selectedSession.suspicion_score,
+        suspicious_flags: editDraft.session.suspicious_flags ?? selectedSession.suspicious_flags,
+      };
+
+      setSelectedSession(updatedSession);
+      await fetchSessions();
+      await fetchSessionDetails(updatedSession);
+      toast.success('Session data updated');
+      setIsEditOpen(false);
+    } catch (error) {
+      console.error('Owner edit failed:', error);
+      toast.error('Failed to update session data');
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -488,6 +727,13 @@ interface SessionDataStatus {
     }
   };
 
+  const canEditSelectedSession = Boolean(
+    isOwner &&
+    selectedSession &&
+    sessionDetails &&
+    new Date(selectedSession.created_at) >= OWNER_EDIT_MIN_DATE
+  );
+
   const filteredSessions = sessions.filter(session => {
     const matchesSearch = session.session_id.toLowerCase().includes(searchTerm.toLowerCase());
     const modesUsed = session.modes_used && session.modes_used.length > 0 ? session.modes_used : [session.mode];
@@ -718,6 +964,17 @@ interface SessionDataStatus {
     }
     y += 5;
 
+    // Avatar interaction summary
+    const avatarEntries = details.avatarTimeTracking || [];
+    const avatarSeconds = avatarEntries.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0);
+    if (session.mode === 'avatar' || avatarEntries.length > 0) {
+      addText('AVATAR INTERACTION SUMMARY', 12, true);
+      y += 2;
+      addText(`Total slide time: ${Math.round(avatarSeconds / 60)} minutes (${avatarSeconds}s)`);
+      addText(`Slides tracked: ${avatarEntries.length}`);
+      y += 5;
+    }
+
     // Data quality flags
     addText('DATA QUALITY FLAGS', 12, true);
     y += 2;
@@ -743,8 +1000,28 @@ interface SessionDataStatus {
     });
     y += 5;
 
-    // Dialogue
-    addText('DIALOGUE', 12, true);
+    // Tutor dialogue (learning)
+    addText('TUTOR DIALOGUE (LEARNING)', 12, true);
+    y += 2;
+    if (details.tutorDialogueTurns.length > 0) {
+      let currentSlide: string | null = null;
+      details.tutorDialogueTurns.forEach((turn) => {
+        const slideLabel = turn.slide_title || turn.slide_id || '';
+        if (slideLabel && slideLabel !== currentSlide) {
+          currentSlide = slideLabel;
+          addText(`Slide: ${currentSlide}`, 11, true);
+        }
+        const role = turn.role === 'user' ? 'User' : 'AI';
+        addText(`[${role}]: ${turn.content}`);
+      });
+    } else {
+      addText('No tutor dialogue');
+    }
+
+    y += 5;
+
+    // Scenario dialogue
+    addText('SCENARIO DIALOGUE', 12, true);
     y += 2;
     if (details.dialogueTurns.length > 0) {
       let currentScenario: string | null = null;
@@ -1311,17 +1588,31 @@ interface SessionDataStatus {
               <DialogTitle className="text-white">
                 Session Details: {selectedSession?.session_id.slice(0, 12)}...
               </DialogTitle>
-              {permissions.canExportData && selectedSession && sessionDetails && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-slate-600"
-                  onClick={() => exportSessionToPDF(selectedSession, sessionDetails)}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Export PDF
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {isOwner && selectedSession && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-slate-600"
+                    onClick={openEditDialog}
+                    disabled={!canEditSelectedSession}
+                  >
+                    <Database className="w-4 h-4 mr-2" />
+                    Edit Data
+                  </Button>
+                )}
+                {permissions.canExportData && selectedSession && sessionDetails && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-slate-600"
+                    onClick={() => exportSessionToPDF(selectedSession, sessionDetails)}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Export PDF
+                  </Button>
+                )}
+              </div>
             </div>
           </DialogHeader>
           
@@ -1460,9 +1751,58 @@ interface SessionDataStatus {
                 )}
               </div>
 
-              {/* Dialogue */}
+              {/* Avatar Interaction Summary */}
+              {(selectedSession?.mode === 'avatar' || sessionDetails.avatarTimeTracking.length > 0) && (
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">Avatar Interaction Summary</h3>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="bg-slate-900 p-3 rounded text-sm">
+                      <span className="text-slate-400">Slide time:</span>
+                      <span className="text-white ml-2">
+                        {Math.round(sessionDetails.avatarTimeTracking.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0) / 60)} min
+                      </span>
+                    </div>
+                    <div className="bg-slate-900 p-3 rounded text-sm">
+                      <span className="text-slate-400">Slides tracked:</span>
+                      <span className="text-white ml-2">{sessionDetails.avatarTimeTracking.length}</span>
+                    </div>
+                    <div className="bg-slate-900 p-3 rounded text-sm">
+                      <span className="text-slate-400">Tutor messages:</span>
+                      <span className="text-white ml-2">
+                        {sessionDetails.tutorDialogueTurns.filter((turn) => turn.role === 'user').length} user / {sessionDetails.tutorDialogueTurns.filter((turn) => turn.role === 'ai').length} AI
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tutor Dialogue (Learning) */}
               <div>
-                <h3 className="text-lg font-semibold text-white mb-2">Dialogue ({sessionDetails.dialogueTurns.length} messages)</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">Tutor Dialogue (Learning) ({sessionDetails.tutorDialogueTurns.length} messages)</h3>
+                {sessionDetails.tutorDialogueTurns.length > 0 ? (
+                  <div className="bg-slate-900 p-4 rounded max-h-60 overflow-y-auto">
+                    {sessionDetails.tutorDialogueTurns.map((turn, i) => (
+                      <div key={i} className={`text-sm mb-2 p-2 rounded ${turn.role === 'user' ? 'bg-blue-900/30' : 'bg-slate-800'}`}>
+                        <span className={`font-semibold ${turn.role === 'user' ? 'text-blue-400' : 'text-green-400'}`}>
+                          {turn.role === 'user' ? 'User' : 'AI'}:
+                        </span>
+                        {turn.slide_title || turn.slide_id ? (
+                          <span className="text-slate-400 ml-2">
+                            [{turn.slide_title || turn.slide_id}]
+                          </span>
+                        ) : null}
+                        <span className="text-white ml-2">{turn.content}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-500">No tutor dialogue recorded</p>
+                )}
+              </div>
+
+              {/* Scenario Dialogue */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-2">Scenario Dialogue ({sessionDetails.dialogueTurns.length} messages)</h3>
                 {sessionDetails.dialogueTurns.length > 0 ? (
                   <div className="bg-slate-900 p-4 rounded max-h-60 overflow-y-auto">
                     {sessionDetails.dialogueTurns.map((turn, i) => (
@@ -1475,13 +1815,432 @@ interface SessionDataStatus {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-slate-500">No dialogues</p>
+                  <p className="text-slate-500">No scenario dialogue recorded</p>
                 )}
               </div>
             </div>
           ) : null}
         </DialogContent>
       </Dialog>
+
+      {isOwner && (
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto bg-slate-900 border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="text-white">Owner Session Editor</DialogTitle>
+              <DialogDescription className="text-slate-400">
+                Hidden owner-only editor. Changes apply immediately to reports and statistics.
+              </DialogDescription>
+            </DialogHeader>
+
+            {!editDraft ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="bg-slate-800/60 p-4 rounded space-y-4">
+                  <h3 className="text-lg font-semibold text-white">Session Timing</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs text-slate-400">Started At (ISO)</label>
+                      <Input
+                        value={editDraft.session.started_at}
+                        onChange={(e) =>
+                          setEditDraft((prev) =>
+                            prev ? { ...prev, session: { ...prev.session, started_at: e.target.value } } : prev
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-slate-400">Completed At (ISO or blank)</label>
+                      <Input
+                        value={editDraft.session.completed_at || ''}
+                        onChange={(e) =>
+                          setEditDraft((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  session: { ...prev.session, completed_at: e.target.value || null },
+                                }
+                              : prev
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-slate-400">Last Activity (ISO or blank)</label>
+                      <Input
+                        value={editDraft.session.last_activity_at || ''}
+                        onChange={(e) =>
+                          setEditDraft((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  session: { ...prev.session, last_activity_at: e.target.value || null },
+                                }
+                              : prev
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-slate-400">Status</label>
+                      <Input
+                        value={editDraft.session.status}
+                        onChange={(e) =>
+                          setEditDraft((prev) =>
+                            prev ? { ...prev, session: { ...prev.session, status: e.target.value } } : prev
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-slate-400">Mode</label>
+                      <Select
+                        value={editDraft.session.mode}
+                        onValueChange={(value) =>
+                          setEditDraft((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  session: { ...prev.session, mode: value as SessionEditDraft['session']['mode'] },
+                                }
+                              : prev
+                          )
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="text">Text</SelectItem>
+                          <SelectItem value="avatar">Avatar</SelectItem>
+                          <SelectItem value="voice">Voice</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-slate-400">Modes Used (comma separated)</label>
+                      <Input
+                        value={editDraft.session.modes_used.join(', ')}
+                        onChange={(e) =>
+                          setEditDraft((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  session: {
+                                    ...prev.session,
+                                    modes_used: e.target.value
+                                      .split(',')
+                                      .map((value) => value.trim())
+                                      .filter(Boolean),
+                                  },
+                                }
+                              : prev
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-white">Demographics</h3>
+                  {editDraft.demographicResponses.length === 0 ? (
+                    <p className="text-slate-500 text-sm">No demographic responses recorded.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {editDraft.demographicResponses.map((response, index) => (
+                        <div key={response.id} className="bg-slate-800/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-slate-400">{response.question_id}</div>
+                          <Textarea
+                            value={response.answer}
+                            onChange={(e) =>
+                              setEditDraft((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      demographicResponses: updateListItem(prev.demographicResponses, index, {
+                                        answer: e.target.value,
+                                      }),
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-white">Pre-test</h3>
+                  {editDraft.preTest.length === 0 ? (
+                    <p className="text-slate-500 text-sm">No pre-test responses recorded.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {editDraft.preTest.map((response, index) => (
+                        <div key={response.id} className="bg-slate-800/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-slate-400">{response.question_id}</div>
+                          <Textarea
+                            value={response.answer}
+                            onChange={(e) =>
+                              setEditDraft((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      preTest: updateListItem(prev.preTest, index, { answer: e.target.value }),
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-white">Post-test</h3>
+                  {editDraft.postTest.length === 0 ? (
+                    <p className="text-slate-500 text-sm">No post-test responses recorded.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {editDraft.postTest.map((response, index) => (
+                        <div key={response.id} className="bg-slate-800/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-slate-400">{response.question_id}</div>
+                          <Textarea
+                            value={response.answer}
+                            onChange={(e) =>
+                              setEditDraft((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      postTest: updateListItem(prev.postTest, index, { answer: e.target.value }),
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-white">Scenarios</h3>
+                  {editDraft.scenarios.length === 0 ? (
+                    <p className="text-slate-500 text-sm">No scenario responses recorded.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {editDraft.scenarios.map((scenario, index) => (
+                        <div key={scenario.id} className="bg-slate-800/60 p-3 rounded space-y-3">
+                          <div className="text-xs text-slate-400">{scenario.scenario_id}</div>
+                          <div className="grid md:grid-cols-3 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-xs text-slate-400">Trust Rating</label>
+                              <Input
+                                type="number"
+                                value={scenario.trust_rating}
+                                onChange={(e) =>
+                                  setEditDraft((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          scenarios: updateListItem(prev.scenarios, index, {
+                                            trust_rating: Number(e.target.value || 0),
+                                          }),
+                                        }
+                                      : prev
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-slate-400">Confidence</label>
+                              <Input
+                                type="number"
+                                value={scenario.confidence_rating}
+                                onChange={(e) =>
+                                  setEditDraft((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          scenarios: updateListItem(prev.scenarios, index, {
+                                            confidence_rating: Number(e.target.value || 0),
+                                          }),
+                                        }
+                                      : prev
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-slate-400">Engagement</label>
+                              <div className="flex items-center gap-2 pt-2">
+                                <Checkbox
+                                  checked={scenario.engagement_rating}
+                                  onCheckedChange={(checked) =>
+                                    setEditDraft((prev) =>
+                                      prev
+                                        ? {
+                                            ...prev,
+                                            scenarios: updateListItem(prev.scenarios, index, {
+                                              engagement_rating: Boolean(checked),
+                                            }),
+                                          }
+                                        : prev
+                                    )
+                                  }
+                                />
+                                <span className="text-sm text-slate-300">
+                                  {scenario.engagement_rating ? 'Engaged' : 'Not engaged'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-slate-400">Completed At (ISO)</label>
+                            <Input
+                              value={scenario.completed_at}
+                              onChange={(e) =>
+                                setEditDraft((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        scenarios: updateListItem(prev.scenarios, index, {
+                                          completed_at: e.target.value,
+                                        }),
+                                      }
+                                    : prev
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-white">Avatar Slide Time</h3>
+                  {editDraft.avatarTimeTracking.length === 0 ? (
+                    <p className="text-slate-500 text-sm">No avatar slide timing recorded.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {editDraft.avatarTimeTracking.map((entry, index) => (
+                        <div key={entry.id} className="bg-slate-800/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-slate-400">{entry.slide_title}</div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-slate-400">Duration (seconds)</label>
+                            <Input
+                              type="number"
+                              value={entry.duration_seconds ?? ''}
+                              onChange={(e) =>
+                                setEditDraft((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        avatarTimeTracking: updateListItem(prev.avatarTimeTracking, index, {
+                                          duration_seconds: e.target.value ? Number(e.target.value) : null,
+                                        }),
+                                      }
+                                    : prev
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-white">Tutor Dialogue</h3>
+                  {editDraft.tutorDialogueTurns.length === 0 ? (
+                    <p className="text-slate-500 text-sm">No tutor dialogue recorded.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {editDraft.tutorDialogueTurns.map((turn, index) => (
+                        <div key={turn.id} className="bg-slate-800/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-slate-400">
+                            {turn.role.toUpperCase()}
+                            {turn.slide_title ? ` · ${turn.slide_title}` : ''}
+                          </div>
+                          <Textarea
+                            value={turn.content}
+                            onChange={(e) =>
+                              setEditDraft((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      tutorDialogueTurns: updateListItem(prev.tutorDialogueTurns, index, {
+                                        content: e.target.value,
+                                      }),
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-white">Scenario Dialogue</h3>
+                  {editDraft.dialogueTurns.length === 0 ? (
+                    <p className="text-slate-500 text-sm">No scenario dialogue recorded.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {editDraft.dialogueTurns.map((turn, index) => (
+                        <div key={turn.id} className="bg-slate-800/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-slate-400">
+                            {turn.role.toUpperCase()}
+                            {turn.scenario_name ? ` · ${turn.scenario_name}` : ''}
+                          </div>
+                          <Textarea
+                            value={turn.content}
+                            onChange={(e) =>
+                              setEditDraft((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      dialogueTurns: updateListItem(prev.dialogueTurns, index, {
+                                        content: e.target.value,
+                                      }),
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" className="border-slate-600" onClick={() => setIsEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={saveOwnerEdits} disabled={isSavingEdit}>
+                {isSavingEdit ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

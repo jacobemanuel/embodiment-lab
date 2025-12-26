@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 import ParticipantFooter from "@/components/ParticipantFooter";
 import { supabase } from "@/integrations/supabase/client";
+import { clearTutorDialogueLog } from "@/lib/tutorDialogue";
 
 const Completion = () => {
   const navigate = useNavigate();
@@ -41,7 +42,6 @@ const Completion = () => {
       const postTest = { ...postTestPage1, ...postTestPage2, ...postTestPage3 };
       const mode = sessionStorage.getItem('studyMode') || 'unknown';
       const scenarioFeedback = JSON.parse(sessionStorage.getItem('scenarioFeedback') || '[]');
-      const dialogueLog = JSON.parse(sessionStorage.getItem('dialogueLog') || '[]');
 
       const demographicSnapshot = JSON.parse(sessionStorage.getItem('demographicQuestionsSnapshot') || '[]');
       const preTestSnapshot = JSON.parse(sessionStorage.getItem('preTestQuestionsSnapshot') || '[]');
@@ -159,20 +159,6 @@ const Completion = () => {
           addRow('Scenario Feedback', `${label} - Engagement`, entry.engagementRating ? 'Yes' : 'No');
         });
       }
-
-      csvContent += '\n';
-      if (dialogueLog.length > 0) {
-        dialogueLog.forEach((entry: any) => {
-          const label = entry.scenarioTitle || entry.scenarioId || 'Scenario';
-          const messages = Array.isArray(entry.messages) ? entry.messages : [];
-          messages.forEach((message: any) => {
-            const role = message.role === 'user' ? 'User' : 'AI';
-            addRow('Dialogue', `${label} (${role})`, message.content || '');
-          });
-        });
-      } else {
-        addRow('Dialogue', 'No dialogues recorded', '');
-      }
       
       // Create and download file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -182,6 +168,14 @@ const Completion = () => {
       a.download = `study-responses-${sessionId}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+
+      sessionStorage.removeItem('postTestPage1');
+      sessionStorage.removeItem('postTestPage2');
+      sessionStorage.removeItem('postTestPage3');
+      sessionStorage.removeItem('postTest1');
+      sessionStorage.removeItem('dialogueLog');
+      sessionStorage.removeItem('scenarioFeedback');
+      clearTutorDialogueLog();
     } catch (error) {
       console.error('Error creating CSV:', error);
     }

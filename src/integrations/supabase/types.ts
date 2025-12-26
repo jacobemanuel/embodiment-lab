@@ -232,6 +232,50 @@ export type Database = {
           },
         ]
       }
+      tutor_dialogue_turns: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          mode: Database["public"]["Enums"]["study_mode"]
+          role: string
+          session_id: string
+          slide_id: string | null
+          slide_title: string | null
+          timestamp: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          mode: Database["public"]["Enums"]["study_mode"]
+          role: string
+          session_id: string
+          slide_id?: string | null
+          slide_title?: string | null
+          timestamp?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          mode?: Database["public"]["Enums"]["study_mode"]
+          role?: string
+          session_id?: string
+          slide_id?: string | null
+          slide_title?: string | null
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_dialogue_turns_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "study_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_test_responses: {
         Row: {
           answer: string

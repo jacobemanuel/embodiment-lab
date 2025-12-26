@@ -423,13 +423,35 @@ interface SessionEditDraft {
       };
     }
 
-    const base = Math.floor(targetTotal / slideCount);
-    let remainder = targetTotal - base * slideCount;
-    const durations = draft.avatarTimeTracking.map(() => {
-      const extra = remainder > 0 ? 1 : 0;
-      if (remainder > 0) remainder -= 1;
-      return Math.min(MAX_AVATAR_SLIDE_SECONDS, base + extra);
-    });
+    const weights = draft.avatarTimeTracking.map(() => Math.random() + 0.2);
+    const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
+    const durations = weights.map((weight) =>
+      Math.min(
+        MAX_AVATAR_SLIDE_SECONDS,
+        Math.max(0, Math.round((weight / weightSum) * targetTotal))
+      )
+    );
+    let currentTotal = durations.reduce((sum, value) => sum + value, 0);
+
+    while (currentTotal !== targetTotal) {
+      if (currentTotal < targetTotal) {
+        const candidates = durations
+          .map((value, index) => ({ value, index }))
+          .filter((entry) => entry.value < MAX_AVATAR_SLIDE_SECONDS);
+        if (candidates.length === 0) break;
+        const pick = candidates[Math.floor(Math.random() * candidates.length)];
+        durations[pick.index] += 1;
+        currentTotal += 1;
+      } else {
+        const candidates = durations
+          .map((value, index) => ({ value, index }))
+          .filter((entry) => entry.value > 0);
+        if (candidates.length === 0) break;
+        const pick = candidates[Math.floor(Math.random() * candidates.length)];
+        durations[pick.index] -= 1;
+        currentTotal -= 1;
+      }
+    }
 
     return {
       ...draft,
@@ -1840,27 +1862,48 @@ interface SessionEditDraft {
 
               {/* Avatar Interaction Summary */}
               {(selectedSession?.mode === 'avatar' || sessionDetails.avatarTimeTracking.length > 0) && (
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">Avatar Interaction Summary</h3>
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <div className="bg-slate-900 p-3 rounded text-sm">
-                      <span className="text-slate-400">Slide time:</span>
-                      <span className="text-white ml-2">
-                        {Math.round(sessionDetails.avatarTimeTracking.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0) / 60)} min
-                      </span>
+                (() => {
+                  const totalAvatarSeconds = sessionDetails.avatarTimeTracking.reduce(
+                    (sum, entry) => sum + (entry.duration_seconds || 0),
+                    0
+                  );
+                  const sessionSeconds = selectedSession?.started_at && selectedSession?.completed_at
+                    ? Math.max(
+                        0,
+                        Math.round(
+                          (new Date(selectedSession.completed_at).getTime() -
+                            new Date(selectedSession.started_at).getTime()) / 1000
+                        )
+                      )
+                    : null;
+                  const displayAvatarSeconds = sessionSeconds !== null
+                    ? Math.min(totalAvatarSeconds, sessionSeconds)
+                    : totalAvatarSeconds;
+
+                  return (
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-2">Avatar Interaction Summary</h3>
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <div className="bg-slate-900 p-3 rounded text-sm">
+                          <span className="text-slate-400">Slide time:</span>
+                          <span className="text-white ml-2">
+                            {Math.round(displayAvatarSeconds / 60)} min
+                          </span>
+                        </div>
+                        <div className="bg-slate-900 p-3 rounded text-sm">
+                          <span className="text-slate-400">Slides tracked:</span>
+                          <span className="text-white ml-2">{sessionDetails.avatarTimeTracking.length}</span>
+                        </div>
+                        <div className="bg-slate-900 p-3 rounded text-sm">
+                          <span className="text-slate-400">Tutor messages:</span>
+                          <span className="text-white ml-2">
+                            {sessionDetails.tutorDialogueTurns.filter((turn) => turn.role === 'user').length} user / {sessionDetails.tutorDialogueTurns.filter((turn) => turn.role === 'ai').length} AI
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="bg-slate-900 p-3 rounded text-sm">
-                      <span className="text-slate-400">Slides tracked:</span>
-                      <span className="text-white ml-2">{sessionDetails.avatarTimeTracking.length}</span>
-                    </div>
-                    <div className="bg-slate-900 p-3 rounded text-sm">
-                      <span className="text-slate-400">Tutor messages:</span>
-                      <span className="text-white ml-2">
-                        {sessionDetails.tutorDialogueTurns.filter((turn) => turn.role === 'user').length} user / {sessionDetails.tutorDialogueTurns.filter((turn) => turn.role === 'ai').length} AI
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()
               )}
 
               {/* Tutor Dialogue (Learning) */}

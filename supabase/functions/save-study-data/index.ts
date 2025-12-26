@@ -522,6 +522,27 @@ serve(async (req) => {
           );
         }
 
+        const { data: session, error: sessionError } = await supabase
+          .from('study_sessions')
+          .select('completed_at, status')
+          .eq('session_id', validated.sessionId)
+          .single();
+
+        if (sessionError) {
+          console.error('Failed to load session for reset:', sessionError);
+          return new Response(
+            JSON.stringify({ error: "Unable to reset session" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (session?.completed_at || session?.status === 'completed') {
+          return new Response(
+            JSON.stringify({ success: true, ignored: true, reason: 'already_completed' }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
         // Mark session as reset - it will be excluded from statistics
         const { error: updateError } = await supabase
           .from('study_sessions')

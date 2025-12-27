@@ -37,7 +37,7 @@ Participants can download their own responses as CSV; researchers can export CSV
 - Sessions table with per-session PDF export + timing breakdown
 - Response analytics + open feedback review
 - Slide and question editors
-- API settings (Lovable/OpenAI gateway + Anam)
+- API settings (OpenAI GPT-5 mini)
 - Audit log and permission summary
 
 ## Tech Stack
@@ -45,13 +45,13 @@ Participants can download their own responses as CSV; researchers can export CSV
 - **Frontend**: React + Vite + TypeScript
 - **UI**: Tailwind CSS + shadcn/ui + Radix
 - **Backend**: Supabase (Postgres, Auth, Edge Functions)
-- **AI**: Lovable AI gateway (OpenAI) for text tutor; Anam AI for avatar streaming
+- **AI**: OpenAI GPT-5 mini for text + avatar tutoring
 - **Exports**: jsPDF + CSV utilities
 - **Charts**: Recharts
 
 ## Architecture Notes
 
-- Primary writes go through Supabase Edge Functions (`chat`, `anam-session`, `save-study-data`, `save-avatar-time`, `complete-session`, etc.).
+- Primary writes go through Supabase Edge Functions (`chat`, `save-study-data`, `save-avatar-time`, `complete-session`, etc.).
 - If edge functions are unavailable, the app falls back to direct table inserts and stores telemetry as `__meta_*` rows in `post_test_responses`.
 
 ## Repo Structure

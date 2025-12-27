@@ -14,7 +14,7 @@ Scope
 
 The platform is a single-page web app that runs a structured research study on AI literacy. Participants are guided through a linear flow: consent, demographics, pre-test, learning content (slides + tutor), short scenarios, post-test, and completion. The experience supports two learning modes: Text Mode (chat-based tutor) and Avatar Mode (video avatar with speech). Admins and the owner can manage content, view live study data, validate sessions, and export full datasets. Mentors can view high-level research data but cannot change content or export.
 
-From a technical point of view, the app is a React + Vite client backed by Supabase (database, auth, edge functions). The learning content and questions are stored in Supabase tables and rendered dynamically on the front end. Participant responses are saved through a server-side edge function that validates input and writes to the database. AI tutor features are powered by a Lovable gateway for text responses and by the Anam API for avatar sessions. The system enforces a strict study flow with sessionStorage markers and blocks backward navigation after each stage is completed.
+From a technical point of view, the app is a React + Vite client backed by Supabase (database, auth, edge functions). The learning content and questions are stored in Supabase tables and rendered dynamically on the front end. Participant responses are saved through a server-side edge function that validates input and writes to the database. AI tutor features are powered by OpenAI GPT-5 mini for text and avatar responses. The system enforces a strict study flow with sessionStorage markers and blocks backward navigation after each stage is completed.
 
 
 ## Actors and roles
@@ -96,9 +96,9 @@ The platform uses a front-end only client paired with Supabase for data, auth, a
 ```
 
 AI integrations:
-- Text tutor: Supabase edge function `chat` -> Lovable AI gateway -> streaming response.
+- Text tutor: Supabase edge function `chat` -> OpenAI API (GPT-5 mini) -> streaming response.
 - Avatar tutor: Supabase edge function `anam-session` -> Anam API -> avatar session.
-- Image Playground: Supabase edge function `generate-image` -> Lovable AI gateway -> image output.
+- Image Playground: Supabase edge function `generate-image` -> OpenAI image endpoint -> image output.
 
 
 ## Participant story: from link to completion
@@ -204,7 +204,7 @@ Tutor (Avatar Mode):
 - Avatar time on each slide can be logged to `avatar_time_tracking`.
 
 AI Playground:
-- Optional panel that calls `generate-image` to produce an image using the Lovable AI gateway.
+- Optional panel that calls `generate-image` to produce an image using the OpenAI image endpoint.
 
 Mobile behavior:
 - The chat panel is placed at the bottom for Text Mode.
@@ -276,7 +276,7 @@ Next comes the pre-test. These questions measure baseline knowledge. Alex answer
 
 Alex now reaches the mode assignment page. Because they entered through `/study/text`, the system already pre-assigns the mode and auto-navigates forward. The platform intentionally prevents switching mid-session; this protects the study design and ensures clean data.
 
-In the learning section, Alex sees a slide viewer on the left and a chat panel on the right. The tutor greets them on the first slide. As Alex moves through the slides, the tutor injects the current slide title and key points into the system context, ensuring responses stay relevant. When Alex asks a question, the system streams the response from the chat edge function, which calls the Lovable AI gateway. This feels responsive and conversational, but the model is strictly constrained to the slide topic.
+In the learning section, Alex sees a slide viewer on the left and a chat panel on the right. The tutor greets them on the first slide. As Alex moves through the slides, the tutor injects the current slide title and key points into the system context, ensuring responses stay relevant. When Alex asks a question, the system streams the response from the chat edge function, which calls the OpenAI API (GPT-5 mini). This feels responsive and conversational, but the model is strictly constrained to the slide topic.
 
 If Alex opens the AI Playground, they can generate images with prompts and parameters. This is optional and does not block the study flow, but it enriches the experience and gives a practical, hands-on step.
 
@@ -481,7 +481,7 @@ User -> TextModeChat
   -> streamChat()
      -> fetch /functions/v1/chat
         -> chat edge function
-           -> Lovable AI Gateway (chat completions)
+           -> OpenAI API (GPT-5 mini)
            -> stream response
   -> UI shows streaming reply
 ```
@@ -516,7 +516,7 @@ Key behavior:
 ```
 User -> ImagePlayground
   -> /functions/v1/generate-image
-     -> Lovable AI Gateway (image model)
+     -> OpenAI image endpoint
   -> UI displays image
 ```
 
@@ -753,7 +753,7 @@ Understanding these constraints helps explain participant behavior and avoids fa
 
 - save-study-data: create sessions, store responses, log suspicious activity, update mode.
 - complete-session: mark session as completed.
-- chat: text tutor (Lovable gateway), uses pre-test context.
+- chat: text tutor (OpenAI GPT-5 mini), uses pre-test context.
 - anam-session: avatar tutor (Anam), injects slide context.
 - generate-image: AI playground image generation.
 - save-avatar-time: record slide time in avatar mode.
@@ -769,7 +769,7 @@ Participant
   -> TextModeChat
   -> streamChat() [client]
   -> /functions/v1/chat [edge]
-  -> Lovable AI Gateway
+  -> OpenAI API (GPT-5 mini)
   -> stream response
   -> UI updates
 ```

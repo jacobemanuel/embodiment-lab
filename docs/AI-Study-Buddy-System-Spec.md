@@ -66,7 +66,7 @@ The content is derived from the current codebase in /workspaces/embodiment-lab a
 
 AI Study Buddy is a research platform built to compare two learning modalities: a text based AI tutor and an avatar based AI tutor. The system guides participants through consent, demographics, pre test, learning, post test, and feedback, while collecting structured responses and optional qualitative data. The same instructional content is used for both modes to ensure a fair comparison.
 
-The platform is implemented as a React 18 + TypeScript single page application, bundled with Vite and styled with Tailwind and shadcn UI. The backend uses Supabase for authentication, Postgres storage, realtime updates, and serverless edge functions. AI services are accessed through the Lovable gateway for chat and image generation, and through Anam AI for avatar streaming.
+The platform is implemented as a React 18 + TypeScript single page application, bundled with Vite and styled with Tailwind and shadcn UI. The backend uses Supabase for authentication, Postgres storage, realtime updates, and serverless edge functions. AI services use OpenAI GPT-5 mini for tutoring and OpenAI image generation for the playground, while avatar streaming is handled by the avatar SDK.
 
 The study flow is guarded by a client side state machine that prevents step skipping and controls repeat participation per device. Data quality checks automatically flag suspicious behavior based on timing heuristics. Admin and owner tooling supports content editing, validation workflows, and comprehensive exports for analysis.
 
@@ -158,7 +158,7 @@ Edge functions use the service role key and bypass RLS. Client operations use th
 Text tutor
 
 - The client sends chat history to /functions/v1/chat
-- The edge function builds a system prompt and calls the Lovable AI gateway
+- The edge function builds a system prompt and calls the OpenAI API (GPT-5 mini)
 - The gateway uses openai/gpt-5-mini
 - Responses are streamed back via SSE
 
@@ -171,7 +171,7 @@ Avatar tutor
 Image Playground
 
 - The client calls /functions/v1/generate-image
-- The edge function forwards to the Lovable AI gateway
+- The edge function forwards to the OpenAI image generation endpoint
 - The gateway uses google/gemini-2.5-flash-image-preview
 
 ### 4.4 Deployment and environment
@@ -847,7 +847,7 @@ Actions
 ### 13.3 chat
 
 - Validates API switches
-- Sends request to Lovable AI gateway
+- Sends request to OpenAI API (GPT-5 mini)
 - Streams responses
 
 ### 13.4 anam-session

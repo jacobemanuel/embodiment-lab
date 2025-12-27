@@ -41,7 +41,7 @@ BT
 11.5 TL
 0 g
 246.089999999999975 581.8899999999999864 Td
-(Generated: 2025-12-26) Tj
+(Generated: 2025-12-27) Tj
 ET
 BT
 /F1 10 Tf
@@ -69,7 +69,7 @@ endobj
 endobj
 6 0 obj
 <<
-/Length 5851
+/Length 5822
 >>
 stream
 0.200025 w
@@ -275,21 +275,21 @@ BT
 11.5 TL
 0 g
 54. 359.8899999999999864 Td
-(to the database. AI tutor features are powered by a Lovable gateway for text responses and by the Anam API) Tj
+(to the database. AI tutor features are powered by OpenAI GPT-5 mini for text and avatar responses. The) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
 54. 345.8899999999999864 Td
-(for avatar sessions. The system enforces a strict study flow with sessionStorage markers and blocks backward) Tj
+(system enforces a strict study flow with sessionStorage markers and blocks backward navigation after each) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
 54. 331.8899999999999864 Td
-(navigation after each stage is completed.) Tj
+(stage is completed.) Tj
 ET
 BT
 /F2 13 Tf
@@ -901,7 +901,7 @@ endobj
 endobj
 10 0 obj
 <<
-/Length 5653
+/Length 5537
 >>
 stream
 0.200025 w
@@ -988,7 +988,7 @@ BT
 11.5 TL
 0 g
 76. 652.8899999999999864 Td
-(Text tutor: Supabase edge function `chat` -> Lovable AI gateway -> streaming response.) Tj
+(Text tutor: Supabase edge function `chat` -> OpenAI API \(GPT-5 mini\) -> streaming response.) Tj
 ET
 BT
 /F1 10 Tf
@@ -1016,301 +1016,294 @@ BT
 11.5 TL
 0 g
 76. 620.8899999999999864 Td
-(Image Playground: Supabase edge function `generate-image` -> Lovable AI gateway -> image output.) Tj
+(Image Playground: Supabase edge function `generate-image` -> OpenAI image endpoint -> image) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 606.8899999999999864 Td
+(output.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 592.8899999999999864 Td
+54. 578.8899999999999864 Td
 (Participant story: from link to completion) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 563.6900000000000546 Td
+54. 549.6900000000000546 Td
 (This section explains the participant journey as a story, showing exactly how the UI leads the participant and) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 549.6900000000000546 Td
+54. 535.6900000000000546 Td
 (how the system captures their data.) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 525.6900000000000546 Td
+54. 511.6899999999999977 Td
 (Step 1: Study entry link) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 506.2900000000000205 Td
+54. 492.2900000000000205 Td
 (Entry routes:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 489.2900000000000205 Td
+66. 475.2900000000000205 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 489.2900000000000205 Td
+76. 475.2900000000000205 Td
 (`/study/text`) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 473.2900000000000205 Td
+66. 459.2900000000000205 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 473.2900000000000205 Td
+76. 459.2900000000000205 Td
 (`/study/avatar`) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 451.2900000000000205 Td
+54. 437.2900000000000205 Td
 (What the user sees:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 434.2900000000000205 Td
+66. 420.2900000000000205 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 434.2900000000000205 Td
+76. 420.2900000000000205 Td
 (A welcome page with study description, time estimate, and privacy notice.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 418.2900000000000205 Td
+66. 404.2900000000000205 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 418.2900000000000205 Td
+76. 404.2900000000000205 Td
 (The selected mode is shown as a badge \(Text Mode or Avatar Mode\).) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 396.2900000000000205 Td
+54. 382.2900000000000205 Td
 (System behavior:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 379.2900000000000205 Td
+66. 365.2900000000000205 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 379.2900000000000205 Td
+76. 365.2900000000000205 Td
 (The `StudyEntry` page validates the mode from the URL.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 363.2900000000000205 Td
+66. 349.2900000000000205 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 363.2900000000000205 Td
+76. 349.2900000000000205 Td
 (If an invalid mode is provided, the user sees an error page.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 347.2900000000000205 Td
+66. 333.2900000000000205 Td
 (•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 347.2900000000000205 Td
-(If the query parameter `?reset=1` is included, the system clears all sessionStorage data and allows a) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
 76. 333.2900000000000205 Td
+(If the query parameter `?reset=1` is included, the system clears all sessionStorage data and allows a) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 319.2900000000000773 Td
 (fresh start.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 317.2900000000000773 Td
+66. 303.2900000000000773 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 317.2900000000000773 Td
+76. 303.2900000000000773 Td
 (The page sets a local lock if the study has already been completed on the device \(stored in localStorage\).) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 295.2900000000000773 Td
+54. 281.2900000000000773 Td
 (Diagram:) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 278.2900000000000773 Td
+72. 264.2900000000000773 Td
 (/ study / :mode) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 266.2900000000000773 Td
+72. 252.2900000000000773 Td
 (   -> validate mode) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 254.2900000000000773 Td
+72. 240.2900000000000773 Td
 (   -> if invalid: error page) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 242.2900000000000773 Td
+72. 228.2900000000000773 Td
 (   -> if reset=1: clear session storage) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 230.2900000000000773 Td
+72. 216.2900000000000773 Td
 (   -> show welcome content) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 208.2900000000000773 Td
+54. 194.2900000000000773 Td
 (Step 2: Consent) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 188.8900000000001 Td
+54. 174.8900000000001 Td
 (The participant must review and accept the consent. If they accept, a session is created.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 164.8900000000001 Td
+54. 150.8900000000001 Td
 (System behavior:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 147.8900000000001 Td
+66. 133.8900000000001 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 147.8900000000001 Td
+76. 133.8900000000001 Td
 (`save-study-data` is called with action `create_session`.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 131.8900000000001 Td
+66. 117.8900000000001 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 131.8900000000001 Td
+76. 117.8900000000001 Td
 (A unique `sessionId` is generated by the server and stored in sessionStorage.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 115.8900000000001 Td
+66. 101.8900000000001 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 115.8900000000001 Td
+76. 101.8900000000001 Td
 (The session is written to `study_sessions`.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 93.8900000000001 Td
+54. 79.8900000000001 Td
 (Outcome:) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 76.8900000000001 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 76.8900000000001 Td
-(Consent is recorded by the existence of a sessionId in sessionStorage.) Tj
 ET
 BT
 /F1 9 Tf
@@ -1331,430 +1324,416 @@ endobj
 endobj
 12 0 obj
 <<
-/Length 5733
+/Length 5587
 >>
 stream
 0.200025 w
 0 G
 BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 787.8899999999999864 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 787.8899999999999864 Td
+(Consent is recorded by the existence of a sessionId in sessionStorage.) Tj
+ET
+BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 787.8899999999999864 Td
+54. 765.8899999999999864 Td
 (Step 3: Demographics) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 768.4900000000000091 Td
+54. 746.4900000000000091 Td
 (The participant fills demographic questions.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 744.4900000000000091 Td
+54. 722.4900000000000091 Td
 (System behavior:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 727.4900000000000091 Td
+66. 705.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 727.4900000000000091 Td
+76. 705.4900000000000091 Td
 (Answers are stored in sessionStorage as `demographics`.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 711.4900000000000091 Td
+66. 689.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 711.4900000000000091 Td
+76. 689.4900000000000091 Td
 (When the participant submits, the app calls `save-study-data` with action `save_demographics`.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 695.4900000000000091 Td
+66. 673.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 695.4900000000000091 Td
+76. 673.4900000000000091 Td
 (Data is written to `demographic_responses` and `demographics` tables.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 673.4900000000000091 Td
+54. 651.4900000000000091 Td
 (Quality checks:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 656.4900000000000091 Td
+66. 634.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 656.4900000000000091 Td
+76. 634.4900000000000091 Td
 (`useBotDetection` tracks how fast questions are answered.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 640.4900000000000091 Td
+66. 618.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 640.4900000000000091 Td
+76. 618.4900000000000091 Td
 (Suspicious timing flags can be reported to `study_sessions` for later review.) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 618.4900000000000091 Td
+54. 596.4900000000000091 Td
 (Step 4: Pre-test) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 599.0899999999999181 Td
+54. 577.0899999999999181 Td
 (The participant completes knowledge questions.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 575.0899999999999181 Td
+54. 553.0899999999999181 Td
 (System behavior:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 558.0899999999999181 Td
+66. 536.0899999999999181 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 558.0899999999999181 Td
+76. 536.0899999999999181 Td
 (Answers saved in sessionStorage as `preTest`.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 542.0899999999999181 Td
+66. 520.0899999999999181 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 542.0899999999999181 Td
+76. 520.0899999999999181 Td
 (`save-study-data` called with `save_pre_test` to write responses.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 526.0899999999999181 Td
+66. 504.089999999999975 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 526.0899999999999181 Td
+76. 504.089999999999975 Td
 (Responses stored in `pre_test_responses`.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 504.089999999999975 Td
+54. 482.089999999999975 Td
 (AI personalization:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 487.089999999999975 Td
+66. 465.089999999999975 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 487.089999999999975 Td
+76. 465.089999999999975 Td
 (The text tutor uses pre-test data to adapt responses. The pre-test is sent to the `chat` edge function and) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 473.089999999999975 Td
+76. 451.089999999999975 Td
 (used to build a weak/strong topic profile.) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 451.089999999999975 Td
+54. 429.089999999999975 Td
 (Step 5: Mode assignment) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 431.6899999999999977 Td
+54. 409.6899999999999977 Td
 (The participant selects Text Mode or Avatar Mode. If they entered via `/study/:mode`, the mode can be) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 417.6899999999999977 Td
+54. 395.6899999999999977 Td
 (pre-assigned.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 393.6899999999999977 Td
+54. 371.6899999999999977 Td
 (System behavior:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 376.6899999999999977 Td
+66. 354.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 376.6899999999999977 Td
+76. 354.6899999999999977 Td
 (Session guard prevents switching modes mid-study.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 360.6899999999999977 Td
+66. 338.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 360.6899999999999977 Td
+76. 338.6899999999999977 Td
 (If mode switching is attempted, the session is reset and flagged.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 344.6899999999999977 Td
+66. 322.6899999999999409 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 344.6899999999999977 Td
+76. 322.6899999999999409 Td
 (`save-study-data` action `update_mode` stores the selected mode in `study_sessions`.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 328.6899999999999409 Td
+66. 306.6899999999999409 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 328.6899999999999409 Td
+76. 306.6899999999999409 Td
 (The selection is cached in sessionStorage as `studyMode`.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 306.6899999999999409 Td
+54. 284.6899999999999409 Td
 (Diagram:) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 289.6899999999999409 Td
+72. 267.6899999999999409 Td
 (User chooses mode) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 277.6899999999999409 Td
+72. 255.6899999999999409 Td
 ( -> update_mode \(edge function\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 265.6899999999999409 Td
+72. 243.6899999999999409 Td
 ( -> store studyMode in sessionStorage) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 253.6899999999999409 Td
+72. 231.6899999999999409 Td
 ( -> navigate /learning/:mode) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 231.6899999999999409 Td
+54. 209.6899999999999409 Td
 (Step 6: Learning \(slides + tutor\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 212.2899999999999636 Td
+54. 190.2899999999999636 Td
 (The participant enters the learning area. This is where the main instructional content lives.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 188.2899999999999636 Td
+54. 166.2899999999999636 Td
 (UI layout:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 171.2899999999999636 Td
+66. 149.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 171.2899999999999636 Td
+76. 149.2899999999999636 Td
 (Header with logo, mode badge, Finish button, and Exit button.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 155.2899999999999636 Td
+66. 133.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 155.2899999999999636 Td
+76. 133.2899999999999636 Td
 (Slide viewer \(center\).) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 139.2899999999999636 Td
+66. 117.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 139.2899999999999636 Td
+76. 117.2899999999999636 Td
 (Tutor panel \(right\) or avatar panel \(right\).) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 123.2899999999999636 Td
+66. 101.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 123.2899999999999636 Td
+76. 101.2899999999999636 Td
 (AI Playground toggle \(rightmost panel\).) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 101.2899999999999636 Td
+54. 79.2899999999999636 Td
 (Slides:) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 84.2899999999999636 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 84.2899999999999636 Td
-(Slides are loaded from `study_slides`.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 68.2899999999999636 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 68.2899999999999636 Td
-(Only active slides are shown, ordered by `sort_order`.) Tj
 ET
 BT
 /F1 9 Tf
@@ -1775,430 +1754,430 @@ endobj
 endobj
 14 0 obj
 <<
-/Length 5799
+/Length 5739
 >>
 stream
 0.200025 w
 0 G
 BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 787.8899999999999864 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 787.8899999999999864 Td
+(Slides are loaded from `study_slides`.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 771.8899999999999864 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 771.8899999999999864 Td
+(Only active slides are shown, ordered by `sort_order`.) Tj
+ET
+BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 787.8899999999999864 Td
+54. 749.8899999999999864 Td
 (Tutor \(Text Mode\):) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 770.8899999999999864 Td
+66. 732.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 770.8899999999999864 Td
+76. 732.8899999999999864 Td
 (A chat panel appears on the right.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 754.8899999999999864 Td
+66. 716.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 754.8899999999999864 Td
+76. 716.8899999999999864 Td
 (The assistant greets on the first slide and updates context on each slide change.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 738.8899999999999864 Td
+66. 700.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 738.8899999999999864 Td
+76. 700.8899999999999864 Td
 (The chat uses the `chat` edge function and streams responses.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 716.8899999999999864 Td
+54. 678.8899999999999864 Td
 (Tutor \(Avatar Mode\):) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 699.8899999999999864 Td
+66. 661.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 699.8899999999999864 Td
+76. 661.8899999999999864 Td
 (The avatar panel uses the Anam SDK.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 683.8899999999999864 Td
+66. 645.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 683.8899999999999864 Td
+76. 645.8899999999999864 Td
 (The system calls `anam-session` to create a session, injecting slide context.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 667.8899999999999864 Td
+66. 629.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 667.8899999999999864 Td
+76. 629.8899999999999864 Td
 (Avatar time on each slide can be logged to `avatar_time_tracking`.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 645.8899999999999864 Td
+54. 607.8899999999999864 Td
 (AI Playground:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 628.8899999999999864 Td
+66. 590.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 628.8899999999999864 Td
-(Optional panel that calls `generate-image` to produce an image using the Lovable AI gateway.) Tj
+76. 590.8899999999999864 Td
+(Optional panel that calls `generate-image` to produce an image using the OpenAI image endpoint.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 606.8899999999999864 Td
+54. 568.8899999999999864 Td
 (Mobile behavior:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 589.8899999999999864 Td
+66. 551.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 589.8899999999999864 Td
+76. 551.8899999999999864 Td
 (The chat panel is placed at the bottom for Text Mode.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 573.8899999999999864 Td
+66. 535.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 573.8899999999999864 Td
+76. 535.8899999999999864 Td
 (Avatar Mode is disabled on mobile to avoid multiple Anam clients.) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 551.8899999999999864 Td
+54. 513.8899999999999864 Td
 (Step 7: Scenarios) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 532.4900000000000091 Td
+54. 494.4900000000000091 Td
 (Scenarios are structured conversations based on predefined scripts.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 508.4900000000000091 Td
+54. 470.4900000000000091 Td
 (System behavior:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 491.4900000000000091 Td
+66. 453.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 491.4900000000000091 Td
+76. 453.4900000000000091 Td
 (Scenario content is loaded from `src/data/scenarios`.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 475.4900000000000091 Td
+66. 437.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 475.4900000000000091 Td
+76. 437.4900000000000091 Td
 (Conversations are persisted in sessionStorage as `scenario-<id>` during the session.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 459.4900000000000091 Td
+66. 421.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 459.4900000000000091 Td
+76. 421.4900000000000091 Td
 (After each scenario, `ScenarioFeedback` collects ratings and saves results via `save-study-data` with) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 445.4900000000000091 Td
+76. 407.4900000000000091 Td
 (`save_scenario`.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 429.4900000000000091 Td
+66. 391.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 429.4900000000000091 Td
+76. 391.4900000000000091 Td
 (Scenario responses are written to the `scenarios` table and dialogue entries to `dialogue_turns` \(when) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 415.4900000000000091 Td
+76. 377.4900000000000091 Td
 (logged\).) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 393.4900000000000091 Td
+54. 355.4900000000000091 Td
 (Diagram \(simplified\):) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 376.4900000000000091 Td
+72. 338.4900000000000091 Td
 (Scenario page) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 364.4900000000000091 Td
+72. 326.4900000000000091 Td
 (  -> scripted AI line) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 352.4900000000000091 Td
+72. 314.4900000000000091 Td
 (  -> user responds) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 340.4900000000000091 Td
+72. 302.4900000000000091 Td
 (  -> repeat) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 328.4900000000000091 Td
+72. 290.4900000000000091 Td
 (  -> feedback) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 316.4900000000000091 Td
+72. 278.4900000000000091 Td
 (  -> save_scenario) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 294.4900000000000091 Td
+54. 256.4900000000000091 Td
 (Step 8: Post-test) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 275.0900000000000318 Td
+54. 237.0900000000000318 Td
 (The post-test is split into three pages to reduce overload.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 251.0900000000000318 Td
+54. 213.0900000000000318 Td
 (System behavior:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 234.0900000000000318 Td
+66. 196.0900000000000318 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 234.0900000000000318 Td
+76. 196.0900000000000318 Td
 (Each page stores responses in sessionStorage \(postTestPage1/2/3\).) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 218.0900000000000318 Td
+66. 180.0900000000000318 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 218.0900000000000318 Td
+76. 180.0900000000000318 Td
 (Responses are saved to `post_test_responses` through `save-study-data`.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 202.0900000000000318 Td
+66. 164.0900000000000318 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 202.0900000000000318 Td
+76. 164.0900000000000318 Td
 (Flow guards prevent going backwards once a post-test page is completed.) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 180.0900000000000318 Td
+54. 142.0900000000000318 Td
 (Step 9: Completion) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 160.6900000000000546 Td
+54. 122.6900000000000546 Td
 (The participant sees a completion page and optional download.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 136.6900000000000546 Td
+54. 98.6900000000000546 Td
 (System behavior:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 119.6900000000000546 Td
+66. 81.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 119.6900000000000546 Td
+76. 81.6900000000000546 Td
 (`complete-session` is called to mark the session as completed.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 103.6900000000000546 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 103.6900000000000546 Td
-(A localStorage flag `studyCompleted = true` prevents repeat participation on the same device.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 87.6900000000000546 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 87.6900000000000546 Td
-(A response export button is available \(client-side export\).) Tj
 ET
 BT
 /F1 9 Tf
@@ -2219,325 +2198,332 @@ endobj
 endobj
 16 0 obj
 <<
-/Length 6310
+/Length 6225
 >>
 stream
 0.200025 w
 0 G
 BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 787.8899999999999864 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 787.8899999999999864 Td
+(A localStorage flag `studyCompleted = true` prevents repeat participation on the same device.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 771.8899999999999864 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 771.8899999999999864 Td
+(A response export button is available \(client-side export\).) Tj
+ET
+BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 787.8899999999999864 Td
+54. 743.8899999999999864 Td
 (Participant journey \(end-to-end diagram\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 758.6899999999999409 Td
+72. 714.6899999999999409 Td
 ([Study Link]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 746.6899999999999409 Td
+72. 702.6900000000000546 Td
 (   -> [Consent]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 734.6899999999999409 Td
+72. 690.6900000000000546 Td
 (   -> [Demographics]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 722.6899999999999409 Td
+72. 678.6900000000000546 Td
 (   -> [Pre-test]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 710.6900000000000546 Td
+72. 666.6900000000000546 Td
 (   -> [Mode Assignment]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 698.6900000000000546 Td
+72. 654.6900000000000546 Td
 (   -> [Learning: Slides + Tutor + Playground]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 686.6900000000000546 Td
+72. 642.6900000000000546 Td
 (   -> [Scenario 1..N]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 674.6900000000000546 Td
+72. 630.6900000000000546 Td
 (   -> [Scenario Feedback]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 662.6900000000000546 Td
+72. 618.6900000000000546 Td
 (   -> [Post-test 1]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 650.6900000000000546 Td
+72. 606.6900000000000546 Td
 (   -> [Post-test 2]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 638.6900000000000546 Td
+72. 594.6900000000000546 Td
 (   -> [Post-test 3]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 626.6900000000000546 Td
+72. 582.6900000000000546 Td
 (   -> [Completion + Optional Export]) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 598.6900000000000546 Td
+54. 554.6900000000000546 Td
 (Narrative walkthrough: Participant in Text Mode \(story\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 569.4900000000000091 Td
+54. 525.4900000000000091 Td
 (Imagine a participant named Alex receives the text-mode link. They open `/study/text` and immediately see a) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 555.4900000000000091 Td
+54. 511.4900000000000091 Td
 (polished welcome card with an estimated duration and a privacy reminder. The UI clearly labels the mode so) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 541.4900000000000091 Td
+54. 497.4900000000000091 Td
 (Alex knows this is the text-based study.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 517.4900000000000091 Td
+54. 473.4900000000000091 Td
 (Alex clicks to continue and reads the consent. Once they accept, the system creates a new session) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 503.4900000000000091 Td
+54. 459.4900000000000091 Td
 (server-side. This is a crucial moment: a new `sessionId` is minted and saved to sessionStorage, which) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 489.4900000000000091 Td
+54. 445.4900000000000091 Td
 (becomes the spine for every subsequent save. From this point onward, every page the participant completes) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 475.4900000000000091 Td
+54. 431.4900000000000091 Td
 (writes data back to Supabase using the same sessionId.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 451.4900000000000091 Td
+54. 407.4900000000000091 Td
 (On the demographics page, Alex answers profile questions. The UI captures each answer and also records) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 437.4900000000000091 Td
+54. 393.4900000000000091 Td
 (time spent and answer speed. When Alex submits, the app sends a validated payload to `save-study-data`. If) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 423.4900000000000091 Td
+54. 379.4900000000000091 Td
 (the answers were completed unusually fast, a suspicion flag can be attached to the session. Alex does not see) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 409.4900000000000091 Td
+54. 365.4900000000000091 Td
 (this; it is a data-quality mechanism for the research team.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 385.4900000000000091 Td
+54. 341.4900000000000091 Td
 (Next comes the pre-test. These questions measure baseline knowledge. Alex answers them, and the data is) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 371.4900000000000091 Td
+54. 327.4900000000000091 Td
 (saved to `pre_test_responses`. This is not just a scoring step; the pre-test becomes part of the context the) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 357.4900000000000091 Td
+54. 313.4900000000000091 Td
 (tutor uses to adjust explanations later.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 333.4900000000000091 Td
+54. 289.4900000000000091 Td
 (Alex now reaches the mode assignment page. Because they entered through `/study/text`, the system already) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 319.4900000000000091 Td
+54. 275.4900000000000091 Td
 (pre-assigns the mode and auto-navigates forward. The platform intentionally prevents switching mid-session;) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 305.4900000000000091 Td
+54. 261.4900000000000091 Td
 (this protects the study design and ensures clean data.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 281.4900000000000091 Td
+54. 237.4900000000000091 Td
 (In the learning section, Alex sees a slide viewer on the left and a chat panel on the right. The tutor greets them) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 267.4900000000000091 Td
+54. 223.4900000000000091 Td
 (on the first slide. As Alex moves through the slides, the tutor injects the current slide title and key points into) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 253.4900000000000091 Td
+54. 209.4900000000000091 Td
 (the system context, ensuring responses stay relevant. When Alex asks a question, the system streams the) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 239.4900000000000091 Td
-(response from the chat edge function, which calls the Lovable AI gateway. This feels responsive and) Tj
+54. 195.4900000000000091 Td
+(response from the chat edge function, which calls the OpenAI API \(GPT-5 mini\). This feels responsive and) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 225.4900000000000091 Td
+54. 181.4900000000000091 Td
 (conversational, but the model is strictly constrained to the slide topic.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 201.4900000000000091 Td
+54. 157.4900000000000091 Td
 (If Alex opens the AI Playground, they can generate images with prompts and parameters. This is optional and) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 187.4900000000000091 Td
+54. 143.4900000000000091 Td
 (does not block the study flow, but it enriches the experience and gives a practical, hands-on step.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 163.4900000000000091 Td
+54. 119.4900000000000091 Td
 (After learning, Alex enters a scenario. The scenario is a scripted dialogue, so Alex experiences a guided) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 149.4900000000000091 Td
+54. 105.4900000000000091 Td
 (conversation. Once the final dialogue turn is reached, the app collects scenario feedback. The conversation) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 135.4900000000000091 Td
+54. 91.4900000000000091 Td
 (and feedback are saved in the scenarios tables, ensuring that later analysis can compare perceptions against) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 121.4900000000000091 Td
+54. 77.4900000000000091 Td
 (responses.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-54. 97.4900000000000091 Td
-(Finally, Alex completes the post-test over three short pages. Each page saves and locks once completed.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-54. 83.4900000000000091 Td
-(Once the final page is submitted, Alex is shown a completion screen and can optionally download their) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-54. 69.4900000000000091 Td
-(responses. The system marks the session completed in the database and sets a localStorage flag to prevent a) Tj
 ET
 BT
 /F1 9 Tf
@@ -2558,7 +2544,7 @@ endobj
 endobj
 18 0 obj
 <<
-/Length 6191
+/Length 6132
 >>
 stream
 0.200025 w
@@ -2568,357 +2554,336 @@ BT
 11.5 TL
 0 g
 54. 787.8899999999999864 Td
+(Finally, Alex completes the post-test over three short pages. Each page saves and locks once completed.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 773.8899999999999864 Td
+(Once the final page is submitted, Alex is shown a completion screen and can optionally download their) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 759.8899999999999864 Td
+(responses. The system marks the session completed in the database and sets a localStorage flag to prevent a) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 745.8899999999999864 Td
 (second run on the same device.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 757.8899999999999864 Td
+54. 715.8899999999999864 Td
 (Narrative walkthrough: Participant in Avatar Mode \(story\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 728.6899999999999409 Td
+54. 686.6900000000000546 Td
 (Now imagine the same participant starts from `/study/avatar`. The entry page is identical, but the mode badge) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 714.6899999999999409 Td
+54. 672.6900000000000546 Td
 (confirms an avatar-guided experience.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 690.6900000000000546 Td
+54. 648.6900000000000546 Td
 (The early flow is the same: consent creates a session, demographics and pre-test are saved, and the system) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 676.6900000000000546 Td
+54. 634.6900000000000546 Td
 (confirms the learning mode. When the participant reaches the learning page, the main difference is the right) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 662.6900000000000546 Td
+54. 620.6900000000000546 Td
 (panel: instead of text chat, the avatar is visible and speaks.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 638.6900000000000546 Td
+54. 596.6900000000000546 Td
 (When the learning page loads, the client requests an Anam session via the `anam-session` edge function. This) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 624.6900000000000546 Td
+54. 582.6900000000000546 Td
 (function checks the master API switch and the Anam toggle in `app_settings`, and then retrieves the most) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 610.6900000000000546 Td
+54. 568.6900000000000546 Td
 (recent API key. If the key is stored in the database, it overrides the environment default. This ensures each) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 596.6900000000000546 Td
+54. 554.6900000000000546 Td
 (admin can use their own free Anam key if needed.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 572.6900000000000546 Td
+54. 530.6900000000000546 Td
 (The avatar uses the same slide context logic as text mode. Each slide provides a system prompt and key) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 558.6900000000000546 Td
+54. 516.6900000000000546 Td
 (points, ensuring the avatar stays on topic. The transcript is shown in the UI for accessibility and review.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 534.6900000000000546 Td
+54. 492.6899999999999977 Td
 (In avatar mode, the AI Playground remains optional but available. The participant can still generate images,) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 520.6900000000000546 Td
+54. 478.6899999999999977 Td
 (but the core differentiator is the visual, spoken tutor experience.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 496.6899999999999977 Td
+54. 454.6899999999999977 Td
 (As in text mode, scenarios are completed after the learning section. The scenario dialogues and feedback are) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 482.6899999999999977 Td
+54. 440.6899999999999977 Td
 (stored the same way. The post-test and completion pages are identical between modes to keep the study) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 468.6899999999999977 Td
+54. 426.6899999999999977 Td
 (consistent.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 444.6899999999999977 Td
+54. 402.6899999999999977 Td
 (One practical limitation: on smaller screens, avatar mode is intentionally disabled during the learning phase to) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 430.6899999999999977 Td
+54. 388.6899999999999977 Td
 (avoid creating multiple Anam clients at once. The UI shows a message instructing participants to use a larger) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 416.6899999999999977 Td
+54. 374.6899999999999977 Td
 (screen for the avatar experience.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 386.6899999999999977 Td
+54. 344.6899999999999977 Td
 (Participant journey: micro-interactions and UI guardrails) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 357.4900000000000091 Td
+54. 315.4900000000000091 Td
 (Key guardrails the participant experiences \(often silently\):) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 340.4900000000000091 Td
+66. 298.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 340.4900000000000091 Td
+76. 298.4900000000000091 Td
 (Flow enforcement: the user cannot skip to later steps without completing prerequisites.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 324.4900000000000091 Td
+66. 282.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 324.4900000000000091 Td
+76. 282.4900000000000091 Td
 (Step locking: once a step is completed, navigation back is blocked.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 308.4900000000000091 Td
+66. 266.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 308.4900000000000091 Td
+76. 266.4900000000000091 Td
 (Mode switching prevention: attempting to switch mode resets the session and returns to the start.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 292.4900000000000091 Td
+66. 250.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 292.4900000000000091 Td
+76. 250.4900000000000091 Td
 (Local completion lock: a completed session is stored in localStorage, blocking repeat participation on the) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 278.4900000000000091 Td
+76. 236.4900000000000091 Td
 (same device.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 256.4900000000000091 Td
+54. 214.4900000000000091 Td
 (Timing and data quality tracking:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 239.4900000000000091 Td
+66. 197.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 239.4900000000000091 Td
+76. 197.4900000000000091 Td
 (Each page records entry time and per-question answer times.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 223.4900000000000091 Td
+66. 181.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 223.4900000000000091 Td
+76. 181.4900000000000091 Td
 (If suspicious timing is detected, a flag is written to the session.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 207.4900000000000091 Td
+66. 165.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 207.4900000000000091 Td
+76. 165.4900000000000091 Td
 (The participant is never shown these flags, but the admin can review them later.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 179.4900000000000091 Td
+54. 137.4900000000000091 Td
 (Component map \(participant-facing\)) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 150.2899999999999636 Td
+54. 108.2899999999999636 Td
 (The key participant-facing pages and components are:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 133.2899999999999636 Td
+66. 91.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 133.2899999999999636 Td
+76. 91.2899999999999636 Td
 (`StudyEntry`: validates mode, shows the initial welcome message, and handles reset flow.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 117.2899999999999636 Td
+66. 75.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 117.2899999999999636 Td
+76. 75.2899999999999636 Td
 (`Consent`: collects consent and creates the session.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 101.2899999999999636 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 101.2899999999999636 Td
-(`Demographics`: renders demographic questions, saves results.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 85.2899999999999636 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 85.2899999999999636 Td
-(`PreTest`: renders knowledge questions, saves results.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 69.2899999999999636 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 69.2899999999999636 Td
-(`ModeAssignment`: locks the mode and prevents mid-study switching.) Tj
 ET
 BT
 /F1 9 Tf
@@ -2939,7 +2904,7 @@ endobj
 endobj
 20 0 obj
 <<
-/Length 5709
+/Length 5958
 >>
 stream
 0.200025 w
@@ -2956,7 +2921,7 @@ BT
 11.5 TL
 0 g
 76. 787.8899999999999864 Td
-(`Learning`: displays slides, tutor panel, and optional AI Playground.) Tj
+(`Demographics`: renders demographic questions, saves results.) Tj
 ET
 BT
 /F1 10 Tf
@@ -2970,7 +2935,7 @@ BT
 11.5 TL
 0 g
 76. 771.8899999999999864 Td
-(`SlideViewer`: renders slide content, title, and key points.) Tj
+(`PreTest`: renders knowledge questions, saves results.) Tj
 ET
 BT
 /F1 10 Tf
@@ -2984,7 +2949,7 @@ BT
 11.5 TL
 0 g
 76. 755.8899999999999864 Td
-(`TextModeChat`: streams text tutor responses.) Tj
+(`ModeAssignment`: locks the mode and prevents mid-study switching.) Tj
 ET
 BT
 /F1 10 Tf
@@ -2998,7 +2963,7 @@ BT
 11.5 TL
 0 g
 76. 739.8899999999999864 Td
-(`AvatarModePanel`: renders the avatar client and transcript.) Tj
+(`Learning`: displays slides, tutor panel, and optional AI Playground.) Tj
 ET
 BT
 /F1 10 Tf
@@ -3012,7 +2977,7 @@ BT
 11.5 TL
 0 g
 76. 723.8899999999999864 Td
-(`Scenario`: scripted dialogue flow.) Tj
+(`SlideViewer`: renders slide content, title, and key points.) Tj
 ET
 BT
 /F1 10 Tf
@@ -3026,7 +2991,7 @@ BT
 11.5 TL
 0 g
 76. 707.8899999999999864 Td
-(`ScenarioFeedback`: collects trust, confidence, and engagement ratings.) Tj
+(`TextModeChat`: streams text tutor responses.) Tj
 ET
 BT
 /F1 10 Tf
@@ -3040,7 +3005,7 @@ BT
 11.5 TL
 0 g
 76. 691.8899999999999864 Td
-(`PostTestPage1/2/3`: post-test survey pages.) Tj
+(`AvatarModePanel`: renders the avatar client and transcript.) Tj
 ET
 BT
 /F1 10 Tf
@@ -3054,329 +3019,350 @@ BT
 11.5 TL
 0 g
 76. 675.8899999999999864 Td
+(`Scenario`: scripted dialogue flow.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 659.8899999999999864 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 659.8899999999999864 Td
+(`ScenarioFeedback`: collects trust, confidence, and engagement ratings.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 643.8899999999999864 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 643.8899999999999864 Td
+(`PostTestPage1/2/3`: post-test survey pages.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 627.8899999999999864 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 627.8899999999999864 Td
 (`Completion`: marks the session complete and offers optional export.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 647.8899999999999864 Td
+54. 599.8899999999999864 Td
 (Admin and owner workflows) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 618.6900000000000546 Td
+54. 570.6900000000000546 Td
 (Admin login) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 599.2899999999999636 Td
+54. 551.2899999999999636 Td
 (Route:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 582.2899999999999636 Td
+66. 534.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 582.2899999999999636 Td
+76. 534.2899999999999636 Td
 (`/admin/login`) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 560.2899999999999636 Td
+54. 512.2899999999999636 Td
 (System behavior:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 543.2899999999999636 Td
+66. 495.2900000000000205 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 543.2899999999999636 Td
+76. 495.2900000000000205 Td
 (Supabase auth used for admin sign-in.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 527.2899999999999636 Td
+66. 479.2900000000000205 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 527.2899999999999636 Td
+76. 479.2900000000000205 Td
 (Role is verified by checking `user_roles`.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 511.2899999999999636 Td
+66. 463.2900000000000205 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 511.2899999999999636 Td
+76. 463.2900000000000205 Td
 (Access granted for users with researcher/admin role.) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 489.2899999999999636 Td
+54. 441.2900000000000205 Td
 (Admin dashboard overview) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 469.8899999999999864 Td
+54. 421.8900000000000432 Td
 (The Overview tab provides a high-level status view:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 452.8899999999999864 Td
+66. 404.8900000000000432 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 452.8899999999999864 Td
+76. 404.8900000000000432 Td
 (Total sessions, completion counts, and trends.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 436.8899999999999864 Td
+66. 388.8900000000000432 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 436.8899999999999864 Td
+76. 388.8900000000000432 Td
 (Data quality alerts and suspicious sessions.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 420.8899999999999864 Td
+66. 372.8900000000000432 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 420.8899999999999864 Td
+76. 372.8900000000000432 Td
 (Mode distribution and summary metrics.) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 398.8899999999999864 Td
+54. 350.8900000000000432 Td
 (Sessions tab \(data quality control\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 379.4900000000000091 Td
+54. 331.4900000000000659 Td
 (The Sessions tab is the primary place for reviewing individual sessions.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 355.4900000000000091 Td
+54. 307.4900000000001228 Td
 (Key actions:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 338.4900000000000091 Td
+66. 290.4900000000001228 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 338.4900000000000091 Td
+76. 290.4900000000001228 Td
 (View session status and mode.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 322.4900000000000091 Td
+66. 274.4900000000001228 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 322.4900000000000091 Td
+76. 274.4900000000001228 Td
 (See suspicion flags and detailed reasons for suspicious behavior.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 306.4900000000000091 Td
+66. 258.4900000000001228 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 306.4900000000000091 Td
+76. 258.4900000000001228 Td
 (Validate a session: Accept or Ignore \(owner can finalize\).) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 284.4900000000000091 Td
+54. 236.4900000000001228 Td
 (Validation logic:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 267.4900000000000091 Td
+66. 219.4900000000001228 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 267.4900000000000091 Td
+76. 219.4900000000001228 Td
 (Suspicious sessions are excluded from analysis unless explicitly accepted.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 251.4900000000000091 Td
+66. 203.4900000000001228 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 251.4900000000000091 Td
+76. 203.4900000000001228 Td
 (Validation status is stored in `study_sessions.validation_status`.) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 229.4900000000000091 Td
+54. 181.4900000000001228 Td
 (Responses tab \(export and audit\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 210.0900000000000318 Td
+54. 162.0900000000001455 Td
 (The Responses tab aggregates answers from demographics, pre-test, and post-test tables.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 186.0900000000000318 Td
+54. 138.0900000000001455 Td
 (Key actions:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 169.0900000000000318 Td
+66. 121.0900000000001455 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 169.0900000000000318 Td
+76. 121.0900000000001455 Td
 (Export full dataset across sessions.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 153.0900000000000318 Td
+66. 105.0900000000001455 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 153.0900000000000318 Td
+76. 105.0900000000001455 Td
 (Export per-session data with dialogue if available.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 137.0900000000000318 Td
+66. 89.0900000000001455 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 137.0900000000000318 Td
+76. 89.0900000000001455 Td
 (Filter results by validation status.) Tj
-ET
-BT
-/F2 11 Tf
-12.6499999999999986 TL
-0 g
-54. 115.0900000000000318 Td
-(Slides tab \(content management\)) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-54. 95.6900000000000546 Td
-(Admins and the owner can edit slide content that participants see.) Tj
-ET
-BT
-/F2 10 Tf
-11.5 TL
-0 g
-54. 71.6900000000000546 Td
-(Fields:) Tj
 ET
 BT
 /F1 9 Tf
@@ -3397,409 +3383,416 @@ endobj
 endobj
 22 0 obj
 <<
-/Length 4922
+/Length 4974
 >>
 stream
 0.200025 w
 0 G
 BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+54. 787.8899999999999864 Td
+(Slides tab \(content management\)) Tj
+ET
+BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 787.8899999999999864 Td
+54. 768.4900000000000091 Td
+(Admins and the owner can edit slide content that participants see.) Tj
+ET
+BT
+/F2 10 Tf
+11.5 TL
+0 g
+54. 744.4900000000000091 Td
+(Fields:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 727.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 787.8899999999999864 Td
+76. 727.4900000000000091 Td
 (Title) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 771.8899999999999864 Td
+66. 711.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 771.8899999999999864 Td
+76. 711.4900000000000091 Td
 (Content \(Markdown supported\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 755.8899999999999864 Td
+66. 695.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 755.8899999999999864 Td
+76. 695.4900000000000091 Td
 (Key points \(bullet summary\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 739.8899999999999864 Td
+66. 679.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 739.8899999999999864 Td
+76. 679.4900000000000091 Td
 (System prompt context \(used for the AI tutor\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 723.8899999999999864 Td
+66. 663.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 723.8899999999999864 Td
+76. 663.4900000000000091 Td
 (Visibility \(active/inactive\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 701.8899999999999864 Td
+54. 641.4900000000000091 Td
 (Changes take effect immediately for new sessions.) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 677.8899999999999864 Td
+54. 617.4900000000000091 Td
 (Questions tab \(survey management\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 658.4900000000000091 Td
+54. 598.0899999999999181 Td
 (Study questions are stored in `study_questions` and can be edited.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 634.4900000000000091 Td
+54. 574.0899999999999181 Td
 (Capabilities:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 617.4900000000000091 Td
+66. 557.0899999999999181 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 617.4900000000000091 Td
+76. 557.0899999999999181 Td
 (Create, edit, and disable questions.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 601.4900000000000091 Td
+66. 541.0899999999999181 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 601.4900000000000091 Td
+76. 541.0899999999999181 Td
 (Mark correct answers for pre-test knowledge items.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 585.4900000000000091 Td
+66. 525.0899999999999181 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 585.4900000000000091 Td
+76. 525.0899999999999181 Td
 (Control question visibility by section.) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 563.4900000000000091 Td
+54. 503.089999999999975 Td
 (API Settings tab) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 544.0900000000000318 Td
+54. 483.6899999999999977 Td
 (This is the operational control panel for AI services.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 520.0900000000000318 Td
+54. 459.6899999999999977 Td
 (Capabilities:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 503.0900000000000318 Td
+66. 442.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 503.0900000000000318 Td
+76. 442.6899999999999977 Td
 (Master switch \(owner only\).) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 487.0900000000000318 Td
+66. 426.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 487.0900000000000318 Td
+76. 426.6899999999999977 Td
 (Toggle OpenAI chat \(owner only\).) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 471.0900000000000318 Td
+66. 410.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 471.0900000000000318 Td
+76. 410.6899999999999977 Td
 (Toggle Anam avatar \(admin and owner\).) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 455.0900000000000318 Td
+66. 394.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 455.0900000000000318 Td
+76. 394.6899999999999977 Td
 (Update Anam API key \(admin and owner\).) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 433.0900000000000318 Td
+54. 372.6899999999999977 Td
 (Audit:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 416.0900000000000318 Td
+66. 355.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 416.0900000000000318 Td
+76. 355.6899999999999977 Td
 (All changes are logged to `admin_audit_log`.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 400.0900000000000318 Td
+66. 339.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 400.0900000000000318 Td
+76. 339.6899999999999977 Td
 (API key changes store the user email and timestamp.) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 378.0900000000000318 Td
+54. 317.6899999999999409 Td
 (My Access tab) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 358.6900000000000546 Td
+54. 298.2899999999999636 Td
 (Shows the logged-in user what they can and cannot do.) Tj
 ET
 BT
 /F2 11 Tf
 12.6499999999999986 TL
 0 g
-54. 334.6900000000000546 Td
+54. 274.2899999999999636 Td
 (Activity Log tab) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 315.2900000000000773 Td
+54. 254.8899999999999864 Td
 (Displays an audit log of content and API changes.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 285.2900000000000773 Td
+54. 224.8899999999999864 Td
 (Viewer / mentor workflow) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 256.0900000000000318 Td
+54. 195.6899999999999409 Td
 (Viewer accounts are read-only. They can:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 239.0900000000000318 Td
+66. 178.6899999999999409 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 239.0900000000000318 Td
+76. 178.6899999999999409 Td
 (View Overview metrics.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 223.0900000000000318 Td
+66. 162.6899999999999409 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 223.0900000000000318 Td
+76. 162.6899999999999409 Td
 (View Sessions list.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 201.0900000000000318 Td
+54. 140.6899999999999409 Td
 (They cannot:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 184.0900000000000318 Td
+66. 123.6899999999999409 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 184.0900000000000318 Td
+76. 123.6899999999999409 Td
 (Edit content.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 168.0900000000000318 Td
+66. 107.6899999999999409 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 168.0900000000000318 Td
+76. 107.6899999999999409 Td
 (Export data.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 152.0900000000000318 Td
+66. 91.6899999999999409 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 152.0900000000000318 Td
+76. 91.6899999999999409 Td
 (View audit logs.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 136.0900000000000318 Td
+66. 75.6899999999999409 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 136.0900000000000318 Td
+76. 75.6899999999999409 Td
 (Access API settings.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-54. 114.0900000000000318 Td
-(This separation is enforced by permission checks in the UI and at the edge function layer.) Tj
-ET
-BT
-/F2 13 Tf
-14.9499999999999993 TL
-0 g
-54. 84.0900000000000318 Td
-(Data model and storage) Tj
 ET
 BT
 /F1 9 Tf
@@ -3820,7 +3813,7 @@ endobj
 endobj
 24 0 obj
 <<
-/Length 6100
+/Length 5906
 >>
 stream
 0.200025 w
@@ -3830,462 +3823,448 @@ BT
 11.5 TL
 0 g
 54. 787.8899999999999864 Td
+(This separation is enforced by permission checks in the UI and at the edge function layer.) Tj
+ET
+BT
+/F2 13 Tf
+14.9499999999999993 TL
+0 g
+54. 757.8899999999999864 Td
+(Data model and storage) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 728.6899999999999409 Td
 (The system uses a Supabase Postgres database. Key tables include:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 763.8899999999999864 Td
+66. 704.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 763.8899999999999864 Td
+76. 704.6900000000000546 Td
 (study_sessions: top-level record for each participant session.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 747.8899999999999864 Td
+66. 688.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 747.8899999999999864 Td
+76. 688.6900000000000546 Td
 (demographic_responses: per-question demographic answers.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 731.8899999999999864 Td
+66. 672.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 731.8899999999999864 Td
+76. 672.6900000000000546 Td
 (pre_test_responses: per-question pre-test answers.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 715.8899999999999864 Td
+66. 656.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 715.8899999999999864 Td
+76. 656.6900000000000546 Td
 (post_test_responses: per-question post-test answers.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 699.8899999999999864 Td
+66. 640.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 699.8899999999999864 Td
+76. 640.6900000000000546 Td
 (scenarios: per-scenario ratings and metadata.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 683.8899999999999864 Td
+66. 624.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 683.8899999999999864 Td
+76. 624.6900000000000546 Td
 (dialogue_turns: stored dialogue lines linked to scenario sessions.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 667.8899999999999864 Td
+66. 608.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 667.8899999999999864 Td
+76. 608.6900000000000546 Td
 (study_slides: learning content displayed in the slides.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 651.8899999999999864 Td
+66. 592.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 651.8899999999999864 Td
+76. 592.6900000000000546 Td
 (study_questions: the question bank used for all surveys.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 635.8899999999999864 Td
+66. 576.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 635.8899999999999864 Td
+76. 576.6900000000000546 Td
 (app_settings: API toggles and stored Anam API key.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 619.8899999999999864 Td
+66. 560.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 619.8899999999999864 Td
+76. 560.6900000000000546 Td
 (admin_audit_log: audit trail for admin/owner actions.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 603.8899999999999864 Td
+66. 544.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 603.8899999999999864 Td
+76. 544.6900000000000546 Td
 (avatar_time_tracking: time spent per slide in avatar mode.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 581.8899999999999864 Td
+54. 522.6900000000000546 Td
 (Session linkage:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 564.8899999999999864 Td
+66. 505.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 564.8899999999999864 Td
+76. 505.6899999999999977 Td
 (The sessionId used in the UI is a string identifier saved in sessionStorage.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 548.8899999999999864 Td
+66. 489.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 548.8899999999999864 Td
+76. 489.6899999999999977 Td
 (The database also uses a UUID `id` for internal relations.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 532.8899999999999864 Td
+66. 473.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 532.8899999999999864 Td
+76. 473.6899999999999977 Td
 (`save-avatar-time` resolves the internal UUID when saving slide durations.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 504.8899999999999864 Td
+54. 445.6899999999999977 Td
 (Data flow for saving participant responses) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 475.6899999999999977 Td
+72. 416.4900000000000091 Td
 (UI \(Participant Page\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 463.6899999999999977 Td
+72. 404.4900000000000091 Td
 (  -> sessionStorage updated) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 451.6899999999999977 Td
+72. 392.4900000000000091 Td
 (  -> Edge function: save-study-data) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 439.6899999999999977 Td
+72. 380.4900000000000091 Td
 (      - validates input schema) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 427.6899999999999977 Td
+72. 368.4900000000000091 Td
 (      - writes to table\(s\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 415.6899999999999977 Td
+72. 356.4900000000000091 Td
 (      - updates study_sessions) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 403.6899999999999977 Td
+72. 344.4900000000000091 Td
 (  -> Supabase Postgres tables) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 381.6899999999999977 Td
+54. 322.4900000000000091 Td
 (The `save-study-data` function supports multiple actions:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 364.6899999999999977 Td
+66. 305.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 364.6899999999999977 Td
+76. 305.4900000000000091 Td
 (create_session) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 348.6899999999999977 Td
+66. 289.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 348.6899999999999977 Td
+76. 289.4900000000000091 Td
 (save_demographics) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 332.6899999999999977 Td
+66. 273.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 332.6899999999999977 Td
+76. 273.4900000000000091 Td
 (save_pre_test) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 316.6899999999999409 Td
+66. 257.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 316.6899999999999409 Td
+76. 257.4900000000000091 Td
 (save_post_test) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 300.6899999999999409 Td
+66. 241.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 300.6899999999999409 Td
+76. 241.4900000000000091 Td
 (save_scenario) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 284.6899999999999409 Td
+66. 225.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 284.6899999999999409 Td
+76. 225.4900000000000091 Td
 (update_mode) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 268.6899999999999409 Td
+66. 209.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 268.6899999999999409 Td
+76. 209.4900000000000091 Td
 (reset_session) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 252.6899999999999409 Td
+66. 193.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 252.6899999999999409 Td
+76. 193.4900000000000091 Td
 (update_activity) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 236.6899999999999409 Td
+66. 177.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 236.6899999999999409 Td
+76. 177.4900000000000091 Td
 (report_suspicious) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 214.6899999999999409 Td
+54. 155.4900000000000091 Td
 (Each action has its own validation schema to protect data quality and prevent malformed writes.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 184.6899999999999409 Td
+54. 125.4900000000000091 Td
 (AI tutor data flow \(Text Mode\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 155.4899999999998954 Td
+72. 96.2899999999999636 Td
 (User -> TextModeChat) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 143.4899999999998954 Td
+72. 84.2899999999999636 Td
 (  -> streamChat\(\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 131.4899999999998954 Td
+72. 72.2899999999999636 Td
 (     -> fetch /functions/v1/chat) Tj
-ET
-BT
-/F5 9 Tf
-10.3499999999999996 TL
-0 g
-72. 119.4899999999998954 Td
-(        -> chat edge function) Tj
-ET
-BT
-/F5 9 Tf
-10.3499999999999996 TL
-0 g
-72. 107.4899999999998954 Td
-(           -> Lovable AI Gateway \(chat completions\)) Tj
-ET
-BT
-/F5 9 Tf
-10.3499999999999996 TL
-0 g
-72. 95.4899999999998954 Td
-(           -> stream response) Tj
-ET
-BT
-/F5 9 Tf
-10.3499999999999996 TL
-0 g
-72. 83.4899999999998954 Td
-(  -> UI shows streaming reply) Tj
 ET
 BT
 /F1 9 Tf
@@ -4306,409 +4285,409 @@ endobj
 endobj
 26 0 obj
 <<
-/Length 5233
+/Length 5215
 >>
 stream
 0.200025 w
 0 G
 BT
+/F5 9 Tf
+10.3499999999999996 TL
+0 g
+72. 787.8899999999999864 Td
+(        -> chat edge function) Tj
+ET
+BT
+/F5 9 Tf
+10.3499999999999996 TL
+0 g
+72. 775.8899999999999864 Td
+(           -> OpenAI API \(GPT-5 mini\)) Tj
+ET
+BT
+/F5 9 Tf
+10.3499999999999996 TL
+0 g
+72. 763.8899999999999864 Td
+(           -> stream response) Tj
+ET
+BT
+/F5 9 Tf
+10.3499999999999996 TL
+0 g
+72. 751.8899999999999864 Td
+(  -> UI shows streaming reply) Tj
+ET
+BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 787.8899999999999864 Td
+54. 729.8899999999999864 Td
 (Text Mode uses slide context as a system message. It injects:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 769.8899999999999864 Td
+66. 711.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 769.8899999999999864 Td
+76. 711.8899999999999864 Td
 (Slide title) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 753.8899999999999864 Td
+66. 695.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 753.8899999999999864 Td
+76. 695.8899999999999864 Td
 (Slide content context) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 737.8899999999999864 Td
+66. 679.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 737.8899999999999864 Td
+76. 679.8899999999999864 Td
 (Key points to cover) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 715.8899999999999864 Td
+54. 657.8899999999999864 Td
 (This ensures the tutor stays on the current topic.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 685.8899999999999864 Td
+54. 627.8899999999999864 Td
 (Avatar tutor data flow \(Avatar Mode\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 656.6900000000000546 Td
+72. 598.6900000000000546 Td
 (User -> AvatarModePanel) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 644.6900000000000546 Td
+72. 586.6900000000000546 Td
 (  -> useAnamClient) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 632.6900000000000546 Td
+72. 574.6900000000000546 Td
 (     -> /functions/v1/anam-session) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 620.6900000000000546 Td
+72. 562.6900000000000546 Td
 (        -> check app_settings) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 608.6900000000000546 Td
+72. 550.6900000000000546 Td
 (        -> select API key \(db override or env\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 596.6900000000000546 Td
+72. 538.6900000000000546 Td
 (        -> create Anam session) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 584.6900000000000546 Td
+72. 526.6900000000000546 Td
 (  -> Avatar client renders video + transcript) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 562.6900000000000546 Td
+54. 504.6899999999999977 Td
 (Key behavior:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 545.6900000000000546 Td
+66. 487.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 545.6900000000000546 Td
+76. 487.6899999999999977 Td
 (Avatar sessions are blocked if the master switch or Anam switch is disabled.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 529.6900000000000546 Td
+66. 471.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 529.6900000000000546 Td
+76. 471.6899999999999977 Td
 (The system logs slide time for avatar sessions using `save-avatar-time`.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 501.6899999999999977 Td
+54. 443.6899999999999977 Td
 (Image playground data flow) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 472.4900000000000091 Td
+72. 414.4900000000000091 Td
 (User -> ImagePlayground) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 460.4900000000000091 Td
+72. 402.4900000000000091 Td
 (  -> /functions/v1/generate-image) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 448.4900000000000091 Td
-(     -> Lovable AI Gateway \(image model\)) Tj
+72. 390.4900000000000091 Td
+(     -> OpenAI image endpoint) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 436.4900000000000091 Td
+72. 378.4900000000000091 Td
 (  -> UI displays image) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 414.4900000000000091 Td
+54. 356.4900000000000091 Td
 (The playground accepts parameters \(prompt, negative prompt, CFG, steps, size\) and is optional for) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 400.4900000000000091 Td
+54. 342.4900000000000091 Td
 (participants.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 370.4900000000000091 Td
+54. 312.4900000000000091 Td
 (Study flow guardrails) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 341.2900000000000205 Td
+54. 283.2899999999999636 Td
 (The study is intentionally linear. The `useStudyFlowGuard` hook enforces:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 323.2900000000000773 Td
+66. 265.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 323.2900000000000773 Td
+76. 265.2899999999999636 Td
 (No skipping ahead without completing required steps.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 307.2900000000000773 Td
+66. 249.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 307.2900000000000773 Td
+76. 249.2899999999999636 Td
 (No returning to already completed steps.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 291.2900000000000773 Td
+66. 233.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 291.2900000000000773 Td
+76. 233.2899999999999636 Td
 (Forced redirects based on sessionStorage markers.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 269.2900000000000773 Td
+54. 211.2899999999999636 Td
 (Key sessionStorage markers:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 252.2900000000000773 Td
+66. 194.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 252.2900000000000773 Td
+76. 194.2899999999999636 Td
 (sessionId) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 236.2900000000000773 Td
+66. 178.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 236.2900000000000773 Td
+76. 178.2899999999999636 Td
 (demographics) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 220.2900000000000773 Td
+66. 162.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 220.2900000000000773 Td
+76. 162.2899999999999636 Td
 (preTest) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 204.2900000000000773 Td
+66. 146.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 204.2900000000000773 Td
+76. 146.2899999999999636 Td
 (studyMode) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 188.2900000000000773 Td
+66. 130.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 188.2900000000000773 Td
+76. 130.2899999999999636 Td
 (postTestPage1) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 172.2900000000000773 Td
+66. 114.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 172.2900000000000773 Td
+76. 114.2899999999999636 Td
 (postTestPage2) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 156.2900000000000773 Td
+66. 98.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 156.2900000000000773 Td
+76. 98.2899999999999636 Td
 (postTestPage3) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 140.2900000000000773 Td
+66. 82.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 140.2900000000000773 Td
+76. 82.2899999999999636 Td
 (studyCompleted) Tj
-ET
-BT
-/F2 10 Tf
-11.5 TL
-0 g
-54. 118.2900000000000773 Td
-(LocalStorage marker:) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 101.2900000000000773 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 101.2900000000000773 Td
-(studyCompleted \(prevents repeat participation on the same device\)) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-54. 79.2900000000000773 Td
-(If a user tries to return to a completed step, they are redirected forward with a warning toast.) Tj
 ET
 BT
 /F1 9 Tf
@@ -4729,430 +4708,444 @@ endobj
 endobj
 28 0 obj
 <<
-/Length 5424
+/Length 5615
 >>
 stream
 0.200025 w
 0 G
 BT
+/F2 10 Tf
+11.5 TL
+0 g
+54. 787.8899999999999864 Td
+(LocalStorage marker:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 770.8899999999999864 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 770.8899999999999864 Td
+(studyCompleted \(prevents repeat participation on the same device\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 748.8899999999999864 Td
+(If a user tries to return to a completed step, they are redirected forward with a warning toast.) Tj
+ET
+BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 787.8899999999999864 Td
+54. 718.8899999999999864 Td
 (Suspicious activity detection \(data quality\)) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 758.6899999999999409 Td
+54. 689.6900000000000546 Td
 (The platform tracks timing patterns via `useBotDetection`:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 741.6899999999999409 Td
+66. 672.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 741.6899999999999409 Td
+76. 672.6900000000000546 Td
 (Time spent on a page.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 725.6899999999999409 Td
+66. 656.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 725.6899999999999409 Td
+76. 656.6900000000000546 Td
 (Answer speed per question.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 709.6900000000000546 Td
+66. 640.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 709.6900000000000546 Td
+76. 640.6900000000000546 Td
 (Average answer speed.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 693.6900000000000546 Td
+66. 624.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 693.6900000000000546 Td
+76. 624.6900000000000546 Td
 (Slide reading time.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 671.6900000000000546 Td
+54. 602.6900000000000546 Td
 (Suspicion scoring:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 654.6900000000000546 Td
+66. 585.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 654.6900000000000546 Td
+76. 585.6900000000000546 Td
 (Each rule adds points \(for example, completing a page too fast adds a large score\).) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 638.6900000000000546 Td
+66. 569.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 638.6900000000000546 Td
+76. 569.6900000000000546 Td
 (A higher score indicates more suspicious behavior.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 622.6900000000000546 Td
+66. 553.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 622.6900000000000546 Td
+76. 553.6900000000000546 Td
 (Flags and scores are saved to `study_sessions` for review.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 600.6900000000000546 Td
+54. 531.6900000000000546 Td
 (Admin/owner workflow:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 583.6900000000000546 Td
+66. 514.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 583.6900000000000546 Td
+76. 514.6900000000000546 Td
 (Suspicious sessions appear in the Sessions tab.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 567.6900000000000546 Td
+66. 498.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 567.6900000000000546 Td
+76. 498.6899999999999977 Td
 (Owner can accept or ignore them.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 551.6900000000000546 Td
+66. 482.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 551.6900000000000546 Td
+76. 482.6899999999999977 Td
 (Accepted sessions are included in exports and analytics.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 523.6900000000000546 Td
+54. 454.6899999999999977 Td
 (API settings workflow \(owner and admin\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 494.4900000000000091 Td
+54. 425.4900000000000091 Td
 (The API settings panel reads and writes entries in `app_settings`.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 470.4900000000000091 Td
+54. 401.4900000000000091 Td
 (Key values:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 453.4900000000000091 Td
+66. 384.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 453.4900000000000091 Td
+76. 384.4900000000000091 Td
 (api_enabled \(master switch\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 437.4900000000000091 Td
+66. 368.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 437.4900000000000091 Td
+76. 368.4900000000000091 Td
 (openai_api_enabled) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 421.4900000000000091 Td
+66. 352.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 421.4900000000000091 Td
+76. 352.4900000000000091 Td
 (anam_api_enabled) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 405.4900000000000091 Td
+66. 336.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 405.4900000000000091 Td
+76. 336.4900000000000091 Td
 (anam_api_key) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 383.4900000000000091 Td
+54. 314.4900000000000091 Td
 (Rules:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 366.4900000000000091 Td
+66. 297.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 366.4900000000000091 Td
+76. 297.4900000000000091 Td
 (Only owner can toggle master switch and OpenAI.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 350.4900000000000091 Td
+66. 281.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 350.4900000000000091 Td
+76. 281.4900000000000091 Td
 (Admins can toggle Anam and update the Anam key.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 334.4900000000000091 Td
+66. 265.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 334.4900000000000091 Td
+76. 265.4900000000000091 Td
 (Updated_by and updated_at fields are recorded and shown in the UI.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 306.4900000000000091 Td
+54. 237.4900000000000091 Td
 (Content editing workflow \(slides and questions\)) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 277.2899999999999636 Td
+54. 208.2899999999999636 Td
 (Slides:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 260.2899999999999636 Td
+66. 191.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 260.2899999999999636 Td
+76. 191.2899999999999636 Td
 (Stored in `study_slides` with fields: title, content, key_points, system_prompt_context, sort_order,) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 246.2899999999999636 Td
+76. 177.2899999999999636 Td
 (is_active.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 230.2899999999999636 Td
+66. 161.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 230.2899999999999636 Td
+76. 161.2899999999999636 Td
 (Admins can update text and key points without deleting.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 214.2899999999999636 Td
+66. 145.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 214.2899999999999636 Td
+76. 145.2899999999999636 Td
 (Owner can fully manage slide visibility and order.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 192.2899999999999636 Td
+54. 123.2899999999999636 Td
 (Questions:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 175.2899999999999636 Td
+66. 106.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 175.2899999999999636 Td
+76. 106.2899999999999636 Td
 (Stored in `study_questions` and grouped by section \(demographics, pre-test, post-test\).) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 159.2899999999999636 Td
+66. 90.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 159.2899999999999636 Td
+76. 90.2899999999999636 Td
 (Admins can edit text, options, and correct answers \(for knowledge scoring\).) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 143.2899999999999636 Td
+66. 74.2899999999999636 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 143.2899999999999636 Td
+76. 74.2899999999999636 Td
 (Questions can be disabled to remove them from live flow.) Tj
-ET
-BT
-/F2 13 Tf
-14.9499999999999993 TL
-0 g
-54. 115.2899999999999636 Td
-(Export workflow \(admin and owner\)) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-54. 86.0899999999999181 Td
-(Exports are generated in the Responses tab and the Sessions tab.) Tj
 ET
 BT
 /F1 9 Tf
@@ -5173,367 +5166,353 @@ endobj
 endobj
 30 0 obj
 <<
-/Length 5865
+/Length 5538
 >>
 stream
 0.200025 w
 0 G
 BT
+/F2 13 Tf
+14.9499999999999993 TL
+0 g
+54. 787.8899999999999864 Td
+(Export workflow \(admin and owner\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 758.6899999999999409 Td
+(Exports are generated in the Responses tab and the Sessions tab.) Tj
+ET
+BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 787.8899999999999864 Td
+54. 734.6899999999999409 Td
 (Export types:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 770.8899999999999864 Td
+66. 717.6899999999999409 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 770.8899999999999864 Td
+76. 717.6899999999999409 Td
 (Session-level CSV or PDF with demographics, pre-test, post-test, scenarios, and dialogue.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 754.8899999999999864 Td
+66. 701.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 754.8899999999999864 Td
+76. 701.6900000000000546 Td
 (Study-level CSV across all sessions.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 732.8899999999999864 Td
+54. 679.6900000000000546 Td
 (Validation rules:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 715.8899999999999864 Td
+66. 662.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 715.8899999999999864 Td
+76. 662.6900000000000546 Td
 (Suspicious sessions are excluded unless accepted.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 699.8899999999999864 Td
+66. 646.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 699.8899999999999864 Td
+76. 646.6900000000000546 Td
 (The system applies the validation status before including data in export.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 671.8899999999999864 Td
+54. 618.6900000000000546 Td
 (Error and recovery paths) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 642.6900000000000546 Td
+54. 589.4900000000000091 Td
 (Key recovery points:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 625.6900000000000546 Td
+66. 572.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 625.6900000000000546 Td
+76. 572.4900000000000091 Td
 (Invalid study link: show error page, no session created.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 609.6900000000000546 Td
+66. 556.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 609.6900000000000546 Td
+76. 556.4900000000000091 Td
 (Mode switching attempt: session reset and user returned to start.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 593.6900000000000546 Td
+66. 540.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 593.6900000000000546 Td
+76. 540.4900000000000091 Td
 (Missing required step: flow guard redirects to the correct step.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 577.6900000000000546 Td
+66. 524.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 577.6900000000000546 Td
+76. 524.4900000000000091 Td
 (API disabled: chat or avatar requests return a 503 response.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 549.6900000000000546 Td
+54. 496.4900000000000091 Td
 (Operational notes \(owner\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 520.4900000000000091 Td
+66. 467.2900000000000205 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 520.4900000000000091 Td
+76. 467.2900000000000205 Td
 (The platform depends on Supabase edge functions for critical writes. If edge functions fail, data may not) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 506.4900000000000091 Td
+76. 453.2900000000000205 Td
 (be saved.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 490.4900000000000091 Td
+66. 437.2900000000000205 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 490.4900000000000091 Td
+76. 437.2900000000000205 Td
 (The `create-admin-users` function seeds admin accounts based on environment secrets.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 474.4900000000000091 Td
+66. 421.2900000000000205 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 474.4900000000000091 Td
+76. 421.2900000000000205 Td
 (API keys can be rotated in the UI, and the current key owner is shown in API Settings.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 446.4900000000000091 Td
+54. 393.2900000000000205 Td
 (Narrative walkthrough: Admin reviewing data quality) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 417.2900000000000205 Td
+54. 364.0900000000000318 Td
 (An admin logs in and opens the Sessions tab. They see a list of sessions with status, mode, and data quality) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 403.2900000000000205 Td
+54. 350.0900000000000318 Td
 (indicators. The suspicious sessions are visually flagged. The admin clicks into a flagged session to review the) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 389.2900000000000205 Td
+54. 336.0900000000000318 Td
 (details. The system displays a list of flags such as \\"page completed too quickly\\" or \\"average answer time) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 375.2900000000000205 Td
+54. 322.0900000000000318 Td
 (very fast\\".) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 351.2900000000000205 Td
+54. 298.0900000000000318 Td
 (At this point the admin has two paths:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 334.2900000000000205 Td
+66. 281.0900000000000318 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 334.2900000000000205 Td
+76. 281.0900000000000318 Td
 (If the session looks valid despite the flags, they request validation so the owner can accept it.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 318.2900000000000773 Td
+66. 265.0900000000000318 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 318.2900000000000773 Td
+76. 265.0900000000000318 Td
 (If the session is clearly invalid \(for example, all answers were completed in seconds\), the admin requests) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 304.2900000000000773 Td
+76. 251.0900000000000318 Td
 (that the owner ignore it.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 282.2900000000000773 Td
+54. 229.0900000000000318 Td
 (The important detail is that the admin does not make the final decision. The workflow is designed to keep data) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 268.2900000000000773 Td
+54. 215.0900000000000318 Td
 (governance centralized with the owner while still allowing admins to triage the workload.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 244.2900000000000773 Td
+54. 191.0900000000000318 Td
 (When the owner later reviews the session, the decision is written to `study_sessions.validation_status`. That) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 230.2900000000000773 Td
+54. 177.0900000000000318 Td
 (status drives whether the session is included in exports and statistics.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 200.2900000000000773 Td
+54. 147.0900000000000318 Td
 (Narrative walkthrough: Owner acceptance and deletion) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 171.0900000000000318 Td
+54. 117.8899999999999864 Td
 (The owner sees the same Sessions list but with full control. If a flagged session is clearly invalid, the owner) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 157.0900000000000318 Td
+54. 103.8899999999999864 Td
 (can ignore it. If the session is legitimate, the owner can accept it. This status is immediate and affects exports) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 143.0900000000000318 Td
+54. 89.8899999999999864 Td
 (and dashboards.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-54. 119.0900000000000318 Td
-(In rare cases \(for example, test data or corrupted sessions\), the owner can delete sessions. The) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-54. 105.0900000000000318 Td
-(`update-session-validation` edge function deletes all related records in an ordered sequence \(dialogue_turns) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-54. 91.0900000000000318 Td
-(-> scenarios -> responses -> session\). This ensures the database remains consistent and prevents orphaned) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-54. 77.0900000000000318 Td
-(rows.) Tj
 ET
 BT
 /F1 9 Tf
@@ -5554,227 +5533,206 @@ endobj
 endobj
 32 0 obj
 <<
-/Length 5982
+/Length 5963
 >>
 stream
 0.200025 w
 0 G
 BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 787.8899999999999864 Td
+(In rare cases \(for example, test data or corrupted sessions\), the owner can delete sessions. The) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 773.8899999999999864 Td
+(`update-session-validation` edge function deletes all related records in an ordered sequence \(dialogue_turns) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 759.8899999999999864 Td
+(-> scenarios -> responses -> session\). This ensures the database remains consistent and prevents orphaned) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 745.8899999999999864 Td
+(rows.) Tj
+ET
+BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 787.8899999999999864 Td
+54. 715.8899999999999864 Td
 (Admin and owner UI component map) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 758.6899999999999409 Td
+54. 686.6900000000000546 Td
 (The most important admin-facing components include:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 741.6899999999999409 Td
+66. 669.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 741.6899999999999409 Td
+76. 669.6900000000000546 Td
 (`AdminOverview`: summary metrics and data quality alerts.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 725.6899999999999409 Td
+66. 653.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 725.6899999999999409 Td
+76. 653.6900000000000546 Td
 (`AdminSessions`: session list, filters, and validation workflow.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 709.6900000000000546 Td
+66. 637.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 709.6900000000000546 Td
+76. 637.6900000000000546 Td
 (`AdminResponses`: aggregate responses and export features.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 693.6900000000000546 Td
+66. 621.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 693.6900000000000546 Td
+76. 621.6900000000000546 Td
 (`AdminSlides`: content editing for slides.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 677.6900000000000546 Td
+66. 605.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 677.6900000000000546 Td
+76. 605.6900000000000546 Td
 (`AdminQuestions`: question bank management.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 661.6900000000000546 Td
+66. 589.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 661.6900000000000546 Td
+76. 589.6900000000000546 Td
 (`ApiToggle`: API settings and key rotation.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 645.6900000000000546 Td
+66. 573.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 645.6900000000000546 Td
+76. 573.6900000000000546 Td
 (`AdminAuditLog`: change history for admin actions.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 617.6900000000000546 Td
+54. 545.6900000000000546 Td
 (Data dictionary \(practical, owner-readable\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 588.4900000000000091 Td
+54. 516.4900000000000091 Td
 (This dictionary describes what each table is for and what kind of data it stores. Field names may vary, but the) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 574.4900000000000091 Td
+54. 502.4900000000000091 Td
 (purpose is stable.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 550.4900000000000091 Td
+54. 478.4900000000000091 Td
 (Study sessions) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 532.4900000000000091 Td
+66. 460.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 532.4900000000000091 Td
+76. 460.4900000000000091 Td
 (`study_sessions`: one row per participant session. Stores mode, status, timing metadata, suspicion flags,) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 518.4900000000000091 Td
+76. 446.4900000000000091 Td
 (validation status, and completion timestamps.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 496.4900000000000091 Td
+54. 424.4900000000000091 Td
 (Demographic answers) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 478.4900000000000091 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 478.4900000000000091 Td
-(`demographic_responses`: one row per demographic question answered \(sessionId, questionId, answer\).) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 462.4900000000000091 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 462.4900000000000091 Td
-(`demographics`: structured demographic summary for quick reporting.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-54. 440.4900000000000091 Td
-(Knowledge and survey answers) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 422.4900000000000091 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 422.4900000000000091 Td
-(`pre_test_responses`: per-question answers for the knowledge pre-test.) Tj
 ET
 BT
 /F1 10 Tf
@@ -5788,28 +5746,28 @@ BT
 11.5 TL
 0 g
 76. 406.4900000000000091 Td
-(`post_test_responses`: per-question answers for post-test pages.) Tj
+(`demographic_responses`: one row per demographic question answered \(sessionId, questionId, answer\).) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 384.4900000000000091 Td
-(Scenarios and dialogue) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 366.4900000000000091 Td
+66. 390.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 366.4900000000000091 Td
-(`scenarios`: per-scenario results \(confidence, trust, engagement\).) Tj
+76. 390.4900000000000091 Td
+(`demographics`: structured demographic summary for quick reporting.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 368.4900000000000091 Td
+(Knowledge and survey answers) Tj
 ET
 BT
 /F1 10 Tf
@@ -5823,28 +5781,28 @@ BT
 11.5 TL
 0 g
 76. 350.4900000000000091 Td
-(`dialogue_turns`: line-by-line conversation content for each scenario.) Tj
+(`pre_test_responses`: per-question answers for the knowledge pre-test.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 328.4900000000000091 Td
-(Content tables) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 310.4900000000000091 Td
+66. 334.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 310.4900000000000091 Td
-(`study_slides`: slide title, content, key points, AI context, ordering, and active flag.) Tj
+76. 334.4900000000000091 Td
+(`post_test_responses`: per-question answers for post-test pages.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 312.4900000000000091 Td
+(Scenarios and dialogue) Tj
 ET
 BT
 /F1 10 Tf
@@ -5858,28 +5816,28 @@ BT
 11.5 TL
 0 g
 76. 294.4900000000000091 Td
-(`study_questions`: question bank for demographics, pre-test, and post-test.) Tj
+(`scenarios`: per-scenario results \(confidence, trust, engagement\).) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 272.4900000000000091 Td
-(System settings) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 254.4900000000000091 Td
+66. 278.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 254.4900000000000091 Td
-(`app_settings`: key-value storage for API toggles and Anam API keys.) Tj
+76. 278.4900000000000091 Td
+(`dialogue_turns`: line-by-line conversation content for each scenario.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 256.4900000000000091 Td
+(Content tables) Tj
 ET
 BT
 /F1 10 Tf
@@ -5893,7 +5851,7 @@ BT
 11.5 TL
 0 g
 76. 238.4900000000000091 Td
-(`admin_audit_log`: records who changed what and when.) Tj
+(`study_slides`: slide title, content, key points, AI context, ordering, and active flag.) Tj
 ET
 BT
 /F1 10 Tf
@@ -5907,84 +5865,84 @@ BT
 11.5 TL
 0 g
 76. 222.4900000000000091 Td
+(`study_questions`: question bank for demographics, pre-test, and post-test.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+54. 200.4900000000000091 Td
+(System settings) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 182.4900000000000091 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 182.4900000000000091 Td
+(`app_settings`: key-value storage for API toggles and Anam API keys.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 166.4900000000000091 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 166.4900000000000091 Td
+(`admin_audit_log`: records who changed what and when.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 150.4900000000000091 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 150.4900000000000091 Td
 (`user_roles` / `admin_users`: access control for admin panel.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 206.4900000000000091 Td
+66. 134.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 206.4900000000000091 Td
+76. 134.4900000000000091 Td
 (`avatar_time_tracking`: time spent per slide in avatar mode.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 178.4900000000000091 Td
+54. 106.4900000000000091 Td
 (Client-side state and persistence \(important for troubleshooting\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 149.2899999999999636 Td
+54. 77.2899999999999636 Td
 (The front end stores short-lived state in sessionStorage and long-lived flags in localStorage.) Tj
-ET
-BT
-/F2 10 Tf
-11.5 TL
-0 g
-54. 125.2899999999999636 Td
-(SessionStorage keys \(examples\):) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 108.2899999999999636 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 108.2899999999999636 Td
-(sessionId: the current session identifier.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 92.2899999999999636 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 92.2899999999999636 Td
-(studyMode: text or avatar.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 76.2899999999999636 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 76.2899999999999636 Td
-(demographics, preTest: cached answers before save.) Tj
 ET
 BT
 /F1 9 Tf
@@ -6005,388 +5963,416 @@ endobj
 endobj
 34 0 obj
 <<
-/Length 5869
+/Length 6116
 >>
 stream
 0.200025 w
 0 G
 BT
+/F2 10 Tf
+11.5 TL
+0 g
+54. 787.8899999999999864 Td
+(SessionStorage keys \(examples\):) Tj
+ET
+BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 787.8899999999999864 Td
+66. 770.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 787.8899999999999864 Td
+76. 770.8899999999999864 Td
+(sessionId: the current session identifier.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 754.8899999999999864 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 754.8899999999999864 Td
+(studyMode: text or avatar.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 738.8899999999999864 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 738.8899999999999864 Td
+(demographics, preTest: cached answers before save.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 722.8899999999999864 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 722.8899999999999864 Td
 (postTestPage1/2/3: markers for completion.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 771.8899999999999864 Td
+66. 706.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 771.8899999999999864 Td
+76. 706.8899999999999864 Td
 (currentSlide: last slide index.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 755.8899999999999864 Td
+66. 690.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 755.8899999999999864 Td
+76. 690.8899999999999864 Td
 (scenario-<id>: conversation history per scenario.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 733.8899999999999864 Td
+54. 668.8899999999999864 Td
 (LocalStorage keys:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 716.8899999999999864 Td
+66. 651.8899999999999864 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 716.8899999999999864 Td
+76. 651.8899999999999864 Td
 (studyCompleted: set to true once the completion page is reached.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 694.8899999999999864 Td
+54. 629.8899999999999864 Td
 (These keys are how the guardrails know where the participant is in the flow. If a key is missing, the user is) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 680.8899999999999864 Td
+54. 615.8899999999999864 Td
 (redirected back to the last valid step.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 650.8899999999999864 Td
+54. 585.8899999999999864 Td
 (AI prompt shaping and context \(how the tutor stays on topic\)) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 621.6900000000000546 Td
+54. 556.6900000000000546 Td
 (Text Mode:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 604.6900000000000546 Td
+66. 539.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 604.6900000000000546 Td
+76. 539.6900000000000546 Td
 (Every request includes a system context message based on the current slide.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 588.6900000000000546 Td
+66. 523.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 588.6900000000000546 Td
+76. 523.6900000000000546 Td
 (The context contains slide title, key points, and a system prompt summary.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 572.6900000000000546 Td
+66. 507.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 572.6900000000000546 Td
+76. 507.6899999999999977 Td
 (The chat function uses pre-test results to customize explanation depth.) Tj
 ET
 BT
 /F2 10 Tf
 11.5 TL
 0 g
-54. 550.6900000000000546 Td
+54. 485.6899999999999977 Td
 (Avatar Mode:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 533.6900000000000546 Td
+66. 468.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 533.6900000000000546 Td
+76. 468.6899999999999977 Td
 (The Anam session is created with a system prompt that includes slide context and strict topic boundaries.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 517.6900000000000546 Td
+66. 452.6899999999999977 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 517.6900000000000546 Td
+76. 452.6899999999999977 Td
 (This keeps avatar responses aligned with the instructional content.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 495.6899999999999977 Td
+54. 430.6899999999999977 Td
 (The design goal is consistent: the tutor should always talk about the current slide, not drift into unrelated) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 481.6899999999999977 Td
+54. 416.6899999999999977 Td
 (topics.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 451.6899999999999977 Td
+54. 386.6899999999999977 Td
 (System limits and constraints \(operational reality\)) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 422.4900000000000091 Td
+54. 357.4900000000000091 Td
 (These constraints are intentional and should be considered in study operations:) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 404.4900000000000091 Td
+66. 339.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 404.4900000000000091 Td
+76. 339.4900000000000091 Td
 (Avatar Mode on mobile is disabled in the learning view to avoid duplicate Anam clients.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 388.4900000000000091 Td
+66. 323.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 388.4900000000000091 Td
+76. 323.4900000000000091 Td
 (Mode switching mid-session is treated as invalid and resets the session.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 372.4900000000000091 Td
+66. 307.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 372.4900000000000091 Td
+76. 307.4900000000000091 Td
 (API usage depends on app_settings toggles; when disabled, the AI services return 503.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 356.4900000000000091 Td
+66. 291.4900000000000091 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 356.4900000000000091 Td
+76. 291.4900000000000091 Td
 (The `save-study-data` function enforces input validation and rate limiting.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 334.4900000000000091 Td
+54. 269.4900000000000091 Td
 (Understanding these constraints helps explain participant behavior and avoids false alarms in data review.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 304.4900000000000091 Td
+54. 239.4900000000000091 Td
 (Appendix A: UI route map) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 275.2899999999999636 Td
+72. 210.2899999999999636 Td
 (/                      -> Welcome) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 263.2899999999999636 Td
+72. 198.2899999999999636 Td
 (/study/:mode           -> StudyEntry) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 251.2899999999999636 Td
+72. 186.2899999999999636 Td
 (/consent               -> Consent) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 239.2899999999999636 Td
+72. 174.2899999999999636 Td
 (/demographics          -> Demographics) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 227.2899999999999636 Td
+72. 162.2899999999999636 Td
 (/pre-test              -> PreTest) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 215.2899999999999636 Td
+72. 150.2899999999999636 Td
 (/mode-assignment       -> ModeAssignment) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 203.2899999999999636 Td
+72. 138.2899999999999636 Td
 (/learning/:mode        -> Learning \(Slides + Tutor\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 191.2899999999999636 Td
+72. 126.2899999999999636 Td
 (/scenario/:mode/:id    -> Scenario) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 179.2899999999999636 Td
+72. 114.2899999999999636 Td
 (/scenario/:mode/:id/feedback -> ScenarioFeedback) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 167.2899999999999636 Td
+72. 102.2899999999999636 Td
 (/post-test-1           -> PostTestPage1) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 155.2899999999999636 Td
+72. 90.2899999999999636 Td
 (/post-test-2           -> PostTestPage2) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 143.2899999999999636 Td
+72. 78.2899999999999636 Td
 (/post-test-3           -> PostTestPage3) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 131.2899999999999636 Td
+72. 66.2899999999999636 Td
 (/completion            -> Completion) Tj
-ET
-BT
-/F5 9 Tf
-10.3499999999999996 TL
-0 g
-72. 119.2899999999999636 Td
-(/admin/login           -> AdminLogin) Tj
-ET
-BT
-/F5 9 Tf
-10.3499999999999996 TL
-0 g
-72. 107.2899999999999636 Td
-(/admin                 -> AdminDashboard) Tj
-ET
-BT
-/F2 13 Tf
-14.9499999999999993 TL
-0 g
-54. 79.2899999999999636 Td
-(Appendix B: Edge functions summary) Tj
 ET
 BT
 /F1 9 Tf
@@ -6407,388 +6393,367 @@ endobj
 endobj
 36 0 obj
 <<
-/Length 5602
+/Length 5392
 >>
 stream
 0.200025 w
 0 G
 BT
+/F5 9 Tf
+10.3499999999999996 TL
+0 g
+72. 787.8899999999999864 Td
+(/admin/login           -> AdminLogin) Tj
+ET
+BT
+/F5 9 Tf
+10.3499999999999996 TL
+0 g
+72. 775.8899999999999864 Td
+(/admin                 -> AdminDashboard) Tj
+ET
+BT
+/F2 13 Tf
+14.9499999999999993 TL
+0 g
+54. 747.8899999999999864 Td
+(Appendix B: Edge functions summary) Tj
+ET
+BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 787.8899999999999864 Td
+66. 718.6899999999999409 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 787.8899999999999864 Td
+76. 718.6899999999999409 Td
 (save-study-data: create sessions, store responses, log suspicious activity, update mode.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 771.8899999999999864 Td
+66. 702.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 771.8899999999999864 Td
+76. 702.6900000000000546 Td
 (complete-session: mark session as completed.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 755.8899999999999864 Td
+66. 686.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 755.8899999999999864 Td
-(chat: text tutor \(Lovable gateway\), uses pre-test context.) Tj
+76. 686.6900000000000546 Td
+(chat: text tutor \(OpenAI GPT-5 mini\), uses pre-test context.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 739.8899999999999864 Td
+66. 670.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 739.8899999999999864 Td
+76. 670.6900000000000546 Td
 (anam-session: avatar tutor \(Anam\), injects slide context.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 723.8899999999999864 Td
+66. 654.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 723.8899999999999864 Td
+76. 654.6900000000000546 Td
 (generate-image: AI playground image generation.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 707.8899999999999864 Td
+66. 638.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 707.8899999999999864 Td
+76. 638.6900000000000546 Td
 (save-avatar-time: record slide time in avatar mode.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 691.8899999999999864 Td
+66. 622.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 691.8899999999999864 Td
+76. 622.6900000000000546 Td
 (toggle-api: API toggles and key updates with audit log.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 675.8899999999999864 Td
+66. 606.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 675.8899999999999864 Td
+76. 606.6900000000000546 Td
 (update-session-validation: accept/ignore suspicious sessions.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 659.8899999999999864 Td
+66. 590.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 659.8899999999999864 Td
+76. 590.6900000000000546 Td
 (create-admin-users: bootstrap admin accounts.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 631.8899999999999864 Td
+54. 562.6900000000000546 Td
 (Appendix C: Example sequence diagram \(text tutor\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 602.6900000000000546 Td
+72. 533.4900000000000091 Td
 (Participant) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 590.6900000000000546 Td
+72. 521.4900000000000091 Td
 (  -> TextModeChat) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 578.6900000000000546 Td
+72. 509.4900000000000091 Td
 (  -> streamChat\(\) [client]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 566.6900000000000546 Td
+72. 497.4900000000000091 Td
 (  -> /functions/v1/chat [edge]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 554.6900000000000546 Td
-(  -> Lovable AI Gateway) Tj
-ET
-BT
-/F5 9 Tf
-10.3499999999999996 TL
-0 g
-72. 542.6900000000000546 Td
-(  -> stream response) Tj
-ET
-BT
-/F5 9 Tf
-10.3499999999999996 TL
-0 g
-72. 530.6900000000000546 Td
-(  -> UI updates) Tj
-ET
-BT
-/F2 13 Tf
-14.9499999999999993 TL
-0 g
-54. 502.6899999999999977 Td
-(Appendix D: Example sequence diagram \(avatar tutor\)) Tj
+72. 485.4900000000000091 Td
+(  -> OpenAI API \(GPT-5 mini\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
 72. 473.4900000000000091 Td
-(Participant) Tj
+(  -> stream response) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
 72. 461.4900000000000091 Td
+(  -> UI updates) Tj
+ET
+BT
+/F2 13 Tf
+14.9499999999999993 TL
+0 g
+54. 433.4900000000000091 Td
+(Appendix D: Example sequence diagram \(avatar tutor\)) Tj
+ET
+BT
+/F5 9 Tf
+10.3499999999999996 TL
+0 g
+72. 404.2900000000000205 Td
+(Participant) Tj
+ET
+BT
+/F5 9 Tf
+10.3499999999999996 TL
+0 g
+72. 392.2900000000000205 Td
 (  -> AvatarModePanel) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 449.4900000000000091 Td
+72. 380.2900000000000205 Td
 (  -> useAnamClient\(\) [client]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 437.4900000000000091 Td
+72. 368.2900000000000205 Td
 (  -> /functions/v1/anam-session [edge]) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 425.4900000000000091 Td
+72. 356.2900000000000205 Td
 (  -> Anam API session) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 413.4900000000000091 Td
+72. 344.2900000000000205 Td
 (  -> Avatar video + transcript) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 385.4900000000000091 Td
+54. 316.2900000000000773 Td
 (Appendix E: Example sequence diagram \(save responses\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 356.2900000000000205 Td
+72. 287.0900000000000318 Td
 (Participant submits answers) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 344.2900000000000205 Td
+72. 275.0900000000000318 Td
 (  -> sessionStorage updated) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 332.2900000000000205 Td
+72. 263.0900000000000318 Td
 (  -> save-study-data \(edge\)) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 320.2900000000000773 Td
+72. 251.0900000000000318 Td
 (     - validate) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 308.2900000000000773 Td
+72. 239.0900000000000318 Td
 (     - insert into response tables) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 296.2900000000000773 Td
+72. 227.0900000000000318 Td
 (     - update study_sessions) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 268.2900000000000773 Td
+54. 199.0900000000000318 Td
 (Appendix F: Participant guardrail states) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 239.0900000000000318 Td
+72. 169.8899999999999864 Td
 (Missing sessionId         -> redirect to /consent) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 227.0900000000000318 Td
+72. 157.8899999999999864 Td
 (Missing demographics      -> redirect to /demographics) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 215.0900000000000318 Td
+72. 145.8899999999999864 Td
 (Missing preTest           -> redirect to /pre-test) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 203.0900000000000318 Td
+72. 133.8899999999999864 Td
 (Missing studyMode         -> redirect to /mode-assignment) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 191.0900000000000318 Td
+72. 121.8899999999999864 Td
 (Missing postTestPage1     -> redirect to /post-test-1) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 179.0900000000000318 Td
+72. 109.8899999999999864 Td
 (Missing postTestPage2     -> redirect to /post-test-2) Tj
 ET
 BT
 /F5 9 Tf
 10.3499999999999996 TL
 0 g
-72. 167.0900000000000318 Td
+72. 97.8899999999999864 Td
 (Missing postTestPage3     -> redirect to /post-test-3) Tj
-ET
-BT
-/F2 13 Tf
-14.9499999999999993 TL
-0 g
-54. 139.0900000000000318 Td
-(Appendix G: Suspicion rules \(plain-language\)) Tj
-ET
-BT
-/F2 10 Tf
-11.5 TL
-0 g
-54. 109.8899999999999864 Td
-(Suspicion flags are generated if:) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 92.8899999999999864 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 92.8899999999999864 Td
-(A page is completed faster than a minimum threshold.) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-66. 76.8899999999999864 Td
-(•) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0 g
-76. 76.8899999999999864 Td
-(Many answers are given suspiciously fast.) Tj
 ET
 BT
 /F1 9 Tf
@@ -6809,72 +6774,114 @@ endobj
 endobj
 38 0 obj
 <<
-/Length 1129
+/Length 1690
 >>
 stream
 0.200025 w
 0 G
 BT
+/F2 13 Tf
+14.9499999999999993 TL
+0 g
+54. 787.8899999999999864 Td
+(Appendix G: Suspicion rules \(plain-language\)) Tj
+ET
+BT
+/F2 10 Tf
+11.5 TL
+0 g
+54. 758.6899999999999409 Td
+(Suspicion flags are generated if:) Tj
+ET
+BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 787.8899999999999864 Td
+66. 741.6899999999999409 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 787.8899999999999864 Td
+76. 741.6899999999999409 Td
+(A page is completed faster than a minimum threshold.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 725.6899999999999409 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 725.6899999999999409 Td
+(Many answers are given suspiciously fast.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+66. 709.6900000000000546 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+76. 709.6900000000000546 Td
 (The average answer time is below a minimum threshold.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-66. 771.8899999999999864 Td
+66. 693.6900000000000546 Td
 (•) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-76. 771.8899999999999864 Td
+76. 693.6900000000000546 Td
 (Slide view time is too short to be realistic.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 749.8899999999999864 Td
+54. 671.6900000000000546 Td
 (These flags and scores are stored in `study_sessions` and shown to admins in the Sessions tab for validation.) Tj
 ET
 BT
 /F2 13 Tf
 14.9499999999999993 TL
 0 g
-54. 719.8899999999999864 Td
+54. 641.6900000000000546 Td
 (Closing note) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 690.6900000000000546 Td
+54. 612.4900000000000091 Td
 (This workflow guide is intentionally narrative. It should help you explain the full story to stakeholders: how a) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 676.6900000000000546 Td
+54. 598.4900000000000091 Td
 (participant is guided, how data is recorded, and how the owner/admin workflows keep the study consistent and) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0 g
-54. 662.6900000000000546 Td
+54. 584.4900000000000091 Td
 (trustworthy.) Tj
 ET
 BT
@@ -7056,7 +7063,7 @@ endobj
 53 0 obj
 <<
 /Producer (jsPDF 3.0.4)
-/CreationDate (D:20251226165530-00'00')
+/CreationDate (D:20251227141606-00'00')
 >>
 endobj
 54 0 obj
@@ -7070,67 +7077,67 @@ endobj
 xref
 0 55
 0000000000 65535 f 
-0000096993 00000 n 
-0000098932 00000 n 
+0000097030 00000 n 
+0000098969 00000 n 
 0000000015 00000 n 
 0000000152 00000 n 
 0000000852 00000 n 
 0000000989 00000 n 
-0000006892 00000 n 
-0000007029 00000 n 
-0000012593 00000 n 
-0000012731 00000 n 
-0000018437 00000 n 
-0000018576 00000 n 
-0000024362 00000 n 
-0000024501 00000 n 
-0000030353 00000 n 
-0000030492 00000 n 
-0000036855 00000 n 
-0000036994 00000 n 
-0000043238 00000 n 
-0000043377 00000 n 
-0000049139 00000 n 
-0000049278 00000 n 
-0000054253 00000 n 
-0000054392 00000 n 
-0000060545 00000 n 
-0000060684 00000 n 
-0000065970 00000 n 
-0000066109 00000 n 
-0000071586 00000 n 
-0000071725 00000 n 
-0000077643 00000 n 
-0000077782 00000 n 
-0000083817 00000 n 
-0000083956 00000 n 
-0000089878 00000 n 
-0000090017 00000 n 
-0000095672 00000 n 
-0000095811 00000 n 
-0000097167 00000 n 
-0000097293 00000 n 
-0000097424 00000 n 
-0000097558 00000 n 
-0000097696 00000 n 
-0000097820 00000 n 
-0000097949 00000 n 
-0000098081 00000 n 
-0000098217 00000 n 
-0000098345 00000 n 
-0000098472 00000 n 
-0000098601 00000 n 
-0000098734 00000 n 
-0000098836 00000 n 
-0000099185 00000 n 
-0000099271 00000 n 
+0000006863 00000 n 
+0000007000 00000 n 
+0000012564 00000 n 
+0000012702 00000 n 
+0000018292 00000 n 
+0000018431 00000 n 
+0000024071 00000 n 
+0000024210 00000 n 
+0000030002 00000 n 
+0000030141 00000 n 
+0000036419 00000 n 
+0000036558 00000 n 
+0000042743 00000 n 
+0000042882 00000 n 
+0000048893 00000 n 
+0000049032 00000 n 
+0000054059 00000 n 
+0000054198 00000 n 
+0000060157 00000 n 
+0000060296 00000 n 
+0000065564 00000 n 
+0000065703 00000 n 
+0000071371 00000 n 
+0000071510 00000 n 
+0000077101 00000 n 
+0000077240 00000 n 
+0000083256 00000 n 
+0000083395 00000 n 
+0000089564 00000 n 
+0000089703 00000 n 
+0000095148 00000 n 
+0000095287 00000 n 
+0000097204 00000 n 
+0000097330 00000 n 
+0000097461 00000 n 
+0000097595 00000 n 
+0000097733 00000 n 
+0000097857 00000 n 
+0000097986 00000 n 
+0000098118 00000 n 
+0000098254 00000 n 
+0000098382 00000 n 
+0000098509 00000 n 
+0000098638 00000 n 
+0000098771 00000 n 
+0000098873 00000 n 
+0000099222 00000 n 
+0000099308 00000 n 
 trailer
 <<
 /Size 55
 /Root 54 0 R
 /Info 53 0 R
-/ID [ <72398FAE08A38D2B2FFA54B7AD228B72> <72398FAE08A38D2B2FFA54B7AD228B72> ]
+/ID [ <50FA75AA84C3E78988A326217C6684AD> <50FA75AA84C3E78988A326217C6684AD> ]
 >>
 startxref
-99375
+99412
 %%EOF

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, ChevronRight } from "lucide-react";
+import { FileText } from "lucide-react";
 
 const ConsentSidebar = () => {
   const [open, setOpen] = useState(false);

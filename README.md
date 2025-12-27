@@ -29,6 +29,10 @@ Participants go through a structured study, and admins/owners get a full backend
 
 Access is enforced via Supabase Auth and role checks in `src/lib/permissions.ts`.
 
+## Eligibility
+
+- **18+ only**: the consent checkbox explicitly requires participants to confirm they are at least 18.
+
 ## Admin + owner toolkit (what you actually get)
 
 - Live sessions table with status, flags, validation state

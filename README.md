@@ -3,7 +3,7 @@
 
 This repo is the full study system (not just the learning UI). It includes the participant flow *and* the admin/owner dashboard used to validate data, review flags, and export datasets for analysis.
 
-## What this is (plain English)
+## What this is
 
 AI Study Buddy is a research platform that compares two learning modes:
 - **Text Mode**: chat-based tutor.

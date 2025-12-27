@@ -9,8 +9,10 @@ import logo from "@/assets/logo-white.png";
 import { saveScenarioData } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
 import ParticipantFooter from "@/components/ParticipantFooter";
+import { usePageTiming } from "@/hooks/usePageTiming";
 
 const ScenarioFeedback = () => {
+  usePageTiming('scenario-feedback', 'Scenario Feedback');
   const { mode, scenarioId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();

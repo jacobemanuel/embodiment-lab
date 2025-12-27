@@ -15,11 +15,13 @@ import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
 import { StudyMode } from "@/types/study";
 import { getTutorDialogueLog } from "@/lib/tutorDialogue";
+import { usePageTiming } from "@/hooks/usePageTiming";
 
 const MIN_CHARS = 10;
 const MAX_CHARS = 50;
 
 const PostTestPage3 = () => {
+  usePageTiming('post-test-3', 'Post-test Page 3');
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -129,19 +131,23 @@ const PostTestPage3 = () => {
         
         await savePostTestResponses(sessionId, allResponses);
 
-        const dialogueLog = getTutorDialogueLog().map(({ role, content, timestamp, slideId, slideTitle }) => ({
-          role,
-          content,
-          timestamp,
-          slideId,
-          slideTitle,
-        }));
-        const studyMode = (sessionStorage.getItem('studyMode') as StudyMode) || 'text';
-        if (dialogueLog.length > 0) {
-          try {
-            await saveTutorDialogue(sessionId, studyMode, dialogueLog);
-          } catch (dialogueError) {
-            console.error('Failed to save tutor dialogue:', dialogueError);
+        const dialogueAlreadySaved = sessionStorage.getItem('tutorDialogueSaved') === 'true';
+        if (!dialogueAlreadySaved) {
+          const dialogueLog = getTutorDialogueLog().map(({ role, content, timestamp, slideId, slideTitle }) => ({
+            role,
+            content,
+            timestamp,
+            slideId,
+            slideTitle,
+          }));
+          const studyMode = (sessionStorage.getItem('studyMode') as StudyMode) || 'text';
+          if (dialogueLog.length > 0) {
+            try {
+              await saveTutorDialogue(sessionId, studyMode, dialogueLog);
+              sessionStorage.setItem('tutorDialogueSaved', 'true');
+            } catch (dialogueError) {
+              console.error('Failed to save tutor dialogue:', dialogueError);
+            }
           }
         }
         await completeStudySession(sessionId);

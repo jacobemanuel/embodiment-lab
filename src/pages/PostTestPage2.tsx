@@ -12,8 +12,10 @@ import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection";
 import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
+import { usePageTiming } from "@/hooks/usePageTiming";
 
 const PostTestPage2 = () => {
+  usePageTiming('post-test-2', 'Post-test Page 2');
   const navigate = useNavigate();
   
   // Guard: Ensure user completed post-test page 1

@@ -8,8 +8,10 @@ import { createStudySession } from "@/lib/studyData";
 import { toast } from "sonner";
 import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
+import { usePageTiming } from "@/hooks/usePageTiming";
 
 const Consent = () => {
+  usePageTiming('consent', 'Consent');
   const navigate = useNavigate();
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +23,7 @@ const Consent = () => {
         // Create session when user consents (before navigating to demographics)
         const sessionId = await createStudySession('text'); // Default mode, will be updated later
         sessionStorage.setItem('sessionId', sessionId);
+        sessionStorage.removeItem('tutorDialogueSaved');
         navigate("/demographics");
       } catch (error) {
         console.error('Error creating session:', error);

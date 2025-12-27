@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 import ParticipantFooter from "@/components/ParticipantFooter";
+import { usePageTiming } from "@/hooks/usePageTiming";
 import { supabase } from "@/integrations/supabase/client";
 import { clearTutorDialogueLog } from "@/lib/tutorDialogue";
 
 const Completion = () => {
+  usePageTiming('completion', 'Completion');
   const navigate = useNavigate();
   
   // Mark that user has completed the study - so back button doesn't trigger cheating detection
@@ -175,6 +177,7 @@ const Completion = () => {
       sessionStorage.removeItem('postTest1');
       sessionStorage.removeItem('dialogueLog');
       sessionStorage.removeItem('scenarioFeedback');
+      sessionStorage.removeItem('tutorDialogueSaved');
       clearTutorDialogueLog();
     } catch (error) {
       console.error('Error creating CSV:', error);

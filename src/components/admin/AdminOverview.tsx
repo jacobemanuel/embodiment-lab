@@ -91,14 +91,21 @@ interface StudyStats {
   noModeCount: number;
   avgSessionDuration: number;
   avgAvatarTime: number;
+  avgTextTime: number;
   totalAvatarTime: number;
+  totalTextTime: number;
+  avatarSessionsTracked: number;
+  textSessionsTracked: number;
   sessionsPerDay: { date: string; count: number }[];
   demographicBreakdown: { name: string; value: number }[];
   educationBreakdown: { name: string; value: number }[];
   experienceBreakdown: { name: string; value: number }[];
   modeComparison: { name: string; count: number }[];
   avatarTimeBySlide: { slide: string; avgTime: number; totalTime: number; count: number }[];
+  textTimeBySlide: { slide: string; avgTime: number; totalTime: number; count: number }[];
+  pageTimeByPage: { page: string; avgTime: number; totalTime: number; count: number }[];
   avatarTimeData: AvatarTimeData[];
+  pageTimeData: AvatarTimeData[];
   knowledgeGain: KnowledgeGainData[];
   avgPreScore: number;
   avgPostScore: number;
@@ -157,6 +164,20 @@ const sortByOrder = (data: { name: string; value: number }[], order: string[]) =
     return aIdx - bIdx;
   });
 };
+
+const resolveSessionMode = (session: { modes_used?: string[] | null; mode?: string | null }) => {
+  const modesUsed = session.modes_used && session.modes_used.length > 0
+    ? session.modes_used
+    : (session.mode ? [session.mode] : []);
+  if (modesUsed.length === 0) return 'none';
+  if (modesUsed.includes('text') && modesUsed.includes('avatar')) return 'both';
+  if (modesUsed.includes('avatar')) return 'avatar';
+  if (modesUsed.includes('text')) return 'text';
+  return 'none';
+};
+
+const isPageEntry = (entry: { slide_id?: string }) =>
+  typeof entry.slide_id === 'string' && entry.slide_id.startsWith('page:');
 
 // Helper component for section CSV export - accepts canExport to hide for viewers
 const ExportButton = ({ onClick, label, size = "sm", canExport = true }: { onClick: () => void; label: string; size?: "sm" | "xs"; canExport?: boolean }) => {
@@ -246,18 +267,21 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       let postTestResponses: any[] = [];
       let avatarTimeData: any[] = [];
 
+      let activeSlides: { slide_id: string; title: string; sort_order: number; is_active: boolean }[] = [];
       if (sessionIds.length > 0) {
-        const [demoRes, preRes, postRes, avatarRes] = await Promise.all([
+        const [demoRes, preRes, postRes, avatarRes, slideRes] = await Promise.all([
           supabase.from('demographic_responses').select('*').in('session_id', sessionIds),
           supabase.from('pre_test_responses').select('*').in('session_id', sessionIds),
           supabase.from('post_test_responses').select('*').in('session_id', sessionIds),
           supabase.from('avatar_time_tracking').select('*').in('session_id', sessionIds),
+          supabase.from('study_slides').select('slide_id, title, sort_order, is_active').order('sort_order'),
         ]);
         
         demographicResponses = demoRes.data || [];
         preTestResponses = preRes.data || [];
         postTestResponses = postRes.data || [];
         avatarTimeData = avatarRes.data || [];
+        activeSlides = (slideRes.data || []).filter((slide) => slide.is_active);
       }
 
       // Fetch questions with correct answers
@@ -275,19 +299,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       const missingPostTest = postTestKnowledgeQuestions.filter(q => !q.correct_answer).length;
 
       // Calculate mode distribution - properly handle sessions with no mode
-      const getSessionMode = (s: any): 'text' | 'avatar' | 'both' | 'none' => {
-        const modesUsed = s.modes_used && s.modes_used.length > 0 ? s.modes_used : (s.mode ? [s.mode] : []);
-        if (modesUsed.length === 0) return 'none';
-        if (modesUsed.includes('text') && modesUsed.includes('avatar')) return 'both';
-        if (modesUsed.includes('avatar')) return 'avatar';
-        if (modesUsed.includes('text')) return 'text';
-        return 'none';
-      };
-      
-      const textModeCompleted = sessionsToAnalyze.filter(s => getSessionMode(s) === 'text').length;
-      const avatarModeCompleted = sessionsToAnalyze.filter(s => getSessionMode(s) === 'avatar').length;
-      const bothModesCompleted = sessionsToAnalyze.filter(s => getSessionMode(s) === 'both').length;
-      const noModeCount = sessionsToAnalyze.filter(s => getSessionMode(s) === 'none').length;
+      const textModeCompleted = sessionsToAnalyze.filter(s => resolveSessionMode(s) === 'text').length;
+      const avatarModeCompleted = sessionsToAnalyze.filter(s => resolveSessionMode(s) === 'avatar').length;
+      const bothModesCompleted = sessionsToAnalyze.filter(s => resolveSessionMode(s) === 'both').length;
+      const noModeCount = sessionsToAnalyze.filter(s => resolveSessionMode(s) === 'none').length;
 
       // Average session duration
       let avgDuration = 0;
@@ -301,13 +316,31 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         avgDuration = Math.round(totalDuration / sessionsWithDuration.length / 1000 / 60);
       }
 
-      // Avatar time calculation - group by session
+      const sessionModeById = new Map<string, 'text' | 'avatar' | 'both' | 'none'>();
+      sessionsToAnalyze.forEach((session) => {
+        sessionModeById.set(session.id, resolveSessionMode(session));
+      });
+
+      const slideTitleMap = new Map(activeSlides.map((slide) => [slide.slide_id, slide.title]));
+      const activeSlideIds = new Set(activeSlides.map((slide) => slide.slide_id));
+      const pageTimeEntries = avatarTimeData.filter((entry) => isPageEntry(entry));
+      const slideTimeEntries = avatarTimeData.filter((entry) => {
+        if (isPageEntry(entry)) return false;
+        if (activeSlideIds.size === 0) return true;
+        return activeSlideIds.has(entry.slide_id);
+      });
+
+      // Avatar & text time calculation - group by session (slides only)
       const avatarTimeBySession: Record<string, number> = {};
-      avatarTimeData.forEach(t => {
-        if (!avatarTimeBySession[t.session_id]) {
-          avatarTimeBySession[t.session_id] = 0;
+      const textTimeBySession: Record<string, number> = {};
+      slideTimeEntries.forEach(t => {
+        const mode = sessionModeById.get(t.session_id) || 'none';
+        if (mode === 'avatar' || mode === 'both') {
+          avatarTimeBySession[t.session_id] = (avatarTimeBySession[t.session_id] || 0) + (t.duration_seconds || 0);
         }
-        avatarTimeBySession[t.session_id] += t.duration_seconds || 0;
+        if (mode === 'text') {
+          textTimeBySession[t.session_id] = (textTimeBySession[t.session_id] || 0) + (t.duration_seconds || 0);
+        }
       });
       
       const totalAvatarTime = Object.values(avatarTimeBySession).reduce((a, b) => a + b, 0);
@@ -315,23 +348,76 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         ? Math.round(totalAvatarTime / Object.keys(avatarTimeBySession).length) 
         : 0;
 
-      // Avatar time by slide
-      const slideTimeMap: Record<string, { total: number; count: number; title: string }> = {};
-      avatarTimeData.forEach(t => {
+      const totalTextTime = Object.values(textTimeBySession).reduce((a, b) => a + b, 0);
+      const avgTextTime = Object.keys(textTimeBySession).length > 0
+        ? Math.round(totalTextTime / Object.keys(textTimeBySession).length)
+        : 0;
+
+      // Avatar/text time by slide
+      const avatarSlideMap: Record<string, { total: number; count: number; title: string }> = {};
+      const textSlideMap: Record<string, { total: number; count: number; title: string }> = {};
+      slideTimeEntries.forEach(t => {
+        const mode = sessionModeById.get(t.session_id) || 'none';
         const key = t.slide_id;
-        if (!slideTimeMap[key]) {
-          slideTimeMap[key] = { total: 0, count: 0, title: t.slide_title || t.slide_id };
+        const title = slideTitleMap.get(t.slide_id) || t.slide_title || t.slide_id;
+
+        if (mode === 'avatar' || mode === 'both') {
+          if (!avatarSlideMap[key]) {
+            avatarSlideMap[key] = { total: 0, count: 0, title };
+          }
+          avatarSlideMap[key].total += t.duration_seconds || 0;
+          avatarSlideMap[key].count += 1;
+          if (title.length > avatarSlideMap[key].title.length) {
+            avatarSlideMap[key].title = title;
+          }
         }
-        slideTimeMap[key].total += t.duration_seconds || 0;
-        slideTimeMap[key].count += 1;
+
+        if (mode === 'text') {
+          if (!textSlideMap[key]) {
+            textSlideMap[key] = { total: 0, count: 0, title };
+          }
+          textSlideMap[key].total += t.duration_seconds || 0;
+          textSlideMap[key].count += 1;
+          if (title.length > textSlideMap[key].title.length) {
+            textSlideMap[key].title = title;
+          }
+        }
       });
 
-      const avatarTimeBySlide = Object.entries(slideTimeMap).map(([slideId, data]) => ({
+      const avatarTimeBySlide = Object.entries(avatarSlideMap).map(([slideId, data]) => ({
         slide: data.title,
         avgTime: Math.round(data.total / data.count),
         totalTime: data.total,
         count: data.count,
-      }));
+      })).sort((a, b) => a.slide.localeCompare(b.slide));
+
+      const textTimeBySlide = Object.entries(textSlideMap).map(([slideId, data]) => ({
+        slide: data.title,
+        avgTime: Math.round(data.total / data.count),
+        totalTime: data.total,
+        count: data.count,
+      })).sort((a, b) => a.slide.localeCompare(b.slide));
+
+      const pageTimeMap: Record<string, { total: number; count: number; title: string }> = {};
+      pageTimeEntries.forEach((entry) => {
+        const key = entry.slide_id;
+        const title = (entry.slide_title || entry.slide_id).replace(/^Page:\s*/i, '');
+        if (!pageTimeMap[key]) {
+          pageTimeMap[key] = { total: 0, count: 0, title };
+        }
+        pageTimeMap[key].total += entry.duration_seconds || 0;
+        pageTimeMap[key].count += 1;
+        if (title.length > pageTimeMap[key].title.length) {
+          pageTimeMap[key].title = title;
+        }
+      });
+
+      const pageTimeByPage = Object.entries(pageTimeMap).map(([pageId, data]) => ({
+        page: data.title,
+        avgTime: Math.round(data.total / data.count),
+        totalTime: data.total,
+        count: data.count,
+      })).sort((a, b) => a.page.localeCompare(b.page));
 
       // Sessions per day
       const sessionsByDay: Record<string, number> = {};
@@ -448,7 +534,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           const preScore = (preScores.correct / preScores.total) * 100;
           const postScore = (postScores.correct / postScores.total) * 100;
           
-          const mode = getSessionMode(s);
+          const mode = resolveSessionMode(s);
           const avatarTime = avatarTimeBySession[s.id] || 0;
           
           // Skip sessions with no mode for knowledge gain analysis
@@ -786,9 +872,9 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       };
 
       const allSessionIds = sessionsToAnalyze.map(s => s.id);
-      const textSessionIds = sessionsToAnalyze.filter(s => getSessionMode(s) === 'text').map(s => s.id);
-      const avatarSessionIds = sessionsToAnalyze.filter(s => getSessionMode(s) === 'avatar').map(s => s.id);
-      const bothSessionIds = sessionsToAnalyze.filter(s => getSessionMode(s) === 'both').map(s => s.id);
+      const textSessionIds = sessionsToAnalyze.filter(s => resolveSessionMode(s) === 'text').map(s => s.id);
+      const avatarSessionIds = sessionsToAnalyze.filter(s => resolveSessionMode(s) === 'avatar').map(s => s.id);
+      const bothSessionIds = sessionsToAnalyze.filter(s => resolveSessionMode(s) === 'both').map(s => s.id);
 
       const likertAnalysis = analyzeLikertForSessions(allSessionIds);
       const likertByMode = {
@@ -833,7 +919,11 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         noModeCount,
         avgSessionDuration: avgDuration,
         avgAvatarTime,
+        avgTextTime,
         totalAvatarTime,
+        totalTextTime,
+        avatarSessionsTracked: Object.keys(avatarTimeBySession).length,
+        textSessionsTracked: Object.keys(textTimeBySession).length,
         sessionsPerDay,
         demographicBreakdown: sortByOrder(Object.entries(ageBreakdown).map(([name, value]) => ({ name, value })), AGE_ORDER),
         educationBreakdown: sortByOrder(Object.entries(educationBreakdown).map(([name, value]) => ({ name, value })), EDUCATION_ORDER),
@@ -845,7 +935,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           { name: 'No Mode', count: noModeCount },
         ],
         avatarTimeBySlide,
+        textTimeBySlide,
+        pageTimeByPage,
         avatarTimeData,
+        pageTimeData: pageTimeEntries,
         knowledgeGain,
         avgPreScore,
         avgPostScore,
@@ -961,6 +1054,47 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       correctAnswerMap[q.question_id] = q.correct_answer || '';
     });
 
+    const { data: slideRows } = await supabase
+      .from('study_slides')
+      .select('slide_id, title, sort_order, is_active')
+      .order('sort_order');
+
+    const activeSlides = (slideRows || []).filter((slide) => slide.is_active);
+    const slideIds = activeSlides.length > 0
+      ? activeSlides.map((slide) => slide.slide_id)
+      : Array.from(new Set(stats.avatarTimeData.map((t) => t.slide_id))).sort();
+    const slideTitleMap: Record<string, string> = {};
+    activeSlides.forEach((slide) => {
+      slideTitleMap[slide.slide_id] = slide.title;
+    });
+
+    const slideTimeEntries = stats.avatarTimeData.filter((entry) => !isPageEntry(entry));
+    const pageTimeEntries = stats.pageTimeData;
+
+    const pageIds = Array.from(new Set(pageTimeEntries.map((entry) => entry.slide_id))).sort();
+    const pageTitleMap: Record<string, string> = {};
+    pageTimeEntries.forEach((entry) => {
+      pageTitleMap[entry.slide_id] = (entry.slide_title || entry.slide_id).replace(/^Page:\s*/i, '');
+    });
+
+    const slideTimeBySession: Record<string, Record<string, number>> = {};
+    slideTimeEntries.forEach((entry) => {
+      if (!slideTimeBySession[entry.session_id]) {
+        slideTimeBySession[entry.session_id] = {};
+      }
+      slideTimeBySession[entry.session_id][entry.slide_id] =
+        (slideTimeBySession[entry.session_id][entry.slide_id] || 0) + (entry.duration_seconds || 0);
+    });
+
+    const pageTimeBySession: Record<string, Record<string, number>> = {};
+    pageTimeEntries.forEach((entry) => {
+      if (!pageTimeBySession[entry.session_id]) {
+        pageTimeBySession[entry.session_id] = {};
+      }
+      pageTimeBySession[entry.session_id][entry.slide_id] =
+        (pageTimeBySession[entry.session_id][entry.slide_id] || 0) + (entry.duration_seconds || 0);
+    });
+
     let csv = '';
     
     const headers = [
@@ -975,6 +1109,9 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       'Post-Test Score (%)',
       'Knowledge Gain (%)',
       'Avatar Time (sec)',
+      'Text Slide Time (sec)',
+      ...slideIds.map((slideId) => `SLIDE: ${slideTitleMap[slideId] || slideId}`),
+      ...pageIds.map((pageId) => `PAGE: ${pageTitleMap[pageId] || pageId}`),
       ...demoQuestionIds.map(qId => `DEMO: ${questionTextMap[qId] || qId}`),
       ...preTestQuestionIds.map(qId => `PRE: ${questionTextMap[qId] || qId}`),
       ...preTestQuestionIds.map(qId => `PRE_CORRECT: ${qId}`),
@@ -993,9 +1130,21 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       const preTestResponses = stats.rawPreTest.filter(r => r.session_id === session.id);
       const postTestResponses = stats.rawPostTest.filter(r => r.session_id === session.id);
       
-      const avatarTime = stats.avatarTimeData
-        .filter(t => t.session_id === session.id)
-        .reduce((sum, t) => sum + (t.duration_seconds || 0), 0);
+      const sessionMode = resolveSessionMode(session);
+      const avatarTime = sessionMode === 'avatar' || sessionMode === 'both'
+        ? slideTimeEntries
+            .filter(t => t.session_id === session.id)
+            .reduce((sum, t) => sum + (t.duration_seconds || 0), 0)
+        : 0;
+
+      const textSlideTime = sessionMode === 'text'
+        ? slideTimeEntries
+            .filter(t => t.session_id === session.id)
+            .reduce((sum, t) => sum + (t.duration_seconds || 0), 0)
+        : 0;
+
+      const slideTimesForSession = slideTimeBySession[session.id] || {};
+      const pageTimesForSession = pageTimeBySession[session.id] || {};
 
       const row = [
         session.session_id,
@@ -1009,6 +1158,9 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         kg?.postScore ?? '',
         kg?.gain ?? '',
         avatarTime,
+        textSlideTime,
+        ...slideIds.map((slideId) => slideTimesForSession[slideId] ?? ''),
+        ...pageIds.map((pageId) => pageTimesForSession[pageId] ?? ''),
         ...demoQuestionIds.map(qId => {
           const resp = demoResponses.find(r => r.question_id === qId);
           return resp?.answer || '';
@@ -1095,6 +1247,9 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         bothModesCompleted: stats.bothModesCompleted,
         avgSessionDuration: stats.avgSessionDuration,
         avgAvatarTime: stats.avgAvatarTime,
+        avgTextTime: stats.avgTextTime,
+        totalAvatarTime: stats.totalAvatarTime,
+        totalTextTime: stats.totalTextTime,
         avgPreScore: stats.avgPreScore,
         avgPostScore: stats.avgPostScore,
         avgGain: stats.avgGain,
@@ -1128,12 +1283,26 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         ...s,
         knowledgeGain: stats.knowledgeGain.find(k => k.sessionId === s.session_id),
         avatarTime: stats.avatarTimeData.filter(t => t.session_id === s.id),
+        slideTimes: stats.avatarTimeData
+          .filter(t => t.session_id === s.id && !isPageEntry(t))
+          .reduce((acc: Record<string, number>, entry) => {
+            acc[entry.slide_id] = (acc[entry.slide_id] || 0) + (entry.duration_seconds || 0);
+            return acc;
+          }, {}),
+        pageTimes: stats.pageTimeData
+          .filter(t => t.session_id === s.id)
+          .reduce((acc: Record<string, number>, entry) => {
+            acc[entry.slide_id] = (acc[entry.slide_id] || 0) + (entry.duration_seconds || 0);
+            return acc;
+          }, {}),
         demographicResponses: stats.rawDemographics.filter(r => r.session_id === s.id),
         preTestResponses: stats.rawPreTest.filter(r => r.session_id === s.id),
         postTestResponses: stats.rawPostTest.filter(r => r.session_id === s.id),
       })),
       avatarTracking: {
         bySlide: stats.avatarTimeBySlide,
+        textBySlide: stats.textTimeBySlide,
+        pageByPage: stats.pageTimeByPage,
       },
       questionAnalysis: {
         preTest: stats.preTestQuestionAnalysis,
@@ -1834,6 +2003,40 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       yPos = drawBarChart(doc, slideTimeData, 14, yPos, 180, 70, 'Average Time per Slide (minutes)', ['#06b6d4', '#22d3ee', '#67e8f9', '#a5f3fc', '#cffafe', '#0891b2', '#0e7490']);
     }
 
+    if (stats.textTimeBySlide.length > 0) {
+      if (yPos > 180) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('9. Text Mode Time by Slide', 14, yPos);
+      yPos += 8;
+
+      const slideTimeData = stats.textTimeBySlide.slice(0, 7).map(s => ({
+        name: s.slide.length > 20 ? s.slide.substring(0, 18) + '...' : s.slide,
+        value: Math.round(s.avgTime / 60),
+      }));
+      yPos = drawBarChart(doc, slideTimeData, 14, yPos, 180, 70, 'Average Time per Slide (minutes)', ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5', '#059669', '#047857']);
+    }
+
+    if (stats.pageTimeByPage.length > 0) {
+      if (yPos > 180) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('10. Time by Page', 14, yPos);
+      yPos += 8;
+
+      const pageTimeData = stats.pageTimeByPage.slice(0, 7).map(p => ({
+        name: p.page.length > 20 ? p.page.substring(0, 18) + '...' : p.page,
+        value: Math.round(p.avgTime / 60),
+      }));
+      yPos = drawBarChart(doc, pageTimeData, 14, yPos, 180, 70, 'Average Time per Page (minutes)', ['#f59e0b', '#fbbf24', '#fcd34d', '#fde68a', '#fef3c7', '#d97706', '#b45309']);
+    }
+
     // Check page break
     if (yPos > 180) {
       doc.addPage();
@@ -1843,7 +2046,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
     // Question Performance
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('9. Question Performance', 14, yPos);
+    doc.text('11. Question Performance', 14, yPos);
     yPos += 8;
 
     const questionData = [
@@ -3375,7 +3578,122 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               </div>
               <div className="bg-slate-700/50 rounded p-2 text-center">
                 <div className="text-slate-400 text-xs">Sessions Tracked</div>
-                <div className="text-white font-medium">{Object.keys(stats.avatarTimeBySlide).length > 0 ? new Set(stats.avatarTimeData.map(t => t.session_id)).size : 0}</div>
+                <div className="text-white font-medium">{stats.avatarSessionsTracked}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Text Time by Slide */}
+      {stats.textTimeBySlide.length > 0 && (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-white">Text Mode Time by Slide</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Avg time participants spent reading each slide (text mode)
+                </CardDescription>
+              </div>
+              <ExportButton
+                onClick={() => downloadCSV(stats.textTimeBySlide.map(s => ({ Slide: s.slide, AvgTimeSeconds: s.avgTime, TotalTimeSeconds: s.totalTime, SessionCount: s.count })), 'text_time_by_slide')}
+                label="CSV"
+                canExport={permissions.canExportData}
+              />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={stats.textTimeBySlide}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="slide" stroke="#9ca3af" fontSize={9} angle={-15} textAnchor="end" height={50} />
+                <YAxis stroke="#9ca3af" fontSize={11} label={{ value: 'Avg seconds', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 10 }} />
+                <ChartTooltip
+                  contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                  formatter={(value: number, name: string) => {
+                    if (name === 'avgTime') return [`${value}s`, 'Avg Time'];
+                    if (name === 'count') return [value, 'Sessions'];
+                    return [value, name];
+                  }}
+                />
+                <Bar dataKey="avgTime" name="Avg Time (s)" fill="#10b981" />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
+              <div className="bg-slate-700/50 rounded p-2 text-center">
+                <div className="text-slate-400 text-xs">Total Time</div>
+                <div className="text-white font-medium">{Math.round(stats.totalTextTime / 60)} min</div>
+              </div>
+              <div className="bg-slate-700/50 rounded p-2 text-center">
+                <div className="text-slate-400 text-xs">Avg per Session</div>
+                <div className="text-white font-medium">{Math.round(stats.avgTextTime / 60)} min</div>
+              </div>
+              <div className="bg-slate-700/50 rounded p-2 text-center">
+                <div className="text-slate-400 text-xs">Sessions Tracked</div>
+                <div className="text-white font-medium">{stats.textSessionsTracked}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {stats.pageTimeByPage.length > 0 && (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-white">Time by Page</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Avg time participants spent on each study page
+                </CardDescription>
+              </div>
+              <ExportButton
+                onClick={() => downloadCSV(stats.pageTimeByPage.map(p => ({ Page: p.page, AvgTimeSeconds: p.avgTime, TotalTimeSeconds: p.totalTime, SessionCount: p.count })), 'page_time_by_page')}
+                label="CSV"
+                canExport={permissions.canExportData}
+              />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={stats.pageTimeByPage}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="page" stroke="#9ca3af" fontSize={9} angle={-15} textAnchor="end" height={50} />
+                <YAxis stroke="#9ca3af" fontSize={11} label={{ value: 'Avg seconds', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 10 }} />
+                <ChartTooltip
+                  contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                  formatter={(value: number, name: string) => {
+                    if (name === 'avgTime') return [`${value}s`, 'Avg Time'];
+                    if (name === 'count') return [value, 'Sessions'];
+                    return [value, name];
+                  }}
+                />
+                <Bar dataKey="avgTime" name="Avg Time (s)" fill="#f59e0b" />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
+              <div className="bg-slate-700/50 rounded p-2 text-center">
+                <div className="text-slate-400 text-xs">Total Time</div>
+                <div className="text-white font-medium">
+                  {Math.round(stats.pageTimeData.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0) / 60)} min
+                </div>
+              </div>
+              <div className="bg-slate-700/50 rounded p-2 text-center">
+                <div className="text-slate-400 text-xs">Avg per Session</div>
+                <div className="text-white font-medium">
+                  {(() => {
+                    const sessionsTracked = new Set(stats.pageTimeData.map(entry => entry.session_id)).size;
+                    const totalSeconds = stats.pageTimeData.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0);
+                    return sessionsTracked > 0 ? `${Math.round(totalSeconds / sessionsTracked / 60)} min` : '0 min';
+                  })()}
+                </div>
+              </div>
+              <div className="bg-slate-700/50 rounded p-2 text-center">
+                <div className="text-slate-400 text-xs">Sessions Tracked</div>
+                <div className="text-white font-medium">
+                  {new Set(stats.pageTimeData.map(entry => entry.session_id)).size}
+                </div>
               </div>
             </div>
           </CardContent>

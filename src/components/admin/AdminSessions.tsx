@@ -123,6 +123,24 @@ interface SessionEditDraft {
   }>;
 }
 
+interface OwnerSessionOverride {
+  session?: Partial<SessionEditDraft['session']>;
+  demographicResponses?: Record<string, string>;
+  preTest?: Record<string, string>;
+  postTest?: Record<string, string>;
+  scenarios?: Record<string, {
+    trust_rating?: number;
+    confidence_rating?: number;
+    engagement_rating?: boolean;
+    completed_at?: string;
+  }>;
+  avatarTimeTracking?: Record<string, { duration_seconds?: number | null }>;
+  tutorDialogueTurns?: Record<string, string>;
+  dialogueTurns?: Record<string, string>;
+}
+
+const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
+
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionDataStatuses, setSessionDataStatuses] = useState<Map<string, SessionDataStatus>>(new Map());
@@ -146,7 +164,154 @@ interface SessionEditDraft {
   const [editDraft, setEditDraft] = useState<SessionEditDraft | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [autoDistributeSlides, setAutoDistributeSlides] = useState(false);
+  const [hasLocalOverride, setHasLocalOverride] = useState(false);
   const itemsPerPage = 10;
+
+  const loadOwnerOverrides = () => {
+    if (!isOwner || typeof window === 'undefined') return {};
+    try {
+      const raw = localStorage.getItem(OWNER_OVERRIDES_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return {};
+      return parsed as Record<string, OwnerSessionOverride>;
+    } catch (error) {
+      console.error('Failed to load owner overrides:', error);
+      return {};
+    }
+  };
+
+  const saveOwnerOverrides = (overrides: Record<string, OwnerSessionOverride>) => {
+    if (!isOwner || typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(OWNER_OVERRIDES_KEY, JSON.stringify(overrides));
+    } catch (error) {
+      console.error('Failed to save owner overrides:', error);
+    }
+  };
+
+  const clearOwnerOverride = (sessionId: string) => {
+    if (!isOwner) return;
+    const overrides = loadOwnerOverrides();
+    if (!overrides[sessionId]) return;
+    delete overrides[sessionId];
+    saveOwnerOverrides(overrides);
+  };
+
+  const applySessionOverride = (session: Session, override?: OwnerSessionOverride) => {
+    if (!override?.session) return session;
+    return {
+      ...session,
+      started_at: override.session.started_at ?? session.started_at,
+      completed_at: override.session.completed_at ?? session.completed_at,
+      last_activity_at: override.session.last_activity_at ?? session.last_activity_at,
+      status: override.session.status ?? session.status,
+      mode: override.session.mode ?? session.mode,
+      modes_used: override.session.modes_used ?? session.modes_used,
+      suspicion_score: override.session.suspicion_score ?? session.suspicion_score,
+      suspicious_flags: override.session.suspicious_flags ?? session.suspicious_flags,
+    };
+  };
+
+  const applyAnswerOverrides = <T extends { id: string; answer?: string }>(
+    list: T[],
+    overrides?: Record<string, string>
+  ) => {
+    if (!overrides) return list;
+    return list.map((item) =>
+      Object.prototype.hasOwnProperty.call(overrides, item.id)
+        ? { ...item, answer: overrides[item.id] }
+        : item
+    );
+  };
+
+  const applyContentOverrides = <T extends { id: string; content?: string }>(
+    list: T[],
+    overrides?: Record<string, string>
+  ) => {
+    if (!overrides) return list;
+    return list.map((item) =>
+      Object.prototype.hasOwnProperty.call(overrides, item.id)
+        ? { ...item, content: overrides[item.id] }
+        : item
+    );
+  };
+
+  const applyScenarioOverrides = (list: SessionDetails['scenarios'], overrides?: OwnerSessionOverride['scenarios']) => {
+    if (!overrides) return list;
+    return list.map((item) => {
+      const patch = overrides[item.id];
+      if (!patch) return item;
+      return {
+        ...item,
+        trust_rating: patch.trust_rating ?? item.trust_rating,
+        confidence_rating: patch.confidence_rating ?? item.confidence_rating,
+        engagement_rating: patch.engagement_rating ?? item.engagement_rating,
+        completed_at: patch.completed_at ?? item.completed_at,
+      };
+    });
+  };
+
+  const applyAvatarOverrides = (
+    list: SessionDetails['avatarTimeTracking'],
+    overrides?: OwnerSessionOverride['avatarTimeTracking']
+  ) => {
+    if (!overrides) return list;
+    return list.map((item) => {
+      const patch = overrides[item.id];
+      if (!patch || !Object.prototype.hasOwnProperty.call(patch, 'duration_seconds')) return item;
+      return {
+        ...item,
+        duration_seconds: patch.duration_seconds ?? item.duration_seconds,
+      };
+    });
+  };
+
+  const applyDetailsOverride = (details: SessionDetails, override?: OwnerSessionOverride): SessionDetails => {
+    if (!override) return details;
+    return {
+      ...details,
+      demographicResponses: applyAnswerOverrides(details.demographicResponses, override.demographicResponses),
+      preTest: applyAnswerOverrides(details.preTest, override.preTest),
+      postTest: applyAnswerOverrides(details.postTest, override.postTest),
+      scenarios: applyScenarioOverrides(details.scenarios, override.scenarios),
+      avatarTimeTracking: applyAvatarOverrides(details.avatarTimeTracking, override.avatarTimeTracking),
+      tutorDialogueTurns: applyContentOverrides(details.tutorDialogueTurns, override.tutorDialogueTurns),
+      dialogueTurns: applyContentOverrides(details.dialogueTurns, override.dialogueTurns),
+    };
+  };
+
+  const buildOverrideFromDraft = (draft: SessionEditDraft): OwnerSessionOverride => ({
+    session: {
+      started_at: draft.session.started_at,
+      completed_at: draft.session.completed_at,
+      last_activity_at: draft.session.last_activity_at,
+      status: draft.session.status,
+      mode: draft.session.mode,
+      modes_used: draft.session.modes_used,
+      suspicion_score: draft.session.suspicion_score,
+      suspicious_flags: draft.session.suspicious_flags,
+    },
+    demographicResponses: Object.fromEntries(draft.demographicResponses.map((r) => [r.id, r.answer])),
+    preTest: Object.fromEntries(draft.preTest.map((r) => [r.id, r.answer])),
+    postTest: Object.fromEntries(draft.postTest.map((r) => [r.id, r.answer])),
+    scenarios: Object.fromEntries(
+      draft.scenarios.map((s) => [
+        s.id,
+        {
+          trust_rating: s.trust_rating,
+          confidence_rating: s.confidence_rating,
+          engagement_rating: s.engagement_rating,
+          completed_at: s.completed_at,
+        },
+      ])
+    ),
+    avatarTimeTracking: Object.fromEntries(
+      draft.avatarTimeTracking.map((t) => [t.id, { duration_seconds: t.duration_seconds }])
+    ),
+    tutorDialogueTurns: Object.fromEntries(draft.tutorDialogueTurns.map((t) => [t.id, t.content])),
+    dialogueTurns: Object.fromEntries(draft.dialogueTurns.map((t) => [t.id, t.content])),
+  });
 
   const fetchSessions = useCallback(async () => {
     setIsRefreshing(true);
@@ -166,7 +331,11 @@ interface SessionEditDraft {
       const { data, error } = await query;
 
       if (error) throw error;
-      setSessions(data || []);
+      const overrides = loadOwnerOverrides();
+      const resolvedSessions = (data || []).map((session) =>
+        applySessionOverride(session, overrides[session.id])
+      );
+      setSessions(resolvedSessions);
       
       // Fetch data completeness for all sessions
       if (data && data.length > 0) {
@@ -311,16 +480,26 @@ interface SessionEditDraft {
         .eq('session_id', session.id)
         .order('started_at', { ascending: true });
 
-      setSessionDetails({
-        demographics: oldDemographics,
-        demographicResponses: demographicResponses || [],
-        preTest: preTest || [],
-        postTest: postTest || [],
-        scenarios: scenarios || [],
-        dialogueTurns,
-        tutorDialogueTurns: tutorDialogueTurns || [],
-        avatarTimeTracking: avatarTimeTracking || [],
-      });
+      const overrides = loadOwnerOverrides();
+      const sessionOverride = overrides[session.id];
+      const resolvedSession = applySessionOverride(session, sessionOverride);
+      const resolvedDetails = applyDetailsOverride(
+        {
+          demographics: oldDemographics,
+          demographicResponses: demographicResponses || [],
+          preTest: preTest || [],
+          postTest: postTest || [],
+          scenarios: scenarios || [],
+          dialogueTurns,
+          tutorDialogueTurns: tutorDialogueTurns || [],
+          avatarTimeTracking: avatarTimeTracking || [],
+        },
+        sessionOverride
+      );
+
+      setSelectedSession(resolvedSession);
+      setSessionDetails(resolvedDetails);
+      setHasLocalOverride(Boolean(sessionOverride));
     } catch (error) {
       console.error('Error fetching session details:', error);
     } finally {
@@ -463,6 +642,103 @@ interface SessionEditDraft {
     };
   };
 
+  const buildAvatarGroups = (entries: SessionEditDraft['avatarTimeTracking']) => {
+    const groups = new Map<string, { slideId: string; title: string; total: number; entryIds: string[] }>();
+    entries.forEach((entry) => {
+      const key = entry.slide_id;
+      const current = groups.get(key);
+      const entryTitle = entry.slide_title || entry.slide_id;
+      if (!current) {
+        groups.set(key, {
+          slideId: entry.slide_id,
+          title: entryTitle,
+          total: entry.duration_seconds || 0,
+          entryIds: [entry.id],
+        });
+      } else {
+        const bestTitle = entryTitle.length > current.title.length ? entryTitle : current.title;
+        groups.set(key, {
+          slideId: entry.slide_id,
+          title: bestTitle,
+          total: current.total + (entry.duration_seconds || 0),
+          entryIds: [...current.entryIds, entry.id],
+        });
+      }
+    });
+    return Array.from(groups.values());
+  };
+
+  const updateGroupDuration = (slideId: string, nextTotalRaw: number, maxPerEntry: number) => {
+    setEditDraft((prev) => {
+      if (!prev) return prev;
+      const entries = prev.avatarTimeTracking.filter((entry) => entry.slide_id === slideId);
+      if (entries.length === 0) return prev;
+
+      const maxTotal = entries.length * maxPerEntry;
+      const targetTotal = Math.min(Math.max(0, Math.round(nextTotalRaw)), maxTotal);
+      const currentTotal = entries.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0);
+
+      let durations: number[] = [];
+      if (currentTotal > 0) {
+        durations = entries.map((entry) =>
+          Math.min(
+            maxPerEntry,
+            Math.max(0, Math.round(((entry.duration_seconds || 0) / currentTotal) * targetTotal))
+          )
+        );
+      } else {
+        const base = Math.floor(targetTotal / entries.length);
+        const remainder = targetTotal % entries.length;
+        durations = entries.map((_, index) =>
+          Math.min(maxPerEntry, base + (index < remainder ? 1 : 0))
+        );
+      }
+
+      let adjustedTotal = durations.reduce((sum, value) => sum + value, 0);
+      while (adjustedTotal !== targetTotal) {
+        if (adjustedTotal < targetTotal) {
+          const candidates = durations
+            .map((value, index) => ({ value, index }))
+            .filter((entry) => entry.value < maxPerEntry);
+          if (candidates.length === 0) break;
+          const pick = candidates[Math.floor(Math.random() * candidates.length)];
+          durations[pick.index] += 1;
+          adjustedTotal += 1;
+        } else {
+          const candidates = durations
+            .map((value, index) => ({ value, index }))
+            .filter((entry) => entry.value > 0);
+          if (candidates.length === 0) break;
+          const pick = candidates[Math.floor(Math.random() * candidates.length)];
+          durations[pick.index] -= 1;
+          adjustedTotal -= 1;
+        }
+      }
+
+      const updatedTracking = prev.avatarTimeTracking.map((entry) => {
+        const index = entries.findIndex((candidate) => candidate.id === entry.id);
+        if (index === -1) return entry;
+        return {
+          ...entry,
+          duration_seconds: durations[index],
+        };
+      });
+
+      return {
+        ...prev,
+        avatarTimeTracking: updatedTracking,
+      };
+    });
+  };
+
+  const updateAvatarGroupDuration = (slideId: string, nextTotalRaw: number) =>
+    updateGroupDuration(slideId, nextTotalRaw, MAX_AVATAR_SLIDE_SECONDS);
+
+  const updatePageGroupDuration = (slideId: string, nextTotalRaw: number) =>
+    updateGroupDuration(slideId, nextTotalRaw, 7200);
+
+  const isPageId = (slideId: string) => slideId.startsWith('page:');
+
   const openEditDialog = () => {
     if (!selectedSession || !sessionDetails) return;
     if (new Date(selectedSession.created_at) < OWNER_EDIT_MIN_DATE) {
@@ -561,6 +837,9 @@ interface SessionEditDraft {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
+      clearOwnerOverride(selectedSession.id);
+      setHasLocalOverride(false);
+
       const updatedSession: Session = {
         ...selectedSession,
         started_at: editDraft.session.started_at || selectedSession.started_at,
@@ -580,14 +859,37 @@ interface SessionEditDraft {
       setIsEditOpen(false);
     } catch (error) {
       console.error('Owner edit failed:', error);
-      let message = error instanceof Error ? error.message : 'Failed to update session data';
-      if (message && message.toLowerCase().includes('404')) {
-        message = 'owner-edit-session function not deployed';
+      const overrides = loadOwnerOverrides();
+      const override = buildOverrideFromDraft(editDraft);
+      overrides[selectedSession.id] = override;
+      saveOwnerOverrides(overrides);
+      setHasLocalOverride(true);
+
+      const updatedSession = applySessionOverride(selectedSession, override);
+      setSelectedSession(updatedSession);
+      setSessions((prev) =>
+        prev.map((session) =>
+          session.id === selectedSession.id ? applySessionOverride(session, override) : session
+        )
+      );
+      if (sessionDetails) {
+        setSessionDetails(applyDetailsOverride(sessionDetails, override));
       }
-      toast.error(message || 'Failed to update session data');
+
+      toast('Saved locally on this device (Supabase not available).');
+      setIsEditOpen(false);
     } finally {
       setIsSavingEdit(false);
     }
+  };
+
+  const clearLocalOverride = async () => {
+    if (!selectedSession) return;
+    clearOwnerOverride(selectedSession.id);
+    setHasLocalOverride(false);
+    await fetchSessions();
+    await fetchSessionDetails(selectedSession);
+    toast.success('Local override cleared.');
   };
 
   // Update session validation status via edge function
@@ -1074,12 +1376,51 @@ interface SessionEditDraft {
 
     // Avatar interaction summary
     const avatarEntries = details.avatarTimeTracking || [];
-    const avatarSeconds = avatarEntries.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0);
-    if (session.mode === 'avatar' || avatarEntries.length > 0) {
+    const slideEntries = avatarEntries.filter((entry) => !isPageId(entry.slide_id));
+    const pageEntries = avatarEntries.filter((entry) => isPageId(entry.slide_id));
+    const avatarSeconds = slideEntries.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0);
+    if (session.mode === 'avatar' || slideEntries.length > 0) {
       addText('AVATAR INTERACTION SUMMARY', 12, true);
       y += 2;
       addText(`Total slide time: ${Math.round(avatarSeconds / 60)} minutes (${avatarSeconds}s)`);
-      addText(`Slides tracked: ${avatarEntries.length}`);
+      addText(`Slides tracked: ${slideEntries.length}`);
+      y += 5;
+    }
+
+    const avatarGroups = buildAvatarGroups(
+      slideEntries.map((entry) => ({
+        id: entry.id,
+        slide_id: entry.slide_id,
+        slide_title: entry.slide_title,
+        duration_seconds: entry.duration_seconds,
+      }))
+    );
+
+    if (avatarGroups.length > 0) {
+      addText('SLIDE TIME BREAKDOWN', 12, true);
+      y += 2;
+      avatarGroups.forEach((group) => {
+        addText(`${group.title}: ${Math.round(group.total)} sec`);
+      });
+      y += 5;
+    }
+
+    const pageGroups = buildAvatarGroups(
+      pageEntries.map((entry) => ({
+        id: entry.id,
+        slide_id: entry.slide_id,
+        slide_title: entry.slide_title,
+        duration_seconds: entry.duration_seconds,
+      }))
+    );
+
+    if (pageGroups.length > 0) {
+      addText('PAGE TIME BREAKDOWN', 12, true);
+      y += 2;
+      pageGroups.forEach((group) => {
+        const label = (group.title || group.slideId).replace(/^Page:\s*/i, '');
+        addText(`${label}: ${Math.round(group.total)} sec`);
+      });
       y += 5;
     }
 
@@ -1164,6 +1505,36 @@ interface SessionEditDraft {
   }
 
   const sessionDurationSeconds = editDraft ? getSessionDurationSeconds(editDraft) : null;
+  const avatarGroupsForDetails = sessionDetails
+    ? buildAvatarGroups(
+        sessionDetails.avatarTimeTracking
+          .filter((entry) => !isPageId(entry.slide_id))
+          .map((entry) => ({
+            id: entry.id,
+            slide_id: entry.slide_id,
+            slide_title: entry.slide_title,
+            duration_seconds: entry.duration_seconds,
+          }))
+      )
+    : [];
+  const pageGroupsForDetails = sessionDetails
+    ? buildAvatarGroups(
+        sessionDetails.avatarTimeTracking
+          .filter((entry) => isPageId(entry.slide_id))
+          .map((entry) => ({
+            id: entry.id,
+            slide_id: entry.slide_id,
+            slide_title: entry.slide_title,
+            duration_seconds: entry.duration_seconds,
+          }))
+      )
+    : [];
+  const avatarGroupsForEdit = editDraft
+    ? buildAvatarGroups(editDraft.avatarTimeTracking.filter((entry) => !isPageId(entry.slide_id)))
+    : [];
+  const pageGroupsForEdit = editDraft
+    ? buildAvatarGroups(editDraft.avatarTimeTracking.filter((entry) => isPageId(entry.slide_id)))
+    : [];
 
   return (
     <div className="space-y-6">
@@ -1734,7 +2105,14 @@ interface SessionEditDraft {
             <div className="space-y-6">
               {/* Session Summary */}
               <div className="bg-slate-900 p-4 rounded">
-                <h3 className="text-lg font-semibold text-white mb-3">Session Summary</h3>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <h3 className="text-lg font-semibold text-white">Session Summary</h3>
+                  {hasLocalOverride && (
+                    <Badge variant="outline" className="border-blue-400 text-blue-300">
+                      Local override
+                    </Badge>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <span className="text-slate-400 block">Mode</span>
@@ -1864,7 +2242,8 @@ interface SessionEditDraft {
               {/* Avatar Interaction Summary */}
               {(selectedSession?.mode === 'avatar' || sessionDetails.avatarTimeTracking.length > 0) && (
                 (() => {
-                  const totalAvatarSeconds = sessionDetails.avatarTimeTracking.reduce(
+                  const slideEntries = sessionDetails.avatarTimeTracking.filter((entry) => !isPageId(entry.slide_id));
+                  const totalAvatarSeconds = slideEntries.reduce(
                     (sum, entry) => sum + (entry.duration_seconds || 0),
                     0
                   );
@@ -1893,7 +2272,7 @@ interface SessionEditDraft {
                         </div>
                         <div className="bg-slate-900 p-3 rounded text-sm">
                           <span className="text-slate-400">Slides tracked:</span>
-                          <span className="text-white ml-2">{sessionDetails.avatarTimeTracking.length}</span>
+                          <span className="text-white ml-2">{slideEntries.length}</span>
                         </div>
                         <div className="bg-slate-900 p-3 rounded text-sm">
                           <span className="text-slate-400">Tutor messages:</span>
@@ -1905,6 +2284,46 @@ interface SessionEditDraft {
                     </div>
                   );
                 })()
+              )}
+
+              {avatarGroupsForDetails.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">Slide Time Breakdown</h3>
+                  <div className="bg-slate-900 p-4 rounded max-h-48 overflow-y-auto">
+                    {avatarGroupsForDetails.map((group) => (
+                      <div key={group.slideId} className="text-sm mb-2 pb-2 border-b border-slate-700 last:border-0">
+                        <span className="text-slate-400">{group.title}:</span>
+                        <span className="text-white ml-2">{Math.round(group.total)} sec</span>
+                        {group.entryIds.length > 1 && (
+                          <span className="text-xs text-slate-500 ml-2">
+                            ({group.entryIds.length} segments)
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {pageGroupsForDetails.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">Page Time Breakdown</h3>
+                  <div className="bg-slate-900 p-4 rounded max-h-48 overflow-y-auto">
+                    {pageGroupsForDetails.map((group) => (
+                      <div key={group.slideId} className="text-sm mb-2 pb-2 border-b border-slate-700 last:border-0">
+                        <span className="text-slate-400">
+                          {(group.title || group.slideId).replace(/^Page:\s*/i, '')}:
+                        </span>
+                        <span className="text-white ml-2">{Math.round(group.total)} sec</span>
+                        {group.entryIds.length > 1 && (
+                          <span className="text-xs text-slate-500 ml-2">
+                            ({group.entryIds.length} segments)
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* Tutor Dialogue (Learning) */}
@@ -1962,6 +2381,11 @@ interface SessionEditDraft {
               <DialogDescription className="text-slate-400">
                 Hidden owner-only editor. Changes apply immediately to reports and statistics.
               </DialogDescription>
+              {hasLocalOverride && (
+                <div className="text-xs text-blue-300">
+                  Local override active on this device (not synced to Supabase).
+                </div>
+              )}
             </DialogHeader>
 
             {!editDraft ? (
@@ -2275,10 +2699,9 @@ interface SessionEditDraft {
                         Avatar total:{' '}
                         <span className="text-white">
                           {Math.round(
-                            editDraft.avatarTimeTracking.reduce(
-                              (sum, entry) => sum + (entry.duration_seconds || 0),
-                              0
-                            ) / 60
+                            editDraft.avatarTimeTracking
+                              .filter((entry) => !isPageId(entry.slide_id))
+                              .reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0) / 60
                           )}{' '}
                           min
                         </span>
@@ -2308,31 +2731,54 @@ interface SessionEditDraft {
                       </Button>
                     </div>
                   </div>
-                  {editDraft.avatarTimeTracking.length === 0 ? (
+                  {avatarGroupsForEdit.length === 0 ? (
                     <p className="text-slate-500 text-sm">No avatar slide timing recorded.</p>
                   ) : (
                     <div className="space-y-3">
-                      {editDraft.avatarTimeTracking.map((entry, index) => (
-                        <div key={entry.id} className="bg-slate-800/60 p-3 rounded space-y-2">
-                          <div className="text-xs text-slate-400">{entry.slide_title}</div>
+                      {avatarGroupsForEdit.map((group) => (
+                        <div key={group.slideId} className="bg-slate-800/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-slate-400">
+                            {group.title}
+                            {group.entryIds.length > 1 && (
+                              <span className="text-xs text-slate-500 ml-2">
+                                ({group.entryIds.length} segments)
+                              </span>
+                            )}
+                          </div>
                           <div className="space-y-1">
-                            <label className="text-xs text-slate-400">Duration (seconds)</label>
+                            <label className="text-xs text-slate-400">Total Duration (seconds)</label>
                             <Input
                               type="number"
-                              value={entry.duration_seconds ?? ''}
+                              value={Math.round(group.total)}
                               onChange={(e) =>
-                                setEditDraft((prev) =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        avatarTimeTracking: updateListItem(prev.avatarTimeTracking, index, {
-                                          duration_seconds: e.target.value
-                                            ? Math.min(MAX_AVATAR_SLIDE_SECONDS, Number(e.target.value))
-                                            : null,
-                                        }),
-                                      }
-                                    : prev
-                                )
+                                updateAvatarGroupDuration(group.slideId, Number(e.target.value || 0))
+                              }
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-white">Page Time</h3>
+                  {pageGroupsForEdit.length === 0 ? (
+                    <p className="text-slate-500 text-sm">No page timing recorded.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {pageGroupsForEdit.map((group) => (
+                        <div key={group.slideId} className="bg-slate-800/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-slate-400">
+                            {(group.title || group.slideId).replace(/^Page:\s*/i, '')}
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-slate-400">Total Duration (seconds)</label>
+                            <Input
+                              type="number"
+                              value={Math.round(group.total)}
+                              onChange={(e) =>
+                                updatePageGroupDuration(group.slideId, Number(e.target.value || 0))
                               }
                             />
                           </div>
@@ -2411,6 +2857,15 @@ interface SessionEditDraft {
             )}
 
             <div className="flex justify-end gap-2 pt-2">
+              {hasLocalOverride && (
+                <Button
+                  variant="ghost"
+                  className="text-blue-300 hover:text-blue-200"
+                  onClick={clearLocalOverride}
+                >
+                  Reset local override
+                </Button>
+              )}
               <Button variant="outline" className="border-slate-600" onClick={() => setIsEditOpen(false)}>
                 Cancel
               </Button>

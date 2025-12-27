@@ -24,7 +24,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   const videoRef = useRef<HTMLVideoElement>(null);
   const userVideoRef = useRef<HTMLVideoElement>(null);
   const userStreamRef = useRef<MediaStream | null>(null);
-  const prevSlideRef = useRef<string>(currentSlide.id);
+  const prevSlideRef = useRef<Slide>(currentSlide);
   const hasAutoStartedCameraRef = useRef(false);
   const slideStartTimeRef = useRef<Date>(new Date());
   const sessionIdRef = useRef<string | null>(null);
@@ -81,6 +81,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
           startedAt: startTime.toISOString(),
           endedAt: endTime.toISOString(),
           durationSeconds,
+          mode: 'avatar',
         }
       });
       console.log(`Avatar time saved: ${slideTitle} - ${durationSeconds}s`);
@@ -91,17 +92,18 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
 
   // Notify slide changes and track time
   useEffect(() => {
-    if (prevSlideRef.current !== currentSlide.id && isConnected) {
-      // Save time for previous slide before switching
-      const prevSlideId = prevSlideRef.current;
-      const prevSlideTitle = prevSlideId; // We'll use ID as fallback
-      saveSlideTime(prevSlideId, prevSlideTitle, slideStartTimeRef.current);
-      
+    if (prevSlideRef.current.id !== currentSlide.id) {
+      if (isConnected) {
+        // Save time for previous slide before switching
+        const prevSlide = prevSlideRef.current;
+        saveSlideTime(prevSlide.id, prevSlide.title, slideStartTimeRef.current);
+      }
+
       // Reset timer for new slide
       slideStartTimeRef.current = new Date();
-      prevSlideRef.current = currentSlide.id;
+      prevSlideRef.current = currentSlide;
       notifySlideChange(currentSlide);
-      
+
       // After first slide, hide camera immediately on subsequent slides
       if (currentSlide.id !== firstSlideIdRef.current) {
         setIsFirstSlide(false);

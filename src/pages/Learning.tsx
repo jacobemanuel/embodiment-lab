@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { StudyMode } from "@/types/study";
 import { useStudySlides, Slide } from "@/hooks/useStudySlides";
@@ -12,6 +12,10 @@ import { AvatarModePanel } from "@/components/modes/AvatarModePanel";
 import { cn } from "@/lib/utils";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import ExitStudyButton from "@/components/ExitStudyButton";
+import { supabase } from "@/integrations/supabase/client";
+import { saveTutorDialogue } from "@/lib/studyData";
+import { getTutorDialogueLog } from "@/lib/tutorDialogue";
+import { usePageTiming } from "@/hooks/usePageTiming";
 
 const Learning = () => {
   const { mode } = useParams<{ mode: StudyMode }>();
@@ -25,6 +29,9 @@ const Learning = () => {
   const [isPlaygroundVisible, setIsPlaygroundVisible] = useState(false);
   const [shouldPulseButton, setShouldPulseButton] = useState(false);
   const [showFinishProminent, setShowFinishProminent] = useState(false);
+  const sessionIdRef = useRef<string | null>(null);
+  const textSlideStartRef = useRef<Date>(new Date());
+  const textPrevSlideRef = useRef<Slide | null>(null);
 
   // Set initial slide when slides are loaded
   useEffect(() => {
@@ -53,6 +60,108 @@ const Learning = () => {
   };
 
   const isTextMode = mode === 'text';
+
+  usePageTiming(`learning-${isTextMode ? 'text' : 'avatar'}`, `Learning (${isTextMode ? 'Text' : 'Avatar'})`);
+
+  useEffect(() => {
+    sessionIdRef.current = sessionStorage.getItem('sessionId');
+  }, []);
+
+  const saveSlideTime = async (slide: Slide, startTime: Date) => {
+    if (!sessionIdRef.current) return;
+
+    const endTime = new Date();
+    const durationSeconds = Math.min(
+      Math.round((endTime.getTime() - startTime.getTime()) / 1000),
+      180
+    );
+
+    if (durationSeconds < 2) return;
+
+    try {
+      await supabase.functions.invoke('save-avatar-time', {
+        body: {
+          sessionId: sessionIdRef.current,
+          slideId: slide.id,
+          slideTitle: slide.title,
+          startedAt: startTime.toISOString(),
+          endedAt: endTime.toISOString(),
+          durationSeconds,
+          mode: 'text',
+        },
+      });
+    } catch (error) {
+      console.error('Failed to save slide time:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (!isTextMode || !currentSlide) return;
+
+    if (!textPrevSlideRef.current) {
+      textPrevSlideRef.current = currentSlide;
+      textSlideStartRef.current = new Date();
+      return;
+    }
+
+    if (textPrevSlideRef.current.id !== currentSlide.id) {
+      const previousSlide = textPrevSlideRef.current;
+      void saveSlideTime(previousSlide, textSlideStartRef.current);
+      textSlideStartRef.current = new Date();
+      textPrevSlideRef.current = currentSlide;
+    }
+  }, [isTextMode, currentSlide]);
+
+  useEffect(() => {
+    return () => {
+      if (isTextMode && currentSlide) {
+        void saveSlideTime(currentSlide, textSlideStartRef.current);
+      }
+    };
+  }, [isTextMode, currentSlide]);
+
+  useEffect(() => {
+    return () => {
+      const sessionId = sessionIdRef.current;
+      const dialogueAlreadySaved = sessionStorage.getItem('tutorDialogueSaved') === 'true';
+      if (!sessionId || dialogueAlreadySaved) return;
+      const dialogueLog = getTutorDialogueLog().map(({ role, content, timestamp, slideId, slideTitle }) => ({
+        role,
+        content,
+        timestamp,
+        slideId,
+        slideTitle,
+      }));
+      if (dialogueLog.length === 0) return;
+      const studyMode = (mode as StudyMode) || 'text';
+      saveTutorDialogue(sessionId, studyMode, dialogueLog)
+        .then(() => sessionStorage.setItem('tutorDialogueSaved', 'true'))
+        .catch((error) => console.error('Failed to save tutor dialogue on exit:', error));
+    };
+  }, [mode]);
+
+  const handleFinish = async () => {
+    const sessionId = sessionIdRef.current;
+    const studyMode = (mode as StudyMode) || 'text';
+    if (sessionId) {
+      const dialogueLog = getTutorDialogueLog().map(({ role, content, timestamp, slideId, slideTitle }) => ({
+        role,
+        content,
+        timestamp,
+        slideId,
+        slideTitle,
+      }));
+      if (dialogueLog.length > 0) {
+        try {
+          await saveTutorDialogue(sessionId, studyMode, dialogueLog);
+          sessionStorage.setItem('tutorDialogueSaved', 'true');
+        } catch (error) {
+          console.error('Failed to save tutor dialogue on finish:', error);
+        }
+      }
+    }
+    navigate('/post-test-1');
+  };
 
   if (isLoading) {
     return (
@@ -95,10 +204,10 @@ const Learning = () => {
               )}
             </div>
             {/* Mode is locked - no switching allowed */}
-            <Button 
-              variant={showFinishProminent ? "default" : "outline"} 
-              size="sm" 
-              onClick={() => navigate('/post-test-1')} 
+            <Button
+              variant={showFinishProminent ? "default" : "outline"}
+              size="sm"
+              onClick={handleFinish}
               className={cn(
                 "gap-2 transition-all",
                 showFinishProminent && "bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/50 animate-pulse"

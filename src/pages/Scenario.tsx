@@ -10,6 +10,7 @@ import { ModuleNavigation } from "@/components/ModuleNavigation";
 import logo from "@/assets/logo-white.png";
 import { Button } from "@/components/ui/button";
 import { HelpCircle, LogOut, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { usePageTiming } from "@/hooks/usePageTiming";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 
 const Scenario = () => {
+  usePageTiming('scenario', 'Scenario');
   const { mode: urlMode, scenarioId } = useParams<{ mode: StudyMode; scenarioId: string }>();
   const navigate = useNavigate();
   

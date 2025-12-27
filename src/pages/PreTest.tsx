@@ -14,8 +14,10 @@ import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection";
 import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
+import { usePageTiming } from "@/hooks/usePageTiming";
 
 const PreTest = () => {
+  usePageTiming('pre-test', 'Pre-test');
   const navigate = useNavigate();
   const { toast } = useToast();
   

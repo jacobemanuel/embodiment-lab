@@ -476,6 +476,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       let postTestQuery = supabase.from('post_test_responses').select('*');
       let scenariosQuery = supabase.from('scenarios').select('*');
       let tutorDialogueQuery = supabase.from('tutor_dialogue_turns').select('*');
+      let avatarTimeQuery = supabase.from('avatar_time_tracking').select('*');
 
       if (sessionIds.length > 0) {
         demographicsQuery = demographicsQuery.in('session_id', sessionIds);
@@ -483,6 +484,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
         postTestQuery = postTestQuery.in('session_id', sessionIds);
         scenariosQuery = scenariosQuery.in('session_id', sessionIds);
         tutorDialogueQuery = tutorDialogueQuery.in('session_id', sessionIds);
+        avatarTimeQuery = avatarTimeQuery.in('session_id', sessionIds);
       }
 
       const { data: demographics } = await demographicsQuery;
@@ -490,6 +492,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       const { data: postTest } = await postTestQuery;
       const { data: scenarios } = await scenariosQuery;
       const { data: tutorDialogueTurns } = await tutorDialogueQuery;
+      const { data: avatarTimeTracking } = await avatarTimeQuery;
       
       const scenarioIds = scenarios?.map(s => s.id) || [];
       let dialoguesQuery = supabase.from('dialogue_turns').select('*');
@@ -512,6 +515,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
         scenarios,
         dialogueTurns: dialogues,
         tutorDialogueTurns: tutorDialogueTurns || [],
+        avatarTimeTracking: avatarTimeTracking || [],
         questionDefinitions: Object.values(questionInfo),
         filters: {
           dateRange: {

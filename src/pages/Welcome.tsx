@@ -27,6 +27,7 @@ const Welcome = () => {
     sessionStorage.removeItem('postTestQuestionsSnapshot');
     sessionStorage.removeItem('dialogueLog');
     sessionStorage.removeItem('tutorDialogueLog');
+    sessionStorage.removeItem('tutorDialogueSaved');
     sessionStorage.removeItem('scenarioFeedback');
     localStorage.removeItem('studyCompleted');
   };

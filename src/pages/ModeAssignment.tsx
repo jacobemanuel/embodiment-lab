@@ -9,8 +9,10 @@ import { toast } from "sonner";
 import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
+import { usePageTiming } from "@/hooks/usePageTiming";
 
 const ModeAssignment = () => {
+  usePageTiming('mode-assignment', 'Mode Assignment');
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMode, setSelectedMode] = useState<StudyMode | null>(null);
@@ -102,6 +104,7 @@ const ModeAssignment = () => {
         const sessionId = await createStudySession(mode);
         sessionStorage.setItem('studyMode', mode);
         sessionStorage.setItem('sessionId', sessionId);
+        sessionStorage.removeItem('tutorDialogueSaved');
         navigate(`/learning/${mode}`);
       }
     } catch (error) {

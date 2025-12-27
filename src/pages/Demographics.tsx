@@ -17,8 +17,10 @@ import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection";
 import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
+import { usePageTiming } from "@/hooks/usePageTiming";
 
 const Demographics = () => {
+  usePageTiming('demographics', 'Demographics');
   const navigate = useNavigate();
   const { toast } = useToast();
   

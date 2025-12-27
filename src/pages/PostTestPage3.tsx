@@ -15,6 +15,7 @@ import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
 import { StudyMode } from "@/types/study";
 import { getTutorDialogueLog } from "@/lib/tutorDialogue";
+import { saveTelemetryMeta } from "@/lib/sessionTelemetry";
 import { usePageTiming } from "@/hooks/usePageTiming";
 
 const MIN_CHARS = 10;
@@ -150,6 +151,8 @@ const PostTestPage3 = () => {
             }
           }
         }
+        const studyMode = (sessionStorage.getItem('studyMode') as StudyMode) || 'text';
+        await saveTelemetryMeta(sessionId, studyMode);
         await completeStudySession(sessionId);
         
         navigate("/completion");

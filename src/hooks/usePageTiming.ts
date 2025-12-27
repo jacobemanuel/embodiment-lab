@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { appendTimingEntry } from "@/lib/sessionTelemetry";
 
 const MIN_SECONDS = 2;
 
@@ -18,6 +19,16 @@ export const usePageTiming = (pageId: string, pageTitle: string, enabled: boolea
       const endTime = new Date();
       const durationSeconds = Math.round((endTime.getTime() - startRef.current.getTime()) / 1000);
       if (durationSeconds < MIN_SECONDS) return;
+
+      appendTimingEntry({
+        kind: 'page',
+        slideId: `page:${pageId}`,
+        slideTitle: `Page: ${pageTitle}`,
+        durationSeconds,
+        mode: 'page',
+        startedAt: startRef.current.toISOString(),
+        endedAt: endTime.toISOString(),
+      });
 
       supabase.functions.invoke('save-avatar-time', {
         body: {

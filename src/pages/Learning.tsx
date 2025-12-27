@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveTutorDialogue } from "@/lib/studyData";
 import { getTutorDialogueLog } from "@/lib/tutorDialogue";
 import { usePageTiming } from "@/hooks/usePageTiming";
+import { appendTimingEntry } from "@/lib/sessionTelemetry";
 
 const Learning = () => {
   const { mode } = useParams<{ mode: StudyMode }>();
@@ -73,10 +74,19 @@ const Learning = () => {
     const endTime = new Date();
     const durationSeconds = Math.min(
       Math.round((endTime.getTime() - startTime.getTime()) / 1000),
-      180
+      7200
     );
 
     if (durationSeconds < 2) return;
+    appendTimingEntry({
+      kind: 'slide',
+      slideId: slide.id,
+      slideTitle: slide.title,
+      durationSeconds,
+      mode: 'text',
+      startedAt: startTime.toISOString(),
+      endedAt: endTime.toISOString(),
+    });
 
     try {
       await supabase.functions.invoke('save-avatar-time', {

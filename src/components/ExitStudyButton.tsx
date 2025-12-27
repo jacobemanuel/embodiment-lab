@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { clearTelemetrySavedFlag, clearTimingLog } from "@/lib/sessionTelemetry";
 
 interface ExitStudyButtonProps {
   variant?: "default" | "ghost" | "outline";
@@ -59,6 +60,8 @@ const ExitStudyButton = ({
       sessionStorage.removeItem('postTestPage2');
       sessionStorage.removeItem('postTest1');
       sessionStorage.removeItem('currentSlide');
+      clearTimingLog();
+      clearTelemetrySavedFlag();
       
       // Navigate to home
       navigate('/');

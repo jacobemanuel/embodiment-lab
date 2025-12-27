@@ -9,10 +9,15 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import DateRangeFilter from "./DateRangeFilter";
 import { startOfDay, endOfDay, format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 const CORRECT_COLOR = '#22c55e';
 const INCORRECT_COLOR = '#64748b';
+const DEMO_FALLBACK_PREFIX = 'demo-';
+const isDemoFallbackQuestionId = (questionId: string) => questionId.startsWith(DEMO_FALLBACK_PREFIX);
+const normalizeDemoQuestionId = (questionId: string) =>
+  questionId.startsWith('demo-demo-') ? questionId.replace(/^demo-/, '') : questionId;
 
 interface ResponseData {
   question_id: string;
@@ -174,9 +179,30 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
         return Array.from(map.values());
       };
 
-      const preTest = dedupeResponses(preTestRaw);
-      const postTest = dedupeResponses(postTestRaw);
-      const demographics = dedupeResponses(demographicsRaw);
+      const preTestAll = dedupeResponses(preTestRaw);
+      const postTestAll = dedupeResponses(postTestRaw);
+      const demographicsBase = dedupeResponses(demographicsRaw);
+
+      const demoFallbackRows = preTestAll.filter((r) => isDemoFallbackQuestionId(r.question_id));
+      const normalizedDemoFallback = demoFallbackRows.map((row) => ({
+        ...row,
+        question_id: normalizeDemoQuestionId(row.question_id),
+      }));
+
+      const demographicsMap = new Map<string, any>();
+      demographicsBase.forEach((row) => {
+        demographicsMap.set(`${row.session_id}:${row.question_id}`, row);
+      });
+      normalizedDemoFallback.forEach((row) => {
+        const key = `${row.session_id}:${row.question_id}`;
+        if (!demographicsMap.has(key)) {
+          demographicsMap.set(key, row);
+        }
+      });
+
+      const demographics = Array.from(demographicsMap.values());
+      const preTest = preTestAll.filter((r) => !isDemoFallbackQuestionId(r.question_id));
+      const postTest = postTestAll.filter((r) => !isTelemetryMetaQuestionId(r.question_id));
 
       // Store raw responses for CSV export
       setRawResponses({ pre: preTest || [], post: postTest || [], demo: demographics || [] });

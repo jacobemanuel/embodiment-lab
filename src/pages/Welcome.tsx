@@ -4,6 +4,7 @@ import { Clock, Sparkles, MousePointerClick, ShieldCheck } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 import { useEffect, useState } from "react";
 import ParticipantFooter from "@/components/ParticipantFooter";
+import { clearTelemetrySavedFlag, clearTimingLog } from "@/lib/sessionTelemetry";
 
 const Welcome = () => {
   const navigate = useNavigate();
@@ -29,6 +30,8 @@ const Welcome = () => {
     sessionStorage.removeItem('tutorDialogueLog');
     sessionStorage.removeItem('tutorDialogueSaved');
     sessionStorage.removeItem('scenarioFeedback');
+    clearTimingLog();
+    clearTelemetrySavedFlag();
     localStorage.removeItem('studyCompleted');
   };
 

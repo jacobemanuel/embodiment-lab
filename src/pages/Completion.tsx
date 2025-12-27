@@ -7,6 +7,7 @@ import ParticipantFooter from "@/components/ParticipantFooter";
 import { usePageTiming } from "@/hooks/usePageTiming";
 import { supabase } from "@/integrations/supabase/client";
 import { clearTutorDialogueLog } from "@/lib/tutorDialogue";
+import { clearTimingLog, clearTelemetrySavedFlag } from "@/lib/sessionTelemetry";
 
 const Completion = () => {
   usePageTiming('completion', 'Completion');
@@ -178,6 +179,8 @@ const Completion = () => {
       sessionStorage.removeItem('dialogueLog');
       sessionStorage.removeItem('scenarioFeedback');
       sessionStorage.removeItem('tutorDialogueSaved');
+      clearTimingLog();
+      clearTelemetrySavedFlag();
       clearTutorDialogueLog();
     } catch (error) {
       console.error('Error creating CSV:', error);

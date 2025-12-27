@@ -10,6 +10,8 @@ import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
 import { usePageTiming } from "@/hooks/usePageTiming";
+import { updateStudyMode } from "@/lib/studyData";
+import { clearTelemetrySavedFlag, clearTimingLog } from "@/lib/sessionTelemetry";
 
 const ModeAssignment = () => {
   usePageTiming('mode-assignment', 'Mode Assignment');
@@ -55,7 +57,15 @@ const ModeAssignment = () => {
           }
         });
       } catch (error) {
-        console.error('Failed to mark session as reset:', error);
+        console.warn('save-study-data reset_session failed, falling back to direct update:', error);
+        try {
+          await supabase
+            .from('study_sessions')
+            .update({ status: 'reset', last_activity_at: new Date().toISOString() })
+            .eq('session_id', existingSessionId);
+        } catch (fallbackError) {
+          console.error('Failed to mark session as reset via fallback:', fallbackError);
+        }
       }
       
       // Clear all local session data
@@ -84,18 +94,7 @@ const ModeAssignment = () => {
 
       if (currentSessionId) {
         // Update existing session via edge function (bypasses RLS)
-        const { data, error } = await supabase.functions.invoke('save-study-data', {
-          body: {
-            action: 'update_mode',
-            sessionId: currentSessionId,
-            mode
-          }
-        });
-
-        if (error) {
-          console.error('Error updating mode:', error);
-        }
-
+        await updateStudyMode(currentSessionId, mode);
         sessionStorage.setItem('studyMode', mode);
         navigate(`/learning/${mode}`);
       } else {
@@ -105,6 +104,8 @@ const ModeAssignment = () => {
         sessionStorage.setItem('studyMode', mode);
         sessionStorage.setItem('sessionId', sessionId);
         sessionStorage.removeItem('tutorDialogueSaved');
+        clearTimingLog();
+        clearTelemetrySavedFlag();
         navigate(`/learning/${mode}`);
       }
     } catch (error) {

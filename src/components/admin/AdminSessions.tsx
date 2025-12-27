@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import DateRangeFilter from "./DateRangeFilter";
 import { getPermissionLevel, getPermissions } from "@/lib/permissions";
 import { describeSuspicionFlag, SUSPICION_REQUIREMENTS } from "@/lib/suspicion";
+import { META_DIALOGUE_ID, META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 import { toast } from "sonner";
 
 interface AdminSessionsProps {
@@ -24,6 +25,7 @@ interface AdminSessionsProps {
 
 const OWNER_EDIT_MIN_DATE = new Date("2025-12-24T00:00:00Z");
 const MAX_AVATAR_SLIDE_SECONDS = 180;
+const DEMO_FALLBACK_PREFIX = 'demo-';
 
 
 const AdminSessions = ({ userEmail = '' }: AdminSessionsProps) => {
@@ -480,19 +482,69 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         .eq('session_id', session.id)
         .order('started_at', { ascending: true });
 
+      const rawPreTest = preTest || [];
+      const rawPostTest = postTest || [];
+
+      const timingMetaRow = rawPostTest.find((row) => row.question_id === META_TIMING_ID);
+      const dialogueMetaRow = rawPostTest.find((row) => row.question_id === META_DIALOGUE_ID);
+
+      const filteredPostTest = rawPostTest.filter((row) => !isTelemetryMetaQuestionId(row.question_id));
+      const demoFallbackRows = rawPreTest.filter((row) => isDemoFallbackQuestionId(row.question_id));
+      const filteredPreTest = rawPreTest.filter((row) => !isDemoFallbackQuestionId(row.question_id));
+
+      const fallbackDemographicResponses = demoFallbackRows.map((row) => ({
+        ...row,
+        question_id: normalizeDemoQuestionId(row.question_id),
+      }));
+
+      const resolvedDemographicResponses =
+        demographicResponses && demographicResponses.length > 0
+          ? demographicResponses
+          : fallbackDemographicResponses;
+
+      const fallbackAvatarTimeTracking = timingMetaRow
+        ? parseTimingMeta(timingMetaRow).map((entry: any, index: number) => ({
+            id: `meta:${timingMetaRow.id}:${index}`,
+            session_id: session.id,
+            slide_id: entry.slideId,
+            slide_title: entry.slideTitle || entry.slideId,
+            started_at: entry.startedAt || null,
+            ended_at: entry.endedAt || null,
+            duration_seconds: entry.durationSeconds ?? null,
+          }))
+        : [];
+
+      const resolvedAvatarTimeTracking =
+        avatarTimeTracking && avatarTimeTracking.length > 0 ? avatarTimeTracking : fallbackAvatarTimeTracking;
+
+      const fallbackTutorDialogueTurns = dialogueMetaRow
+        ? parseDialogueMeta(dialogueMetaRow).map((entry: any, index: number) => ({
+            id: `meta:${dialogueMetaRow.id}:${index}`,
+            session_id: session.id,
+            role: entry.role,
+            content: entry.content,
+            slide_id: entry.slideId || null,
+            slide_title: entry.slideTitle || null,
+            timestamp: entry.timestamp ? new Date(entry.timestamp).toISOString() : new Date().toISOString(),
+          }))
+        : [];
+
+      const resolvedTutorDialogueTurns =
+        tutorDialogueTurns && tutorDialogueTurns.length > 0 ? tutorDialogueTurns : fallbackTutorDialogueTurns;
+
       const overrides = loadOwnerOverrides();
       const sessionOverride = overrides[session.id];
       const resolvedSession = applySessionOverride(session, sessionOverride);
       const resolvedDetails = applyDetailsOverride(
         {
           demographics: oldDemographics,
-          demographicResponses: demographicResponses || [],
-          preTest: preTest || [],
-          postTest: postTest || [],
+          demographicResponses: resolvedDemographicResponses || [],
+          preTest: filteredPreTest,
+          postTest: filteredPostTest,
           scenarios: scenarios || [],
           dialogueTurns,
-          tutorDialogueTurns: tutorDialogueTurns || [],
-          avatarTimeTracking: avatarTimeTracking || [],
+          tutorDialogueTurns: resolvedTutorDialogueTurns || [],
+          avatarTimeTracking: resolvedAvatarTimeTracking || [],
         },
         sessionOverride
       );
@@ -542,13 +594,17 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         engagement_rating: Boolean(s.engagement_rating),
         completed_at: s.completed_at || '',
       })),
-      avatarTimeTracking: (details.avatarTimeTracking || []).map((t) => ({
+      avatarTimeTracking: (details.avatarTimeTracking || [])
+        .filter((t) => !isMetaRowId(String(t.id)))
+        .map((t) => ({
         id: t.id,
         slide_id: t.slide_id,
         slide_title: t.slide_title,
         duration_seconds: t.duration_seconds ?? null,
       })),
-      tutorDialogueTurns: (details.tutorDialogueTurns || []).map((t) => ({
+      tutorDialogueTurns: (details.tutorDialogueTurns || [])
+        .filter((t) => !isMetaRowId(String(t.id)))
+        .map((t) => ({
         id: t.id,
         role: t.role,
         content: t.content || '',
@@ -738,6 +794,32 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     updateGroupDuration(slideId, nextTotalRaw, 7200);
 
   const isPageId = (slideId: string) => slideId.startsWith('page:');
+  const isDemoFallbackQuestionId = (questionId: string) => questionId.startsWith(DEMO_FALLBACK_PREFIX);
+  const normalizeDemoQuestionId = (questionId: string) =>
+    questionId.startsWith('demo-demo-') ? questionId.replace(/^demo-/, '') : questionId;
+  const isMetaRowId = (id: string) => id.startsWith('meta:');
+
+  const parseTimingMeta = (row: any) => {
+    if (!row?.answer) return [];
+    try {
+      const parsed = JSON.parse(row.answer);
+      if (!parsed || !Array.isArray(parsed.entries)) return [];
+      return parsed.entries;
+    } catch {
+      return [];
+    }
+  };
+
+  const parseDialogueMeta = (row: any) => {
+    if (!row?.answer) return [];
+    try {
+      const parsed = JSON.parse(row.answer);
+      if (!parsed || !Array.isArray(parsed.messages)) return [];
+      return parsed.messages;
+    } catch {
+      return [];
+    }
+  };
 
   const openEditDialog = () => {
     if (!selectedSession || !sessionDetails) return;

@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress";
 import QuestionPerformanceByMode from "./QuestionPerformanceByMode";
 import { describeSuspicionFlag, SUSPICION_REQUIREMENTS } from "@/lib/suspicion";
+import { META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 
 interface AvatarTimeData {
   session_id: string;
@@ -178,6 +179,19 @@ const resolveSessionMode = (session: { modes_used?: string[] | null; mode?: stri
 
 const isPageEntry = (entry: { slide_id?: string }) =>
   typeof entry.slide_id === 'string' && entry.slide_id.startsWith('page:');
+const isDemoFallbackQuestionId = (questionId: string) => questionId.startsWith('demo-');
+const normalizeDemoQuestionId = (questionId: string) =>
+  questionId.startsWith('demo-demo-') ? questionId.replace(/^demo-/, '') : questionId;
+
+const parseTimingMetaEntries = (row: any) => {
+  if (!row?.answer) return [] as any[];
+  try {
+    const parsed = JSON.parse(row.answer);
+    return Array.isArray(parsed?.entries) ? parsed.entries : [];
+  } catch {
+    return [];
+  }
+};
 
 // Helper component for section CSV export - accepts canExport to hide for viewers
 const ExportButton = ({ onClick, label, size = "sm", canExport = true }: { onClick: () => void; label: string; size?: "sm" | "xs"; canExport?: boolean }) => {
@@ -277,10 +291,48 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           supabase.from('study_slides').select('slide_id, title, sort_order, is_active').order('sort_order'),
         ]);
         
-        demographicResponses = demoRes.data || [];
-        preTestResponses = preRes.data || [];
-        postTestResponses = postRes.data || [];
-        avatarTimeData = avatarRes.data || [];
+        const rawDemographicResponses = demoRes.data || [];
+        const rawPreTestResponses = preRes.data || [];
+        const rawPostTestResponses = postRes.data || [];
+        const rawAvatarTimeData = avatarRes.data || [];
+
+        const demoFallbackRows = rawPreTestResponses.filter((r) => isDemoFallbackQuestionId(r.question_id));
+        const normalizedDemoFallback = demoFallbackRows.map((row) => ({
+          ...row,
+          question_id: normalizeDemoQuestionId(row.question_id),
+        }));
+
+        const demographicMap = new Map<string, any>();
+        rawDemographicResponses.forEach((row: any) => {
+          demographicMap.set(`${row.session_id}:${row.question_id}`, row);
+        });
+        normalizedDemoFallback.forEach((row: any) => {
+          const key = `${row.session_id}:${row.question_id}`;
+          if (!demographicMap.has(key)) {
+            demographicMap.set(key, row);
+          }
+        });
+
+        demographicResponses = Array.from(demographicMap.values());
+        preTestResponses = rawPreTestResponses.filter((r) => !isDemoFallbackQuestionId(r.question_id));
+        postTestResponses = rawPostTestResponses.filter((r) => !isTelemetryMetaQuestionId(r.question_id));
+
+        const timingMetaRows = rawPostTestResponses.filter((r) => r.question_id === META_TIMING_ID);
+        const fallbackAvatarTimeData = timingMetaRows.flatMap((row: any) =>
+          parseTimingMetaEntries(row).map((entry: any, index: number) => ({
+            session_id: row.session_id,
+            slide_id: entry.slideId,
+            slide_title: entry.slideTitle || entry.slideId,
+            duration_seconds: entry.durationSeconds ?? 0,
+            started_at: entry.startedAt || row.created_at,
+          }))
+        );
+
+        const sessionsWithAvatarTime = new Set(rawAvatarTimeData.map((entry: any) => entry.session_id));
+        avatarTimeData = [
+          ...rawAvatarTimeData,
+          ...fallbackAvatarTimeData.filter((entry: any) => !sessionsWithAvatarTime.has(entry.session_id)),
+        ];
         activeSlides = (slideRes.data || []).filter((slide) => slide.is_active);
       }
 

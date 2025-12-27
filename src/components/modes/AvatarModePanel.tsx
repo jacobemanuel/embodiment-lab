@@ -7,6 +7,7 @@ import { useAnamClient } from "@/hooks/useAnamClient";
 import { TranscriptPanel, TranscriptMessage } from "@/components/TranscriptPanel";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { appendTimingEntry } from "@/lib/sessionTelemetry";
 
 interface AvatarModePanelProps {
   currentSlide: Slide;
@@ -71,6 +72,15 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
     
     // Only save if duration > 2 seconds (filter out quick navigation)
     if (durationSeconds < 2) return;
+    appendTimingEntry({
+      kind: 'slide',
+      slideId,
+      slideTitle,
+      durationSeconds,
+      mode: 'avatar',
+      startedAt: startTime.toISOString(),
+      endedAt: endTime.toISOString(),
+    });
     
     try {
       await supabase.functions.invoke('save-avatar-time', {

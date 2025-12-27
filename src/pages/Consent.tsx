@@ -5,6 +5,7 @@ import { useState } from "react";
 import { FileText, List, Database, Scale, Hand, Loader2 } from "lucide-react";
 import logo from "@/assets/logo-white.png";
 import { createStudySession } from "@/lib/studyData";
+import { clearTelemetrySavedFlag, clearTimingLog } from "@/lib/sessionTelemetry";
 import { toast } from "sonner";
 import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
@@ -24,6 +25,8 @@ const Consent = () => {
         const sessionId = await createStudySession('text'); // Default mode, will be updated later
         sessionStorage.setItem('sessionId', sessionId);
         sessionStorage.removeItem('tutorDialogueSaved');
+        clearTimingLog();
+        clearTelemetrySavedFlag();
         navigate("/demographics");
       } catch (error) {
         console.error('Error creating session:', error);

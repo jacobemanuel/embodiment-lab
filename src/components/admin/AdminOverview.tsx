@@ -319,20 +319,44 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
         const timingMetaRows = rawPostTestResponses.filter((r) => r.question_id === META_TIMING_ID);
         const fallbackAvatarTimeData = timingMetaRows.flatMap((row: any) =>
-          parseTimingMetaEntries(row).map((entry: any, index: number) => ({
-            session_id: row.session_id,
-            slide_id: entry.slideId,
-            slide_title: entry.slideTitle || entry.slideId,
-            duration_seconds: entry.durationSeconds ?? 0,
-            started_at: entry.startedAt || row.created_at,
-          }))
+          parseTimingMetaEntries(row)
+            .filter((entry: any) => entry?.slideId && typeof entry.durationSeconds === 'number')
+            .map((entry: any, index: number) => ({
+              session_id: row.session_id,
+              slide_id: entry.slideId,
+              slide_title: entry.slideTitle || entry.slideId,
+              duration_seconds: entry.durationSeconds ?? 0,
+              started_at: entry.startedAt || row.created_at,
+            }))
         );
 
-        const sessionsWithAvatarTime = new Set(rawAvatarTimeData.map((entry: any) => entry.session_id));
-        avatarTimeData = [
-          ...rawAvatarTimeData,
-          ...fallbackAvatarTimeData.filter((entry: any) => !sessionsWithAvatarTime.has(entry.session_id)),
-        ];
+        const rawSlideIdsBySession = new Map<string, Set<string>>();
+        const rawPageIdsBySession = new Map<string, Set<string>>();
+        rawAvatarTimeData.forEach((entry: any) => {
+          const targetMap = isPageEntry(entry) ? rawPageIdsBySession : rawSlideIdsBySession;
+          const slideId = entry.slide_id;
+          if (!slideId) return;
+          const existing = targetMap.get(entry.session_id) || new Set<string>();
+          existing.add(slideId);
+          targetMap.set(entry.session_id, existing);
+        });
+
+        avatarTimeData = [...rawAvatarTimeData];
+        fallbackAvatarTimeData.forEach((entry: any) => {
+          const slideId = entry.slide_id;
+          if (!slideId) return;
+          if (isPageEntry(entry)) {
+            const seenPages = rawPageIdsBySession.get(entry.session_id);
+            if (!seenPages || !seenPages.has(slideId)) {
+              avatarTimeData.push(entry);
+            }
+            return;
+          }
+          const seenSlides = rawSlideIdsBySession.get(entry.session_id);
+          if (!seenSlides || !seenSlides.has(slideId)) {
+            avatarTimeData.push(entry);
+          }
+        });
         activeSlides = (slideRes.data || []).filter((slide) => slide.is_active);
       }
 

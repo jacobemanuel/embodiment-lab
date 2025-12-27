@@ -482,6 +482,11 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         .eq('session_id', session.id)
         .order('started_at', { ascending: true });
 
+      const { data: activeSlides } = await supabase
+        .from('study_slides')
+        .select('slide_id, is_active')
+        .eq('is_active', true);
+
       const rawPreTest = preTest || [];
       const rawPostTest = postTest || [];
 
@@ -514,8 +519,12 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           }))
         : [];
 
-      const resolvedAvatarTimeTracking =
-        avatarTimeTracking && avatarTimeTracking.length > 0 ? avatarTimeTracking : fallbackAvatarTimeTracking;
+      const activeSlideIds = new Set((activeSlides || []).map((slide) => slide.slide_id));
+      const resolvedAvatarTimeTracking = mergeAvatarTiming(
+        avatarTimeTracking || [],
+        fallbackAvatarTimeTracking,
+        activeSlideIds
+      );
 
       const fallbackTutorDialogueTurns = dialogueMetaRow
         ? parseDialogueMeta(dialogueMetaRow).map((entry: any, index: number) => ({
@@ -529,8 +538,10 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           }))
         : [];
 
-      const resolvedTutorDialogueTurns =
-        tutorDialogueTurns && tutorDialogueTurns.length > 0 ? tutorDialogueTurns : fallbackTutorDialogueTurns;
+      const resolvedTutorDialogueTurns = mergeTutorDialogue(
+        tutorDialogueTurns || [],
+        fallbackTutorDialogueTurns
+      );
 
       const overrides = loadOwnerOverrides();
       const sessionOverride = overrides[session.id];
@@ -798,6 +809,61 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
   const normalizeDemoQuestionId = (questionId: string) =>
     questionId.startsWith('demo-demo-') ? questionId.replace(/^demo-/, '') : questionId;
   const isMetaRowId = (id: string) => id.startsWith('meta:');
+
+  const mergeAvatarTiming = (
+    rawEntries: any[],
+    fallbackEntries: any[],
+    activeSlideIds?: Set<string>
+  ) => {
+    const merged = [...rawEntries];
+    const rawSlideIds = new Set<string>();
+    const rawPageIds = new Set<string>();
+
+    rawEntries.forEach((entry) => {
+      if (!entry?.slide_id) return;
+      if (isPageId(entry.slide_id)) {
+        rawPageIds.add(entry.slide_id);
+      } else {
+        rawSlideIds.add(entry.slide_id);
+      }
+    });
+
+    fallbackEntries.forEach((entry) => {
+      if (!entry?.slide_id) return;
+      if (isPageId(entry.slide_id)) {
+        if (!rawPageIds.has(entry.slide_id)) {
+          merged.push(entry);
+        }
+        return;
+      }
+      if (!rawSlideIds.has(entry.slide_id)) {
+        merged.push(entry);
+      }
+    });
+
+    if (activeSlideIds && activeSlideIds.size > 0) {
+      return merged.filter((entry) => isPageId(entry.slide_id) || activeSlideIds.has(entry.slide_id));
+    }
+
+    return merged;
+  };
+
+  const mergeTutorDialogue = (rawEntries: any[], fallbackEntries: any[]) => {
+    if (rawEntries.length === 0) return fallbackEntries;
+    if (fallbackEntries.length === 0) return rawEntries;
+
+    const merged = [...rawEntries];
+    const seen = new Set(
+      rawEntries.map((entry) => `${entry.role}:${entry.content}:${entry.timestamp || ''}:${entry.slide_id || ''}`)
+    );
+    fallbackEntries.forEach((entry) => {
+      const key = `${entry.role}:${entry.content}:${entry.timestamp || ''}:${entry.slide_id || ''}`;
+      if (!seen.has(key)) {
+        merged.push(entry);
+      }
+    });
+    return merged;
+  };
 
   const parseTimingMeta = (row: any) => {
     if (!row?.answer) return [];
@@ -1314,26 +1380,144 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
   );
   const selectedFlags = Array.isArray(selectedSession?.suspicious_flags) ? selectedSession?.suspicious_flags : [];
 
-  const exportToCSV = () => {
-    const headers = ['Session ID', 'Mode', 'Started', 'Completed', 'Duration (min)', 'Status', 'Flags'];
-    const rows = filteredSessions.map(s => {
-      const duration = s.completed_at 
-        ? Math.round((new Date(s.completed_at).getTime() - new Date(s.started_at).getTime()) / 1000 / 60)
+  const exportToCSV = async () => {
+    if (filteredSessions.length === 0) return;
+
+    const sessionIds = filteredSessions.map((s) => s.id);
+    const escapeCsv = (value: string | number) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+    let rawAvatarTimeData: any[] = [];
+    let timingMetaRows: any[] = [];
+    let activeSlides: Array<{ slide_id: string; title: string; sort_order: number; is_active: boolean }> = [];
+
+    try {
+      const [avatarRes, postRes, slideRes] = await Promise.all([
+        supabase.from('avatar_time_tracking').select('*').in('session_id', sessionIds),
+        supabase.from('post_test_responses').select('session_id, question_id, answer, created_at').in('session_id', sessionIds),
+        supabase.from('study_slides').select('slide_id, title, sort_order, is_active').order('sort_order'),
+      ]);
+
+      rawAvatarTimeData = avatarRes.data || [];
+      timingMetaRows = (postRes.data || []).filter((row) => row.question_id === META_TIMING_ID);
+      activeSlides = (slideRes.data || []).filter((slide) => slide.is_active);
+    } catch (error) {
+      console.error('Failed to load timing data for CSV export:', error);
+    }
+
+    const activeSlideIds = new Set(activeSlides.map((slide) => slide.slide_id));
+    const rawBySession = new Map<string, any[]>();
+    rawAvatarTimeData.forEach((entry) => {
+      const list = rawBySession.get(entry.session_id) || [];
+      list.push(entry);
+      rawBySession.set(entry.session_id, list);
+    });
+
+    const fallbackBySession = new Map<string, any[]>();
+    timingMetaRows.forEach((row: any) => {
+      const entries = parseTimingMeta(row)
+        .filter((entry: any) => entry?.slideId && typeof entry.durationSeconds === 'number')
+        .map((entry: any, index: number) => ({
+          id: `meta:${row.id}:${index}`,
+          session_id: row.session_id,
+          slide_id: entry.slideId,
+          slide_title: entry.slideTitle || entry.slideId,
+          duration_seconds: entry.durationSeconds ?? 0,
+        }));
+      const list = fallbackBySession.get(row.session_id) || [];
+      list.push(...entries);
+      fallbackBySession.set(row.session_id, list);
+    });
+
+    const mergedBySession = new Map<string, any[]>();
+    const slideColumnMap = new Map<string, string>();
+    const pageColumnMap = new Map<string, string>();
+
+    filteredSessions.forEach((session) => {
+      const merged = mergeAvatarTiming(
+        rawBySession.get(session.id) || [],
+        fallbackBySession.get(session.id) || [],
+        activeSlideIds.size > 0 ? activeSlideIds : undefined
+      );
+      mergedBySession.set(session.id, merged);
+      merged.forEach((entry) => {
+        if (!entry?.slide_id) return;
+        if (isPageId(entry.slide_id)) {
+          const label = (entry.slide_title || entry.slide_id).replace(/^Page:\s*/i, '');
+          pageColumnMap.set(entry.slide_id, label);
+        } else if (activeSlideIds.size === 0 || activeSlideIds.has(entry.slide_id)) {
+          const label = entry.slide_title || entry.slide_id;
+          if (!slideColumnMap.has(entry.slide_id) || label.length > (slideColumnMap.get(entry.slide_id) || '').length) {
+            slideColumnMap.set(entry.slide_id, label);
+          }
+        }
+      });
+    });
+
+    const slideColumns = activeSlides.length > 0
+      ? activeSlides.map((slide) => ({ id: slide.slide_id, title: slide.title }))
+      : Array.from(slideColumnMap.entries())
+          .map(([id, title]) => ({ id, title }))
+          .sort((a, b) => a.title.localeCompare(b.title));
+
+    const pageColumns = Array.from(pageColumnMap.entries())
+      .map(([id, title]) => ({ id, title }))
+      .sort((a, b) => a.title.localeCompare(b.title));
+
+    const headers = [
+      'Session ID',
+      'Mode',
+      'Started',
+      'Completed',
+      'Duration (min)',
+      'Status',
+      'Flags',
+      ...slideColumns.map((slide) => `Slide: ${slide.title} (sec)`),
+      ...pageColumns.map((page) => `Page: ${page.title} (sec)`),
+      'Slide Total (sec)',
+      'Page Total (sec)',
+    ];
+
+    const rows = filteredSessions.map((session) => {
+      const duration = session.completed_at
+        ? Math.round((new Date(session.completed_at).getTime() - new Date(session.started_at).getTime()) / 1000 / 60)
         : '';
-      const flags = Array.isArray(s.suspicious_flags) ? s.suspicious_flags.join('; ') : '';
-      const status = s.status === 'reset' ? 'Reset' : (s.completed_at ? 'Completed' : 'Incomplete');
+      const flags = Array.isArray(session.suspicious_flags) ? session.suspicious_flags.join('; ') : '';
+      const status = session.status === 'reset' ? 'Reset' : (session.completed_at ? 'Completed' : 'Incomplete');
+      const modesUsed = session.modes_used && session.modes_used.length > 0 ? session.modes_used.join(' / ') : session.mode;
+
+      const merged = mergedBySession.get(session.id) || [];
+      const slideTimes: Record<string, number> = {};
+      const pageTimes: Record<string, number> = {};
+      merged.forEach((entry) => {
+        if (!entry?.slide_id) return;
+        const durationSeconds = Number(entry.duration_seconds || 0);
+        if (durationSeconds <= 0) return;
+        if (isPageId(entry.slide_id)) {
+          pageTimes[entry.slide_id] = (pageTimes[entry.slide_id] || 0) + durationSeconds;
+        } else {
+          slideTimes[entry.slide_id] = (slideTimes[entry.slide_id] || 0) + durationSeconds;
+        }
+      });
+
+      const slideTotal = Object.values(slideTimes).reduce((sum, value) => sum + value, 0);
+      const pageTotal = Object.values(pageTimes).reduce((sum, value) => sum + value, 0);
+
       return [
-        s.session_id,
-        s.mode,
-        s.started_at,
-        s.completed_at || '',
+        session.session_id,
+        modesUsed,
+        session.started_at,
+        session.completed_at || '',
         duration,
         status,
-        flags
+        flags,
+        ...slideColumns.map((slide) => slideTimes[slide.id] ?? ''),
+        ...pageColumns.map((page) => pageTimes[page.id] ?? ''),
+        slideTotal,
+        pageTotal,
       ];
     });
 
-    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const csv = [headers, ...rows].map((row) => row.map(escapeCsv).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

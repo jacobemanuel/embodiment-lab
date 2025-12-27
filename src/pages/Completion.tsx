@@ -7,7 +7,8 @@ import ParticipantFooter from "@/components/ParticipantFooter";
 import { usePageTiming } from "@/hooks/usePageTiming";
 import { supabase } from "@/integrations/supabase/client";
 import { clearTutorDialogueLog } from "@/lib/tutorDialogue";
-import { clearTimingLog, clearTelemetrySavedFlag } from "@/lib/sessionTelemetry";
+import { clearTimingLog, clearTelemetrySavedFlag, saveTelemetryMeta } from "@/lib/sessionTelemetry";
+import { StudyMode } from "@/types/study";
 
 const Completion = () => {
   usePageTiming('completion', 'Completion');
@@ -17,6 +18,14 @@ const Completion = () => {
   useEffect(() => {
     sessionStorage.setItem('studyCompleted', 'true');
     localStorage.setItem('studyCompleted', 'true');
+
+    const sessionId = sessionStorage.getItem('sessionId');
+    if (sessionId) {
+      const mode = (sessionStorage.getItem('studyMode') as StudyMode) || 'unknown';
+      saveTelemetryMeta(sessionId, mode).catch((error) => {
+        console.error('Failed to save telemetry on completion:', error);
+      });
+    }
     
     // Handle browser back button - redirect to home gracefully
     const handlePopState = () => {

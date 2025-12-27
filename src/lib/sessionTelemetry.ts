@@ -65,6 +65,19 @@ const fetchSessionUuid = async (sessionId: string) => {
   return data?.id || null;
 };
 
+const fetchExistingMeta = async (sessionUuid: string) => {
+  const { data, error } = await supabase
+    .from('post_test_responses')
+    .select('question_id')
+    .eq('session_id', sessionUuid)
+    .in('question_id', [META_TIMING_ID, META_DIALOGUE_ID]);
+  if (error) {
+    console.error('Failed to check existing telemetry meta:', error);
+    return new Set<string>();
+  }
+  return new Set((data || []).map((row) => row.question_id));
+};
+
 export const saveTelemetryMeta = async (sessionId: string, mode: StudyMode | 'unknown') => {
   if (!sessionId) return;
   if (sessionStorage.getItem(TELEMETRY_SAVED_KEY) === 'true') return;
@@ -106,9 +119,17 @@ export const saveTelemetryMeta = async (sessionId: string, mode: StudyMode | 'un
 
   if (inserts.length === 0) return;
 
+  const existingMeta = await fetchExistingMeta(sessionUuid);
+  const filteredInserts = inserts.filter((row) => !existingMeta.has(row.question_id));
+
+  if (filteredInserts.length === 0) {
+    sessionStorage.setItem(TELEMETRY_SAVED_KEY, 'true');
+    return;
+  }
+
   const { error } = await supabase
     .from('post_test_responses')
-    .insert(inserts);
+    .insert(filteredInserts);
 
   if (error) {
     console.error('Failed to store telemetry fallback:', error);

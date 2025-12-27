@@ -1,103 +1,103 @@
-# AI Study Buddy - Learning Platform
+# Embodiment Lab – AI Study Buddy
 
-A research platform built for my thesis project at Technical University of Munich. The goal is to study how effective avatar-based learning is compared to traditional text-based learning for teaching AI image generation concepts.
+Research platform for comparing AI avatar tutoring vs. text-based tutoring in an AI image generation study. Built for a TUM research project to measure knowledge gain, engagement, and user experience across learning modes.
 
-## What This Project Does
+## Participant Flow
 
-This platform lets participants learn about AI image generation through two different modes:
-- **Text Mode**: A chat interface where you can ask questions to an AI tutor
-- **Avatar Mode**: An interactive AI avatar that talks to you and responds to voice
+1. Welcome + consent
+2. Demographics
+3. Pre-test (baseline)
+4. Learning session (Text or Avatar mode)
+5. Post-test (Likert + knowledge + open feedback)
+6. Completion + optional download of responses
 
-The study collects data on knowledge gain, engagement, and user experience to compare both approaches.
+## Roles & Access
 
-## How It Works
+- **Participants**: no login required.
+- **Owner**: full control (validation, exports, API settings).
+- **Admin**: content editing, exports, API toggles.
+- **Viewer/Mentor**: read-only research view.
 
-The study flow goes like this:
-1. Welcome page → Consent form
-2. Demographics questionnaire
-3. Pre-test (to measure baseline knowledge)
-4. Learning session (either Text or Avatar mode)
-5. Post-test (to measure what was learned)
-6. Open feedback questions
-7. Completion
+Access is enforced via Supabase Auth and role checks in `src/lib/permissions.ts`.
 
-## Project Structure
+## Data Captured
 
-```
-src/
-├── components/          # UI components
-│   ├── ui/             # Base components (buttons, cards, etc.)
-│   ├── modes/          # Text and Avatar mode interfaces
-│   ├── admin/          # Admin dashboard for researchers
-│   └── __tests__/      # Unit tests
-├── pages/              # All the pages (Welcome, Learning, PostTest, etc.)
-├── hooks/              # Custom React hooks
-├── lib/                # Helper functions
-│   └── __tests__/      # Tests for helpers
-├── data/               # Question and slide data
-└── test/               # Test setup and integration tests
+- Session metadata (mode, timestamps, status, flags)
+- Demographics and pre/post responses
+- Scenario ratings and dialogue turns
+- Tutor dialogue (text + avatar)
+- Slide/page timing (avatar + text, including per-page time)
+- Data quality flags + validation status
 
-supabase/
-└── functions/          # Backend API functions
-```
+Participants can download their own responses as CSV; researchers can export CSV/PDF from the admin panel.
+
+## Admin Dashboard (Research Panel)
+
+- Overview analytics and completion metrics
+- Sessions table with per-session PDF export + timing breakdown
+- Response analytics + open feedback review
+- Slide and question editors
+- API settings (Lovable/OpenAI gateway + Anam)
+- Audit log and permission summary
 
 ## Tech Stack
 
-- **Frontend**: React with TypeScript and Vite
-- **Styling**: Tailwind CSS with shadcn/ui components  
-- **Backend**: PostgreSQL database with serverless functions
-- **AI**: OpenAI for chat responses, Anam AI for avatar streaming
-- **Testing**: Vitest with React Testing Library
+- **Frontend**: React + Vite + TypeScript
+- **UI**: Tailwind CSS + shadcn/ui + Radix
+- **Backend**: Supabase (Postgres, Auth, Edge Functions)
+- **AI**: Lovable AI gateway (OpenAI) for text tutor; Anam AI for avatar streaming
+- **Exports**: jsPDF + CSV utilities
+- **Charts**: Recharts
 
-## Running Tests
+## Architecture Notes
 
-If you want to run the tests locally:
+- Primary writes go through Supabase Edge Functions (`chat`, `anam-session`, `save-study-data`, `save-avatar-time`, `complete-session`, etc.).
+- If edge functions are unavailable, the app falls back to direct table inserts and stores telemetry as `__meta_*` rows in `post_test_responses`.
 
-```bash
-# Install dependencies first
-npm install
+## Repo Structure
 
-# Run all tests once
-npx vitest run
-
-# Run tests in watch mode (reruns when files change)
-npx vitest
-
-# Generate coverage report
-npx vitest run --coverage
+```
+src/
+  components/
+    admin/
+    modes/
+    ui/
+  pages/
+  hooks/
+  lib/
+  utils/
+  data/
+  test/
+supabase/
+  functions/
+  migrations/
 ```
 
-### Test Coverage
+## Local Development
 
-The tests cover:
-- **Component tests**: LikertScale, ConfidenceSlider components
-- **Utility tests**: Helper functions, permission system
-- **Data tests**: API request validation, data schemas
-- **Integration tests**: Edge function contracts
-
-## Admin Dashboard
-
-The admin panel at `/admin` lets researchers:
-- View all participant sessions and responses
-- Export data as CSV for analysis
-- See statistics and completion rates
-- Edit learning content and survey questions
-
-Access requires an authorized email address.
-
-## Development
-
-To run locally:
-
-```bash
+```
 npm install
 npm run dev
 ```
 
-The app will be available at `http://localhost:8080`
+App runs at `http://localhost:8080`.
+
+Required env:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+## Tests
+
+```
+npx vitest
+npx vitest run
+```
+
+## Deployment
+
+Frontend is published via Lovable; Supabase provides the database, auth, and edge functions.
 
 ## Author
 
-Built by Jakub Majewski as part of a research project at TUM.
-
+Jakub Majewski (TUM research project)  
 Mentor: Efe Bozkir

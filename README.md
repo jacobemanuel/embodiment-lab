@@ -11,7 +11,7 @@ AI Study Buddy is a research platform that compares two learning modes:
 
 Participants go through a structured study, and admins/owners get a full backend to monitor quality, validate sessions, and export clean data.
 
-## Participant flow (the story)
+## Participant flow
 
 1. Welcome + consent
 2. Demographics
@@ -39,7 +39,7 @@ Access is enforced via Supabase Auth and role checks in `src/lib/permissions.ts`
 - Timing analytics (per-page and per-slide)
 - Dialogue logs (text + avatar transcript where available)
 
-## Guardrails and data quality (short + clear)
+## Guardrails and data quality
 
 The study blocks shortcuts and flags suspicious behavior automatically.
 

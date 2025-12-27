@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveTutorDialogue } from "@/lib/studyData";
 import { getTutorDialogueLog } from "@/lib/tutorDialogue";
 import { usePageTiming } from "@/hooks/usePageTiming";
-import { appendTimingEntry } from "@/lib/sessionTelemetry";
+import { appendTimingEntry, saveTelemetryMeta } from "@/lib/sessionTelemetry";
 
 const Learning = () => {
   const { mode } = useParams<{ mode: StudyMode }>();
@@ -134,7 +134,7 @@ const Learning = () => {
     return () => {
       const sessionId = sessionIdRef.current;
       const dialogueAlreadySaved = sessionStorage.getItem('tutorDialogueSaved') === 'true';
-      if (!sessionId || dialogueAlreadySaved) return;
+      if (!sessionId) return;
       const dialogueLog = getTutorDialogueLog().map(({ role, content, timestamp, slideId, slideTitle }) => ({
         role,
         content,
@@ -142,11 +142,15 @@ const Learning = () => {
         slideId,
         slideTitle,
       }));
-      if (dialogueLog.length === 0) return;
       const studyMode = (mode as StudyMode) || 'text';
-      saveTutorDialogue(sessionId, studyMode, dialogueLog)
-        .then(() => sessionStorage.setItem('tutorDialogueSaved', 'true'))
-        .catch((error) => console.error('Failed to save tutor dialogue on exit:', error));
+      saveTelemetryMeta(sessionId, studyMode).catch((error) =>
+        console.error('Failed to save telemetry on learning exit:', error)
+      );
+      if (!dialogueAlreadySaved && dialogueLog.length > 0) {
+        saveTutorDialogue(sessionId, studyMode, dialogueLog)
+          .then(() => sessionStorage.setItem('tutorDialogueSaved', 'true'))
+          .catch((error) => console.error('Failed to save tutor dialogue on exit:', error));
+      }
     };
   }, [mode]);
 

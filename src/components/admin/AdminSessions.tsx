@@ -2409,6 +2409,18 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 </div>
               </div>
 
+              {sessionDetails.postTest.length === 0 && (
+                <div className="bg-amber-900/20 border border-amber-600/40 text-amber-200 p-3 rounded text-sm flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold">Post-test not recorded</div>
+                    <div className="text-amber-200/80">
+                      This session likely ended before the post-test. Tutor dialogue and timing may be partial or missing.
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {selectedFlags.length > 0 && (
                 <div className="bg-slate-900 p-4 rounded">
                   <h3 className="text-lg font-semibold text-white mb-3">Data Quality Flags</h3>

@@ -1,8 +1,17 @@
-# Embodiment Lab – AI Study Buddy
+# P6: AI Study Buddy
+## Exploring Trust and Engagement toward Embodied AI Agents for AI Literacy
 
-Research platform for comparing AI avatar tutoring vs. text-based tutoring in an AI image generation study. Built for a TUM research project to measure knowledge gain, engagement, and user experience across learning modes.
+This repo is the full study system (not just the learning UI). It includes the participant flow *and* the admin/owner dashboard used to validate data, review flags, and export datasets for analysis.
 
-## Participant Flow
+## What this is (plain English)
+
+AI Study Buddy is a research platform that compares two learning modes:
+- **Text Mode**: chat-based tutor.
+- **Avatar Mode**: embodied tutor experience.
+
+Participants go through a structured study, and admins/owners get a full backend to monitor quality, validate sessions, and export clean data.
+
+## Participant flow (the story)
 
 1. Welcome + consent
 2. Demographics
@@ -11,36 +20,71 @@ Research platform for comparing AI avatar tutoring vs. text-based tutoring in an
 5. Post-test (Likert + knowledge + open feedback)
 6. Completion + optional download of responses
 
-## Roles & Access
+## Roles and access
 
-- **Participants**: no login required.
-- **Owner**: full control (validation, exports, API settings).
-- **Admin**: content editing, exports, API toggles.
-- **Viewer/Mentor**: read-only research view.
+- **Participant**: no login required, can only complete the study once per device.
+- **Admin**: edits content, reviews sessions, exports data, requests validation.
+- **Owner**: full control (accept/ignore sessions, delete sessions, export everything).
+- **Mentor / Viewer**: read-only access to results and dashboards.
 
 Access is enforced via Supabase Auth and role checks in `src/lib/permissions.ts`.
 
-## Data Captured
+## Admin + owner toolkit (what you actually get)
 
-- Session metadata (mode, timestamps, status, flags)
-- Demographics and pre/post responses
-- Scenario ratings and dialogue turns
-- Tutor dialogue (text + avatar)
-- Slide/page timing (avatar + text, including per-page time)
-- Data quality flags + validation status
+- Live sessions table with status, flags, validation state
+- Full response viewer with demographic + pre/post + feedback answers
+- Slide and question editors (content is dynamic, not hardcoded)
+- API toggles and key management
+- Export system (CSV + PDF, session-level and global)
+- Timing analytics (per-page and per-slide)
+- Dialogue logs (text + avatar transcript where available)
 
-Participants can download their own responses as CSV; researchers can export CSV/PDF from the admin panel.
+## Guardrails and data quality (short + clear)
 
-## Admin Dashboard (Research Panel)
+The study blocks shortcuts and flags suspicious behavior automatically.
 
-- Overview analytics and completion metrics
-- Sessions table with per-session PDF export + timing breakdown
-- Response analytics + open feedback review
-- Slide and question editors
-- API settings (OpenAI GPT-5 mini)
-- Audit log and permission summary
+User-facing guardrail messages you will see:
+- "This device already completed the study. To protect data quality, repeat participation is blocked."
+- "Please complete the previous steps first."
+- "You have already completed this section."
+- "Your session has been reset. Please start from the beginning."
 
-## Tech Stack
+### Data quality requirements (to pass without flags)
+
+These are the minimum thresholds used by the system:
+- Demographics page time >= 15s
+- Pre-test page time >= 30s
+- Post-test page time >= 45s
+- Learning page time >= 24s (based on 3 slides x 8s minimum)
+- Average slide view time >= 8s
+- Fast answers (<3s) < 50%
+- Average answer time >= 2s
+
+### What triggers a flag
+
+Flags are raised when:
+- A page is completed faster than the minimum time
+- More than 50% of answers are too fast
+- Average answer time is below the minimum
+- Average slide view time is below the minimum
+
+Flags roll up into a **suspicion score**. Sessions with a score > 0 require validation:
+- **Accepted** sessions are included in stats and exports
+- **Ignored** sessions are excluded
+
+## What we monitor (for validation)
+
+Admins/owners can see:
+- Session start/end timestamps + total duration
+- Per-page timing (consent, demographics, pre, learning, post)
+- Per-slide timing (avatar + text)
+- Question-level answer timing (fast answers, averages)
+- Full answer set (demographics, pre, post, feedback)
+- Tutor dialogue transcript (text + avatar, when captured)
+- Scenario responses (if enabled)
+- Suspicious flags + validation decisions
+
+## Tech stack
 
 - **Frontend**: React + Vite + TypeScript
 - **UI**: Tailwind CSS + shadcn/ui + Radix
@@ -49,31 +93,12 @@ Participants can download their own responses as CSV; researchers can export CSV
 - **Exports**: jsPDF + CSV utilities
 - **Charts**: Recharts
 
-## Architecture Notes
+## Architecture notes
 
 - Primary writes go through Supabase Edge Functions (`chat`, `save-study-data`, `save-avatar-time`, `complete-session`, etc.).
 - If edge functions are unavailable, the app falls back to direct table inserts and stores telemetry as `__meta_*` rows in `post_test_responses`.
 
-## Repo Structure
-
-```
-src/
-  components/
-    admin/
-    modes/
-    ui/
-  pages/
-  hooks/
-  lib/
-  utils/
-  data/
-  test/
-supabase/
-  functions/
-  migrations/
-```
-
-## Local Development
+## Local development
 
 ```
 npm install

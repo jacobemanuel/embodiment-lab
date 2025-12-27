@@ -17,6 +17,7 @@ import DateRangeFilter from "./DateRangeFilter";
 import { getPermissionLevel, getPermissions } from "@/lib/permissions";
 import { describeSuspicionFlag, SUSPICION_REQUIREMENTS } from "@/lib/suspicion";
 import { META_DIALOGUE_ID, META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
+import { buildSlideLookup, resolveSlideKey } from "@/lib/slideTiming";
 import { toast } from "sonner";
 
 interface AdminSessionsProps {
@@ -157,6 +158,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+  const [activeSlides, setActiveSlides] = useState<Array<{ slide_id: string; title: string; sort_order?: number; is_active?: boolean }>>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -484,7 +486,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
       const { data: activeSlides } = await supabase
         .from('study_slides')
-        .select('slide_id, is_active')
+        .select('slide_id, title, is_active')
         .eq('is_active', true);
 
       const rawPreTest = preTest || [];
@@ -519,11 +521,12 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           }))
         : [];
 
-      const activeSlideIds = new Set((activeSlides || []).map((slide) => slide.slide_id));
+      setActiveSlides(activeSlides || []);
+      const slideLookup = buildSlideLookup(activeSlides || []);
       const resolvedAvatarTimeTracking = mergeAvatarTiming(
         avatarTimeTracking || [],
         fallbackAvatarTimeTracking,
-        activeSlideIds
+        slideLookup
       );
 
       const fallbackTutorDialogueTurns = dialogueMetaRow
@@ -709,23 +712,27 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     };
   };
 
-  const buildAvatarGroups = (entries: SessionEditDraft['avatarTimeTracking']) => {
+  const buildAvatarGroups = (
+    entries: SessionEditDraft['avatarTimeTracking'],
+    resolveGroupKey: (entry: SessionEditDraft['avatarTimeTracking'][number]) => { key: string; title: string }
+  ) => {
     const groups = new Map<string, { slideId: string; title: string; total: number; entryIds: string[] }>();
     entries.forEach((entry) => {
-      const key = entry.slide_id;
-      const current = groups.get(key);
-      const entryTitle = entry.slide_title || entry.slide_id;
+      const resolved = resolveGroupKey(entry);
+      if (!resolved.key) return;
+      const current = groups.get(resolved.key);
+      const entryTitle = resolved.title || entry.slide_title || entry.slide_id;
       if (!current) {
-        groups.set(key, {
-          slideId: entry.slide_id,
+        groups.set(resolved.key, {
+          slideId: resolved.key,
           title: entryTitle,
           total: entry.duration_seconds || 0,
           entryIds: [entry.id],
         });
       } else {
         const bestTitle = entryTitle.length > current.title.length ? entryTitle : current.title;
-        groups.set(key, {
-          slideId: entry.slide_id,
+        groups.set(resolved.key, {
+          slideId: resolved.key,
           title: bestTitle,
           total: current.total + (entry.duration_seconds || 0),
           entryIds: [...current.entryIds, entry.id],
@@ -735,10 +742,10 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     return Array.from(groups.values());
   };
 
-  const updateGroupDuration = (slideId: string, nextTotalRaw: number, maxPerEntry: number) => {
+  const updateGroupDuration = (entryIds: string[], nextTotalRaw: number, maxPerEntry: number) => {
     setEditDraft((prev) => {
       if (!prev) return prev;
-      const entries = prev.avatarTimeTracking.filter((entry) => entry.slide_id === slideId);
+      const entries = prev.avatarTimeTracking.filter((entry) => entryIds.includes(entry.id));
       if (entries.length === 0) return prev;
 
       const maxTotal = entries.length * maxPerEntry;
@@ -798,34 +805,50 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     });
   };
 
-  const updateAvatarGroupDuration = (slideId: string, nextTotalRaw: number) =>
-    updateGroupDuration(slideId, nextTotalRaw, MAX_AVATAR_SLIDE_SECONDS);
+  const updateAvatarGroupDuration = (entryIds: string[], nextTotalRaw: number) =>
+    updateGroupDuration(entryIds, nextTotalRaw, MAX_AVATAR_SLIDE_SECONDS);
 
-  const updatePageGroupDuration = (slideId: string, nextTotalRaw: number) =>
-    updateGroupDuration(slideId, nextTotalRaw, 7200);
+  const updatePageGroupDuration = (entryIds: string[], nextTotalRaw: number) =>
+    updateGroupDuration(entryIds, nextTotalRaw, 7200);
 
   const isPageId = (slideId: string) => slideId.startsWith('page:');
   const isDemoFallbackQuestionId = (questionId: string) => questionId.startsWith(DEMO_FALLBACK_PREFIX);
   const normalizeDemoQuestionId = (questionId: string) =>
     questionId.startsWith('demo-demo-') ? questionId.replace(/^demo-/, '') : questionId;
   const isMetaRowId = (id: string) => id.startsWith('meta:');
+  const slideLookup = buildSlideLookup(activeSlides);
+  const resolveSlideGroupKey = (entry: { slide_id: string; slide_title?: string | null }) =>
+    resolveSlideKey(entry.slide_id, entry.slide_title, slideLookup);
+  const resolvePageGroupKey = (entry: { slide_id: string; slide_title?: string | null }) => ({
+    key: entry.slide_id,
+    title: (entry.slide_title || entry.slide_id).replace(/^Page:\s*/i, ''),
+  });
 
   const mergeAvatarTiming = (
     rawEntries: any[],
     fallbackEntries: any[],
-    activeSlideIds?: Set<string>
+    slideLookup?: ReturnType<typeof buildSlideLookup>
   ) => {
-    const merged = [...rawEntries];
-    const rawSlideIds = new Set<string>();
+    const merged: any[] = [];
+    const rawSlideKeys = new Set<string>();
     const rawPageIds = new Set<string>();
+    const hasActiveSlides = Boolean(slideLookup && slideLookup.byId.size > 0);
+
+    const getCanonicalKey = (entry: any) =>
+      resolveSlideKey(entry?.slide_id, entry?.slide_title, slideLookup).key;
 
     rawEntries.forEach((entry) => {
       if (!entry?.slide_id) return;
       if (isPageId(entry.slide_id)) {
         rawPageIds.add(entry.slide_id);
-      } else {
-        rawSlideIds.add(entry.slide_id);
+        merged.push(entry);
+        return;
       }
+      const canonicalKey = getCanonicalKey(entry);
+      if (!canonicalKey) return;
+      if (hasActiveSlides && slideLookup && !slideLookup.byId.has(canonicalKey)) return;
+      rawSlideKeys.add(canonicalKey);
+      merged.push(entry);
     });
 
     fallbackEntries.forEach((entry) => {
@@ -836,14 +859,13 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         }
         return;
       }
-      if (!rawSlideIds.has(entry.slide_id)) {
+      const canonicalKey = getCanonicalKey(entry);
+      if (!canonicalKey) return;
+      if (hasActiveSlides && slideLookup && !slideLookup.byId.has(canonicalKey)) return;
+      if (!rawSlideKeys.has(canonicalKey)) {
         merged.push(entry);
       }
     });
-
-    if (activeSlideIds && activeSlideIds.size > 0) {
-      return merged.filter((entry) => isPageId(entry.slide_id) || activeSlideIds.has(entry.slide_id));
-    }
 
     return merged;
   };
@@ -1404,7 +1426,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       console.error('Failed to load timing data for CSV export:', error);
     }
 
-    const activeSlideIds = new Set(activeSlides.map((slide) => slide.slide_id));
+    const slideLookup = buildSlideLookup(activeSlides);
+    const hasActiveSlides = slideLookup.byId.size > 0;
     const rawBySession = new Map<string, any[]>();
     rawAvatarTimeData.forEach((entry) => {
       const list = rawBySession.get(entry.session_id) || [];
@@ -1436,7 +1459,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       const merged = mergeAvatarTiming(
         rawBySession.get(session.id) || [],
         fallbackBySession.get(session.id) || [],
-        activeSlideIds.size > 0 ? activeSlideIds : undefined
+        slideLookup
       );
       mergedBySession.set(session.id, merged);
       merged.forEach((entry) => {
@@ -1444,10 +1467,13 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         if (isPageId(entry.slide_id)) {
           const label = (entry.slide_title || entry.slide_id).replace(/^Page:\s*/i, '');
           pageColumnMap.set(entry.slide_id, label);
-        } else if (activeSlideIds.size === 0 || activeSlideIds.has(entry.slide_id)) {
-          const label = entry.slide_title || entry.slide_id;
-          if (!slideColumnMap.has(entry.slide_id) || label.length > (slideColumnMap.get(entry.slide_id) || '').length) {
-            slideColumnMap.set(entry.slide_id, label);
+        } else {
+          const resolved = resolveSlideKey(entry.slide_id, entry.slide_title, slideLookup);
+          if (!resolved.key) return;
+          if (hasActiveSlides && !slideLookup.byId.has(resolved.key)) return;
+          const label = resolved.title || entry.slide_title || entry.slide_id;
+          if (!slideColumnMap.has(resolved.key) || label.length > (slideColumnMap.get(resolved.key) || '').length) {
+            slideColumnMap.set(resolved.key, label);
           }
         }
       });
@@ -1495,7 +1521,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         if (isPageId(entry.slide_id)) {
           pageTimes[entry.slide_id] = (pageTimes[entry.slide_id] || 0) + durationSeconds;
         } else {
-          slideTimes[entry.slide_id] = (slideTimes[entry.slide_id] || 0) + durationSeconds;
+          const resolved = resolveSlideKey(entry.slide_id, entry.slide_title, slideLookup);
+          if (!resolved.key) return;
+          slideTimes[resolved.key] = (slideTimes[resolved.key] || 0) + durationSeconds;
         }
       });
 
@@ -1659,7 +1687,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         slide_id: entry.slide_id,
         slide_title: entry.slide_title,
         duration_seconds: entry.duration_seconds,
-      }))
+      })),
+      resolveSlideGroupKey
     );
 
     if (avatarGroups.length > 0) {
@@ -1677,7 +1706,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         slide_id: entry.slide_id,
         slide_title: entry.slide_title,
         duration_seconds: entry.duration_seconds,
-      }))
+      })),
+      resolvePageGroupKey
     );
 
     if (pageGroups.length > 0) {
@@ -1780,7 +1810,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
             slide_id: entry.slide_id,
             slide_title: entry.slide_title,
             duration_seconds: entry.duration_seconds,
-          }))
+          })),
+        resolveSlideGroupKey
       )
     : [];
   const pageGroupsForDetails = sessionDetails
@@ -1792,14 +1823,15 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
             slide_id: entry.slide_id,
             slide_title: entry.slide_title,
             duration_seconds: entry.duration_seconds,
-          }))
+          })),
+        resolvePageGroupKey
       )
     : [];
   const avatarGroupsForEdit = editDraft
-    ? buildAvatarGroups(editDraft.avatarTimeTracking.filter((entry) => !isPageId(entry.slide_id)))
+    ? buildAvatarGroups(editDraft.avatarTimeTracking.filter((entry) => !isPageId(entry.slide_id)), resolveSlideGroupKey)
     : [];
   const pageGroupsForEdit = editDraft
-    ? buildAvatarGroups(editDraft.avatarTimeTracking.filter((entry) => isPageId(entry.slide_id)))
+    ? buildAvatarGroups(editDraft.avatarTimeTracking.filter((entry) => isPageId(entry.slide_id)), resolvePageGroupKey)
     : [];
 
   return (
@@ -2550,7 +2582,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                         </div>
                         <div className="bg-slate-900 p-3 rounded text-sm">
                           <span className="text-slate-400">Slides tracked:</span>
-                          <span className="text-white ml-2">{slideEntries.length}</span>
+                          <span className="text-white ml-2">{avatarGroupsForDetails.length}</span>
                         </div>
                         <div className="bg-slate-900 p-3 rounded text-sm">
                           <span className="text-slate-400">Tutor messages:</span>
@@ -3029,7 +3061,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                               type="number"
                               value={Math.round(group.total)}
                               onChange={(e) =>
-                                updateAvatarGroupDuration(group.slideId, Number(e.target.value || 0))
+                                updateAvatarGroupDuration(group.entryIds, Number(e.target.value || 0))
                               }
                             />
                           </div>
@@ -3056,7 +3088,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                               type="number"
                               value={Math.round(group.total)}
                               onChange={(e) =>
-                                updatePageGroupDuration(group.slideId, Number(e.target.value || 0))
+                                updatePageGroupDuration(group.entryIds, Number(e.target.value || 0))
                               }
                             />
                           </div>

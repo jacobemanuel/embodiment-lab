@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import QuestionPerformanceByMode from "./QuestionPerformanceByMode";
 import { describeSuspicionFlag, SUSPICION_REQUIREMENTS } from "@/lib/suspicion";
 import { META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
+import { buildSlideLookup, resolveSlideKey } from "@/lib/slideTiming";
 
 interface AvatarTimeData {
   session_id: string;
@@ -397,13 +398,15 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         sessionModeById.set(session.id, resolveSessionMode(session));
       });
 
-      const slideTitleMap = new Map(activeSlides.map((slide) => [slide.slide_id, slide.title]));
-      const activeSlideIds = new Set(activeSlides.map((slide) => slide.slide_id));
+      const slideLookup = buildSlideLookup(activeSlides);
+      const hasActiveSlides = slideLookup.byId.size > 0;
       const pageTimeEntries = avatarTimeData.filter((entry) => isPageEntry(entry));
       const slideTimeEntries = avatarTimeData.filter((entry) => {
         if (isPageEntry(entry)) return false;
-        if (activeSlideIds.size === 0) return true;
-        return activeSlideIds.has(entry.slide_id);
+        const resolved = resolveSlideKey(entry.slide_id, entry.slide_title, slideLookup);
+        if (!resolved.key) return false;
+        if (hasActiveSlides && !slideLookup.byId.has(resolved.key)) return false;
+        return true;
       });
 
       // Avatar & text time calculation - group by session (slides only)
@@ -434,8 +437,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       const textSlideMap: Record<string, { total: number; count: number; title: string }> = {};
       slideTimeEntries.forEach(t => {
         const mode = sessionModeById.get(t.session_id) || 'none';
-        const key = t.slide_id;
-        const title = slideTitleMap.get(t.slide_id) || t.slide_title || t.slide_id;
+        const resolved = resolveSlideKey(t.slide_id, t.slide_title, slideLookup);
+        if (!resolved.key) return;
+        const key = resolved.key;
+        const title = resolved.title || t.slide_title || t.slide_id;
 
         if (mode === 'avatar' || mode === 'both') {
           if (!avatarSlideMap[key]) {
@@ -1136,15 +1141,36 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       .order('sort_order');
 
     const activeSlides = (slideRows || []).filter((slide) => slide.is_active);
-    const slideIds = activeSlides.length > 0
+    const slideLookup = buildSlideLookup(activeSlides);
+    const hasActiveSlides = slideLookup.byId.size > 0;
+
+    const slideTimeEntries = stats.avatarTimeData
+      .filter((entry) => !isPageEntry(entry))
+      .map((entry) => {
+        const resolved = resolveSlideKey(entry.slide_id, entry.slide_title, slideLookup);
+        if (!resolved.key) return null;
+        if (hasActiveSlides && !slideLookup.byId.has(resolved.key)) return null;
+        return {
+          ...entry,
+          canonical_slide_id: resolved.key,
+          canonical_title: resolved.title,
+        };
+      })
+      .filter(Boolean) as Array<any>;
+
+    const slideIds = hasActiveSlides
       ? activeSlides.map((slide) => slide.slide_id)
-      : Array.from(new Set(stats.avatarTimeData.map((t) => t.slide_id))).sort();
+      : Array.from(new Set(slideTimeEntries.map((t) => t.canonical_slide_id))).sort();
     const slideTitleMap: Record<string, string> = {};
     activeSlides.forEach((slide) => {
       slideTitleMap[slide.slide_id] = slide.title;
     });
-
-    const slideTimeEntries = stats.avatarTimeData.filter((entry) => !isPageEntry(entry));
+    slideTimeEntries.forEach((entry) => {
+      const key = entry.canonical_slide_id;
+      if (!slideTitleMap[key]) {
+        slideTitleMap[key] = entry.canonical_title || entry.slide_title || entry.slide_id;
+      }
+    });
     const pageTimeEntries = stats.pageTimeData;
 
     const pageIds = Array.from(new Set(pageTimeEntries.map((entry) => entry.slide_id))).sort();
@@ -1158,8 +1184,8 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       if (!slideTimeBySession[entry.session_id]) {
         slideTimeBySession[entry.session_id] = {};
       }
-      slideTimeBySession[entry.session_id][entry.slide_id] =
-        (slideTimeBySession[entry.session_id][entry.slide_id] || 0) + (entry.duration_seconds || 0);
+      slideTimeBySession[entry.session_id][entry.canonical_slide_id] =
+        (slideTimeBySession[entry.session_id][entry.canonical_slide_id] || 0) + (entry.duration_seconds || 0);
     });
 
     const pageTimeBySession: Record<string, Record<string, number>> = {};

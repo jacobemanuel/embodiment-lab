@@ -31,7 +31,7 @@ Access is enforced via Supabase Auth and role checks in `src/lib/permissions.ts`
 
 ## Eligibility
 
-- **18+ only**: the consent checkbox explicitly requires participants to confirm they are at least 18.
+- **18+ only**: the consent statement (on the main consent page and the consent sidebar) explicitly requires participants to confirm they are at least 18.
 
 ## Admin + owner toolkit (what you actually get)
 

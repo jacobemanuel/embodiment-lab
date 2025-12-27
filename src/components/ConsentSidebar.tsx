@@ -33,7 +33,7 @@ const ConsentSidebar = () => {
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Purpose of the Study</h2>
               <p className="text-muted-foreground text-sm leading-relaxed text-justify">
-                This research investigates how embodied AI agents, such as virtual avatars powered by large language models, can enhance learners' trust, engagement, and comprehension in AI literacy education. You will learn about AI image generation as a practical example of AI capabilities, comparing text-based and avatar-based learning formats.
+                This research investigates how embodied AI agents, such as virtual avatars powered by large language models, can enhance learners' trust, engagement, and comprehension in AI literacy education. You will learn about AI image generation as a practical example of AI capabilities, comparing text-based and avatar-based learning formats. Results will inform the design of trustworthy, engaging AI companions for education.
               </p>
             </section>
 
@@ -70,6 +70,9 @@ const ConsentSidebar = () => {
                 <li>• Stored securely and encrypted</li>
                 <li>• Used solely for research purposes</li>
                 <li>• Compliant with GDPR and privacy regulations</li>
+                <li>
+                  • <strong className="text-foreground">No video recording</strong> — if you participate in Avatar Mode, your camera feed is used only for real-time interaction to enhance the experience. No video data is stored or saved.
+                </li>
               </ul>
             </section>
 
@@ -92,7 +95,7 @@ const ConsentSidebar = () => {
 
             <div className="pt-4 border-t border-border">
               <p className="text-xs text-muted-foreground italic">
-                By continuing with this study, you have agreed to these terms.
+                I confirm that I am 18 years of age or older. I have read and understood the information above. I voluntarily agree to participate in this research study. I understand my responses will be anonymous and I can withdraw at any time.
               </p>
             </div>
           </div>

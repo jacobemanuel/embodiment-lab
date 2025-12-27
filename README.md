@@ -120,7 +120,7 @@ npx vitest run
 
 ## Deployment
 
-Frontend is published via Lovable; Supabase provides the database, auth, and edge functions.
+Frontend is published via the project hosting workflow; Supabase provides the database, auth, and edge functions.
 
 ## Author
 

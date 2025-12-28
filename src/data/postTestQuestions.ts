@@ -187,7 +187,7 @@ export const postTestQuestions: PostTestQuestion[] = [
   },
   {
     id: "engagement-2",
-    text: "I felt motivated to complete all the scenarios",
+    text: "I felt motivated to complete all the slides",
     type: 'likert',
     category: 'engagement',
     options: [

@@ -4,7 +4,7 @@ import type { AnamClient } from '@anam-ai/js-sdk';
 import { Slide } from '@/data/slides';
 import { TranscriptMessage } from '@/components/TranscriptPanel';
 import { supabase } from '@/integrations/supabase/client';
-import { appendTutorDialogue } from '@/lib/tutorDialogue';
+import { upsertTutorDialogue } from '@/lib/tutorDialogue';
 
 interface UseAnamClientProps {
   onTranscriptUpdate?: (messages: TranscriptMessage[]) => void;
@@ -26,6 +26,24 @@ interface ToggleStats {
   lastToggleTime: number;
 }
 
+type PendingTranscript = {
+  timestamp: number;
+  lastLoggedAt: number;
+  content: string;
+  timeoutId: ReturnType<typeof setTimeout> | null;
+};
+
+const TRANSCRIPT_UPSERT_INTERVAL_MS = 1200;
+const TRANSCRIPT_IDLE_FLUSH_MS = 1500;
+
+const mergeStreamingChunk = (buffer: string, chunk: string) => {
+  if (!chunk) return buffer;
+  if (!buffer) return chunk;
+  if (chunk.startsWith(buffer)) return chunk;
+  if (buffer.endsWith(chunk)) return buffer;
+  return buffer + chunk;
+};
+
 export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId }: UseAnamClientProps) => {
   const [state, setState] = useState<AnamState>({
     isConnected: false,
@@ -38,6 +56,8 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
   const clientRef = useRef<AnamClient | null>(null);
   const currentSlideRef = useRef<Slide>(currentSlide);
   const avatarBufferRef = useRef<string>('');
+  const userBufferRef = useRef<string>('');
+  const pendingTranscriptRef = useRef<{ avatar?: PendingTranscript; user?: PendingTranscript }>({});
   const toggleStatsRef = useRef<ToggleStats>({ cameraToggles: 0, micToggles: 0, lastToggleTime: 0 });
   const isUserMicOnRef = useRef(false);
   const isInitializingRef = useRef(false);
@@ -78,19 +98,123 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         },
       ];
     });
+  }, []);
 
-    if (isFinal) {
-      const mappedRole = role === 'avatar' ? 'ai' : 'user';
-      appendTutorDialogue({
+  const logTutorDialogue = useCallback((role: 'user' | 'avatar', content: string, isFinal: boolean) => {
+    if (!content || !content.trim()) return;
+    const now = Date.now();
+    const mappedRole = role === 'avatar' ? 'ai' : 'user';
+    const slideSnapshot = currentSlideRef.current;
+    let pending = pendingTranscriptRef.current[role];
+
+    if (!pending) {
+      pending = {
+        timestamp: now,
+        lastLoggedAt: 0,
+        content: '',
+        timeoutId: null,
+      };
+      pendingTranscriptRef.current[role] = pending;
+    }
+
+    pending.content = content;
+
+    if (isFinal || now - pending.lastLoggedAt >= TRANSCRIPT_UPSERT_INTERVAL_MS) {
+      upsertTutorDialogue({
         role: mappedRole,
         content,
-        timestamp: Date.now(),
-        slideId: currentSlideRef.current.id,
-        slideTitle: currentSlideRef.current.title,
+        timestamp: pending.timestamp,
+        slideId: slideSnapshot.id,
+        slideTitle: slideSnapshot.title,
         mode: 'avatar',
       });
+      pending.lastLoggedAt = now;
     }
+
+    if (pending.timeoutId) {
+      clearTimeout(pending.timeoutId);
+    }
+
+    if (isFinal) {
+      pendingTranscriptRef.current[role] = undefined;
+      if (role === 'avatar') {
+        avatarBufferRef.current = '';
+      } else {
+        userBufferRef.current = '';
+      }
+      return;
+    }
+
+    pending.timeoutId = setTimeout(() => {
+      const current = pendingTranscriptRef.current[role];
+      if (!current) return;
+      upsertTutorDialogue({
+        role: mappedRole,
+        content: current.content,
+        timestamp: current.timestamp,
+        slideId: slideSnapshot.id,
+        slideTitle: slideSnapshot.title,
+        mode: 'avatar',
+      });
+      pendingTranscriptRef.current[role] = undefined;
+      if (role === 'avatar') {
+        avatarBufferRef.current = '';
+      } else {
+        userBufferRef.current = '';
+      }
+    }, TRANSCRIPT_IDLE_FLUSH_MS);
   }, []);
+
+  const handleStreamEvent = useCallback((event: any) => {
+    const isFinal = event.endOfSpeech === true;
+    const contentChunk = event.content || '';
+    const trimmed = contentChunk.trim();
+
+    // AGGRESSIVE filter: skip any content that looks like JSON, system messages, or toggle noise
+    const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[{');
+    const containsJsonKeys = /"(id|title|keyPoints|systemPromptContext|state|toggleCount)"/.test(trimmed);
+    const isSystemMessage = trimmed.startsWith('[SYSTEM_EVENT') ||
+      trimmed.startsWith('[SILENT_CONTEXT_UPDATE') ||
+      trimmed.includes('[ACKNOWLEDGED]') ||
+      trimmed.includes('[DO_NOT_SPEAK]');
+    const isToggleNoise = /^(on|off|camera\s*(on|off)|mic\s*(on|off)|microphone\s*(on|off))$/i.test(trimmed);
+
+    if (isSystemMessage || looksLikeJson || containsJsonKeys || isToggleNoise) {
+      return;
+    }
+
+    // Avatar (persona) speaking – show as "Tutor"
+    if (event.role === MessageRole.PERSONA || event.role === 'assistant' || event.role === 'persona') {
+      avatarBufferRef.current = mergeStreamingChunk(avatarBufferRef.current, contentChunk);
+      const fullContent = avatarBufferRef.current.trim();
+      if (fullContent) {
+        addTranscriptMessage('avatar', fullContent, isFinal);
+        logTutorDialogue('avatar', fullContent, isFinal);
+      }
+      if (isFinal) {
+        avatarBufferRef.current = '';
+      }
+      setState(prev => ({ ...prev, isTalking: !isFinal }));
+      return;
+    }
+
+    // User speech – show as "You" in transcript, but ONLY when mic is ON
+    if (event.role === MessageRole.USER || event.role === 'user') {
+      if (!isUserMicOnRef.current) {
+        userBufferRef.current = '';
+        return;
+      }
+      userBufferRef.current = mergeStreamingChunk(userBufferRef.current, contentChunk);
+      const fullContent = userBufferRef.current.trim();
+      if (fullContent) {
+        addTranscriptMessage('user', fullContent, isFinal);
+        logTutorDialogue('user', fullContent, isFinal);
+      }
+      if (isFinal) {
+        userBufferRef.current = '';
+      }
+    }
+  }, [addTranscriptMessage, logTutorDialogue]);
 
   const getSessionToken = useCallback(async (): Promise<string> => {
     const { data, error } = await supabase.functions.invoke('anam-session', {
@@ -154,54 +278,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       });
 
       // Stream events - source of truth for avatar + user transcript
-      client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, (event: any) => {
-        console.log('Stream event:', event, 'role:', event.role, 'endOfSpeech:', event.endOfSpeech);
-
-        const isFinal = event.endOfSpeech === true;
-        const contentChunk = event.content || '';
-        const trimmed = contentChunk.trim();
-
-        // AGGRESSIVE filter: skip any content that looks like JSON, system messages, or toggle noise
-        const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[{');
-        const containsJsonKeys = /"(id|title|keyPoints|systemPromptContext|state|toggleCount)"/.test(trimmed);
-        const isSystemMessage = trimmed.startsWith('[SYSTEM_EVENT') || 
-                                trimmed.startsWith('[SILENT_CONTEXT_UPDATE') ||
-                                trimmed.includes('[ACKNOWLEDGED]') ||
-                                trimmed.includes('[DO_NOT_SPEAK]');
-        // Filter out toggle state noise like "on", "off", "camera on", "mic off" etc.
-        const isToggleNoise = /^(on|off|camera\s*(on|off)|mic\s*(on|off)|microphone\s*(on|off))$/i.test(trimmed);
-        
-        if (isSystemMessage || looksLikeJson || containsJsonKeys || isToggleNoise) {
-          console.log('Filtering from transcript:', trimmed.substring(0, 60));
-          return;
-        }
-
-        // Avatar (persona) speaking – show as "Tutor"
-        if (event.role === MessageRole.PERSONA || event.role === 'assistant' || event.role === 'persona') {
-          // Accumulate full utterance across streaming chunks
-          avatarBufferRef.current += contentChunk;
-
-          if (isFinal) {
-            const fullContent = avatarBufferRef.current.trim();
-            if (fullContent) {
-              addTranscriptMessage('avatar', fullContent, true);
-            }
-            avatarBufferRef.current = '';
-          }
-
-          setState(prev => ({ ...prev, isTalking: !isFinal }));
-          return;
-        }
-
-        // User speech – show as "You" in transcript, but ONLY when mic is ON
-        if (event.role === MessageRole.USER || event.role === 'user') {
-          if (isUserMicOnRef.current) {
-            addTranscriptMessage('user', contentChunk, isFinal);
-          } else {
-            console.log('Ignoring user speech while mic is OFF');
-          }
-        }
-      });
+      client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, handleStreamEvent);
 
       clientRef.current = client;
 
@@ -240,7 +317,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     } finally {
       isInitializingRef.current = false;
     }
-  }, [getSessionToken, addTranscriptMessage, videoElementId]);
+  }, [getSessionToken, handleStreamEvent, videoElementId]);
 
   const sendMessage = useCallback(async (message: string) => {
     if (!clientRef.current || !state.isConnected) {
@@ -327,45 +404,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         });
 
         // Stream events handler
-        client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, (event: any) => {
-          const isFinal = event.endOfSpeech === true;
-          const contentChunk = event.content || '';
-          const trimmed = contentChunk.trim();
-
-          // AGGRESSIVE filter for JSON/system messages/toggle noise
-          const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[{');
-          const containsJsonKeys = /"(id|title|keyPoints|systemPromptContext|state|toggleCount)"/.test(trimmed);
-          const isSystemMessage = trimmed.startsWith('[SYSTEM_EVENT') || 
-                                  trimmed.startsWith('[SILENT_CONTEXT_UPDATE') ||
-                                  trimmed.includes('[ACKNOWLEDGED]') ||
-                                  trimmed.includes('[DO_NOT_SPEAK]');
-          const isToggleNoise = /^(on|off|camera\s*(on|off)|mic\s*(on|off)|microphone\s*(on|off))$/i.test(trimmed);
-          
-          if (isSystemMessage || looksLikeJson || containsJsonKeys || isToggleNoise) {
-            return;
-          }
-
-          // Avatar speaking
-          if (event.role === MessageRole.PERSONA || event.role === 'assistant' || event.role === 'persona') {
-            avatarBufferRef.current += contentChunk;
-            if (isFinal) {
-              const fullContent = avatarBufferRef.current.trim();
-              if (fullContent) {
-                addTranscriptMessage('avatar', fullContent, true);
-              }
-              avatarBufferRef.current = '';
-            }
-            setState(prev => ({ ...prev, isTalking: !isFinal }));
-            return;
-          }
-
-          // User speech
-          if (event.role === MessageRole.USER || event.role === 'user') {
-            if (isUserMicOnRef.current) {
-              addTranscriptMessage('user', contentChunk, isFinal);
-            }
-          }
-        });
+        client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, handleStreamEvent);
 
         clientRef.current = client;
         await client.streamToVideoElement(videoElementId);
@@ -389,7 +428,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         isReconnectingRef.current = false;
       }
     }
-  }, [state.isConnected, getSessionToken, addTranscriptMessage, videoElementId]);
+  }, [state.isConnected, getSessionToken, handleStreamEvent, videoElementId]);
 
   // Camera toggle notification with spam detection
   const notifyCameraToggle = useCallback(async (isOn: boolean) => {
@@ -493,6 +532,13 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     }
     setState({ isConnected: false, isStreaming: false, isTalking: false, error: null });
     avatarBufferRef.current = '';
+    userBufferRef.current = '';
+    Object.values(pendingTranscriptRef.current).forEach((pending) => {
+      if (pending?.timeoutId) {
+        clearTimeout(pending.timeoutId);
+      }
+    });
+    pendingTranscriptRef.current = {};
     toggleStatsRef.current = { cameraToggles: 0, micToggles: 0, lastToggleTime: 0 };
     isUserMicOnRef.current = false;
     isInitializingRef.current = false;

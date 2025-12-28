@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress";
 import QuestionPerformanceByMode from "./QuestionPerformanceByMode";
 import { describeSuspicionFlag, getSuspicionRequirements } from "@/lib/suspicion";
-import { META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
+import { META_DIALOGUE_ID, META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 import { buildSlideLookup, resolveSlideKey } from "@/lib/slideTiming";
 
 interface AvatarTimeData {
@@ -146,6 +146,12 @@ interface StudyStats {
   acceptedCount: number;
   pendingCount: number;
   awaitingApprovalCount: number;
+  dialogueByMode: {
+    mode: 'text' | 'avatar' | 'both' | 'none';
+    label: string;
+    messages: number;
+    sessions: number;
+  }[];
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
@@ -190,6 +196,16 @@ const parseTimingMetaEntries = (row: any) => {
   try {
     const parsed = JSON.parse(row.answer);
     return Array.isArray(parsed?.entries) ? parsed.entries : [];
+  } catch {
+    return [];
+  }
+};
+
+const parseDialogueMetaEntries = (row: any) => {
+  if (!row?.answer) return [] as any[];
+  try {
+    const parsed = JSON.parse(row.answer);
+    return Array.isArray(parsed?.messages) ? parsed.messages : [];
   } catch {
     return [];
   }
@@ -287,21 +303,25 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       let preTestResponses: any[] = [];
       let postTestResponses: any[] = [];
       let avatarTimeData: any[] = [];
+      let tutorDialogueRows: any[] = [];
 
       let activeSlides: { slide_id: string; title: string; sort_order: number; is_active: boolean }[] = [];
+      let latestDialogueBySession = new Map<string, any>();
       if (sessionIds.length > 0) {
-        const [demoRes, preRes, postRes, avatarRes, slideRes] = await Promise.all([
+        const [demoRes, preRes, postRes, avatarRes, slideRes, tutorDialogueRes] = await Promise.all([
           supabase.from('demographic_responses').select('*').in('session_id', sessionIds),
           supabase.from('pre_test_responses').select('*').in('session_id', sessionIds),
           supabase.from('post_test_responses').select('*').in('session_id', sessionIds),
           supabase.from('avatar_time_tracking').select('*').in('session_id', sessionIds),
           supabase.from('study_slides').select('slide_id, title, sort_order, is_active').order('sort_order'),
+          supabase.from('tutor_dialogue_turns').select('session_id').in('session_id', sessionIds),
         ]);
         
         const rawDemographicResponses = demoRes.data || [];
         const rawPreTestResponses = preRes.data || [];
         const rawPostTestResponses = postRes.data || [];
         const rawAvatarTimeData = avatarRes.data || [];
+        const rawTutorDialogueRows = tutorDialogueRes.data || [];
 
         const demoFallbackRows = rawPreTestResponses.filter((r) => isDemoFallbackQuestionId(r.question_id));
         const normalizedDemoFallback = demoFallbackRows.map((row) => ({
@@ -325,6 +345,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         postTestResponses = rawPostTestResponses.filter((r) => !isTelemetryMetaQuestionId(r.question_id));
 
         const timingMetaRows = rawPostTestResponses.filter((r) => r.question_id === META_TIMING_ID);
+        const dialogueMetaRows = rawPostTestResponses.filter((r) => r.question_id === META_DIALOGUE_ID);
         const latestTimingBySession = new Map<string, any>();
         timingMetaRows.forEach((row: any) => {
           const existing = latestTimingBySession.get(row.session_id);
@@ -336,6 +357,19 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           const rowTime = row.created_at ? new Date(row.created_at).getTime() : 0;
           if (rowTime >= existingTime) {
             latestTimingBySession.set(row.session_id, row);
+          }
+        });
+        latestDialogueBySession = new Map<string, any>();
+        dialogueMetaRows.forEach((row: any) => {
+          const existing = latestDialogueBySession.get(row.session_id);
+          if (!existing) {
+            latestDialogueBySession.set(row.session_id, row);
+            return;
+          }
+          const existingTime = existing.created_at ? new Date(existing.created_at).getTime() : 0;
+          const rowTime = row.created_at ? new Date(row.created_at).getTime() : 0;
+          if (rowTime >= existingTime) {
+            latestDialogueBySession.set(row.session_id, row);
           }
         });
         const fallbackAvatarTimeData = Array.from(latestTimingBySession.values()).flatMap((row: any) =>
@@ -379,6 +413,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         });
         activeSlides = (slideRes.data || []).filter((slide) => slide.is_active);
         setActiveSlideCount(activeSlides.length);
+        tutorDialogueRows = rawTutorDialogueRows;
       }
 
       // Fetch questions with correct answers
@@ -417,6 +452,50 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       sessionsToAnalyze.forEach((session) => {
         sessionModeById.set(session.id, resolveSessionMode(session));
       });
+
+      const dialogueCountBySession: Record<string, number> = {};
+      tutorDialogueRows.forEach((row: any) => {
+        dialogueCountBySession[row.session_id] = (dialogueCountBySession[row.session_id] || 0) + 1;
+      });
+
+      const fallbackDialogueCountBySession = new Map<string, number>();
+      latestDialogueBySession.forEach((row: any, sessionId: string) => {
+        const count = parseDialogueMetaEntries(row).length;
+        if (count > 0) {
+          fallbackDialogueCountBySession.set(sessionId, count);
+        }
+      });
+
+      const dialogueMessageTotals: Record<'text' | 'avatar' | 'both' | 'none', number> = {
+        text: 0,
+        avatar: 0,
+        both: 0,
+        none: 0,
+      };
+      const dialogueSessionTotals: Record<'text' | 'avatar' | 'both' | 'none', number> = {
+        text: 0,
+        avatar: 0,
+        both: 0,
+        none: 0,
+      };
+
+      sessionsToAnalyze.forEach((session) => {
+        const mode = sessionModeById.get(session.id) || 'none';
+        const dbCount = dialogueCountBySession[session.id] || 0;
+        const fallbackCount = fallbackDialogueCountBySession.get(session.id) || 0;
+        const count = dbCount > 0 ? dbCount : fallbackCount;
+        if (count > 0) {
+          dialogueMessageTotals[mode] += count;
+          dialogueSessionTotals[mode] += 1;
+        }
+      });
+
+      const dialogueByMode = (['text', 'avatar', 'both', 'none'] as const).map((mode) => ({
+        mode,
+        label: mode === 'text' ? 'Text' : mode === 'avatar' ? 'Avatar' : mode === 'both' ? 'Both' : 'No Mode',
+        messages: dialogueMessageTotals[mode],
+        sessions: dialogueSessionTotals[mode],
+      }));
 
       const slideLookup = buildSlideLookup(activeSlides);
       const hasActiveSlides = slideLookup.byId.size > 0;
@@ -920,7 +999,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         { id: 'trust-2', text: 'I would rely on this AI system for learning complex topics', category: 'trust' },
         { id: 'trust-3', text: "The AI system's explanations were credible and trustworthy", category: 'trust' },
         { id: 'engagement-1', text: 'The learning experience kept me engaged throughout', category: 'engagement' },
-        { id: 'engagement-2', text: 'I felt motivated to complete all the scenarios', category: 'engagement' },
+        { id: 'engagement-2', text: 'I felt motivated to complete all the slides', category: 'engagement' },
         { id: 'engagement-3', text: 'The interactive format was more engaging than traditional reading', category: 'engagement' },
         { id: 'satisfaction-1', text: 'Overall, I am satisfied with this learning experience', category: 'satisfaction' },
         { id: 'satisfaction-2', text: 'I would recommend this learning format to other students', category: 'satisfaction' },
@@ -1073,6 +1152,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         acceptedCount,
         pendingCount,
         awaitingApprovalCount,
+        dialogueByMode,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -1096,6 +1176,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_test_responses' }, () => fetchStats())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'study_questions' }, () => fetchStats())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'avatar_time_tracking' }, () => fetchStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_dialogue_turns' }, () => fetchStats())
       .subscribe();
 
     return () => {
@@ -3839,6 +3920,68 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 <div className="text-slate-400 text-xs">Sessions Tracked</div>
                 <div className="text-white font-medium">
                   {new Set(stats.pageTimeData.map(entry => entry.session_id)).size}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {stats.dialogueByMode.some((entry) => entry.messages > 0) && (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-white">Dialogue Volume by Mode</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Total tutor messages logged per session mode (user + AI)
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={stats.dialogueByMode}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="label" stroke="#9ca3af" fontSize={11} />
+                <YAxis stroke="#9ca3af" fontSize={11} label={{ value: 'Messages', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 10 }} />
+                <ChartTooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload || payload.length === 0) return null;
+                    const data = payload[0].payload as { messages: number; sessions: number };
+                    return (
+                      <div className="bg-slate-800 border border-slate-700 p-2 text-xs rounded">
+                        <div className="text-slate-200 font-medium">{label}</div>
+                        <div className="text-slate-300">Messages: {data.messages}</div>
+                        <div className="text-slate-400">Sessions with dialogue: {data.sessions}</div>
+                      </div>
+                    );
+                  }}
+                />
+                <Bar dataKey="messages" name="Messages" fill="#38bdf8" />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
+              <div className="bg-slate-700/50 rounded p-2 text-center">
+                <div className="text-slate-400 text-xs">Total Messages</div>
+                <div className="text-white font-medium">
+                  {stats.dialogueByMode.reduce((sum, entry) => sum + entry.messages, 0)}
+                </div>
+              </div>
+              <div className="bg-slate-700/50 rounded p-2 text-center">
+                <div className="text-slate-400 text-xs">Sessions with Dialogue</div>
+                <div className="text-white font-medium">
+                  {stats.dialogueByMode.reduce((sum, entry) => sum + entry.sessions, 0)}
+                </div>
+              </div>
+              <div className="bg-slate-700/50 rounded p-2 text-center">
+                <div className="text-slate-400 text-xs">Avg Messages/Session</div>
+                <div className="text-white font-medium">
+                  {(() => {
+                    const totalMessages = stats.dialogueByMode.reduce((sum, entry) => sum + entry.messages, 0);
+                    const totalSessions = stats.dialogueByMode.reduce((sum, entry) => sum + entry.sessions, 0);
+                    return totalSessions > 0 ? Math.round(totalMessages / totalSessions) : 0;
+                  })()}
                 </div>
               </div>
             </div>

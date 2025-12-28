@@ -39,6 +39,19 @@ const PostTestPage1 = () => {
   // Get current study mode
   const studyMode = sessionStorage.getItem('studyMode') || 'text';
 
+  const normalizePostTestText = (text: string) => {
+    let updated = text;
+    if (studyMode === 'text') {
+      updated = updated
+        .replace(/\bthe avatar\b/gi, 'the AI chatbot')
+        .replace(/\bthis avatar\b/gi, 'this AI chatbot')
+        .replace(/\bavatar\b/gi, 'AI chatbot');
+    }
+    return updated
+      .replace(/\bscenarios\b/gi, 'slides')
+      .replace(/\bscenario\b/gi, 'slide');
+  };
+
   const scrollToQuestion = (index: number) => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
@@ -59,25 +72,16 @@ const PostTestPage1 = () => {
   }, [responses]);
 
   // Filter questions based on mode_specific field and study mode
-  // Also replace "avatar" with "AI chatbot" for text mode users
+  // Also normalize avatar/scenario language for the current mode.
   const filteredQuestions = postTestQuestions
     .filter(q => {
       const modeSpecific = q.modeSpecific || 'both';
       return modeSpecific === 'both' || modeSpecific === studyMode;
     })
-    .map(q => {
-      // For text mode, replace avatar-related text with AI chatbot
-      if (studyMode === 'text') {
-        return {
-          ...q,
-          text: q.text
-            .replace(/\bavatar\b/gi, 'AI chatbot')
-            .replace(/\bthe avatar\b/gi, 'the AI chatbot')
-            .replace(/\bthis avatar\b/gi, 'this AI chatbot')
-        };
-      }
-      return q;
-    });
+    .map(q => ({
+      ...q,
+      text: normalizePostTestText(q.text),
+    }));
 
   useEffect(() => {
     if (likertQuestions.length === 0) return;

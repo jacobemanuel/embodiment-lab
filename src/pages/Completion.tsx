@@ -73,10 +73,16 @@ const Completion = () => {
       registerSnapshot(preTestSnapshot);
       registerSnapshot(postTestSnapshot);
 
+      const hasMeaningfulAnswer = (answers: Record<string, string>, id: string) => {
+        if (!Object.prototype.hasOwnProperty.call(answers, id)) return false;
+        const value = answers[id];
+        return value !== null && value !== undefined && String(value).trim() !== '';
+      };
+
       const allQuestionIds = Array.from(new Set([
-        ...Object.keys(demographics || {}),
-        ...Object.keys(preTest || {}),
-        ...Object.keys(postTest || {}),
+        ...Object.keys(demographics || {}).filter((id) => hasMeaningfulAnswer(demographics, id)),
+        ...Object.keys(preTest || {}).filter((id) => hasMeaningfulAnswer(preTest, id)),
+        ...Object.keys(postTest || {}).filter((id) => hasMeaningfulAnswer(postTest, id)),
       ]));
 
       const missingQuestionIds = allQuestionIds.filter((id) => !questionTextMap[id]);
@@ -99,7 +105,7 @@ const Completion = () => {
       }
 
       const escapeCsv = (value: string) => `"${String(value ?? '').replace(/"/g, '""')}"`;
-      const formatAnswer = (answer: string) => String(answer || '').split('|||').join('; ');
+      const formatAnswer = (answer: string) => String(answer ?? '').split('|||').join('; ');
       const addRow = (category: string, question: string, response: string | number | boolean) => {
         csvContent += [
           escapeCsv(category),
@@ -117,8 +123,7 @@ const Completion = () => {
       csvContent += '\n';
       
       // Add demographics
-      const hasAnswerKey = (answers: Record<string, string>, id: string) =>
-        Object.prototype.hasOwnProperty.call(answers, id);
+      const hasAnswerKey = (answers: Record<string, string>, id: string) => hasMeaningfulAnswer(answers, id);
 
       const demographicOrder = demographicSnapshot.length > 0
         ? demographicSnapshot.filter((q) => hasAnswerKey(demographics, q.id))

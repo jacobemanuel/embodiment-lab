@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw, CheckCircle, XCircle, AlertTriangle, Info, Clock, CheckSquare, Square, FileText, Trash2, EyeOff, Database } from "lucide-react";
+import { Download, Search, ChevronLeft, ChevronRight, Eye, RefreshCw, CheckCircle, XCircle, AlertTriangle, Info, Clock, CheckSquare, Square, FileText, Trash2, EyeOff, Database, FileSpreadsheet } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import jsPDF from "jspdf";
 import { format, startOfDay, endOfDay } from "date-fns";
@@ -560,12 +560,15 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       const overrides = loadOwnerOverrides();
       const sessionOverride = overrides[session.id];
       const resolvedSession = applySessionOverride(session, sessionOverride);
+      const hasMeaningfulAnswer = (answer: string | null | undefined) =>
+        typeof answer === 'string' ? answer.trim() !== '' : answer !== null && answer !== undefined;
+
       const resolvedDetails = applyDetailsOverride(
         {
           demographics: oldDemographics,
-          demographicResponses: resolvedDemographicResponses || [],
-          preTest: filteredPreTest,
-          postTest: filteredPostTest,
+          demographicResponses: (resolvedDemographicResponses || []).filter((r) => hasMeaningfulAnswer(r.answer)),
+          preTest: filteredPreTest.filter((r) => hasMeaningfulAnswer(r.answer)),
+          postTest: filteredPostTest.filter((r) => hasMeaningfulAnswer(r.answer)),
           scenarios: scenarios || [],
           dialogueTurns,
           tutorDialogueTurns: resolvedTutorDialogueTurns || [],
@@ -1579,6 +1582,58 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     a.click();
   };
 
+  const exportDialogueCSV = (session: Session, details: SessionDetails) => {
+    const escapeCsv = (value: string | number) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const modeLabel = session.modes_used && session.modes_used.length > 0 ? session.modes_used.join(' / ') : (session.mode || '');
+
+    const tutorEntries = (details.tutorDialogueTurns || []).map((turn) => ({
+      source: 'Tutor',
+      role: turn.role,
+      content: turn.content,
+      context: turn.slide_title || turn.slide_id || '',
+      timestamp: turn.timestamp || turn.created_at || '',
+    }));
+
+    const scenarioEntries = (details.dialogueTurns || []).map((turn) => ({
+      source: 'Scenario',
+      role: turn.role,
+      content: turn.content,
+      context: turn.scenario_name || turn.scenario_id || '',
+      timestamp: turn.timestamp || turn.created_at || '',
+    }));
+
+    const entries = [...tutorEntries, ...scenarioEntries];
+    if (entries.length === 0) {
+      toast.error('No dialogue recorded for this session.');
+      return;
+    }
+
+    entries.sort((a, b) => {
+      const aTime = a.timestamp ? Date.parse(a.timestamp) : 0;
+      const bTime = b.timestamp ? Date.parse(b.timestamp) : 0;
+      return aTime - bTime;
+    });
+
+    const headers = ['Session ID', 'Mode', 'Source', 'Role', 'Context', 'Timestamp', 'Message'];
+    const rows = entries.map((entry) => [
+      session.session_id,
+      modeLabel,
+      entry.source,
+      entry.role,
+      entry.context,
+      entry.timestamp || '',
+      entry.content,
+    ]);
+
+    const csv = [headers, ...rows].map((row) => row.map(escapeCsv).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `session_${session.session_id}_dialogue.csv`;
+    a.click();
+  };
+
   // Export individual session to PDF
   const exportSessionToPDF = async (session: Session, details: SessionDetails) => {
     const doc = new jsPDF();
@@ -1606,6 +1661,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         questionTextMap[row.question_id] = row.question_text;
       });
     }
+
+    const formatQuestionText = (text: string) =>
+      text.replace(/\bscenarios\b/gi, 'slides').replace(/\bscenario\b/gi, 'slide');
 
     // Helper to add text with word wrap
     const addText = (text: string, fontSize: number = 10, isBold: boolean = false) => {
@@ -1658,7 +1716,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     y += 2;
     if (details.demographicResponses.length > 0) {
       details.demographicResponses.forEach((r) => {
-        addText(`${questionTextMap[r.question_id] || r.question_id}: ${r.answer}`);
+        const label = formatQuestionText(questionTextMap[r.question_id] || r.question_id);
+        addText(`${label}: ${r.answer}`);
       });
     } else if (details.demographics) {
       addText(`Age: ${details.demographics.age_range || '-'}`);
@@ -1674,7 +1733,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     y += 2;
     if (details.preTest.length > 0) {
       details.preTest.forEach((r) => {
-        addText(`${questionTextMap[r.question_id] || r.question_id}: ${r.answer}`);
+        const label = formatQuestionText(questionTextMap[r.question_id] || r.question_id);
+        addText(`${label}: ${r.answer}`);
       });
     } else {
       addText('No responses');
@@ -1686,7 +1746,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     y += 2;
     if (details.postTest.length > 0) {
       details.postTest.forEach((r) => {
-        addText(`${questionTextMap[r.question_id] || r.question_id}: ${r.answer}`);
+        const label = formatQuestionText(questionTextMap[r.question_id] || r.question_id);
+        addText(`${label}: ${r.answer}`);
       });
     } else {
       addText('No responses');
@@ -1781,7 +1842,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           currentSlide = slideLabel;
           addText(`Slide: ${currentSlide}`, 11, true);
         }
-        const role = turn.role === 'user' ? 'User' : 'AI';
+        const role = turn.role === 'user' ? 'User' : 'Alex (AI)';
         addText(`[${role}]: ${turn.content}`);
       });
     } else {
@@ -1790,10 +1851,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
     y += 5;
 
-    // Scenario dialogue
-    addText('SCENARIO DIALOGUE', 12, true);
-    y += 2;
     if (details.dialogueTurns.length > 0) {
+      addText('SCENARIO DIALOGUE (LEGACY)', 12, true);
+      y += 2;
       let currentScenario: string | null = null;
       details.dialogueTurns.forEach((turn) => {
         const scenarioLabel = turn.scenario_name ? String(turn.scenario_name).replace(/_/g, ' ') : '';
@@ -1801,11 +1861,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           currentScenario = scenarioLabel;
           addText(`Scenario: ${currentScenario}`, 11, true);
         }
-        const role = turn.role === 'user' ? 'User' : 'AI';
+        const role = turn.role === 'user' ? 'User' : 'Alex (AI)';
         addText(`[${role}]: ${turn.content}`);
       });
-    } else {
-      addText('No dialogues');
     }
 
     // Footer
@@ -2406,15 +2464,26 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                   </Button>
                 )}
                 {permissions.canExportData && selectedSession && sessionDetails && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-slate-600"
-                    onClick={() => exportSessionToPDF(selectedSession, sessionDetails)}
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Export PDF
-                  </Button>
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-slate-600"
+                      onClick={() => exportSessionToPDF(selectedSession, sessionDetails)}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Export PDF
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-slate-600"
+                      onClick={() => exportDialogueCSV(selectedSession, sessionDetails)}
+                    >
+                      <FileSpreadsheet className="w-4 h-4 mr-2" />
+                      Dialogue CSV
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
@@ -2663,13 +2732,18 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
               {/* Tutor Dialogue (Learning) */}
               <div>
-                <h3 className="text-lg font-semibold text-white mb-2">Tutor Dialogue (Learning) ({sessionDetails.tutorDialogueTurns.length} messages)</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Tutor Dialogue (Learning) ({sessionDetails.tutorDialogueTurns.length} messages)
+                </h3>
+                <p className="text-xs text-slate-400 mb-2">
+                  Mode: {selectedSession?.mode || 'unknown'}
+                </p>
                 {sessionDetails.tutorDialogueTurns.length > 0 ? (
                   <div className="bg-slate-900 p-4 rounded max-h-60 overflow-y-auto">
                     {sessionDetails.tutorDialogueTurns.map((turn, i) => (
                       <div key={i} className={`text-sm mb-2 p-2 rounded ${turn.role === 'user' ? 'bg-blue-900/30' : 'bg-slate-800'}`}>
                         <span className={`font-semibold ${turn.role === 'user' ? 'text-blue-400' : 'text-green-400'}`}>
-                          {turn.role === 'user' ? 'User' : 'AI'}:
+                          {turn.role === 'user' ? 'User' : 'Alex (AI)'}:
                         </span>
                         {turn.slide_title || turn.slide_id ? (
                           <span className="text-slate-400 ml-2">
@@ -2685,24 +2759,24 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 )}
               </div>
 
-              {/* Scenario Dialogue */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-2">Scenario Dialogue ({sessionDetails.dialogueTurns.length} messages)</h3>
-                {sessionDetails.dialogueTurns.length > 0 ? (
+              {/* Scenario Dialogue (legacy, only shown if present) */}
+              {sessionDetails.dialogueTurns.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    Scenario Dialogue (Legacy) ({sessionDetails.dialogueTurns.length} messages)
+                  </h3>
                   <div className="bg-slate-900 p-4 rounded max-h-60 overflow-y-auto">
                     {sessionDetails.dialogueTurns.map((turn, i) => (
                       <div key={i} className={`text-sm mb-2 p-2 rounded ${turn.role === 'user' ? 'bg-blue-900/30' : 'bg-slate-800'}`}>
                         <span className={`font-semibold ${turn.role === 'user' ? 'text-blue-400' : 'text-green-400'}`}>
-                          {turn.role === 'user' ? 'User' : 'AI'}:
+                          {turn.role === 'user' ? 'User' : 'Alex (AI)'}:
                         </span>
                         <span className="text-white ml-2">{turn.content}</span>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-slate-500">No scenario dialogue recorded</p>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           ) : null}
         </DialogContent>

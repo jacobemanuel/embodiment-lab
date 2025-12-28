@@ -38,23 +38,28 @@ const PostTestPage2 = () => {
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const studyMode = sessionStorage.getItem('studyMode') || 'text';
+  const normalizePostTestText = (text: string) => {
+    let updated = text;
+    if (studyMode === 'text') {
+      updated = updated
+        .replace(/\bthe avatar\b/gi, 'the AI chatbot')
+        .replace(/\bthis avatar\b/gi, 'this AI chatbot')
+        .replace(/\bavatar\b/gi, 'AI chatbot');
+    }
+    return updated
+      .replace(/\bscenarios\b/gi, 'slides')
+      .replace(/\bscenario\b/gi, 'slide');
+  };
+
   const filteredQuestions = postTestQuestions
     .filter(q => {
       const modeSpecific = q.modeSpecific || 'both';
       return modeSpecific === 'both' || modeSpecific === studyMode;
     })
-    .map(q => {
-      if (studyMode === 'text') {
-        return {
-          ...q,
-          text: q.text
-            .replace(/\bavatar\b/gi, 'AI chatbot')
-            .replace(/\bthe avatar\b/gi, 'the AI chatbot')
-            .replace(/\bthis avatar\b/gi, 'this AI chatbot')
-        };
-      }
-      return q;
-    });
+    .map(q => ({
+      ...q,
+      text: normalizePostTestText(q.text),
+    }));
 
   const knowledgeQuestions = filteredQuestions.filter(q => q.category === 'knowledge');
 

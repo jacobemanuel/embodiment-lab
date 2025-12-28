@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
 import { Slide } from "@/data/slides";
 import { Message } from "@/types/study";
-import { appendTutorDialogue } from "@/lib/tutorDialogue";
+import { appendTutorDialogue, upsertTutorDialogue } from "@/lib/tutorDialogue";
 
 interface TextModeChatProps {
   currentSlide: Slide;
@@ -20,6 +20,8 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
   const { toast } = useToast();
   const prevSlideRef = useRef<string | null>(null);
   const isFirstSlide = currentSlide.id === 'intro' || currentSlide.id === 'slide-1';
+  const aiResponseTimestampRef = useRef<number | null>(null);
+  const lastAiUpsertAtRef = useRef(0);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -72,6 +74,11 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
 
     const userMessage = input;
     setInput("");
+
+    const slideId = currentSlide.id;
+    const slideTitle = currentSlide.title;
+    aiResponseTimestampRef.current = Date.now();
+    lastAiUpsertAtRef.current = 0;
     
     const userMsg: Message = { role: 'user', content: userMessage, timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
@@ -79,13 +86,15 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
       role: 'user',
       content: userMessage,
       timestamp: userMsg.timestamp,
-      slideId: currentSlide.id,
-      slideTitle: currentSlide.title,
+      slideId,
+      slideTitle,
       mode: 'text',
     });
     setIsStreaming(true);
 
     let aiResponse = "";
+
+    const aiResponseTimestamp = aiResponseTimestampRef.current;
 
     // Build message history for the AI - include slide context with priority like Avatar mode
     const systemContext: Message = {
@@ -104,34 +113,74 @@ IMPORTANT: Focus your responses on this specific slide topic. If the user asks w
         messages: [systemContext, ...messages, userMsg],
         onDelta: (chunk) => {
           aiResponse += chunk;
+          const now = Date.now();
+          const aiTimestamp = aiResponseTimestampRef.current ?? now;
+          aiResponseTimestampRef.current = aiTimestamp;
           setMessages(prev => {
             const last = prev[prev.length - 1];
             if (last?.role === 'ai' && last.timestamp > userMsg.timestamp) {
               return [...prev.slice(0, -1), { role: 'ai' as const, content: aiResponse, timestamp: last.timestamp }];
             }
-            return [...prev, { role: 'ai' as const, content: aiResponse, timestamp: Date.now() }];
+            return [...prev, { role: 'ai' as const, content: aiResponse, timestamp: aiTimestamp }];
           });
-        },
-        onDone: () => {
-          if (aiResponse.trim()) {
-            appendTutorDialogue({
+          if (now - lastAiUpsertAtRef.current >= 1200) {
+            lastAiUpsertAtRef.current = now;
+            upsertTutorDialogue({
               role: 'ai',
               content: aiResponse,
-              timestamp: Date.now(),
-              slideId: currentSlide.id,
-              slideTitle: currentSlide.title,
+              timestamp: aiTimestamp,
+              slideId,
+              slideTitle,
               mode: 'text',
             });
           }
+        },
+        onDone: () => {
+          if (aiResponse.trim()) {
+            upsertTutorDialogue({
+              role: 'ai',
+              content: aiResponse,
+              timestamp: aiResponseTimestamp ?? Date.now(),
+              slideId,
+              slideTitle,
+              mode: 'text',
+            });
+          }
+          aiResponseTimestampRef.current = null;
+          lastAiUpsertAtRef.current = 0;
           setIsStreaming(false);
         },
         onError: (error) => {
           console.error("AI error:", error);
+          if (aiResponse.trim()) {
+            upsertTutorDialogue({
+              role: 'ai',
+              content: aiResponse,
+              timestamp: aiResponseTimestamp ?? Date.now(),
+              slideId,
+              slideTitle,
+              mode: 'text',
+            });
+          }
+          aiResponseTimestampRef.current = null;
+          lastAiUpsertAtRef.current = 0;
           toast({ title: "Error", description: "Failed to get response", variant: "destructive" });
           setIsStreaming(false);
         }
       });
     } catch {
+      if (aiResponse.trim()) {
+        upsertTutorDialogue({
+          role: 'ai',
+          content: aiResponse,
+          timestamp: aiResponseTimestamp ?? Date.now(),
+          slideId,
+          slideTitle,
+          mode: 'text',
+        });
+      }
+      aiResponseTimestampRef.current = null;
+      lastAiUpsertAtRef.current = 0;
       setIsStreaming(false);
     }
   };

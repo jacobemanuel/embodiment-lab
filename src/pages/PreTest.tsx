@@ -15,6 +15,7 @@ import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection"
 import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
 import { usePageTiming } from "@/hooks/usePageTiming";
+import { updateQuestionSnapshot } from "@/lib/questionSnapshots";
 
 const PreTest = () => {
   usePageTiming('pre-test', 'Pre-test');
@@ -52,7 +53,6 @@ const PreTest = () => {
 
   useEffect(() => {
     if (preTestQuestions.length === 0) return;
-    if (sessionStorage.getItem('preTestQuestionsSnapshot')) return;
     const snapshot = preTestQuestions.map((q) => ({
       id: q.id,
       text: q.text,
@@ -60,7 +60,7 @@ const PreTest = () => {
       type: q.type,
       options: q.options,
     }));
-    sessionStorage.setItem('preTestQuestionsSnapshot', JSON.stringify(snapshot));
+    updateQuestionSnapshot('preTestQuestionsSnapshot', snapshot);
   }, [preTestQuestions]);
 
   const scrollToQuestion = (index: number) => {

@@ -13,6 +13,7 @@ import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection"
 import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
 import { usePageTiming } from "@/hooks/usePageTiming";
+import { updateQuestionSnapshot } from "@/lib/questionSnapshots";
 
 const PostTestPage2 = () => {
   usePageTiming('post-test-2', 'Post-test Page 2');
@@ -36,18 +37,38 @@ const PostTestPage2 = () => {
   const [responses, setResponses] = useState<Record<string, string>>({});
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  const studyMode = sessionStorage.getItem('studyMode') || 'text';
+  const filteredQuestions = postTestQuestions
+    .filter(q => {
+      const modeSpecific = q.modeSpecific || 'both';
+      return modeSpecific === 'both' || modeSpecific === studyMode;
+    })
+    .map(q => {
+      if (studyMode === 'text') {
+        return {
+          ...q,
+          text: q.text
+            .replace(/\bavatar\b/gi, 'AI chatbot')
+            .replace(/\bthe avatar\b/gi, 'the AI chatbot')
+            .replace(/\bthis avatar\b/gi, 'this AI chatbot')
+        };
+      }
+      return q;
+    });
+
+  const knowledgeQuestions = filteredQuestions.filter(q => q.category === 'knowledge');
+
   useEffect(() => {
-    if (postTestQuestions.length === 0) return;
-    if (sessionStorage.getItem('postTestQuestionsSnapshot')) return;
-    const snapshot = postTestQuestions.map((q) => ({
+    if (knowledgeQuestions.length === 0) return;
+    const snapshot = knowledgeQuestions.map((q) => ({
       id: q.id,
       text: q.text,
       category: q.category,
       type: q.type,
       options: q.options,
     }));
-    sessionStorage.setItem('postTestQuestionsSnapshot', JSON.stringify(snapshot));
-  }, [postTestQuestions]);
+    updateQuestionSnapshot('postTestQuestionsSnapshot', snapshot);
+  }, [knowledgeQuestions]);
 
   const scrollToQuestion = (index: number) => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -70,9 +91,6 @@ const PostTestPage2 = () => {
     }
   }, [responses]);
 
-  // Filter knowledge questions from post_test
-  // Filter knowledge questions from post_test
-  const knowledgeQuestions = postTestQuestions.filter(q => q.category === 'knowledge');
   // Count questions that have at least one answer (not empty string)
   const answeredQuestionsCount = knowledgeQuestions.filter(q => responses[q.id] && responses[q.id].trim() !== '').length;
   const allQuestionsAnswered = knowledgeQuestions.length > 0 && answeredQuestionsCount === knowledgeQuestions.length;

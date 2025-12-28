@@ -33,6 +33,7 @@ const Learning = () => {
   const sessionIdRef = useRef<string | null>(null);
   const textSlideStartRef = useRef<Date>(new Date());
   const textPrevSlideRef = useRef<Slide | null>(null);
+  const textSlideSavedRef = useRef(false);
 
   // Set initial slide when slides are loaded
   useEffect(() => {
@@ -111,6 +112,7 @@ const Learning = () => {
     if (!textPrevSlideRef.current) {
       textPrevSlideRef.current = currentSlide;
       textSlideStartRef.current = new Date();
+      textSlideSavedRef.current = false;
       return;
     }
 
@@ -119,14 +121,30 @@ const Learning = () => {
       void saveSlideTime(previousSlide, textSlideStartRef.current);
       textSlideStartRef.current = new Date();
       textPrevSlideRef.current = currentSlide;
+      textSlideSavedRef.current = false;
     }
+  }, [isTextMode, currentSlide]);
+
+  const flushTextSlideTime = () => {
+    if (!isTextMode || !currentSlide || textSlideSavedRef.current) return;
+    textSlideSavedRef.current = true;
+    void saveSlideTime(currentSlide, textSlideStartRef.current);
+  };
+
+  useEffect(() => {
+    if (!isTextMode) return;
+    const handlePageHide = () => {
+      flushTextSlideTime();
+    };
+    window.addEventListener('pagehide', handlePageHide);
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+    };
   }, [isTextMode, currentSlide]);
 
   useEffect(() => {
     return () => {
-      if (isTextMode && currentSlide) {
-        void saveSlideTime(currentSlide, textSlideStartRef.current);
-      }
+      flushTextSlideTime();
     };
   }, [isTextMode, currentSlide]);
 
@@ -143,7 +161,7 @@ const Learning = () => {
         slideTitle,
       }));
       const studyMode = (mode as StudyMode) || 'text';
-      saveTelemetryMeta(sessionId, studyMode).catch((error) =>
+      saveTelemetryMeta(sessionId, studyMode, { final: false }).catch((error) =>
         console.error('Failed to save telemetry on learning exit:', error)
       );
       if (!dialogueAlreadySaved && dialogueLog.length > 0) {

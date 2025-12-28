@@ -31,6 +31,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   const sessionIdRef = useRef<string | null>(null);
   const cameraHideTimerRef = useRef<NodeJS.Timeout | null>(null);
   const firstSlideIdRef = useRef<string>(currentSlide.id);
+  const slideExitSavedRef = useRef(false);
 
   // Get session ID from sessionStorage
   useEffect(() => {
@@ -103,16 +104,17 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
   // Notify slide changes and track time
   useEffect(() => {
     if (prevSlideRef.current.id !== currentSlide.id) {
-      if (isConnected) {
-        // Save time for previous slide before switching
-        const prevSlide = prevSlideRef.current;
-        saveSlideTime(prevSlide.id, prevSlide.title, slideStartTimeRef.current);
-      }
+      // Save time for previous slide before switching
+      const prevSlide = prevSlideRef.current;
+      saveSlideTime(prevSlide.id, prevSlide.title, slideStartTimeRef.current);
 
       // Reset timer for new slide
       slideStartTimeRef.current = new Date();
       prevSlideRef.current = currentSlide;
-      notifySlideChange(currentSlide);
+      slideExitSavedRef.current = false;
+      if (isConnected) {
+        notifySlideChange(currentSlide);
+      }
 
       // After first slide, hide camera immediately on subsequent slides
       if (currentSlide.id !== firstSlideIdRef.current) {
@@ -121,6 +123,22 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
       }
     }
   }, [currentSlide, isConnected, notifySlideChange]);
+
+  const flushAvatarSlideTime = () => {
+    if (!sessionIdRef.current || !currentSlide || slideExitSavedRef.current) return;
+    slideExitSavedRef.current = true;
+    saveSlideTime(currentSlide.id, currentSlide.title, slideStartTimeRef.current);
+  };
+
+  useEffect(() => {
+    const handlePageHide = () => {
+      flushAvatarSlideTime();
+    };
+    window.addEventListener('pagehide', handlePageHide);
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, [currentSlide]);
 
   // Hide camera after 45 seconds on first slide only
   useEffect(() => {
@@ -146,9 +164,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
       }
       
       // Save time for current slide when leaving avatar mode
-      if (sessionIdRef.current && currentSlide) {
-        saveSlideTime(currentSlide.id, currentSlide.title, slideStartTimeRef.current);
-      }
+      flushAvatarSlideTime();
       
       if (userStreamRef.current) {
         userStreamRef.current.getTracks().forEach(track => track.stop());

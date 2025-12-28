@@ -18,6 +18,7 @@ import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection"
 import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
 import { usePageTiming } from "@/hooks/usePageTiming";
+import { updateQuestionSnapshot } from "@/lib/questionSnapshots";
 
 const Demographics = () => {
   usePageTiming('demographics', 'Demographics');
@@ -57,7 +58,6 @@ const Demographics = () => {
 
   useEffect(() => {
     if (demographicQuestions.length === 0) return;
-    if (sessionStorage.getItem('demographicQuestionsSnapshot')) return;
     const snapshot = demographicQuestions.map((q) => ({
       id: q.id,
       text: q.text,
@@ -65,7 +65,7 @@ const Demographics = () => {
       type: q.type,
       options: q.options,
     }));
-    sessionStorage.setItem('demographicQuestionsSnapshot', JSON.stringify(snapshot));
+    updateQuestionSnapshot('demographicQuestionsSnapshot', snapshot);
   }, [demographicQuestions]);
 
   const scrollToQuestion = (index: number) => {

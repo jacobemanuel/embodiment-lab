@@ -36,6 +36,7 @@ const ExitStudyButton = ({
     setIsExiting(true);
     
     try {
+      sessionStorage.setItem('studyExitRequested', 'true');
       // Get session ID before clearing
       const sessionId = sessionStorage.getItem('sessionId');
       
@@ -70,6 +71,7 @@ const ExitStudyButton = ({
       // Still navigate home even if update fails
       navigate('/');
     } finally {
+      sessionStorage.removeItem('studyExitRequested');
       setIsExiting(false);
     }
   };

@@ -5,11 +5,14 @@ import logo from "@/assets/logo-white.png";
 import { useEffect, useState } from "react";
 import ParticipantFooter from "@/components/ParticipantFooter";
 import { clearTelemetrySavedFlag, clearTimingLog } from "@/lib/sessionTelemetry";
+import { usePageTiming } from "@/hooks/usePageTiming";
 
 const Welcome = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [studyLocked, setStudyLocked] = useState(false);
+
+  usePageTiming('welcome', 'Welcome');
 
   const resetStudyState = () => {
     sessionStorage.removeItem('sessionId');

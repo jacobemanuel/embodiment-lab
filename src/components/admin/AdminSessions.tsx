@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import DateRangeFilter from "./DateRangeFilter";
 import { getPermissionLevel, getPermissions } from "@/lib/permissions";
-import { describeSuspicionFlag, SUSPICION_REQUIREMENTS } from "@/lib/suspicion";
+import { describeSuspicionFlag, getSuspicionRequirements } from "@/lib/suspicion";
 import { META_DIALOGUE_ID, META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 import { buildSlideLookup, resolveSlideKey } from "@/lib/slideTiming";
 import { toast } from "sonner";
@@ -492,8 +492,19 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       const rawPreTest = preTest || [];
       const rawPostTest = postTest || [];
 
-      const timingMetaRow = rawPostTest.find((row) => row.question_id === META_TIMING_ID);
-      const dialogueMetaRow = rawPostTest.find((row) => row.question_id === META_DIALOGUE_ID);
+      const pickLatestMetaRow = (rows: any[], questionId: string) => {
+        const candidates = rows.filter((row) => row.question_id === questionId);
+        if (candidates.length === 0) return null;
+        return candidates.reduce((latest, row) => {
+          if (!latest) return row;
+          const latestTime = latest.created_at ? new Date(latest.created_at).getTime() : 0;
+          const rowTime = row.created_at ? new Date(row.created_at).getTime() : 0;
+          return rowTime >= latestTime ? row : latest;
+        }, null as any);
+      };
+
+      const timingMetaRow = pickLatestMetaRow(rawPostTest, META_TIMING_ID);
+      const dialogueMetaRow = pickLatestMetaRow(rawPostTest, META_DIALOGUE_ID);
 
       const filteredPostTest = rawPostTest.filter((row) => !isTelemetryMetaQuestionId(row.question_id));
       const demoFallbackRows = rawPreTest.filter((row) => isDemoFallbackQuestionId(row.question_id));
@@ -817,8 +828,14 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     questionId.startsWith('demo-demo-') ? questionId.replace(/^demo-/, '') : questionId;
   const isMetaRowId = (id: string) => id.startsWith('meta:');
   const slideLookup = buildSlideLookup(activeSlides);
+  const hasActiveSlides = slideLookup.byId.size > 0;
   const resolveSlideGroupKey = (entry: { slide_id: string; slide_title?: string | null }) =>
-    resolveSlideKey(entry.slide_id, entry.slide_title, slideLookup);
+    (() => {
+      const resolved = resolveSlideKey(entry.slide_id, entry.slide_title, slideLookup);
+      if (!resolved.key) return { key: '', title: '' };
+      if (hasActiveSlides && !slideLookup.byId.has(resolved.key)) return { key: '', title: '' };
+      return resolved;
+    })();
   const resolvePageGroupKey = (entry: { slide_id: string; slide_title?: string | null }) => ({
     key: entry.slide_id,
     title: (entry.slide_title || entry.slide_id).replace(/^Page:\s*/i, ''),
@@ -834,8 +851,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     const rawPageIds = new Set<string>();
     const hasActiveSlides = Boolean(slideLookup && slideLookup.byId.size > 0);
 
-    const getCanonicalKey = (entry: any) =>
-      resolveSlideKey(entry?.slide_id, entry?.slide_title, slideLookup).key;
+    const resolveSlide = (entry: any) =>
+      resolveSlideKey(entry?.slide_id, entry?.slide_title, slideLookup);
 
     rawEntries.forEach((entry) => {
       if (!entry?.slide_id) return;
@@ -844,11 +861,15 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         merged.push(entry);
         return;
       }
-      const canonicalKey = getCanonicalKey(entry);
-      if (!canonicalKey) return;
-      if (hasActiveSlides && slideLookup && !slideLookup.byId.has(canonicalKey)) return;
-      rawSlideKeys.add(canonicalKey);
-      merged.push(entry);
+      const resolved = resolveSlide(entry);
+      if (!resolved.key) return;
+      if (hasActiveSlides && slideLookup && !slideLookup.byId.has(resolved.key)) return;
+      rawSlideKeys.add(resolved.key);
+      merged.push({
+        ...entry,
+        slide_id: resolved.key,
+        slide_title: resolved.title || entry.slide_title || entry.slide_id,
+      });
     });
 
     fallbackEntries.forEach((entry) => {
@@ -859,11 +880,15 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         }
         return;
       }
-      const canonicalKey = getCanonicalKey(entry);
-      if (!canonicalKey) return;
-      if (hasActiveSlides && slideLookup && !slideLookup.byId.has(canonicalKey)) return;
-      if (!rawSlideKeys.has(canonicalKey)) {
-        merged.push(entry);
+      const resolved = resolveSlide(entry);
+      if (!resolved.key) return;
+      if (hasActiveSlides && slideLookup && !slideLookup.byId.has(resolved.key)) return;
+      if (!rawSlideKeys.has(resolved.key)) {
+        merged.push({
+          ...entry,
+          slide_id: resolved.key,
+          slide_title: resolved.title || entry.slide_title || entry.slide_id,
+        });
       }
     });
 
@@ -1740,7 +1765,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     // Data quality requirements
     addText('DATA QUALITY REQUIREMENTS', 12, true);
     y += 2;
-    SUSPICION_REQUIREMENTS.forEach((req) => {
+    getSuspicionRequirements(activeSlides.length).forEach((req) => {
       addText(`- ${req.label}`);
     });
     y += 5;
@@ -2170,7 +2195,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                                     <hr className="border-slate-700 my-2" />
                                     <p className="font-semibold text-white">Requirements to avoid flags:</p>
                                     <ul className="space-y-1 text-[11px]">
-                                      {SUSPICION_REQUIREMENTS.map((req) => (
+                                      {getSuspicionRequirements(activeSlides.length).map((req) => (
                                         <li key={req.id}>• {req.label}</li>
                                       ))}
                                     </ul>
@@ -2473,7 +2498,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                   <div className="mt-4 text-xs text-slate-400">
                     <div className="font-semibold text-slate-300 mb-1">Requirements to avoid flags:</div>
                     <ul className="space-y-1">
-                      {SUSPICION_REQUIREMENTS.map((req) => (
+                      {getSuspicionRequirements(activeSlides.length).map((req) => (
                         <li key={req.id}>• {req.label}</li>
                       ))}
                     </ul>

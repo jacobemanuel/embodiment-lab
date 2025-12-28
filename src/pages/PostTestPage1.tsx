@@ -12,6 +12,7 @@ import { useBotDetection, logSuspiciousActivity } from "@/hooks/useBotDetection"
 import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
 import { usePageTiming } from "@/hooks/usePageTiming";
+import { updateQuestionSnapshot } from "@/lib/questionSnapshots";
 
 const PostTestPage1 = () => {
   usePageTiming('post-test-1', 'Post-test Page 1');
@@ -79,17 +80,16 @@ const PostTestPage1 = () => {
     });
 
   useEffect(() => {
-    if (filteredQuestions.length === 0) return;
-    if (sessionStorage.getItem('postTestQuestionsSnapshot')) return;
-    const snapshot = filteredQuestions.map((q) => ({
+    if (likertQuestions.length === 0) return;
+    const snapshot = likertQuestions.map((q) => ({
       id: q.id,
       text: q.text,
       category: q.category,
       type: q.type,
       options: q.options,
     }));
-    sessionStorage.setItem('postTestQuestionsSnapshot', JSON.stringify(snapshot));
-  }, [filteredQuestions]);
+    updateQuestionSnapshot('postTestQuestionsSnapshot', snapshot);
+  }, [likertQuestions]);
 
   // Filter for likert questions with all perception-related categories (exclude knowledge and open_feedback)
   const likertQuestions = filteredQuestions.filter(q => 

@@ -22,7 +22,7 @@ const Completion = () => {
     const sessionId = sessionStorage.getItem('sessionId');
     if (sessionId) {
       const mode = (sessionStorage.getItem('studyMode') as StudyMode) || 'unknown';
-      saveTelemetryMeta(sessionId, mode).catch((error) => {
+      saveTelemetryMeta(sessionId, mode, { final: true }).catch((error) => {
         console.error('Failed to save telemetry on completion:', error);
       });
     }
@@ -117,8 +117,11 @@ const Completion = () => {
       csvContent += '\n';
       
       // Add demographics
+      const hasAnswerKey = (answers: Record<string, string>, id: string) =>
+        Object.prototype.hasOwnProperty.call(answers, id);
+
       const demographicOrder = demographicSnapshot.length > 0
-        ? demographicSnapshot
+        ? demographicSnapshot.filter((q) => hasAnswerKey(demographics, q.id))
         : Object.keys(demographics || {}).map((id) => ({ id, text: questionTextMap[id] || id }));
       demographicOrder.forEach((q) => {
         const answer = demographics[q.id] ?? '';
@@ -128,7 +131,7 @@ const Completion = () => {
       
       // Add pre-test responses
       const preTestOrder = preTestSnapshot.length > 0
-        ? preTestSnapshot
+        ? preTestSnapshot.filter((q) => hasAnswerKey(preTest, q.id))
         : Object.keys(preTest || {}).map((id) => ({ id, text: questionTextMap[id] || id }));
       preTestOrder.forEach((q) => {
         const answer = preTest[q.id] ?? '';
@@ -137,7 +140,7 @@ const Completion = () => {
       csvContent += '\n';
       
       const postTestOrder = postTestSnapshot.length > 0
-        ? postTestSnapshot
+        ? postTestSnapshot.filter((q) => hasAnswerKey(postTest, q.id))
         : Object.keys(postTest || {}).map((id) => ({ id, text: questionTextMap[id] || id }));
       const perceptionCategories = ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'];
       const categorizePostTest = (questionId: string) => {

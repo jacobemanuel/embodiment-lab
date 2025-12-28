@@ -5,6 +5,7 @@ import logo from "@/assets/logo-white.png";
 import { useEffect, useState } from "react";
 import ParticipantFooter from "@/components/ParticipantFooter";
 import { clearTelemetrySavedFlag, clearTimingLog } from "@/lib/sessionTelemetry";
+import { usePageTiming } from "@/hooks/usePageTiming";
 
 const StudyEntry = () => {
   const navigate = useNavigate();
@@ -12,6 +13,9 @@ const StudyEntry = () => {
   const [invalidMode, setInvalidMode] = useState(false);
   const [studyLocked, setStudyLocked] = useState(false);
   const location = useLocation();
+  const safeModeLabel = mode === 'avatar' ? 'Avatar' : mode === 'text' ? 'Text' : 'Invalid';
+
+  usePageTiming(`study-entry-${safeModeLabel.toLowerCase()}`, `Study Entry (${safeModeLabel})`);
 
   const resetStudyState = () => {
     sessionStorage.removeItem('sessionId');

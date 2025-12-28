@@ -17,6 +17,7 @@ import { StudyMode } from "@/types/study";
 import { getTutorDialogueLog } from "@/lib/tutorDialogue";
 import { saveTelemetryMeta } from "@/lib/sessionTelemetry";
 import { usePageTiming } from "@/hooks/usePageTiming";
+import { updateQuestionSnapshot } from "@/lib/questionSnapshots";
 
 const MIN_CHARS = 10;
 const MAX_CHARS = 50;
@@ -34,18 +35,40 @@ const PostTestPage3 = () => {
   const [isLoading, setIsLoading] = useState(false);
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  const studyMode = (sessionStorage.getItem('studyMode') as StudyMode) || 'text';
+  const filteredQuestions = postTestQuestions
+    .filter(q => {
+      const modeSpecific = q.modeSpecific || 'both';
+      return modeSpecific === 'both' || modeSpecific === studyMode;
+    })
+    .map(q => {
+      if (studyMode === 'text') {
+        return {
+          ...q,
+          text: q.text
+            .replace(/\bavatar\b/gi, 'AI chatbot')
+            .replace(/\bthe avatar\b/gi, 'the AI chatbot')
+            .replace(/\bthis avatar\b/gi, 'this AI chatbot')
+        };
+      }
+      return q;
+    });
+
+  // Filter open feedback questions
+  const openFeedbackQuestions = filteredQuestions.filter(q => q.category === 'open_feedback');
+  const hasOpenFeedback = openFeedbackQuestions.length > 0;
+
   useEffect(() => {
-    if (postTestQuestions.length === 0) return;
-    if (sessionStorage.getItem('postTestQuestionsSnapshot')) return;
-    const snapshot = postTestQuestions.map((q) => ({
+    if (openFeedbackQuestions.length === 0) return;
+    const snapshot = openFeedbackQuestions.map((q) => ({
       id: q.id,
       text: q.text,
       category: q.category,
       type: q.type,
       options: q.options,
     }));
-    sessionStorage.setItem('postTestQuestionsSnapshot', JSON.stringify(snapshot));
-  }, [postTestQuestions]);
+    updateQuestionSnapshot('postTestQuestionsSnapshot', snapshot);
+  }, [openFeedbackQuestions]);
 
   const scrollToQuestion = (index: number) => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -70,10 +93,6 @@ const PostTestPage3 = () => {
     }
   }, [responses]);
 
-  // Filter open feedback questions
-  const openFeedbackQuestions = postTestQuestions.filter(q => q.category === 'open_feedback');
-  const hasOpenFeedback = openFeedbackQuestions.length > 0;
-  
   // Check if answer meets minimum length requirement
   const isValidAnswer = (text: string) => text.trim().length >= MIN_CHARS;
   
@@ -152,7 +171,7 @@ const PostTestPage3 = () => {
           }
         }
         const studyMode = (sessionStorage.getItem('studyMode') as StudyMode) || 'text';
-        await saveTelemetryMeta(sessionId, studyMode);
+        await saveTelemetryMeta(sessionId, studyMode, { final: true });
         await completeStudySession(sessionId);
         
         navigate("/completion");

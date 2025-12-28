@@ -59,10 +59,10 @@ These are the minimum thresholds used by the system:
 - Demographics page time >= 15s
 - Pre-test page time >= 30s
 - Post-test page time >= 45s
-- Learning page time >= 24s (based on 3 slides x 8s minimum)
+- Learning page time >= (active slide count × 8s minimum)
 - Average slide view time >= 8s
 - Fast answers (<3s) < 50%
-- Average answer time >= 2s
+- Average answer time >= 1.5s
 
 ### What triggers a flag
 
@@ -121,6 +121,12 @@ Required env:
 npx vitest
 npx vitest run
 ```
+
+## Testing & evaluation
+
+- **Unit + integration**: core UI + data/edge‑function contracts (Vitest).
+- **E2E smoke**: app routing sanity checks live in `src/test/e2e/AppSmoke.test.tsx`.
+- **User-based evaluation checklist**: see `docs/testing-evaluation.md` for the structured pilot flow + reporting checklist.
 
 ## Deployment
 

@@ -10,10 +10,11 @@ import { format, parseISO, startOfDay, endOfDay } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import QuestionPerformanceByMode from "./QuestionPerformanceByMode";
-import { describeSuspicionFlag, SUSPICION_REQUIREMENTS } from "@/lib/suspicion";
+import { describeSuspicionFlag, getSuspicionRequirements } from "@/lib/suspicion";
 import { META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 import { buildSlideLookup, resolveSlideKey } from "@/lib/slideTiming";
 
@@ -225,6 +226,8 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('completed');
+  const [activeSlideCount, setActiveSlideCount] = useState(0);
+  const [includeFlagged, setIncludeFlagged] = useState(false);
 
   const fetchStats = useCallback(async () => {
     setIsRefreshing(true);
@@ -254,8 +257,11 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         if (s.status === 'reset') return false;
         // Exclude ignored sessions
         if (s.validation_status === 'ignored') return false;
-        // For suspicious sessions (flagged), only include if explicitly accepted
-        if ((s.suspicion_score || 0) > 0 && s.validation_status !== 'accepted') return false;
+        // For suspicious sessions (flagged), only include if explicitly accepted (unless override enabled)
+        const isFlagged =
+          (s.suspicion_score || 0) > 0 ||
+          (Array.isArray(s.suspicious_flags) && s.suspicious_flags.length > 0);
+        if (isFlagged && s.validation_status !== 'accepted' && !includeFlagged) return false;
         return true;
       }) || [];
       const resetSessions = allSessions?.filter(s => s.status === 'reset') || [];
@@ -319,10 +325,23 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         postTestResponses = rawPostTestResponses.filter((r) => !isTelemetryMetaQuestionId(r.question_id));
 
         const timingMetaRows = rawPostTestResponses.filter((r) => r.question_id === META_TIMING_ID);
-        const fallbackAvatarTimeData = timingMetaRows.flatMap((row: any) =>
+        const latestTimingBySession = new Map<string, any>();
+        timingMetaRows.forEach((row: any) => {
+          const existing = latestTimingBySession.get(row.session_id);
+          if (!existing) {
+            latestTimingBySession.set(row.session_id, row);
+            return;
+          }
+          const existingTime = existing.created_at ? new Date(existing.created_at).getTime() : 0;
+          const rowTime = row.created_at ? new Date(row.created_at).getTime() : 0;
+          if (rowTime >= existingTime) {
+            latestTimingBySession.set(row.session_id, row);
+          }
+        });
+        const fallbackAvatarTimeData = Array.from(latestTimingBySession.values()).flatMap((row: any) =>
           parseTimingMetaEntries(row)
             .filter((entry: any) => entry?.slideId && typeof entry.durationSeconds === 'number')
-            .map((entry: any, index: number) => ({
+            .map((entry: any) => ({
               session_id: row.session_id,
               slide_id: entry.slideId,
               slide_title: entry.slideTitle || entry.slideId,
@@ -359,6 +378,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           }
         });
         activeSlides = (slideRes.data || []).filter((slide) => slide.is_active);
+        setActiveSlideCount(activeSlides.length);
       }
 
       // Fetch questions with correct answers
@@ -1060,7 +1080,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [startDate, endDate, statusFilter]);
+  }, [startDate, endDate, statusFilter, includeFlagged]);
 
   useEffect(() => {
     fetchStats();
@@ -2401,6 +2421,30 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={includeFlagged}
+                onCheckedChange={(checked) => setIncludeFlagged(Boolean(checked))}
+              />
+              <span className="text-sm text-slate-300">Include flagged (pending)</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-slate-400 hover:text-slate-200 transition"
+                      aria-label="About flagged sessions"
+                    >
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    Adds suspicious sessions to charts and exports. Ignored and reset sessions remain excluded.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
 
           {/* Export Buttons */}
@@ -2537,7 +2581,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                       <div className="text-xs space-y-2">
                         <p className="font-semibold">Requirements to avoid flags</p>
                         <ul className="space-y-1">
-                          {SUSPICION_REQUIREMENTS.map((req) => (
+                          {getSuspicionRequirements(activeSlideCount).map((req) => (
                             <li key={req.id}>• {req.label}</li>
                           ))}
                         </ul>

@@ -195,6 +195,24 @@ const AdminDashboard = () => {
                       <p className="text-sm">Download narrative workflow and user journey guide</p>
                     </TooltipContent>
                   </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                      >
+                        <a href="/testing-evaluation.md" download>
+                          <FileText className="w-4 h-4 md:mr-2" />
+                          <span className="hidden md:inline">Testing & Eval</span>
+                        </a>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600">
+                      <p className="text-sm">Download testing & evaluation checklist</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </TooltipProvider>
             )}

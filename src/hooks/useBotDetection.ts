@@ -33,11 +33,12 @@ interface BotDetectionResult {
 
 interface UseBotDetectionOptions {
   pageType: 'demographics' | 'pretest' | 'posttest' | 'learning';
+  learningSlidesCount?: number;
   onSuspiciousActivity?: (result: BotDetectionResult) => void;
 }
 
 export function useBotDetection(options: UseBotDetectionOptions) {
-  const { pageType, onSuspiciousActivity } = options;
+  const { pageType, learningSlidesCount, onSuspiciousActivity } = options;
   const [suspicionLevel, setSuspicionLevel] = useState<SuspicionLevel>('none');
   const [detectionResult, setDetectionResult] = useState<BotDetectionResult | null>(null);
   
@@ -85,11 +86,15 @@ export function useBotDetection(options: UseBotDetectionOptions) {
     let score = 0;
 
     const timeOnPage = Date.now() - data.pageEnterTime;
+    const effectiveLearningSlides =
+      learningSlidesCount && learningSlidesCount > 0
+        ? learningSlidesCount
+        : minLearningSlides;
     const minTimeForPage = {
       'demographics': minTimeForDemographicsMs,
       'pretest': minTimeForPretestMs,
       'posttest': minTimeForPosttestMs,
-      'learning': minTimeForReadingSlideMs * minLearningSlides,
+      'learning': minTimeForReadingSlideMs * effectiveLearningSlides,
     }[pageType];
 
     // Check if page was completed too quickly
@@ -146,7 +151,7 @@ export function useBotDetection(options: UseBotDetectionOptions) {
     }
 
     return result;
-  }, [pageType, onSuspiciousActivity]);
+  }, [pageType, learningSlidesCount, onSuspiciousActivity]);
 
   // Get current timing summary
   const getTimingSummary = useCallback(() => {

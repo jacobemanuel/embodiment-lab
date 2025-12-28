@@ -4,6 +4,7 @@ import { getTutorDialogueLog } from "@/lib/tutorDialogue";
 
 const TIMING_KEY = 'sessionTimingLog';
 const TELEMETRY_SAVED_KEY = 'sessionTelemetrySaved';
+const TELEMETRY_LAST_SAVED_AT = 'sessionTelemetryLastSavedAt';
 const MAX_TIMING_ENTRIES = 600;
 
 export const META_TIMING_ID = '__meta_timing_v1';
@@ -46,6 +47,7 @@ export const clearTimingLog = () => {
 
 export const clearTelemetrySavedFlag = () => {
   sessionStorage.removeItem(TELEMETRY_SAVED_KEY);
+  sessionStorage.removeItem(TELEMETRY_LAST_SAVED_AT);
 };
 
 export const isTelemetryMetaQuestionId = (questionId?: string | null) =>
@@ -65,22 +67,25 @@ const fetchSessionUuid = async (sessionId: string) => {
   return data?.id || null;
 };
 
-const fetchExistingMeta = async (sessionUuid: string) => {
-  const { data, error } = await supabase
-    .from('post_test_responses')
-    .select('question_id')
-    .eq('session_id', sessionUuid)
-    .in('question_id', [META_TIMING_ID, META_DIALOGUE_ID]);
-  if (error) {
-    console.error('Failed to check existing telemetry meta:', error);
-    return new Set<string>();
-  }
-  return new Set((data || []).map((row) => row.question_id));
+type SaveTelemetryOptions = {
+  final?: boolean;
+  throttleMs?: number;
 };
 
-export const saveTelemetryMeta = async (sessionId: string, mode: StudyMode | 'unknown') => {
+export const saveTelemetryMeta = async (
+  sessionId: string,
+  mode: StudyMode | 'unknown',
+  options: SaveTelemetryOptions = {}
+) => {
   if (!sessionId) return;
+  if (sessionStorage.getItem('studyExitRequested') === 'true') return;
   if (sessionStorage.getItem(TELEMETRY_SAVED_KEY) === 'true') return;
+
+  const final = options.final ?? true;
+  const throttleMs = options.throttleMs ?? 15000;
+  const lastSavedRaw = sessionStorage.getItem(TELEMETRY_LAST_SAVED_AT);
+  const lastSavedAt = lastSavedRaw ? Number(lastSavedRaw) : 0;
+  if (!final && Date.now() - lastSavedAt < throttleMs) return;
 
   const sessionUuid = await fetchSessionUuid(sessionId);
   if (!sessionUuid) return;
@@ -119,22 +124,17 @@ export const saveTelemetryMeta = async (sessionId: string, mode: StudyMode | 'un
 
   if (inserts.length === 0) return;
 
-  const existingMeta = await fetchExistingMeta(sessionUuid);
-  const filteredInserts = inserts.filter((row) => !existingMeta.has(row.question_id));
-
-  if (filteredInserts.length === 0) {
-    sessionStorage.setItem(TELEMETRY_SAVED_KEY, 'true');
-    return;
-  }
-
   const { error } = await supabase
     .from('post_test_responses')
-    .insert(filteredInserts);
+    .insert(inserts);
 
   if (error) {
     console.error('Failed to store telemetry fallback:', error);
     return;
   }
 
-  sessionStorage.setItem(TELEMETRY_SAVED_KEY, 'true');
+  sessionStorage.setItem(TELEMETRY_LAST_SAVED_AT, Date.now().toString());
+  if (final) {
+    sessionStorage.setItem(TELEMETRY_SAVED_KEY, 'true');
+  }
 };

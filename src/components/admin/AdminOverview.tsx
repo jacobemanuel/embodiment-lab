@@ -104,8 +104,8 @@ interface StudyStats {
   educationBreakdown: { name: string; value: number }[];
   experienceBreakdown: { name: string; value: number }[];
   modeComparison: { name: string; count: number }[];
-  avatarTimeBySlide: { slide: string; avgTime: number; totalTime: number; count: number }[];
-  textTimeBySlide: { slide: string; avgTime: number; totalTime: number; count: number }[];
+  avatarTimeBySlide: { slideId: string; slide: string; avgTime: number; totalTime: number; count: number }[];
+  textTimeBySlide: { slideId: string; slide: string; avgTime: number; totalTime: number; count: number }[];
   pageTimeByPage: { page: string; avgTime: number; totalTime: number; count: number }[];
   avatarTimeData: AvatarTimeData[];
   pageTimeData: AvatarTimeData[];
@@ -564,19 +564,37 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         }
       });
 
+      const slideOrder = new Map<string, number>();
+      activeSlides.forEach((slide, index) => {
+        slideOrder.set(slide.slide_id, slide.sort_order ?? index);
+      });
+
+      const compareSlideOrder = (a: { slideId: string; slide: string }, b: { slideId: string; slide: string }) => {
+        const orderA = slideOrder.get(a.slideId);
+        const orderB = slideOrder.get(b.slideId);
+        if (orderA !== undefined && orderB !== undefined && orderA !== orderB) {
+          return orderA - orderB;
+        }
+        if (orderA !== undefined && orderB === undefined) return -1;
+        if (orderA === undefined && orderB !== undefined) return 1;
+        return a.slide.localeCompare(b.slide);
+      };
+
       const avatarTimeBySlide = Object.entries(avatarSlideMap).map(([slideId, data]) => ({
+        slideId,
         slide: data.title,
         avgTime: Math.round(data.total / data.count),
         totalTime: data.total,
         count: data.count,
-      })).sort((a, b) => a.slide.localeCompare(b.slide));
+      })).sort(compareSlideOrder);
 
       const textTimeBySlide = Object.entries(textSlideMap).map(([slideId, data]) => ({
+        slideId,
         slide: data.title,
         avgTime: Math.round(data.total / data.count),
         totalTime: data.total,
         count: data.count,
-      })).sort((a, b) => a.slide.localeCompare(b.slide));
+      })).sort(compareSlideOrder);
 
       const pageTimeMap: Record<string, { total: number; count: number; title: string }> = {};
       pageTimeEntries.forEach((entry) => {

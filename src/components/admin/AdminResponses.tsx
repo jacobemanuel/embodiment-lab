@@ -249,6 +249,16 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
         }
       });
 
+      Object.keys(preTestAggregated).forEach((questionId) => {
+        preTestAggregated[questionId] = mergeResponsesWithOptions(questionId, preTestAggregated[questionId]);
+      });
+      Object.keys(postTestAggregated).forEach((questionId) => {
+        postTestAggregated[questionId] = mergeResponsesWithOptions(questionId, postTestAggregated[questionId]);
+      });
+      Object.keys(demoAggregated).forEach((questionId) => {
+        demoAggregated[questionId] = mergeResponsesWithOptions(questionId, demoAggregated[questionId]);
+      });
+
       // Filter open feedback from post-test responses
       const openFeedback = (postTest || []).filter(r => {
         const question = questionData[r.question_id];
@@ -375,75 +385,91 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
   };
 
   const exportDemographicsCSV = async () => {
-    const questionIds = rawResponses.demo.map(r => r.question_id);
+    const questionIds = Object.keys(demographicsData);
     const questionInfo = await resolveQuestionInfo(questionIds);
-    const data = rawResponses.demo.map(r => ({
-      SessionID: r.session_id,
-      QuestionID: r.question_id,
-      Question: questionInfo[r.question_id]?.question_text || r.question_id,
-      Answer: r.answer
-    }));
-    downloadCSV(data, 'demographics_responses');
+    const data = questionIds.flatMap((questionId) => {
+      const responses = demographicsData[questionId] || [];
+      const total = responses.reduce((sum, r) => sum + r.count, 0);
+      return responses.map((r) => ({
+        QuestionID: questionId,
+        Question: questionInfo[questionId]?.question_text || questionId,
+        AnswerOption: r.answer,
+        Count: r.count,
+        TotalResponses: total,
+      }));
+    });
+    downloadCSV(data, 'demographics_summary');
   };
 
   const exportPreTestCSV = async () => {
-    const questionIds = rawResponses.pre.map(r => r.question_id);
+    const questionIds = Object.keys(preTestData);
     const questionInfo = await resolveQuestionInfo(questionIds);
-    const data = rawResponses.pre.map(r => {
-      const question = questionInfo[r.question_id];
+    const data = questionIds.flatMap((questionId) => {
+      const responses = preTestData[questionId] || [];
+      const question = questionInfo[questionId];
       const correctAnswer = question?.correct_answer || '';
-      return {
-        SessionID: r.session_id,
-        QuestionID: r.question_id,
-        Question: question?.question_text || r.question_id,
-        Answer: r.answer,
+      const total = responses.reduce((sum, r) => sum + r.count, 0);
+      return responses.map((r) => ({
+        QuestionID: questionId,
+        Question: question?.question_text || questionId,
+        AnswerOption: r.answer,
+        Count: r.count,
+        TotalResponses: total,
         CorrectAnswer: correctAnswer,
-        IsCorrect: correctAnswer ? (isAnswerCorrectWithInfo(question, r.answer) ? 'Yes' : 'No') : ''
-      };
+        IsCorrect: correctAnswer ? (isAnswerCorrectWithInfo(question, r.answer) ? 'Yes' : 'No') : '',
+      }));
     });
-    downloadCSV(data, 'pretest_responses');
+    downloadCSV(data, 'pretest_summary');
   };
 
   const exportPostTestKnowledgeCSV = async () => {
-    const questionIds = rawResponses.post.map(r => r.question_id);
+    const questionIds = Object.keys(postTestData);
     const questionInfo = await resolveQuestionInfo(questionIds);
-    const knowledgeResponses = rawResponses.post.filter(r => {
-      const question = questionInfo[r.question_id];
+    const knowledgeQuestions = questionIds.filter((questionId) => {
+      const question = questionInfo[questionId];
       if (question?.category === 'knowledge') return true;
       if (question?.correct_answer) return true;
-      return r.question_id.startsWith('knowledge-');
+      return questionId.startsWith('knowledge-');
     });
-    const data = knowledgeResponses.map(r => {
-      const question = questionInfo[r.question_id];
+    const data = knowledgeQuestions.flatMap((questionId) => {
+      const responses = postTestData[questionId] || [];
+      const question = questionInfo[questionId];
       const correctAnswer = question?.correct_answer || '';
-      return {
-        SessionID: r.session_id,
-        QuestionID: r.question_id,
-        Question: question?.question_text || r.question_id,
-        Answer: r.answer,
+      const total = responses.reduce((sum, r) => sum + r.count, 0);
+      return responses.map((r) => ({
+        QuestionID: questionId,
+        Question: question?.question_text || questionId,
+        AnswerOption: r.answer,
+        Count: r.count,
+        TotalResponses: total,
         CorrectAnswer: correctAnswer,
-        IsCorrect: correctAnswer ? (isAnswerCorrectWithInfo(question, r.answer) ? 'Yes' : 'No') : ''
-      };
+        IsCorrect: correctAnswer ? (isAnswerCorrectWithInfo(question, r.answer) ? 'Yes' : 'No') : '',
+      }));
     });
-    downloadCSV(data, 'posttest_knowledge_responses');
+    downloadCSV(data, 'posttest_knowledge_summary');
   };
 
   const exportPostTestPerceptionCSV = async () => {
-    const questionIds = rawResponses.post.map(r => r.question_id);
+    const questionIds = Object.keys(postTestData);
     const questionInfo = await resolveQuestionInfo(questionIds);
     const perceptionCategories = ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'];
-    const perceptionResponses = rawResponses.post.filter(r => {
-      const category = questionInfo[r.question_id]?.category;
+    const perceptionQuestions = questionIds.filter((questionId) => {
+      const category = questionInfo[questionId]?.category;
       return category && perceptionCategories.includes(category);
     });
-    const data = perceptionResponses.map(r => ({
-      SessionID: r.session_id,
-      QuestionID: r.question_id,
-      Category: questionInfo[r.question_id]?.category || '',
-      Question: questionInfo[r.question_id]?.question_text || r.question_id,
-      Answer: r.answer
-    }));
-    downloadCSV(data, 'posttest_perception_responses');
+    const data = perceptionQuestions.flatMap((questionId) => {
+      const responses = postTestData[questionId] || [];
+      const total = responses.reduce((sum, r) => sum + r.count, 0);
+      return responses.map((r) => ({
+        QuestionID: questionId,
+        Category: questionInfo[questionId]?.category || '',
+        Question: questionInfo[questionId]?.question_text || questionId,
+        AnswerOption: r.answer,
+        Count: r.count,
+        TotalResponses: total,
+      }));
+    });
+    downloadCSV(data, 'posttest_perception_summary');
   };
 
   const exportOpenFeedbackCSV = async () => {
@@ -568,6 +594,28 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
 
   const getQuestionText = (questionId: string): string => {
     return questionData[questionId]?.question_text || questionId;
+  };
+
+  const getQuestionOptions = (questionId: string): string[] => {
+    const options = questionData[questionId]?.question_meta?.options;
+    return Array.isArray(options) ? options : [];
+  };
+
+  const mergeResponsesWithOptions = (questionId: string, responses: ResponseData[]) => {
+    const options = getQuestionOptions(questionId);
+    if (!options.length) return responses;
+    const counts = new Map(responses.map(r => [r.answer, r.count]));
+    const merged = options.map(option => ({
+      question_id: questionId,
+      answer: option,
+      count: counts.get(option) ?? 0,
+    }));
+    responses.forEach((r) => {
+      if (!options.includes(r.answer)) {
+        merged.push(r);
+      }
+    });
+    return merged;
   };
 
   const isAnswerCorrect = (questionId: string, answer: string): boolean => {
@@ -735,11 +783,11 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
                 </Button>
                 <Button onClick={exportPostTestKnowledgeCSV} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
                   <FileSpreadsheet className="w-3 h-3" />
-                  Knowledge CSV
+                  Knowledge Summary CSV
                 </Button>
                 <Button onClick={exportPostTestPerceptionCSV} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
                   <FileSpreadsheet className="w-3 h-3" />
-                  Perception CSV
+                  Perception Summary CSV
                 </Button>
               </div>
             )}
@@ -776,7 +824,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             <h3 className="text-sm text-slate-400">Demographic responses ({sessionCount.completed} completed participants)</h3>
             {permissions.canExportData && (
               <Button onClick={exportDemographicsCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-                <FileSpreadsheet className="w-3 h-3" /> Export CSV
+                <FileSpreadsheet className="w-3 h-3" /> Summary CSV
               </Button>
             )}
           </div>
@@ -814,9 +862,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
                 });
                 
                 // Sort by AGE_ORDER
-                chartData = AGE_ORDER
-                  .filter(range => ageGroups[range] > 0)
-                  .map(range => ({ name: range, value: ageGroups[range] }));
+                chartData = AGE_ORDER.map(range => ({ name: range, value: ageGroups[range] || 0 }));
               } else {
                 chartData = responses.map(r => ({ name: r.answer, value: r.count }));
               }
@@ -867,7 +913,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             <h3 className="text-sm text-slate-400">Pre-test responses ({sessionCount.completed} completed participants)</h3>
             {permissions.canExportData && (
               <Button onClick={exportPreTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-                <FileSpreadsheet className="w-3 h-3" /> Export CSV
+                <FileSpreadsheet className="w-3 h-3" /> Summary CSV
               </Button>
             )}
           </div>
@@ -900,7 +946,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             </div>
             {permissions.canExportData && (
               <Button onClick={exportPostTestKnowledgeCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-                <FileSpreadsheet className="w-3 h-3" /> Export CSV
+                <FileSpreadsheet className="w-3 h-3" /> Summary CSV
               </Button>
             )}
           </div>
@@ -936,7 +982,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             </div>
             {permissions.canExportData && (
               <Button onClick={exportPostTestPerceptionCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-                <FileSpreadsheet className="w-3 h-3" /> Export CSV
+                <FileSpreadsheet className="w-3 h-3" /> Summary CSV
               </Button>
             )}
           </div>

@@ -1884,17 +1884,33 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
   }
 
   const sessionDurationSeconds = editDraft ? getSessionDurationSeconds(editDraft) : null;
+  const slideOrder = new Map<string, number>();
+  activeSlides.forEach((slide, index) => {
+    slideOrder.set(slide.slide_id, slide.sort_order ?? index);
+  });
+  const sortSlideGroups = (groups: Array<{ slideId: string; title: string }>) => {
+    return [...groups].sort((a, b) => {
+      const orderA = slideOrder.get(a.slideId);
+      const orderB = slideOrder.get(b.slideId);
+      if (orderA !== undefined && orderB !== undefined && orderA !== orderB) return orderA - orderB;
+      if (orderA !== undefined && orderB === undefined) return -1;
+      if (orderA === undefined && orderB !== undefined) return 1;
+      return a.title.localeCompare(b.title);
+    });
+  };
   const avatarGroupsForDetails = sessionDetails
-    ? buildAvatarGroups(
-        sessionDetails.avatarTimeTracking
-          .filter((entry) => !isPageId(entry.slide_id))
-          .map((entry) => ({
-            id: entry.id,
-            slide_id: entry.slide_id,
-            slide_title: entry.slide_title,
-            duration_seconds: entry.duration_seconds,
-          })),
-        resolveSlideGroupKey
+    ? sortSlideGroups(
+        buildAvatarGroups(
+          sessionDetails.avatarTimeTracking
+            .filter((entry) => !isPageId(entry.slide_id))
+            .map((entry) => ({
+              id: entry.id,
+              slide_id: entry.slide_id,
+              slide_title: entry.slide_title,
+              duration_seconds: entry.duration_seconds,
+            })),
+          resolveSlideGroupKey
+        )
       )
     : [];
   const pageGroupsForDetails = sessionDetails
@@ -1911,7 +1927,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       )
     : [];
   const avatarGroupsForEdit = editDraft
-    ? buildAvatarGroups(editDraft.avatarTimeTracking.filter((entry) => !isPageId(entry.slide_id)), resolveSlideGroupKey)
+    ? sortSlideGroups(
+        buildAvatarGroups(editDraft.avatarTimeTracking.filter((entry) => !isPageId(entry.slide_id)), resolveSlideGroupKey)
+      )
     : [];
   const pageGroupsForEdit = editDraft
     ? buildAvatarGroups(editDraft.avatarTimeTracking.filter((entry) => isPageId(entry.slide_id)), resolvePageGroupKey)
@@ -2693,6 +2711,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
               {avatarGroupsForDetails.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">Slide Time Breakdown</h3>
+                  <p className="text-xs text-slate-500 mb-2">
+                    Segments appear when a participant returns to the same slide (back/forward or refresh). Times are summed.
+                  </p>
                   <div className="bg-slate-900 p-4 rounded max-h-48 overflow-y-auto">
                     {avatarGroupsForDetails.map((group) => (
                       <div key={group.slideId} className="text-sm mb-2 pb-2 border-b border-slate-700 last:border-0">

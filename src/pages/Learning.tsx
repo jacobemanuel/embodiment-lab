@@ -17,6 +17,7 @@ import { saveTutorDialogue } from "@/lib/studyData";
 import { getTutorDialogueLog } from "@/lib/tutorDialogue";
 import { usePageTiming } from "@/hooks/usePageTiming";
 import { appendTimingEntry, saveTelemetryMeta } from "@/lib/sessionTelemetry";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Learning = () => {
   const { mode } = useParams<{ mode: StudyMode }>();
@@ -34,6 +35,7 @@ const Learning = () => {
   const textSlideStartRef = useRef<Date>(new Date());
   const textPrevSlideRef = useRef<Slide | null>(null);
   const textSlideSavedRef = useRef(false);
+  const isMobile = useIsMobile();
 
   // Set initial slide when slides are loaded
   useEffect(() => {
@@ -266,13 +268,15 @@ const Learning = () => {
         </div>
 
         {/* Chat/Avatar Panel - Right side (hidden on mobile when playground visible) */}
-        <div className={`hidden md:flex ${isPlaygroundVisible ? 'md:w-1/4' : 'md:w-1/3'} flex-col border-r border-border`}>
-          {isTextMode ? (
-            <TextModeChat currentSlide={currentSlide} />
-          ) : (
-            <AvatarModePanel currentSlide={currentSlide} onSlideChange={handleSlideChange} />
-          )}
-        </div>
+        {!isMobile && (
+          <div className={`${isPlaygroundVisible ? 'md:w-1/4' : 'md:w-1/3'} flex-col border-r border-border hidden md:flex`}>
+            {isTextMode ? (
+              <TextModeChat currentSlide={currentSlide} />
+            ) : (
+              <AvatarModePanel currentSlide={currentSlide} onSlideChange={handleSlideChange} />
+            )}
+          </div>
+        )}
 
         {/* AI Playground */}
         {isPlaygroundVisible && (
@@ -298,17 +302,19 @@ const Learning = () => {
         </Button>
 
         {/* Mobile Chat Panel - Bottom sheet style */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-1/2 bg-card border-t border-border z-40">
-          {isTextMode ? (
-            <TextModeChat currentSlide={currentSlide} />
-          ) : (
-            // To avoid creating TWO Anam clients at once, we only mount
-            // AvatarModePanel on desktop. On mobile we show an info message.
-            <div className="h-full flex items-center justify-center px-4 text-sm text-muted-foreground text-center">
-              Avatar Mode is currently available on larger screens. Please use a desktop or tablet for the full avatar experience.
-            </div>
-          )}
-        </div>
+        {isMobile && (
+          <div className="fixed bottom-0 left-0 right-0 h-1/2 bg-card border-t border-border z-40 md:hidden">
+            {isTextMode ? (
+              <TextModeChat currentSlide={currentSlide} />
+            ) : (
+              // To avoid creating TWO Anam clients at once, we only mount
+              // AvatarModePanel on desktop. On mobile we show an info message.
+              <div className="h-full flex items-center justify-center px-4 text-sm text-muted-foreground text-center">
+                Avatar Mode is currently available on larger screens. Please use a desktop or tablet for the full avatar experience.
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

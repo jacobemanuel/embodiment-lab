@@ -83,6 +83,12 @@ const PostTestPage1 = () => {
       text: normalizePostTestText(q.text),
     }));
 
+  // Filter for likert questions with all perception-related categories (exclude knowledge and open_feedback)
+  const likertQuestions = filteredQuestions.filter(q => 
+    q.type === 'likert' && 
+    ['trust', 'engagement', 'satisfaction', 'expectations', 'avatar-qualities', 'realism'].includes(q.category || '')
+  );
+
   useEffect(() => {
     if (likertQuestions.length === 0) return;
     const snapshot = likertQuestions.map((q) => ({
@@ -95,12 +101,6 @@ const PostTestPage1 = () => {
     updateQuestionSnapshot('postTestQuestionsSnapshot', snapshot);
   }, [likertQuestions]);
 
-  // Filter for likert questions with all perception-related categories (exclude knowledge and open_feedback)
-  const likertQuestions = filteredQuestions.filter(q => 
-    q.type === 'likert' && 
-    ['trust', 'engagement', 'satisfaction', 'expectations', 'avatar-qualities', 'realism'].includes(q.category || '')
-  );
-  
   const allQuestionsAnswered = likertQuestions.length > 0 && likertQuestions.every(q => responses[q.id]);
   const progress = likertQuestions.length > 0 ? Object.keys(responses).length / likertQuestions.length * 100 : 0;
 

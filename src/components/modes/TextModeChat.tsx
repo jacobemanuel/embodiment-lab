@@ -77,10 +77,12 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
 
     const slideId = currentSlide.id;
     const slideTitle = currentSlide.title;
-    aiResponseTimestampRef.current = Date.now();
     lastAiUpsertAtRef.current = 0;
+    const userTimestamp = Date.now();
+    const aiTimestampSeed = userTimestamp + 1;
+    aiResponseTimestampRef.current = aiTimestampSeed;
     
-    const userMsg: Message = { role: 'user', content: userMessage, timestamp: Date.now() };
+    const userMsg: Message = { role: 'user', content: userMessage, timestamp: userTimestamp };
     setMessages(prev => [...prev, userMsg]);
     appendTutorDialogue({
       role: 'user',
@@ -118,7 +120,7 @@ IMPORTANT: Focus your responses on this specific slide topic. If the user asks w
           aiResponseTimestampRef.current = aiTimestamp;
           setMessages(prev => {
             const last = prev[prev.length - 1];
-            if (last?.role === 'ai' && last.timestamp > userMsg.timestamp) {
+            if (last?.role === 'ai' && last.timestamp === aiTimestamp) {
               return [...prev.slice(0, -1), { role: 'ai' as const, content: aiResponse, timestamp: last.timestamp }];
             }
             return [...prev, { role: 'ai' as const, content: aiResponse, timestamp: aiTimestamp }];

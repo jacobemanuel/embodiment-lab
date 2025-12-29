@@ -244,6 +244,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('completed');
   const [activeSlideCount, setActiveSlideCount] = useState(0);
   const [includeFlagged, setIncludeFlagged] = useState(false);
+  const [likertView, setLikertView] = useState<'overall' | 'text' | 'avatar' | 'both'>('overall');
 
   const fetchStats = useCallback(async () => {
     setIsRefreshing(true);
@@ -3530,7 +3531,18 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                <Select value={likertView} onValueChange={(value) => setLikertView(value as 'overall' | 'text' | 'avatar' | 'both')}>
+                  <SelectTrigger className="w-[140px] bg-slate-900 border-slate-600 h-7 text-xs">
+                    <SelectValue placeholder="View mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="overall">Overall</SelectItem>
+                    <SelectItem value="text">Text only</SelectItem>
+                    <SelectItem value="avatar">Avatar only</SelectItem>
+                    <SelectItem value="both">Both modes</SelectItem>
+                  </SelectContent>
+                </Select>
                 <ExportButton onClick={exportLikertCSV} label="CSV" size="xs" canExport={permissions.canExportData} />
                 <ExportButton onClick={exportLikertByModeCSV} label="By Mode" size="xs" canExport={permissions.canExportData} />
               </div>
@@ -3544,7 +3556,8 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               {/* Overall Summary by Category */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {(['trust', 'engagement', 'satisfaction'] as const).map(category => {
-                  const categoryData = stats.likertAnalysis.filter(l => l.category === category);
+                  const currentLikert = likertView === 'overall' ? stats.likertAnalysis : stats.likertByMode[likertView];
+                  const categoryData = currentLikert.filter(l => l.category === category);
                   const avgMean = categoryData.length > 0
                     ? Math.round((categoryData.reduce((sum, l) => sum + l.mean, 0) / categoryData.length) * 100) / 100
                     : 0;
@@ -3557,10 +3570,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   };
                   const colors = categoryColors[category];
                   
-                  return (
-                    <div key={category} className={`${colors.bg} border ${colors.border} rounded-lg p-4`}>
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
+                    return (
+                      <div key={category} className={`${colors.bg} border ${colors.border} rounded-lg p-4`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
                           <span className={`text-sm font-medium ${colors.text} capitalize`}>{category}</span>
                         </div>
@@ -3574,13 +3587,14 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                       <p className="text-xs text-slate-500 mt-2">
                         {avgMean >= 4 ? 'Very positive' : avgMean >= 3 ? 'Moderately positive' : avgMean >= 2 ? 'Neutral' : 'Needs improvement'}
                       </p>
-                    </div>
-                  );
-                })}
+                      </div>
+                    );
+                  })}
               </div>
 
               {/* By Mode Comparison */}
-              <div className="border-t border-slate-700 pt-4">
+              {likertView === 'overall' && (
+                <div className="border-t border-slate-700 pt-4">
                 <h4 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
                   Perception by Learning Mode
                   <TooltipProvider>
@@ -3646,13 +3660,14 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                     );
                   })}
                 </div>
-              </div>
+                </div>
+              )}
 
               {/* Individual Questions */}
               <div className="border-t border-slate-700 pt-4">
                 <h4 className="text-sm font-medium text-slate-300 mb-4">Individual Question Responses</h4>
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                  {stats.likertAnalysis.map(l => {
+                  {(likertView === 'overall' ? stats.likertAnalysis : stats.likertByMode[likertView]).map(l => {
                     const categoryColors = {
                       trust: 'border-l-blue-500',
                       engagement: 'border-l-green-500',

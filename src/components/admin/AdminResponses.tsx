@@ -404,6 +404,18 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
     downloadCSV(data, 'demographics_summary');
   };
 
+  const exportDemographicsRawCSV = async () => {
+    const questionIds = rawResponses.demo.map(r => r.question_id);
+    const questionInfo = await resolveQuestionInfo(questionIds);
+    const data = rawResponses.demo.map(r => ({
+      SessionID: r.session_id,
+      QuestionID: r.question_id,
+      Question: questionInfo[r.question_id]?.question_text || r.question_id,
+      Answer: r.answer,
+    }));
+    downloadCSV(data, 'demographics_raw');
+  };
+
   const exportPreTestCSV = async () => {
     const questionIds = Object.keys(preTestData);
     const questionInfo = await resolveQuestionInfo(questionIds);
@@ -423,6 +435,24 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       }));
     });
     downloadCSV(data, 'pretest_summary');
+  };
+
+  const exportPreTestRawCSV = async () => {
+    const questionIds = rawResponses.pre.map(r => r.question_id);
+    const questionInfo = await resolveQuestionInfo(questionIds);
+    const data = rawResponses.pre.map(r => {
+      const question = questionInfo[r.question_id];
+      const correctAnswer = question?.correct_answer || '';
+      return {
+        SessionID: r.session_id,
+        QuestionID: r.question_id,
+        Question: question?.question_text || r.question_id,
+        Answer: r.answer,
+        CorrectAnswer: correctAnswer,
+        IsCorrect: correctAnswer ? (isAnswerCorrectWithInfo(question, r.answer) ? 'Yes' : 'No') : '',
+      };
+    });
+    downloadCSV(data, 'pretest_raw');
   };
 
   const exportPostTestKnowledgeCSV = async () => {
@@ -452,6 +482,30 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
     downloadCSV(data, 'posttest_knowledge_summary');
   };
 
+  const exportPostTestKnowledgeRawCSV = async () => {
+    const questionIds = rawResponses.post.map(r => r.question_id);
+    const questionInfo = await resolveQuestionInfo(questionIds);
+    const knowledgeResponses = rawResponses.post.filter(r => {
+      const question = questionInfo[r.question_id];
+      if (question?.category === 'knowledge') return true;
+      if (question?.correct_answer) return true;
+      return r.question_id.startsWith('knowledge-');
+    });
+    const data = knowledgeResponses.map(r => {
+      const question = questionInfo[r.question_id];
+      const correctAnswer = question?.correct_answer || '';
+      return {
+        SessionID: r.session_id,
+        QuestionID: r.question_id,
+        Question: question?.question_text || r.question_id,
+        Answer: r.answer,
+        CorrectAnswer: correctAnswer,
+        IsCorrect: correctAnswer ? (isAnswerCorrectWithInfo(question, r.answer) ? 'Yes' : 'No') : '',
+      };
+    });
+    downloadCSV(data, 'posttest_knowledge_raw');
+  };
+
   const exportPostTestPerceptionCSV = async () => {
     const questionIds = Object.keys(postTestData);
     const questionInfo = await resolveQuestionInfo(questionIds);
@@ -473,6 +527,24 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       }));
     });
     downloadCSV(data, 'posttest_perception_summary');
+  };
+
+  const exportPostTestPerceptionRawCSV = async () => {
+    const questionIds = rawResponses.post.map(r => r.question_id);
+    const questionInfo = await resolveQuestionInfo(questionIds);
+    const perceptionCategories = ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'];
+    const perceptionResponses = rawResponses.post.filter(r => {
+      const category = questionInfo[r.question_id]?.category;
+      return category && perceptionCategories.includes(category);
+    });
+    const data = perceptionResponses.map(r => ({
+      SessionID: r.session_id,
+      QuestionID: r.question_id,
+      Category: questionInfo[r.question_id]?.category || '',
+      Question: questionInfo[r.question_id]?.question_text || r.question_id,
+      Answer: r.answer,
+    }));
+    downloadCSV(data, 'posttest_perception_raw');
   };
 
   const exportOpenFeedbackCSV = async () => {
@@ -835,9 +907,14 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
           <div className="flex justify-between items-center">
             <h3 className="text-sm text-slate-400">Demographic responses ({sessionCount.completed} completed participants)</h3>
             {permissions.canExportData && (
-              <Button onClick={exportDemographicsCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-                <FileSpreadsheet className="w-3 h-3" /> Summary CSV
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={exportDemographicsCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                  <FileSpreadsheet className="w-3 h-3" /> Summary CSV
+                </Button>
+                <Button onClick={exportDemographicsRawCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                  <FileSpreadsheet className="w-3 h-3" /> Raw CSV
+                </Button>
+              </div>
             )}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -924,9 +1001,14 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
           <div className="flex justify-between items-center">
             <h3 className="text-sm text-slate-400">Pre-test responses ({sessionCount.completed} completed participants)</h3>
             {permissions.canExportData && (
-              <Button onClick={exportPreTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-                <FileSpreadsheet className="w-3 h-3" /> Summary CSV
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={exportPreTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                  <FileSpreadsheet className="w-3 h-3" /> Summary CSV
+                </Button>
+                <Button onClick={exportPreTestRawCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                  <FileSpreadsheet className="w-3 h-3" /> Raw CSV
+                </Button>
+              </div>
             )}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -957,9 +1039,14 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
               <h3 className="text-sm text-slate-400">Knowledge Check Questions ({sessionCount.completed} completed participants)</h3>
             </div>
             {permissions.canExportData && (
-              <Button onClick={exportPostTestKnowledgeCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-                <FileSpreadsheet className="w-3 h-3" /> Summary CSV
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={exportPostTestKnowledgeCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                  <FileSpreadsheet className="w-3 h-3" /> Summary CSV
+                </Button>
+                <Button onClick={exportPostTestKnowledgeRawCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                  <FileSpreadsheet className="w-3 h-3" /> Raw CSV
+                </Button>
+              </div>
             )}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -993,9 +1080,14 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
               <h3 className="text-sm text-slate-400">Perception & Experience Questions ({sessionCount.completed} completed participants)</h3>
             </div>
             {permissions.canExportData && (
-              <Button onClick={exportPostTestPerceptionCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
-                <FileSpreadsheet className="w-3 h-3" /> Summary CSV
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={exportPostTestPerceptionCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                  <FileSpreadsheet className="w-3 h-3" /> Summary CSV
+                </Button>
+                <Button onClick={exportPostTestPerceptionRawCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                  <FileSpreadsheet className="w-3 h-3" /> Raw CSV
+                </Button>
+              </div>
             )}
           </div>
           

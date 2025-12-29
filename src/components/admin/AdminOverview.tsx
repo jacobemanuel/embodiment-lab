@@ -610,12 +610,43 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         }
       });
 
-      const pageTimeByPage = Object.entries(pageTimeMap).map(([pageId, data]) => ({
-        page: data.title,
-        avgTime: Math.round(data.total / data.count),
-        totalTime: data.total,
-        count: data.count,
-      })).sort((a, b) => a.page.localeCompare(b.page));
+      const pageOrder = new Map<string, number>([
+        ['page:welcome', 0],
+        ['page:consent', 1],
+        ['page:study-entry-text', 2],
+        ['page:study-entry-avatar', 3],
+        ['page:mode-assignment', 4],
+        ['page:demographics', 5],
+        ['page:pre-test', 6],
+        ['page:learning-text', 7],
+        ['page:learning-avatar', 8],
+        ['page:post-test-1', 9],
+        ['page:post-test-2', 10],
+        ['page:post-test-3', 11],
+        ['page:completion', 12],
+        ['page:scenario', 13],
+        ['page:scenario-feedback', 14],
+      ]);
+
+      const pageTimeByPage = Object.entries(pageTimeMap)
+        .map(([pageId, data]) => ({
+          pageId,
+          page: data.title,
+          avgTime: Math.round(data.total / data.count),
+          totalTime: data.total,
+          count: data.count,
+        }))
+        .sort((a, b) => {
+          const orderA = pageOrder.get(a.pageId);
+          const orderB = pageOrder.get(b.pageId);
+          if (orderA !== undefined && orderB !== undefined && orderA !== orderB) {
+            return orderA - orderB;
+          }
+          if (orderA !== undefined && orderB === undefined) return -1;
+          if (orderA === undefined && orderB !== undefined) return 1;
+          return a.page.localeCompare(b.page);
+        })
+        .map(({ pageId, ...rest }) => rest);
 
       // Sessions per day
       const sessionsByDay: Record<string, number> = {};

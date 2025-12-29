@@ -12,6 +12,7 @@ interface QuestionModePerformance {
   questionId: string;
   questionText: string;
   questionType: 'pre_test' | 'post_test';
+  sortOrder: number;
   textCorrectRate: number;
   avatarCorrectRate: number;
   textResponses: number;
@@ -70,7 +71,7 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
       // Fetch questions with correct answers
       const { data: questions } = await supabase
         .from('study_questions')
-        .select('question_id, question_text, correct_answer, question_type')
+        .select('question_id, question_text, correct_answer, question_type, sort_order')
         .eq('is_active', true)
         .in('question_type', ['pre_test', 'post_test']);
 
@@ -135,6 +136,7 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
           questionId: qId,
           questionText: question.question_text,
           questionType: question.question_type.includes('pre') ? 'pre_test' : 'post_test',
+          sortOrder: typeof question.sort_order === 'number' ? question.sort_order : 0,
           textCorrectRate: textRate,
           avatarCorrectRate: avatarRate,
           textResponses: stats.textTotal,
@@ -144,10 +146,17 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
         });
       });
 
-      // Sort by difference (biggest avatar advantage first)
-      result.sort((a, b) => b.difference - a.difference);
+      const sortedByOrder = [...result].sort((a, b) => {
+        if (a.questionType !== b.questionType) {
+          return a.questionType === 'pre_test' ? -1 : 1;
+        }
+        if (a.sortOrder !== b.sortOrder) {
+          return a.sortOrder - b.sortOrder;
+        }
+        return a.questionId.localeCompare(b.questionId);
+      });
 
-      setData(result);
+      setData(sortedByOrder);
     } catch (error) {
       console.error('Error fetching question performance by mode:', error);
     } finally {

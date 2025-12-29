@@ -32,6 +32,7 @@ interface QuestionData {
   question_type: string;
   category: string | null;
   question_meta?: Record<string, any> | null;
+  sort_order?: number | null;
 }
 
 type ModeFilter = 'all' | 'text' | 'avatar';
@@ -65,7 +66,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       // Only fetch ACTIVE questions - hidden/disabled questions should not appear in stats
       const { data } = await supabase
         .from('study_questions')
-        .select('question_id, question_text, correct_answer, question_type, category, question_meta, is_active')
+        .select('question_id, question_text, correct_answer, question_type, category, question_meta, sort_order, is_active')
         .eq('is_active', true);
       
       const questions: Record<string, QuestionData> = {};
@@ -77,7 +78,8 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
           correct_answer: q.correct_answer,
           question_type: q.question_type,
           category: q.category,
-          question_meta: meta
+          question_meta: meta,
+          sort_order: q.sort_order ?? null,
         };
       });
       setQuestionData(questions);
@@ -330,7 +332,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
     if (missingIds.length > 0) {
       const { data } = await supabase
         .from('study_questions')
-        .select('question_id, question_text, correct_answer, question_type, category, question_meta')
+        .select('question_id, question_text, correct_answer, question_type, category, question_meta, sort_order')
         .in('question_id', missingIds);
 
       data?.forEach((q) => {
@@ -342,6 +344,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
           question_type: q.question_type,
           category: q.category,
           question_meta: meta,
+          sort_order: q.sort_order ?? null,
         };
       });
     }
@@ -644,14 +647,23 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
   };
 
   // Separate post-test questions by category
-  const knowledgeQuestions = Object.entries(postTestData).filter(([qId]) => 
-    questionData[qId]?.category === 'knowledge' || qId.startsWith('knowledge-')
-  );
+  const sortByQuestionOrder = ([idA]: [string, ResponseData[]], [idB]: [string, ResponseData[]]) => {
+    const orderA = questionData[idA]?.sort_order ?? Number.MAX_SAFE_INTEGER;
+    const orderB = questionData[idB]?.sort_order ?? Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) return orderA - orderB;
+    return idA.localeCompare(idB);
+  };
+
+  const knowledgeQuestions = Object.entries(postTestData)
+    .filter(([qId]) => questionData[qId]?.category === 'knowledge' || qId.startsWith('knowledge-'))
+    .sort(sortByQuestionOrder);
   
-  const perceptionQuestions = Object.entries(postTestData).filter(([qId]) => {
-    const category = questionData[qId]?.category;
-    return category && ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'].includes(category);
-  });
+  const perceptionQuestions = Object.entries(postTestData)
+    .filter(([qId]) => {
+      const category = questionData[qId]?.category;
+      return category && ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'].includes(category);
+    })
+    .sort(sortByQuestionOrder);
 
   if (isLoading) {
     return (

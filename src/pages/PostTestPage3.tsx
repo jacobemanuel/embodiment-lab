@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import logo from "@/assets/logo-white.png";
 import { useStudyQuestions } from "@/hooks/useStudyQuestions";
-import { savePostTestResponses, completeStudySession, saveTutorDialogue } from "@/lib/studyData";
+import { savePostTestResponses, completeStudySession } from "@/lib/studyData";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, MessageSquare, ChevronLeft } from "lucide-react";
 import { VerticalProgressBar } from "@/components/VerticalProgressBar";
@@ -14,7 +14,6 @@ import { useStudyFlowGuard } from "@/hooks/useStudyFlowGuard";
 import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
 import { StudyMode } from "@/types/study";
-import { getTutorDialogueLog } from "@/lib/tutorDialogue";
 import { saveTelemetryMeta } from "@/lib/sessionTelemetry";
 import { usePageTiming } from "@/hooks/usePageTiming";
 import { updateQuestionSnapshot } from "@/lib/questionSnapshots";
@@ -154,28 +153,9 @@ const PostTestPage3 = () => {
           ...responses
         };
         
-        await savePostTestResponses(sessionId, allResponses);
-
-        const dialogueAlreadySaved = sessionStorage.getItem('tutorDialogueSaved') === 'true';
-        if (!dialogueAlreadySaved) {
-          const dialogueLog = getTutorDialogueLog().map(({ role, content, timestamp, slideId, slideTitle }) => ({
-            role,
-            content,
-            timestamp,
-            slideId,
-            slideTitle,
-          }));
-          const studyMode = (sessionStorage.getItem('studyMode') as StudyMode) || 'text';
-          if (dialogueLog.length > 0) {
-            try {
-              await saveTutorDialogue(sessionId, studyMode, dialogueLog);
-              sessionStorage.setItem('tutorDialogueSaved', 'true');
-            } catch (dialogueError) {
-              console.error('Failed to save tutor dialogue:', dialogueError);
-            }
-          }
-        }
         const studyMode = (sessionStorage.getItem('studyMode') as StudyMode) || 'text';
+        await savePostTestResponses(sessionId, allResponses, { includeTelemetry: true, mode: studyMode });
+        sessionStorage.setItem('tutorDialogueSaved', 'true');
         await saveTelemetryMeta(sessionId, studyMode, { final: true });
         await completeStudySession(sessionId);
         

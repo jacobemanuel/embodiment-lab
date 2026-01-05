@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { StudyMode } from "@/types/study";
+import { getTimingLog, META_DIALOGUE_ID, META_TIMING_ID } from "@/lib/sessionTelemetry";
+import { getTutorDialogueLog } from "@/lib/tutorDialogue";
 
 const resolveSessionUuid = async (sessionId: string) => {
   const { data, error } = await supabase
@@ -257,18 +259,99 @@ export const saveScenarioData = async (
   }
 };
 
-export const savePostTestResponses = async (sessionId: string, responses: Record<string, string>) => {
+type SavePostTestOptions = {
+  includeTelemetry?: boolean;
+  mode?: StudyMode;
+};
+
+export const savePostTestResponses = async (
+  sessionId: string,
+  responses: Record<string, string>,
+  options: SavePostTestOptions = {}
+) => {
   const postTestResponses = Object.entries(responses).map(([questionId, answer]) => ({
     questionId,
     answer
   }));
+  const telemetryResponses: Array<{ questionId: string; answer: string }> = [];
+
+  if (options.includeTelemetry) {
+    const capturedAt = new Date().toISOString();
+    const timingEntries = getTimingLog();
+    const dialogueEntries = getTutorDialogueLog();
+    const studyMode =
+      options.mode ||
+      (typeof sessionStorage !== 'undefined'
+        ? (sessionStorage.getItem('studyMode') as StudyMode)
+        : undefined) ||
+      'text';
+    const chunkLimit = 1800;
+    const chunkPayload = (baseId: string, payload: string) => {
+      if (payload.length <= chunkLimit) {
+        return [{ questionId: baseId, answer: payload }];
+      }
+      const batchId = Date.now().toString(36);
+      const chunks: Array<{ questionId: string; answer: string }> = [];
+      for (let i = 0; i < payload.length; i += chunkLimit) {
+        const partIndex = Math.floor(i / chunkLimit) + 1;
+        chunks.push({
+          questionId: `${baseId}__batch_${batchId}__part_${partIndex}`,
+          answer: payload.slice(i, i + chunkLimit),
+        });
+      }
+      return chunks;
+    };
+
+    if (timingEntries.length > 0) {
+      const payload = JSON.stringify({
+        version: 1,
+        capturedAt,
+        mode: studyMode,
+        entries: timingEntries,
+      });
+      telemetryResponses.push(...chunkPayload(META_TIMING_ID, payload));
+    }
+
+    if (dialogueEntries.length > 0) {
+      const sanitizedDialogue = dialogueEntries
+        .filter((msg) => msg && (msg.role === 'ai' || msg.role === 'user') && msg.content?.trim())
+        .slice(-500)
+        .map((msg) => ({
+          role: msg.role,
+          content: msg.content.trim().slice(0, 10000),
+          timestamp: typeof msg.timestamp === 'number' ? msg.timestamp : Date.now(),
+          slideId: msg.slideId ? msg.slideId.slice(0, 100) : undefined,
+          slideTitle: msg.slideTitle ? msg.slideTitle.slice(0, 300) : undefined,
+          mode: msg.mode || studyMode,
+        }));
+
+      if (sanitizedDialogue.length > 0) {
+        const payload = JSON.stringify({
+          version: 1,
+          capturedAt,
+          mode: studyMode,
+          messages: sanitizedDialogue,
+        });
+        telemetryResponses.push(...chunkPayload(META_DIALOGUE_ID, payload));
+      }
+    }
+  }
+
+  const maxEdgeResponses = 200;
+  if (telemetryResponses.length > 0 && postTestResponses.length + telemetryResponses.length > maxEdgeResponses) {
+    const metaMap = Object.fromEntries(
+      telemetryResponses.map((entry) => [entry.questionId, entry.answer])
+    );
+    await fallbackSavePostTest(sessionId, { ...responses, ...metaMap });
+    return;
+  }
 
   try {
     const { data, error } = await supabase.functions.invoke('save-study-data', {
       body: {
         action: 'save_post_test',
         sessionId,
-        postTestResponses,
+        postTestResponses: [...postTestResponses, ...telemetryResponses],
       }
     });
 
@@ -276,7 +359,14 @@ export const savePostTestResponses = async (sessionId: string, responses: Record
     if (data?.error) throw new Error(data.error);
   } catch (error) {
     console.warn('save-study-data save_post_test failed, falling back to direct insert:', error);
-    await fallbackSavePostTest(sessionId, responses);
+    if (telemetryResponses.length > 0) {
+      const metaMap = Object.fromEntries(
+        telemetryResponses.map((entry) => [entry.questionId, entry.answer])
+      );
+      await fallbackSavePostTest(sessionId, { ...responses, ...metaMap });
+    } else {
+      await fallbackSavePostTest(sessionId, responses);
+    }
   }
 };
 
@@ -294,6 +384,32 @@ export const completeStudySession = async (sessionId: string) => {
   }
 };
 
+const MAX_DIALOGUE_ENTRIES = 500;
+const MAX_DIALOGUE_CONTENT = 10000;
+const MAX_DIALOGUE_SLIDE_ID = 100;
+const MAX_DIALOGUE_SLIDE_TITLE = 300;
+const DIALOGUE_EDGE_DISABLED_KEY = 'dialogueEdgeDisabled';
+
+const sanitizeTutorDialogue = (
+  messages: Array<{
+    role: 'ai' | 'user';
+    content: string;
+    timestamp?: number;
+    slideId?: string;
+    slideTitle?: string;
+  }>
+) =>
+  (messages || [])
+    .filter((msg) => msg && (msg.role === 'ai' || msg.role === 'user') && msg.content?.trim())
+    .slice(-MAX_DIALOGUE_ENTRIES)
+    .map((msg) => ({
+      role: msg.role,
+      content: msg.content.trim().slice(0, MAX_DIALOGUE_CONTENT),
+      timestamp: typeof msg.timestamp === 'number' ? msg.timestamp : Date.now(),
+      slideId: msg.slideId ? msg.slideId.slice(0, MAX_DIALOGUE_SLIDE_ID) : undefined,
+      slideTitle: msg.slideTitle ? msg.slideTitle.slice(0, MAX_DIALOGUE_SLIDE_TITLE) : undefined,
+    }));
+
 export const saveTutorDialogue = async (
   sessionId: string,
   mode: StudyMode,
@@ -305,16 +421,38 @@ export const saveTutorDialogue = async (
     slideTitle?: string;
   }>
 ) => {
-  if (!messages || messages.length === 0) return;
-  const { data, error } = await supabase.functions.invoke('save-study-data', {
-    body: {
-      action: 'save_tutor_dialogue',
-      sessionId,
-      mode,
-      messages,
+  const sanitized = sanitizeTutorDialogue(messages);
+  if (!sanitized.length) return;
+  if (sessionStorage.getItem(DIALOGUE_EDGE_DISABLED_KEY) === 'true') {
+    try {
+      const { saveTelemetryMeta } = await import('@/lib/sessionTelemetry');
+      await saveTelemetryMeta(sessionId, mode, { final: false });
+    } catch (fallbackError) {
+      console.error('Failed to store tutor dialogue fallback:', fallbackError);
     }
-  });
+    return;
+  }
 
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
+  try {
+    const { data, error } = await supabase.functions.invoke('save-study-data', {
+      body: {
+        action: 'save_tutor_dialogue',
+        sessionId,
+        mode,
+        messages: sanitized,
+      }
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+  } catch (error) {
+    console.warn('save-study-data save_tutor_dialogue failed, using telemetry fallback:', error);
+    sessionStorage.setItem(DIALOGUE_EDGE_DISABLED_KEY, 'true');
+    try {
+      const { saveTelemetryMeta } = await import('@/lib/sessionTelemetry');
+      await saveTelemetryMeta(sessionId, mode, { final: false });
+    } catch (fallbackError) {
+      console.error('Failed to store tutor dialogue fallback:', fallbackError);
+    }
+  }
 };

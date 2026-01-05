@@ -6,6 +6,7 @@ import { useState } from "react";
 import logo from "@/assets/logo-white.png";
 import { postTestQuestions } from "@/data/postTestQuestions";
 import { savePostTestResponses, completeStudySession } from "@/lib/studyData";
+import { StudyMode } from "@/types/study";
 import { useToast } from "@/hooks/use-toast";
 import { LikertScale } from "@/components/LikertScale";
 
@@ -25,7 +26,8 @@ const PostTest = () => {
         const sessionId = sessionStorage.getItem('sessionId');
         if (!sessionId) throw new Error('Session not found');
         
-        await savePostTestResponses(sessionId, responses);
+        const studyMode = (sessionStorage.getItem('studyMode') as StudyMode) || 'text';
+        await savePostTestResponses(sessionId, responses, { includeTelemetry: true, mode: studyMode });
         await completeStudySession(sessionId);
         
         navigate("/completion");

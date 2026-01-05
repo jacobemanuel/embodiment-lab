@@ -22,6 +22,9 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
   const isFirstSlide = currentSlide.id === 'intro' || currentSlide.id === 'slide-1';
   const aiResponseTimestampRef = useRef<number | null>(null);
   const lastAiUpsertAtRef = useRef(0);
+  const sendInFlightRef = useRef(false);
+  const lastAnnouncementRef = useRef<{ key: string; at: number } | null>(null);
+  const ANNOUNCEMENT_COOLDOWN_MS = 1500;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -32,45 +35,81 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
     if (prevSlideRef.current !== currentSlide.id) {
       const isInitialLoad = prevSlideRef.current === null;
       prevSlideRef.current = currentSlide.id;
+      const now = Date.now();
+      const announcementKey = `${currentSlide.id}:${isInitialLoad ? 'greeting' : 'update'}`;
+      if (
+        lastAnnouncementRef.current &&
+        lastAnnouncementRef.current.key === announcementKey &&
+        now - lastAnnouncementRef.current.at < ANNOUNCEMENT_COOLDOWN_MS
+      ) {
+        return;
+      }
+      lastAnnouncementRef.current = { key: announcementKey, at: now };
       
       if (isInitialLoad && isFirstSlide) {
         // First slide greeting - like Avatar
         const greeting = `Hey! Nice to see you! 👋 I'm Alex, your AI tutor for learning about AI image generation. We're starting with \"${currentSlide.title}\" - feel free to ask me anything!`;
-        setMessages([{
-          role: 'ai',
-          content: greeting,
-          timestamp: Date.now()
-        }]);
-        appendTutorDialogue({
-          role: 'ai',
-          content: greeting,
-          timestamp: Date.now(),
-          slideId: currentSlide.id,
-          slideTitle: currentSlide.title,
-          mode: 'text',
+        const greetingTimestamp = Date.now();
+        let shouldAppend = true;
+        setMessages((prev) => {
+          if (
+            prev.length > 0 &&
+            prev[0]?.role === 'ai' &&
+            prev[0]?.content === greeting
+          ) {
+            shouldAppend = false;
+            return prev;
+          }
+          return [{
+            role: 'ai',
+            content: greeting,
+            timestamp: greetingTimestamp
+          }];
         });
+        if (shouldAppend) {
+          appendTutorDialogue({
+            role: 'ai',
+            content: greeting,
+            timestamp: greetingTimestamp,
+            slideId: currentSlide.id,
+            slideTitle: currentSlide.title,
+            mode: 'text',
+          });
+        }
       } else if (!isInitialLoad) {
         // Subsequent slides - context continuation like Avatar
         const updateMessage = `Alright, now we're on \"${currentSlide.title}\". Need help understanding anything here?`;
-        setMessages(prev => [...prev, {
-          role: 'ai',
-          content: updateMessage,
-          timestamp: Date.now()
-        }]);
-        appendTutorDialogue({
-          role: 'ai',
-          content: updateMessage,
-          timestamp: Date.now(),
-          slideId: currentSlide.id,
-          slideTitle: currentSlide.title,
-          mode: 'text',
+        const updateTimestamp = Date.now();
+        let shouldAppend = true;
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === 'ai' && last.content === updateMessage) {
+            shouldAppend = false;
+            return prev;
+          }
+          return [...prev, {
+            role: 'ai',
+            content: updateMessage,
+            timestamp: updateTimestamp
+          }];
         });
+        if (shouldAppend) {
+          appendTutorDialogue({
+            role: 'ai',
+            content: updateMessage,
+            timestamp: updateTimestamp,
+            slideId: currentSlide.id,
+            slideTitle: currentSlide.title,
+            mode: 'text',
+          });
+        }
       }
     }
   }, [currentSlide, isFirstSlide]);
 
   const handleSend = async () => {
-    if (!input.trim() || isStreaming) return;
+    if (!input.trim() || isStreaming || sendInFlightRef.current) return;
+    sendInFlightRef.current = true;
 
     const userMessage = input;
     setInput("");
@@ -97,6 +136,12 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
     let aiResponse = "";
 
     const aiResponseTimestamp = aiResponseTimestampRef.current;
+    const finishStreaming = () => {
+      aiResponseTimestampRef.current = null;
+      lastAiUpsertAtRef.current = 0;
+      sendInFlightRef.current = false;
+      setIsStreaming(false);
+    };
 
     // Build message history for the AI - include slide context with priority like Avatar mode
     const systemContext: Message = {
@@ -119,9 +164,13 @@ IMPORTANT: Focus your responses on this specific slide topic. If the user asks w
           const aiTimestamp = aiResponseTimestampRef.current ?? now;
           aiResponseTimestampRef.current = aiTimestamp;
           setMessages(prev => {
-            const last = prev[prev.length - 1];
-            if (last?.role === 'ai' && last.timestamp === aiTimestamp) {
-              return [...prev.slice(0, -1), { role: 'ai' as const, content: aiResponse, timestamp: last.timestamp }];
+            const idx = prev.findIndex(
+              (msg) => msg.role === 'ai' && msg.timestamp === aiTimestamp
+            );
+            if (idx >= 0) {
+              const next = [...prev];
+              next[idx] = { ...next[idx], content: aiResponse };
+              return next;
             }
             return [...prev, { role: 'ai' as const, content: aiResponse, timestamp: aiTimestamp }];
           });
@@ -148,9 +197,7 @@ IMPORTANT: Focus your responses on this specific slide topic. If the user asks w
               mode: 'text',
             });
           }
-          aiResponseTimestampRef.current = null;
-          lastAiUpsertAtRef.current = 0;
-          setIsStreaming(false);
+          finishStreaming();
         },
         onError: (error) => {
           console.error("AI error:", error);
@@ -164,10 +211,8 @@ IMPORTANT: Focus your responses on this specific slide topic. If the user asks w
               mode: 'text',
             });
           }
-          aiResponseTimestampRef.current = null;
-          lastAiUpsertAtRef.current = 0;
           toast({ title: "Error", description: "Failed to get response", variant: "destructive" });
-          setIsStreaming(false);
+          finishStreaming();
         }
       });
     } catch {
@@ -181,9 +226,7 @@ IMPORTANT: Focus your responses on this specific slide topic. If the user asks w
           mode: 'text',
         });
       }
-      aiResponseTimestampRef.current = null;
-      lastAiUpsertAtRef.current = 0;
-      setIsStreaming(false);
+      finishStreaming();
     }
   };
 

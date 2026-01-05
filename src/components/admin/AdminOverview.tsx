@@ -191,24 +191,75 @@ const isDemoFallbackQuestionId = (questionId: string) => questionId.startsWith('
 const normalizeDemoQuestionId = (questionId: string) =>
   questionId.startsWith('demo-demo-') ? questionId.replace(/^demo-/, '') : questionId;
 
-const parseTimingMetaEntries = (row: any) => {
-  if (!row?.answer) return [] as any[];
+const parseTimingMetaEntries = (answer?: string | null) => {
+  if (!answer) return [] as any[];
   try {
-    const parsed = JSON.parse(row.answer);
+    const parsed = JSON.parse(answer);
     return Array.isArray(parsed?.entries) ? parsed.entries : [];
   } catch {
     return [];
   }
 };
 
-const parseDialogueMetaEntries = (row: any) => {
-  if (!row?.answer) return [] as any[];
+const parseDialogueMetaEntries = (answer?: string | null) => {
+  if (!answer) return [] as any[];
   try {
-    const parsed = JSON.parse(row.answer);
+    const parsed = JSON.parse(answer);
     return Array.isArray(parsed?.messages) ? parsed.messages : [];
   } catch {
     return [];
   }
+};
+
+const extractMetaPayload = (rows: any[], baseId: string) => {
+  const direct = rows
+    .filter((row) => row.question_id === baseId)
+    .reduce((latest, row) => {
+      if (!latest) return row;
+      const latestTime = latest.created_at ? new Date(latest.created_at).getTime() : 0;
+      const rowTime = row.created_at ? new Date(row.created_at).getTime() : 0;
+      return rowTime >= latestTime ? row : latest;
+    }, null as any);
+
+  const directPayload = direct?.answer ? String(direct.answer) : null;
+  const directTime = direct?.created_at ? new Date(direct.created_at).getTime() : 0;
+
+  const partPrefix = `${baseId}__batch_`;
+  const partRegex = new RegExp(`^${baseId}__batch_(.+)__part_(\\d+)$`);
+  const partRows = rows.filter(
+    (row) => typeof row.question_id === 'string' && row.question_id.startsWith(partPrefix)
+  );
+  if (partRows.length === 0) return directPayload;
+
+  const batches = new Map<string, { createdAt: number; parts: Map<number, string> }>();
+  partRows.forEach((row) => {
+    const match = String(row.question_id).match(partRegex);
+    if (!match) return;
+    const batchId = match[1];
+    const index = Number(match[2]);
+    if (!Number.isFinite(index)) return;
+    const createdAt = row.created_at ? new Date(row.created_at).getTime() : 0;
+    const bucket = batches.get(batchId) || { createdAt, parts: new Map<number, string>() };
+    bucket.createdAt = Math.max(bucket.createdAt, createdAt);
+    bucket.parts.set(index, row.answer || '');
+    batches.set(batchId, bucket);
+  });
+
+  let latestBatch: { createdAt: number; parts: Map<number, string> } | null = null;
+  batches.forEach((batch) => {
+    if (!latestBatch || batch.createdAt >= latestBatch.createdAt) {
+      latestBatch = batch;
+    }
+  });
+  if (!latestBatch) return directPayload;
+
+  const combined = Array.from(latestBatch.parts.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map((entry) => entry[1])
+    .join('');
+  if (!combined) return directPayload;
+  if (!directPayload) return combined;
+  return latestBatch.createdAt >= directTime ? combined : directPayload;
 };
 
 // Helper component for section CSV export - accepts canExport to hide for viewers
@@ -345,43 +396,54 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         preTestResponses = rawPreTestResponses.filter((r) => !isDemoFallbackQuestionId(r.question_id));
         postTestResponses = rawPostTestResponses.filter((r) => !isTelemetryMetaQuestionId(r.question_id));
 
-        const timingMetaRows = rawPostTestResponses.filter((r) => r.question_id === META_TIMING_ID);
-        const dialogueMetaRows = rawPostTestResponses.filter((r) => r.question_id === META_DIALOGUE_ID);
-        const latestTimingBySession = new Map<string, any>();
+        const timingMetaRows = rawPostTestResponses.filter(
+          (r) =>
+            typeof r.question_id === 'string' &&
+            (r.question_id === META_TIMING_ID || r.question_id.startsWith(`${META_TIMING_ID}__batch_`))
+        );
+        const dialogueMetaRows = rawPostTestResponses.filter(
+          (r) =>
+            typeof r.question_id === 'string' &&
+            (r.question_id === META_DIALOGUE_ID || r.question_id.startsWith(`${META_DIALOGUE_ID}__batch_`))
+        );
+
+        const timingRowsBySession = new Map<string, any[]>();
         timingMetaRows.forEach((row: any) => {
-          const existing = latestTimingBySession.get(row.session_id);
-          if (!existing) {
-            latestTimingBySession.set(row.session_id, row);
-            return;
-          }
-          const existingTime = existing.created_at ? new Date(existing.created_at).getTime() : 0;
-          const rowTime = row.created_at ? new Date(row.created_at).getTime() : 0;
-          if (rowTime >= existingTime) {
-            latestTimingBySession.set(row.session_id, row);
-          }
+          const bucket = timingRowsBySession.get(row.session_id) || [];
+          bucket.push(row);
+          timingRowsBySession.set(row.session_id, bucket);
         });
-        latestDialogueBySession = new Map<string, any>();
+
+        const dialogueRowsBySession = new Map<string, any[]>();
         dialogueMetaRows.forEach((row: any) => {
-          const existing = latestDialogueBySession.get(row.session_id);
-          if (!existing) {
-            latestDialogueBySession.set(row.session_id, row);
-            return;
-          }
-          const existingTime = existing.created_at ? new Date(existing.created_at).getTime() : 0;
-          const rowTime = row.created_at ? new Date(row.created_at).getTime() : 0;
-          if (rowTime >= existingTime) {
-            latestDialogueBySession.set(row.session_id, row);
+          const bucket = dialogueRowsBySession.get(row.session_id) || [];
+          bucket.push(row);
+          dialogueRowsBySession.set(row.session_id, bucket);
+        });
+
+        const timingPayloadBySession = new Map<string, string>();
+        timingRowsBySession.forEach((rows: any[], sessionId: string) => {
+          const payload = extractMetaPayload(rows, META_TIMING_ID);
+          if (payload) timingPayloadBySession.set(sessionId, payload);
+        });
+
+        latestDialogueBySession = new Map<string, any>();
+        dialogueRowsBySession.forEach((rows: any[], sessionId: string) => {
+          const payload = extractMetaPayload(rows, META_DIALOGUE_ID);
+          if (payload) {
+            latestDialogueBySession.set(sessionId, { session_id: sessionId, answer: payload });
           }
         });
-        const fallbackAvatarTimeData = Array.from(latestTimingBySession.values()).flatMap((row: any) =>
-          parseTimingMetaEntries(row)
+
+        const fallbackAvatarTimeData = Array.from(timingPayloadBySession.entries()).flatMap(([sessionId, payload]) =>
+          parseTimingMetaEntries(payload)
             .filter((entry: any) => entry?.slideId && typeof entry.durationSeconds === 'number')
             .map((entry: any) => ({
-              session_id: row.session_id,
+              session_id: sessionId,
               slide_id: entry.slideId,
               slide_title: entry.slideTitle || entry.slideId,
               duration_seconds: entry.durationSeconds ?? 0,
-              started_at: entry.startedAt || row.created_at,
+              started_at: entry.startedAt || null,
             }))
         );
 
@@ -461,7 +523,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
       const fallbackDialogueCountBySession = new Map<string, number>();
       latestDialogueBySession.forEach((row: any, sessionId: string) => {
-        const count = parseDialogueMetaEntries(row).length;
+        const count = parseDialogueMetaEntries(row?.answer).length;
         if (count > 0) {
           fallbackDialogueCountBySession.set(sessionId, count);
         }

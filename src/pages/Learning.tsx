@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveTutorDialogue } from "@/lib/studyData";
 import { getTutorDialogueLog } from "@/lib/tutorDialogue";
 import { usePageTiming } from "@/hooks/usePageTiming";
-import { appendTimingEntry, saveTelemetryMeta } from "@/lib/sessionTelemetry";
+import { appendTimingEntry, getTimingLog, saveTelemetryMeta } from "@/lib/sessionTelemetry";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Learning = () => {
@@ -120,17 +120,22 @@ const Learning = () => {
 
     if (textPrevSlideRef.current.id !== currentSlide.id) {
       const previousSlide = textPrevSlideRef.current;
-      void saveSlideTime(previousSlide, textSlideStartRef.current);
+      if (!textSlideSavedRef.current) {
+        textSlideSavedRef.current = true;
+        void saveSlideTime(previousSlide, textSlideStartRef.current);
+      }
       textSlideStartRef.current = new Date();
       textPrevSlideRef.current = currentSlide;
       textSlideSavedRef.current = false;
     }
   }, [isTextMode, currentSlide]);
 
-  const flushTextSlideTime = () => {
-    if (!isTextMode || !currentSlide || textSlideSavedRef.current) return;
+  const flushTextSlideTime = (targetSlide?: Slide | null) => {
+    if (!isTextMode || textSlideSavedRef.current) return;
+    const slideToSave = targetSlide || textPrevSlideRef.current || currentSlide;
+    if (!slideToSave) return;
     textSlideSavedRef.current = true;
-    void saveSlideTime(currentSlide, textSlideStartRef.current);
+    void saveSlideTime(slideToSave, textSlideStartRef.current);
   };
 
   useEffect(() => {
@@ -146,9 +151,9 @@ const Learning = () => {
 
   useEffect(() => {
     return () => {
-      flushTextSlideTime();
+      flushTextSlideTime(textPrevSlideRef.current);
     };
-  }, [isTextMode, currentSlide]);
+  }, [isTextMode]);
 
   useEffect(() => {
     return () => {
@@ -172,6 +177,20 @@ const Learning = () => {
           .catch((error) => console.error('Failed to save tutor dialogue on exit:', error));
       }
     };
+  }, [mode]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const sessionId = sessionIdRef.current ?? sessionStorage.getItem('sessionId');
+      if (!sessionId) return;
+      if (getTutorDialogueLog().length === 0 && getTimingLog().length === 0) return;
+      const studyMode = (mode as StudyMode) || (sessionStorage.getItem('studyMode') as StudyMode) || 'text';
+      saveTelemetryMeta(sessionId, studyMode, { final: false, throttleMs: 15000 }).catch((error) => {
+        console.error('Failed to store telemetry snapshot:', error);
+      });
+    }, 20000);
+
+    return () => clearInterval(interval);
   }, [mode]);
 
   const handleFinish = async () => {

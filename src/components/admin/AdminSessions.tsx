@@ -503,8 +503,51 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         }, null as any);
       };
 
-      const timingMetaRow = pickLatestMetaRow(rawPostTest, META_TIMING_ID);
-      const dialogueMetaRow = pickLatestMetaRow(rawPostTest, META_DIALOGUE_ID);
+      const extractMetaPayload = (rows: any[], baseId: string) => {
+        const direct = pickLatestMetaRow(rows, baseId);
+        const directPayload = direct?.answer ? String(direct.answer) : null;
+        const directTime = direct?.created_at ? new Date(direct.created_at).getTime() : 0;
+
+        const partPrefix = `${baseId}__batch_`;
+        const partRegex = new RegExp(`^${baseId}__batch_(.+)__part_(\\d+)$`);
+        const partRows = rows.filter(
+          (row) => typeof row.question_id === 'string' && row.question_id.startsWith(partPrefix)
+        );
+        if (partRows.length === 0) return directPayload;
+
+        const batches = new Map<string, { createdAt: number; parts: Map<number, string> }>();
+        partRows.forEach((row) => {
+          const match = String(row.question_id).match(partRegex);
+          if (!match) return;
+          const batchId = match[1];
+          const index = Number(match[2]);
+          if (!Number.isFinite(index)) return;
+          const createdAt = row.created_at ? new Date(row.created_at).getTime() : 0;
+          const bucket = batches.get(batchId) || { createdAt, parts: new Map<number, string>() };
+          bucket.createdAt = Math.max(bucket.createdAt, createdAt);
+          bucket.parts.set(index, row.answer || '');
+          batches.set(batchId, bucket);
+        });
+
+        let latestBatch: { createdAt: number; parts: Map<number, string> } | null = null;
+        batches.forEach((batch) => {
+          if (!latestBatch || batch.createdAt >= latestBatch.createdAt) {
+            latestBatch = batch;
+          }
+        });
+        if (!latestBatch) return directPayload;
+
+        const combined = Array.from(latestBatch.parts.entries())
+          .sort((a, b) => a[0] - b[0])
+          .map((entry) => entry[1])
+          .join('');
+        if (!combined) return directPayload;
+        if (!directPayload) return combined;
+        return latestBatch.createdAt >= directTime ? combined : directPayload;
+      };
+
+      const timingMetaPayload = extractMetaPayload(rawPostTest, META_TIMING_ID);
+      const dialogueMetaPayload = extractMetaPayload(rawPostTest, META_DIALOGUE_ID);
 
       const filteredPostTest = rawPostTest.filter((row) => !isTelemetryMetaQuestionId(row.question_id));
       const demoFallbackRows = rawPreTest.filter((row) => isDemoFallbackQuestionId(row.question_id));
@@ -520,9 +563,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           ? demographicResponses
           : fallbackDemographicResponses;
 
-      const fallbackAvatarTimeTracking = timingMetaRow
-        ? parseTimingMeta(timingMetaRow).map((entry: any, index: number) => ({
-            id: `meta:${timingMetaRow.id}:${index}`,
+      const fallbackAvatarTimeTracking = timingMetaPayload
+        ? parseTimingMeta(timingMetaPayload).map((entry: any, index: number) => ({
+            id: `meta:${session.id}:${index}`,
             session_id: session.id,
             slide_id: entry.slideId,
             slide_title: entry.slideTitle || entry.slideId,
@@ -540,9 +583,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         slideLookup
       );
 
-      const fallbackTutorDialogueTurns = dialogueMetaRow
-        ? parseDialogueMeta(dialogueMetaRow).map((entry: any, index: number) => ({
-            id: `meta:${dialogueMetaRow.id}:${index}`,
+      const fallbackTutorDialogueTurns = dialogueMetaPayload
+        ? parseDialogueMeta(dialogueMetaPayload).map((entry: any, index: number) => ({
+            id: `meta:${session.id}:${index}`,
             session_id: session.id,
             role: entry.role,
             content: entry.content,
@@ -915,10 +958,10 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     return merged;
   };
 
-  const parseTimingMeta = (row: any) => {
-    if (!row?.answer) return [];
+  const parseTimingMeta = (answer?: string | null) => {
+    if (!answer) return [];
     try {
-      const parsed = JSON.parse(row.answer);
+      const parsed = JSON.parse(answer);
       if (!parsed || !Array.isArray(parsed.entries)) return [];
       return parsed.entries;
     } catch {
@@ -926,10 +969,10 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     }
   };
 
-  const parseDialogueMeta = (row: any) => {
-    if (!row?.answer) return [];
+  const parseDialogueMeta = (answer?: string | null) => {
+    if (!answer) return [];
     try {
-      const parsed = JSON.parse(row.answer);
+      const parsed = JSON.parse(answer);
       if (!parsed || !Array.isArray(parsed.messages)) return [];
       return parsed.messages;
     } catch {
@@ -1448,7 +1491,11 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       ]);
 
       rawAvatarTimeData = avatarRes.data || [];
-      timingMetaRows = (postRes.data || []).filter((row) => row.question_id === META_TIMING_ID);
+      timingMetaRows = (postRes.data || []).filter(
+        (row) =>
+          typeof row.question_id === 'string' &&
+          (row.question_id === META_TIMING_ID || row.question_id.startsWith(`${META_TIMING_ID}__batch_`))
+      );
       activeSlides = (slideRes.data || []).filter((slide) => slide.is_active);
     } catch (error) {
       console.error('Failed to load timing data for CSV export:', error);
@@ -1463,20 +1510,79 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       rawBySession.set(entry.session_id, list);
     });
 
-    const fallbackBySession = new Map<string, any[]>();
+    const extractMetaPayload = (rows: any[], baseId: string) => {
+      const direct = rows
+        .filter((row) => row.question_id === baseId)
+        .reduce((latest, row) => {
+          if (!latest) return row;
+          const latestTime = latest.created_at ? new Date(latest.created_at).getTime() : 0;
+          const rowTime = row.created_at ? new Date(row.created_at).getTime() : 0;
+          return rowTime >= latestTime ? row : latest;
+        }, null as any);
+      const directPayload = direct?.answer ? String(direct.answer) : null;
+      const directTime = direct?.created_at ? new Date(direct.created_at).getTime() : 0;
+
+      const partPrefix = `${baseId}__batch_`;
+      const partRegex = new RegExp(`^${baseId}__batch_(.+)__part_(\\d+)$`);
+      const partRows = rows.filter(
+        (row) => typeof row.question_id === 'string' && row.question_id.startsWith(partPrefix)
+      );
+      if (partRows.length === 0) return directPayload;
+
+      const batches = new Map<string, { createdAt: number; parts: Map<number, string> }>();
+      partRows.forEach((row) => {
+        const match = String(row.question_id).match(partRegex);
+        if (!match) return;
+        const batchId = match[1];
+        const index = Number(match[2]);
+        if (!Number.isFinite(index)) return;
+        const createdAt = row.created_at ? new Date(row.created_at).getTime() : 0;
+        const bucket = batches.get(batchId) || { createdAt, parts: new Map<number, string>() };
+        bucket.createdAt = Math.max(bucket.createdAt, createdAt);
+        bucket.parts.set(index, row.answer || '');
+        batches.set(batchId, bucket);
+      });
+
+      let latestBatch: { createdAt: number; parts: Map<number, string> } | null = null;
+      batches.forEach((batch) => {
+        if (!latestBatch || batch.createdAt >= latestBatch.createdAt) {
+          latestBatch = batch;
+        }
+      });
+      if (!latestBatch) return directPayload;
+
+      const combined = Array.from(latestBatch.parts.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map((entry) => entry[1])
+        .join('');
+      if (!combined) return directPayload;
+      if (!directPayload) return combined;
+      return latestBatch.createdAt >= directTime ? combined : directPayload;
+    };
+
+    const timingRowsBySession = new Map<string, any[]>();
     timingMetaRows.forEach((row: any) => {
-      const entries = parseTimingMeta(row)
+      const list = timingRowsBySession.get(row.session_id) || [];
+      list.push(row);
+      timingRowsBySession.set(row.session_id, list);
+    });
+
+    const fallbackBySession = new Map<string, any[]>();
+    timingRowsBySession.forEach((rows: any[], sessionId: string) => {
+      const payload = extractMetaPayload(rows, META_TIMING_ID);
+      if (!payload) return;
+      const entries = parseTimingMeta(payload)
         .filter((entry: any) => entry?.slideId && typeof entry.durationSeconds === 'number')
         .map((entry: any, index: number) => ({
-          id: `meta:${row.id}:${index}`,
-          session_id: row.session_id,
+          id: `meta:${sessionId}:${index}`,
+          session_id: sessionId,
           slide_id: entry.slideId,
           slide_title: entry.slideTitle || entry.slideId,
           duration_seconds: entry.durationSeconds ?? 0,
         }));
-      const list = fallbackBySession.get(row.session_id) || [];
+      const list = fallbackBySession.get(sessionId) || [];
       list.push(...entries);
-      fallbackBySession.set(row.session_id, list);
+      fallbackBySession.set(sessionId, list);
     });
 
     const mergedBySession = new Map<string, any[]>();

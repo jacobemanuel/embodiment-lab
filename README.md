@@ -54,7 +54,7 @@ There is no automatic randomization in code. The mode is:
 
 ### LLM and prompting
 - Text mode uses OpenAI GPT-5 mini via an OpenAI-compatible API endpoint (configured in `supabase/functions/chat/index.ts`).
-- Avatar mode uses the LLM configured in Anam. For consistency, set the Anam LLM to the GPT-5 family (for example GPT-5 mini). This project expects both modes to be aligned. You can change this in the Anam dashboard under LLM settings.
+- Avatar mode uses the LLM configured in Anam. For consistency, set the Anam LLM to the GPT-5 family (for example GPT-5 mini). This project expects both modes to be aligned. You can change this in the Anam dashboard under LLM settings. Suggested setting: GPT-5 mini for parity with text mode.
 - API parameters (temperature, top_p, max_tokens) are not set explicitly, so provider defaults apply.
 - Context window: the edge function accepts up to 100 messages; the client sends the full session history up to that cap.
 
@@ -403,6 +403,8 @@ What we do NOT capture:
 - real names, emails, or identifiers
 - video recordings (Avatar mode is streaming only)
 - explicit clickstream logging
+- button clicks
+- API response latency (we only track time on pages/slides)
 
 PII note (for the report):
 We do not collect participant names or emails and identify sessions only via random `session_id`. The system does not automatically scrub free-text input, so participants are instructed not to share personal data in chat. Data is used only for research analysis and exported in anonymized form.
@@ -475,6 +477,6 @@ Frontend is served on the Cloudflare-managed custom domain. Supabase provides th
 
 ## Team
 
-- Lead / System build: Jakub Majewski
+- System build: Jakub Majewski
 - Mentor: Efe Bozkir
 - Team members (report, video, analysis): Zeynep Gurlek, Markus Moenckhoff, Michel Alexander, Manuel Peichl

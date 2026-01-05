@@ -103,6 +103,10 @@ const Consent = () => {
                 We will collect your responses, confidence ratings, and dialogue interactions. All data is:
               </p>
               <ul className="space-y-1.5 text-muted-foreground pl-11 ml-4">
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-2 shrink-0" />
+                  <span><strong>Please do not share personal or sensitive information in chat.</strong></span>
+                </li>
                 <li className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
                   Completely anonymous (no names or emails linked to responses)
@@ -126,6 +130,10 @@ const Consent = () => {
                 <li className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-2 shrink-0" />
                   <span><strong>No video recording</strong> — if you participate in Avatar Mode, your camera feed is used only for real-time interaction to enhance the experience. No video data is stored or saved.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-2 shrink-0" />
+                  <span>Dialogue transcripts may be reviewed by the research team to evaluate learning interactions.</span>
                 </li>
               </ul>
             </section>

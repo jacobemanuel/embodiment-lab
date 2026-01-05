@@ -65,6 +65,7 @@ const ConsentSidebar = () => {
                 We will collect your responses, confidence ratings, and dialogue interactions. All data is:
               </p>
               <ul className="space-y-2 text-muted-foreground text-sm ml-4">
+                <li>• <strong className="text-foreground">Please do not share personal or sensitive information in chat.</strong></li>
                 <li>• Completely anonymous (no names or emails linked to responses)</li>
                 <li>• Assigned a random session ID only</li>
                 <li>• Stored securely and encrypted</li>
@@ -73,6 +74,7 @@ const ConsentSidebar = () => {
                 <li>
                   • <strong className="text-foreground">No video recording</strong> — if you participate in Avatar Mode, your camera feed is used only for real-time interaction to enhance the experience. No video data is stored or saved.
                 </li>
+                <li>• Dialogue transcripts may be reviewed by the research team to evaluate learning interactions.</li>
               </ul>
             </section>
 

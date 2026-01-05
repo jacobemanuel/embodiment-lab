@@ -73,6 +73,8 @@ There is no automatic randomization in code. The mode is:
 ```mermaid
 flowchart LR
   U["Participant Browser"] --> FE["React + Vite"]
+  Admin["Admin/Owner Dashboard"] --> FE
+
   FE -->|API calls| Edge["Supabase Edge Functions (Deno)"]
   Edge --> DB[("Supabase Postgres")]
 
@@ -80,17 +82,26 @@ flowchart LR
   ChatFn --> LLMApi["OpenAI-compatible API endpoint"]
   LLMApi --> OpenAI["OpenAI GPT-5 mini"]
 
-  FE -->|Avatar stream| Anam["Anam AI"]
-  Anam --> FE
-  Anam -->|Transcript events| FE
-  FE -->|Transcript + timing| Edge
-
   FE -->|Image requests| ImgFn["/functions/v1/generate-image"]
   ImgFn --> LLMApi
   LLMApi --> Gemini["Gemini 2.5 Flash Image Preview"]
 
-  Admin["Admin/Owner Dashboard"] --> FE
-  Admin --> Edge
+  FE -->|Avatar session init| Anam["Anam AI"]
+  Anam -->|Avatar stream| FE
+  Anam -->|Transcript events| FE
+  FE -->|Transcript + timing| Edge
+```
+
+## Data logging and exports diagram
+
+```mermaid
+flowchart LR
+  FE["React + Vite"] -->|Responses + timing + transcripts| Edge["Supabase Edge Functions (Deno)"]
+  Edge --> DB[("Supabase Postgres")]
+  Admin["Admin/Owner Dashboard"] -->|Review + validate| FE
+  Admin -->|Export PDF/CSV| FE
+  FE -->|Download| Admin
+  DB -->|Queries for stats/exports| Edge
 ```
 
 ## System prompts (full, copy/paste)

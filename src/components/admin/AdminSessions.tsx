@@ -18,6 +18,7 @@ import { getPermissionLevel, getPermissions } from "@/lib/permissions";
 import { describeSuspicionFlag, getSuspicionRequirements } from "@/lib/suspicion";
 import { META_DIALOGUE_ID, META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 import { buildSlideLookup, resolveSlideKey } from "@/lib/slideTiming";
+import { canUseTutorDialogueTable } from "@/lib/tutorDialogueAvailability";
 import { toast } from "sonner";
 
 interface AdminSessionsProps {
@@ -364,13 +365,20 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
   // Fetch data completeness for sessions
   const fetchDataStatuses = async (sessionIds: string[]) => {
     try {
+      const canUseTutorDialogue = await canUseTutorDialogueTable();
+      const tutorDialogueQuery = canUseTutorDialogue
+        ? (supabase.from('tutor_dialogue_turns' as any) as any)
+            .select('session_id')
+            .in('session_id', sessionIds)
+        : Promise.resolve({ data: [] as any[] });
+
       // Fetch counts for each data type
       const [demoRes, preRes, postRes, scenarioRes, tutorRes] = await Promise.all([
         supabase.from('demographic_responses').select('session_id').in('session_id', sessionIds),
         supabase.from('pre_test_responses').select('session_id').in('session_id', sessionIds),
         supabase.from('post_test_responses').select('session_id').in('session_id', sessionIds),
         supabase.from('scenarios').select('session_id').in('session_id', sessionIds),
-        (supabase.from('tutor_dialogue_turns' as any) as any).select('session_id').in('session_id', sessionIds),
+        tutorDialogueQuery,
       ]);
 
       const demoSessions = new Set((demoRes.data || []).map(d => d.session_id));
@@ -480,11 +488,15 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         }
       }
 
-      const { data: tutorDialogueTurns } = await (supabase
-        .from('tutor_dialogue_turns' as any) as any)
-        .select('*')
-        .eq('session_id', session.id)
-        .order('timestamp', { ascending: true });
+      let tutorDialogueTurns: any[] = [];
+      if (await canUseTutorDialogueTable()) {
+        const { data } = await (supabase
+          .from('tutor_dialogue_turns' as any) as any)
+          .select('*')
+          .eq('session_id', session.id)
+          .order('timestamp', { ascending: true });
+        tutorDialogueTurns = data || [];
+      }
 
       const { data: avatarTimeTracking } = await supabase
         .from('avatar_time_tracking')
@@ -1183,7 +1195,12 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       toast.success('Session restored');
     } catch (error) {
       console.error('Failed to restore session:', error);
-      toast.error('Failed to restore session');
+      const message = String((error as Error)?.message || '');
+      if (message.toLowerCase().includes('fetch') || message.toLowerCase().includes('cors')) {
+        toast.error('Restore failed: owner-edit-session is not reachable. Deploy the Edge Function.');
+      } else {
+        toast.error('Failed to restore session');
+      }
     } finally {
       setRestoringSessionId(null);
     }

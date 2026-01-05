@@ -10,6 +10,7 @@ import DateRangeFilter from "./DateRangeFilter";
 import { startOfDay, endOfDay, format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
+import { canUseTutorDialogueTable } from "@/lib/tutorDialogueAvailability";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 const CORRECT_COLOR = '#22c55e';
@@ -602,15 +603,14 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       let preTestQuery = supabase.from('pre_test_responses').select('*');
       let postTestQuery = supabase.from('post_test_responses').select('*');
       let scenariosQuery = supabase.from('scenarios').select('*');
-      let tutorDialogueQuery = (supabase.from('tutor_dialogue_turns' as any) as any).select('*');
       let avatarTimeQuery = supabase.from('avatar_time_tracking').select('*');
+      let tutorDialogueTurns: any[] = [];
 
       if (sessionIds.length > 0) {
         demographicsQuery = demographicsQuery.in('session_id', sessionIds);
         preTestQuery = preTestQuery.in('session_id', sessionIds);
         postTestQuery = postTestQuery.in('session_id', sessionIds);
         scenariosQuery = scenariosQuery.in('session_id', sessionIds);
-        tutorDialogueQuery = (tutorDialogueQuery as any).in('session_id', sessionIds);
         avatarTimeQuery = avatarTimeQuery.in('session_id', sessionIds);
       }
 
@@ -618,7 +618,14 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       const { data: preTest } = await preTestQuery;
       const { data: postTest } = await postTestQuery;
       const { data: scenarios } = await scenariosQuery;
-      const { data: tutorDialogueTurns } = await tutorDialogueQuery;
+      if (await canUseTutorDialogueTable()) {
+        let tutorDialogueQuery = (supabase.from('tutor_dialogue_turns' as any) as any).select('*');
+        if (sessionIds.length > 0) {
+          tutorDialogueQuery = (tutorDialogueQuery as any).in('session_id', sessionIds);
+        }
+        const { data } = await tutorDialogueQuery;
+        tutorDialogueTurns = data || [];
+      }
       const { data: avatarTimeTracking } = await avatarTimeQuery;
       
       const scenarioIds = scenarios?.map(s => s.id) || [];

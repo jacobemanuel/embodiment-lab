@@ -17,6 +17,7 @@ import QuestionPerformanceByMode from "./QuestionPerformanceByMode";
 import { describeSuspicionFlag, getSuspicionRequirements } from "@/lib/suspicion";
 import { META_DIALOGUE_ID, META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 import { buildSlideLookup, resolveSlideKey } from "@/lib/slideTiming";
+import { canUseTutorDialogueTable } from "@/lib/tutorDialogueAvailability";
 
 interface AvatarTimeData {
   session_id: string;
@@ -360,13 +361,18 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       let activeSlides: { slide_id: string; title: string; sort_order: number; is_active: boolean }[] = [];
       let latestDialogueBySession = new Map<string, any>();
       if (sessionIds.length > 0) {
+        const canUseTutorDialogue = await canUseTutorDialogueTable();
         const [demoRes, preRes, postRes, avatarRes, slideRes, tutorDialogueRes] = await Promise.all([
           supabase.from('demographic_responses').select('*').in('session_id', sessionIds),
           supabase.from('pre_test_responses').select('*').in('session_id', sessionIds),
           supabase.from('post_test_responses').select('*').in('session_id', sessionIds),
           supabase.from('avatar_time_tracking').select('*').in('session_id', sessionIds),
           supabase.from('study_slides').select('slide_id, title, sort_order, is_active').order('sort_order'),
-          (supabase.from('tutor_dialogue_turns' as any) as any).select('session_id').in('session_id', sessionIds),
+          canUseTutorDialogue
+            ? (supabase.from('tutor_dialogue_turns' as any) as any)
+                .select('session_id')
+                .in('session_id', sessionIds)
+            : Promise.resolve({ data: [] as any[] }),
         ]);
         
         const rawDemographicResponses = demoRes.data || [];
@@ -1293,19 +1299,40 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
   // Real-time subscription for all relevant tables
   useEffect(() => {
-    const channel = supabase
-      .channel('overview-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_sessions' }, () => fetchStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'demographic_responses' }, () => fetchStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pre_test_responses' }, () => fetchStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'post_test_responses' }, () => fetchStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_questions' }, () => fetchStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'avatar_time_tracking' }, () => fetchStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_dialogue_turns' }, () => fetchStats())
-      .subscribe();
+    let isActive = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const setup = async () => {
+      const canUseTutorDialogue = await canUseTutorDialogueTable();
+      if (!isActive) return;
+
+      let nextChannel = supabase
+        .channel('overview-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'study_sessions' }, () => fetchStats())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'demographic_responses' }, () => fetchStats())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pre_test_responses' }, () => fetchStats())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'post_test_responses' }, () => fetchStats())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'study_questions' }, () => fetchStats())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'avatar_time_tracking' }, () => fetchStats());
+
+      if (canUseTutorDialogue) {
+        nextChannel = nextChannel.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'tutor_dialogue_turns' },
+          () => fetchStats()
+        );
+      }
+
+      channel = nextChannel.subscribe();
+    };
+
+    setup();
 
     return () => {
-      supabase.removeChannel(channel);
+      isActive = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [fetchStats]);
 

@@ -40,12 +40,12 @@ export const PermissionGuard = ({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="inline-flex items-center gap-1 text-slate-500 cursor-not-allowed opacity-50">
+            <div className="inline-flex items-center gap-1 text-muted-foreground/70 cursor-not-allowed opacity-50">
               <Lock className="w-4 h-4" />
               <span className="text-xs">Owner only</span>
             </div>
           </TooltipTrigger>
-          <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600 max-w-xs">
+          <TooltipContent className="bg-muted text-foreground border-border max-w-xs">
             <p className="text-sm">
               {tooltipText || "This action requires owner permissions. Contact jakub.majewski@tum.de for access."}
             </p>

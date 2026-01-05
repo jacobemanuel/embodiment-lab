@@ -183,9 +183,9 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
 
   if (isLoading) {
     return (
-      <Card className="bg-slate-800 border-slate-700">
+      <Card className="bg-card border-border">
         <CardContent className="py-6">
-          <div className="flex items-center gap-2 text-slate-400">
+          <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span>Loading API controls...</span>
           </div>
@@ -226,7 +226,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                     : 'Anam API is disabled — toggle it ON below'}
               </p>
               {anamUsable && (
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Active key owner: {keyOwner}{keyUpdatedAt ? ` • Updated ${keyUpdatedAt}` : ''}
                 </p>
               )}
@@ -237,7 +237,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
 
       {/* Master Switch - Owner Only */}
       {isOwner && (
-        <Card className="bg-slate-800 border-red-700/50">
+        <Card className="bg-card border-red-700/50">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Power className="w-5 h-5 text-red-500" />
@@ -247,7 +247,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                 {masterEnabled ? 'ON' : 'OFF'}
               </div>
             </div>
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-muted-foreground">
               Owner-only: Kill switch for ALL API services. When OFF, all APIs are blocked and admins cannot add their keys.
             </CardDescription>
           </CardHeader>
@@ -267,7 +267,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                 )}
               </div>
               <div className="flex items-center gap-3">
-                <Label htmlFor="master-toggle" className="text-slate-300 text-sm">
+                <Label htmlFor="master-toggle" className="text-foreground/80 text-sm">
                   {isToggling === 'master' ? 'Switching...' : masterEnabled ? 'ON' : 'OFF'}
                 </Label>
                 <Switch
@@ -280,7 +280,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
               </div>
             </div>
             {settings.api_enabled?.updated_by && (
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-muted-foreground/70 mt-2">
                 Last changed by: {settings.api_enabled.updated_by}
               </p>
             )}
@@ -290,7 +290,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
 
       {/* OpenAI API Toggle - Owner Only */}
       {isOwner && (
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-blue-500" />
@@ -300,7 +300,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                 {masterEnabled && openaiEnabled ? 'ON' : 'OFF'}
               </div>
             </div>
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-muted-foreground">
               Controls text-based chat functionality
             </CardDescription>
           </CardHeader>
@@ -320,7 +320,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                 )}
               </div>
               <div className="flex items-center gap-3">
-                <Label htmlFor="openai-toggle" className="text-slate-300 text-sm">
+                <Label htmlFor="openai-toggle" className="text-foreground/80 text-sm">
                   {isToggling === 'openai' ? 'Switching...' : openaiEnabled ? 'ON' : 'OFF'}
                 </Label>
                 <Switch
@@ -339,7 +339,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
               </p>
             )}
             {settings.openai_api_enabled?.updated_by && masterEnabled && (
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-muted-foreground/70 mt-2">
                 Last changed by: {settings.openai_api_enabled.updated_by}
               </p>
             )}
@@ -348,7 +348,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
       )}
 
       {/* Anam API Toggle - Available to all admins */}
-      <Card className={`bg-slate-800 border-slate-700 ${!masterEnabled && !isOwner ? 'opacity-60' : ''}`}>
+      <Card className={`bg-card border-border ${!masterEnabled && !isOwner ? 'opacity-60' : ''}`}>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-purple-500" />
@@ -358,7 +358,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                 {anamUsable ? 'ON' : 'OFF'}
               </div>
           </div>
-          <CardDescription className="text-slate-400">
+          <CardDescription className="text-muted-foreground">
             Controls avatar-based interaction functionality
           </CardDescription>
         </CardHeader>
@@ -389,7 +389,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
               )}
             </div>
             <div className="flex items-center gap-3">
-              <Label htmlFor="anam-toggle" className="text-slate-300 text-sm">
+              <Label htmlFor="anam-toggle" className="text-foreground/80 text-sm">
                 {isToggling === 'anam' ? 'Switching...' : anamEnabled ? 'ON' : 'OFF'}
               </Label>
               <Switch
@@ -402,13 +402,13 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
             </div>
           </div>
           {settings.anam_api_enabled?.updated_by && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground/70">
               Last changed by: {settings.anam_api_enabled.updated_by}
             </p>
           )}
 
           {/* API Key Section - All Admins can update, but blocked when master is OFF */}
-          <div className="pt-4 border-t border-slate-700">
+          <div className="pt-4 border-t border-border">
             <div className="flex items-center gap-2 mb-3">
               <Key className="w-4 h-4 text-yellow-500" />
               <Label className="text-white text-sm font-medium">Anam API Key</Label>
@@ -416,18 +416,18 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
             
             {/* Current key info */}
             <div className="flex items-center gap-2 mb-3 text-sm flex-wrap">
-              <span className="text-slate-400">Current:</span>
-              <code className={`px-2 py-1 rounded ${hasCustomKey ? 'bg-slate-900 text-slate-300' : 'bg-blue-900/50 text-blue-300'}`}>
+              <span className="text-muted-foreground">Current:</span>
+              <code className={`px-2 py-1 rounded ${hasCustomKey ? 'bg-background text-foreground/80' : 'bg-blue-900/50 text-blue-300'}`}>
                 {hasCustomKey ? currentAnamKey : 'System default'}
               </code>
               {settings.anam_api_key?.updated_by && hasCustomKey && (
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-muted-foreground/70">
                   (by {settings.anam_api_key.updated_by}
                   {settings.anam_api_key.updated_at && ` on ${new Date(settings.anam_api_key.updated_at).toLocaleDateString()}`})
                 </span>
               )}
             </div>
-            <div className="text-xs text-slate-500 mb-3">
+            <div className="text-xs text-muted-foreground/70 mb-3">
               Active key owner: {keyOwner}{keyUpdatedAt ? ` • Updated ${keyUpdatedAt}` : ''}
             </div>
 
@@ -438,13 +438,13 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                   value={newApiKey}
                   onChange={(e) => setNewApiKey(e.target.value)}
                   placeholder="Enter your Anam API key..."
-                  className="bg-slate-900 border-slate-600 text-white pr-10"
+                  className="bg-background border-border text-white pr-10"
                   disabled={!masterEnabled && !isOwner}
                 />
                 <button
                   type="button"
                   onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
                   disabled={!masterEnabled && !isOwner}
                 >
                   {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -453,7 +453,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
               <Button
                 onClick={handleSaveApiKey}
                 disabled={isSavingKey || !newApiKey.trim() || (!masterEnabled && !isOwner)}
-                className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-slate-700"
+                className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-muted"
               >
                 {isSavingKey ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -468,7 +468,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                 variant="outline"
                 onClick={handleTestApiKey}
                 disabled={isTestingKey || (!masterEnabled && !isOwner) || !anamEnabled}
-                className="border-slate-600"
+                className="border-border"
               >
                 {isTestingKey ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -482,7 +482,7 @@ const ApiToggle = ({ userEmail }: ApiToggleProps) => {
                 Last test: {lastKeyTest.status === 'success' ? 'Success' : 'Failed'} • {new Date(lastKeyTest.at).toLocaleString()}
               </p>
             )}
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="text-xs text-muted-foreground/70 mt-2">
               {masterEnabled || isOwner 
                 ? 'Add your own Anam API key from your free account. This will override the system default key. Test creates a temporary session token.'
                 : 'API key changes are locked while the system is disabled.'}

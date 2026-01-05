@@ -187,7 +187,7 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
 
   if (isLoading) {
     return (
-      <Card className="bg-slate-800 border-slate-700">
+      <Card className="bg-card border-border">
         <CardContent className="py-12">
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -213,7 +213,7 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
   }));
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
+    <Card className="bg-card border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
@@ -222,9 +222,9 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-slate-400 cursor-help" />
+                    <Info className="w-4 h-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-sm bg-slate-700 border-slate-600">
+                  <TooltipContent className="max-w-sm bg-muted border-border">
                     <p className="text-sm">
                       Compares correct answer rates between Text Mode and Avatar Mode for each question.
                       Positive difference = Avatar performed better. Useful for identifying which concepts
@@ -234,12 +234,12 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
                 </Tooltip>
               </TooltipProvider>
             </CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-muted-foreground">
               Text vs Avatar mode performance per question (only questions with correct answers)
             </CardDescription>
           </div>
           {permissions.canExportData && (
-            <Button variant="outline" size="sm" onClick={exportCSV} className="gap-2 border-slate-600">
+            <Button variant="outline" size="sm" onClick={exportCSV} className="gap-2 border-border">
               <Download className="w-4 h-4" />
               CSV
             </Button>
@@ -248,7 +248,7 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
       </CardHeader>
       <CardContent className="space-y-6">
         {data.length === 0 ? (
-          <div className="text-center py-8 text-slate-400">
+          <div className="text-center py-8 text-muted-foreground">
             <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
             <p>No data available. Ensure questions have correct answers marked and both modes have responses.</p>
           </div>
@@ -262,10 +262,10 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
                     <TrendingUp className="w-5 h-5 text-emerald-400" />
                     <span className="text-emerald-300 font-medium">Biggest Avatar Advantage</span>
                   </div>
-                  <p className="text-sm text-slate-300 mb-1">{biggestAvatarAdvantage.questionText.slice(0, 80)}...</p>
+                  <p className="text-sm text-foreground/80 mb-1">{biggestAvatarAdvantage.questionText.slice(0, 80)}...</p>
                   <div className="flex items-center gap-2">
                     <Badge className="bg-emerald-600">+{biggestAvatarAdvantage.difference}%</Badge>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted-foreground">
                       Text: {biggestAvatarAdvantage.textCorrectRate}% → Avatar: {biggestAvatarAdvantage.avatarCorrectRate}%
                     </span>
                   </div>
@@ -277,10 +277,10 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
                     <TrendingDown className="w-5 h-5 text-blue-400" />
                     <span className="text-blue-300 font-medium">Biggest Text Advantage</span>
                   </div>
-                  <p className="text-sm text-slate-300 mb-1">{biggestTextAdvantage.questionText.slice(0, 80)}...</p>
+                  <p className="text-sm text-foreground/80 mb-1">{biggestTextAdvantage.questionText.slice(0, 80)}...</p>
                   <div className="flex items-center gap-2">
                     <Badge className="bg-blue-600">{biggestTextAdvantage.difference}%</Badge>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted-foreground">
                       Text: {biggestTextAdvantage.textCorrectRate}% → Avatar: {biggestTextAdvantage.avatarCorrectRate}%
                     </span>
                   </div>
@@ -291,7 +291,7 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
             {/* Chart */}
             {chartData.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-slate-300 mb-3">Correct Answer Rate by Mode</h4>
+                <h4 className="text-sm font-medium text-foreground/80 mb-3">Correct Answer Rate by Mode</h4>
                 <ResponsiveContainer width="100%" height={Math.max(300, chartData.length * 40)}>
                   <BarChart data={chartData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -315,29 +315,29 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
             {/* Pre-test Details */}
             {preTestData.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-slate-300 mb-3">Pre-Test Questions</h4>
+                <h4 className="text-sm font-medium text-foreground/80 mb-3">Pre-Test Questions</h4>
                 <div className="space-y-2 max-h-[300px] overflow-y-auto">
                   {preTestData.map(q => (
-                    <div key={q.questionId} className="bg-slate-700/30 rounded-lg p-3 flex items-center justify-between">
+                    <div key={q.questionId} className="bg-muted/30 rounded-lg p-3 flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-slate-200 truncate">{q.questionText}</p>
-                        <p className="text-xs text-slate-500">{q.questionId}</p>
+                        <p className="text-sm text-foreground/90 truncate">{q.questionText}</p>
+                        <p className="text-xs text-muted-foreground/70">{q.questionId}</p>
                       </div>
                       <div className="flex items-center gap-3 ml-4">
                         <div className="text-center">
                           <div className="text-xs text-blue-400">Text</div>
                           <div className="text-sm font-medium text-white">{q.textCorrectRate}%</div>
-                          <div className="text-xs text-slate-500">n={q.textResponses}</div>
+                          <div className="text-xs text-muted-foreground/70">n={q.textResponses}</div>
                         </div>
                         <div className="text-center">
                           <div className="text-xs text-emerald-400">Avatar</div>
                           <div className="text-sm font-medium text-white">{q.avatarCorrectRate}%</div>
-                          <div className="text-xs text-slate-500">n={q.avatarResponses}</div>
+                          <div className="text-xs text-muted-foreground/70">n={q.avatarResponses}</div>
                         </div>
                         <Badge className={`${
                           q.difference > 5 ? 'bg-emerald-600' : 
                           q.difference < -5 ? 'bg-blue-600' : 
-                          'bg-slate-600'
+                          'bg-muted-foreground/40'
                         }`}>
                           {q.difference > 0 ? '+' : ''}{q.difference}%
                         </Badge>
@@ -351,29 +351,29 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
             {/* Post-test Details */}
             {postTestData.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-slate-300 mb-3">Post-Test Knowledge Questions</h4>
+                <h4 className="text-sm font-medium text-foreground/80 mb-3">Post-Test Knowledge Questions</h4>
                 <div className="space-y-2 max-h-[300px] overflow-y-auto">
                   {postTestData.map(q => (
-                    <div key={q.questionId} className="bg-slate-700/30 rounded-lg p-3 flex items-center justify-between">
+                    <div key={q.questionId} className="bg-muted/30 rounded-lg p-3 flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-slate-200 truncate">{q.questionText}</p>
-                        <p className="text-xs text-slate-500">{q.questionId}</p>
+                        <p className="text-sm text-foreground/90 truncate">{q.questionText}</p>
+                        <p className="text-xs text-muted-foreground/70">{q.questionId}</p>
                       </div>
                       <div className="flex items-center gap-3 ml-4">
                         <div className="text-center">
                           <div className="text-xs text-blue-400">Text</div>
                           <div className="text-sm font-medium text-white">{q.textCorrectRate}%</div>
-                          <div className="text-xs text-slate-500">n={q.textResponses}</div>
+                          <div className="text-xs text-muted-foreground/70">n={q.textResponses}</div>
                         </div>
                         <div className="text-center">
                           <div className="text-xs text-emerald-400">Avatar</div>
                           <div className="text-sm font-medium text-white">{q.avatarCorrectRate}%</div>
-                          <div className="text-xs text-slate-500">n={q.avatarResponses}</div>
+                          <div className="text-xs text-muted-foreground/70">n={q.avatarResponses}</div>
                         </div>
                         <Badge className={`${
                           q.difference > 5 ? 'bg-emerald-600' : 
                           q.difference < -5 ? 'bg-blue-600' : 
-                          'bg-slate-600'
+                          'bg-muted-foreground/40'
                         }`}>
                           {q.difference > 0 ? '+' : ''}{q.difference}%
                         </Badge>

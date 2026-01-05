@@ -806,7 +806,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
   return (
     <div className="space-y-6">
       {/* Filters Card */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-card/50 border-border">
         <CardContent className="pt-4 space-y-4">
           <div className="flex flex-wrap gap-4 items-end">
             <DateRangeFilter
@@ -822,9 +822,9 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             
             {/* Status Filter */}
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-slate-400" />
+              <CheckCircle className="w-4 h-4 text-muted-foreground" />
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-                <SelectTrigger className="w-[160px] bg-slate-900 border-slate-600">
+                <SelectTrigger className="w-[160px] bg-background border-border">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -837,9 +837,9 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             
             {/* Mode Filter */}
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-slate-400" />
+              <Filter className="w-4 h-4 text-muted-foreground" />
               <Select value={modeFilter} onValueChange={(v) => setModeFilter(v as ModeFilter)}>
-                <SelectTrigger className="w-[160px] bg-slate-900 border-slate-600">
+                <SelectTrigger className="w-[160px] bg-background border-border">
                   <SelectValue placeholder="Filter by mode" />
                 </SelectTrigger>
                 <SelectContent>
@@ -852,7 +852,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
           </div>
 
           {/* Session counts & Export buttons */}
-          <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-slate-700">
+          <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-border">
             <Badge variant="outline" className="text-green-400 border-green-700">
               <CheckCircle className="w-3 h-3 mr-1" /> {sessionCount.completed} completed
             </Badge>
@@ -861,15 +861,15 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             </Badge>
             {permissions.canExportData && (
               <div className="ml-auto flex gap-2">
-                <Button onClick={exportAllData} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
+                <Button onClick={exportAllData} variant="outline" size="sm" className="border-border h-8 text-xs gap-1">
                   <Download className="w-3 h-3" />
                   Full JSON (Raw)
                 </Button>
-                <Button onClick={exportPostTestKnowledgeCSV} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
+                <Button onClick={exportPostTestKnowledgeCSV} variant="outline" size="sm" className="border-border h-8 text-xs gap-1">
                   <FileSpreadsheet className="w-3 h-3" />
                   Knowledge Summary CSV
                 </Button>
-                <Button onClick={exportPostTestPerceptionCSV} variant="outline" size="sm" className="border-slate-600 h-8 text-xs gap-1">
+                <Button onClick={exportPostTestPerceptionCSV} variant="outline" size="sm" className="border-border h-8 text-xs gap-1">
                   <FileSpreadsheet className="w-3 h-3" />
                   Perception Summary CSV
                 </Button>
@@ -880,7 +880,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       </Card>
 
       <Tabs defaultValue="demographics" className="space-y-6">
-        <TabsList className="bg-slate-800 border border-slate-700">
+        <TabsList className="bg-card border border-border">
           <TabsTrigger value="demographics" className="flex items-center gap-1">
             <Users className="w-3 h-3" />
             Demographics
@@ -905,13 +905,13 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
 
         <TabsContent value="demographics" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-sm text-slate-400">Demographic responses ({sessionCount.completed} completed participants)</h3>
+            <h3 className="text-sm text-muted-foreground">Demographic responses ({sessionCount.completed} completed participants)</h3>
             {permissions.canExportData && (
               <div className="flex gap-2">
-                <Button onClick={exportDemographicsCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <Button onClick={exportDemographicsCSV} variant="ghost" size="sm" className="gap-1 text-muted-foreground hover:text-white h-7 text-xs">
                   <FileSpreadsheet className="w-3 h-3" /> Summary CSV
                 </Button>
-                <Button onClick={exportDemographicsRawCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <Button onClick={exportDemographicsRawCSV} variant="ghost" size="sm" className="gap-1 text-muted-foreground hover:text-white h-7 text-xs">
                   <FileSpreadsheet className="w-3 h-3" /> Raw CSV
                 </Button>
               </div>
@@ -959,10 +959,10 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
               const totalResponses = chartData.reduce((sum, r) => sum + r.value, 0);
               
               return (
-                <Card key={questionId} className="bg-slate-800 border-slate-700">
+                <Card key={questionId} className="bg-card border-border">
                   <CardHeader>
                     <CardTitle className="text-white text-sm">{questionText}</CardTitle>
-                    <CardDescription className="text-slate-400">{totalResponses} responses</CardDescription>
+                    <CardDescription className="text-muted-foreground">{totalResponses} responses</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {chartData.length > 0 ? (
@@ -985,7 +985,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
                         </PieChart>
                       </ResponsiveContainer>
                     ) : (
-                      <p className="text-slate-500 text-center py-8">No data</p>
+                      <p className="text-muted-foreground/70 text-center py-8">No data</p>
                     )}
                   </CardContent>
                 </Card>
@@ -993,19 +993,19 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             })}
           </div>
           {Object.keys(demographicsData).length === 0 && (
-            <p className="text-slate-500 text-center py-8">No demographic data</p>
+            <p className="text-muted-foreground/70 text-center py-8">No demographic data</p>
           )}
         </TabsContent>
 
         <TabsContent value="pretest" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-sm text-slate-400">Pre-test responses ({sessionCount.completed} completed participants)</h3>
+            <h3 className="text-sm text-muted-foreground">Pre-test responses ({sessionCount.completed} completed participants)</h3>
             {permissions.canExportData && (
               <div className="flex gap-2">
-                <Button onClick={exportPreTestCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <Button onClick={exportPreTestCSV} variant="ghost" size="sm" className="gap-1 text-muted-foreground hover:text-white h-7 text-xs">
                   <FileSpreadsheet className="w-3 h-3" /> Summary CSV
                 </Button>
-                <Button onClick={exportPreTestRawCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <Button onClick={exportPreTestRawCSV} variant="ghost" size="sm" className="gap-1 text-muted-foreground hover:text-white h-7 text-xs">
                   <FileSpreadsheet className="w-3 h-3" /> Raw CSV
                 </Button>
               </div>
@@ -1015,10 +1015,10 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             {Object.entries(preTestData).map(([questionId, responses]) => {
               const questionText = getQuestionText(questionId);
               return (
-                <Card key={questionId} className="bg-slate-800 border-slate-700">
+                <Card key={questionId} className="bg-card border-border">
                   <CardHeader>
                     <CardTitle className="text-white text-sm">{questionText}</CardTitle>
-                    <CardDescription className="text-slate-400">{responses.reduce((sum, r) => sum + r.count, 0)} responses</CardDescription>
+                    <CardDescription className="text-muted-foreground">{responses.reduce((sum, r) => sum + r.count, 0)} responses</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {renderBarChartWithCorrectAnswer(questionId, responses, '#3b82f6')}
@@ -1028,7 +1028,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             })}
           </div>
           {Object.keys(preTestData).length === 0 && (
-            <p className="text-slate-500 text-center py-8">No pre-test data</p>
+            <p className="text-muted-foreground/70 text-center py-8">No pre-test data</p>
           )}
         </TabsContent>
 
@@ -1036,14 +1036,14 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Brain className="w-4 h-4 text-purple-400" />
-              <h3 className="text-sm text-slate-400">Knowledge Check Questions ({sessionCount.completed} completed participants)</h3>
+              <h3 className="text-sm text-muted-foreground">Knowledge Check Questions ({sessionCount.completed} completed participants)</h3>
             </div>
             {permissions.canExportData && (
               <div className="flex gap-2">
-                <Button onClick={exportPostTestKnowledgeCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <Button onClick={exportPostTestKnowledgeCSV} variant="ghost" size="sm" className="gap-1 text-muted-foreground hover:text-white h-7 text-xs">
                   <FileSpreadsheet className="w-3 h-3" /> Summary CSV
                 </Button>
-                <Button onClick={exportPostTestKnowledgeRawCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <Button onClick={exportPostTestKnowledgeRawCSV} variant="ghost" size="sm" className="gap-1 text-muted-foreground hover:text-white h-7 text-xs">
                   <FileSpreadsheet className="w-3 h-3" /> Raw CSV
                 </Button>
               </div>
@@ -1053,13 +1053,13 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             {knowledgeQuestions.map(([questionId, responses]) => {
               const questionText = getQuestionText(questionId);
               return (
-                <Card key={questionId} className="bg-slate-800 border-slate-700">
+                <Card key={questionId} className="bg-card border-border">
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <Award className="w-4 h-4 text-purple-400" />
                       <CardTitle className="text-white text-sm">{questionText}</CardTitle>
                     </div>
-                    <CardDescription className="text-slate-400">{responses.reduce((sum, r) => sum + r.count, 0)} responses</CardDescription>
+                    <CardDescription className="text-muted-foreground">{responses.reduce((sum, r) => sum + r.count, 0)} responses</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {renderBarChartWithCorrectAnswer(questionId, responses, '#10b981')}
@@ -1069,7 +1069,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             })}
           </div>
           {knowledgeQuestions.length === 0 && (
-            <p className="text-slate-500 text-center py-8">No knowledge check questions</p>
+            <p className="text-muted-foreground/70 text-center py-8">No knowledge check questions</p>
           )}
         </TabsContent>
 
@@ -1077,14 +1077,14 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <ThumbsUp className="w-4 h-4 text-blue-400" />
-              <h3 className="text-sm text-slate-400">Perception & Experience Questions ({sessionCount.completed} completed participants)</h3>
+              <h3 className="text-sm text-muted-foreground">Perception & Experience Questions ({sessionCount.completed} completed participants)</h3>
             </div>
             {permissions.canExportData && (
               <div className="flex gap-2">
-                <Button onClick={exportPostTestPerceptionCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <Button onClick={exportPostTestPerceptionCSV} variant="ghost" size="sm" className="gap-1 text-muted-foreground hover:text-white h-7 text-xs">
                   <FileSpreadsheet className="w-3 h-3" /> Summary CSV
                 </Button>
-                <Button onClick={exportPostTestPerceptionRawCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+                <Button onClick={exportPostTestPerceptionRawCSV} variant="ghost" size="sm" className="gap-1 text-muted-foreground hover:text-white h-7 text-xs">
                   <FileSpreadsheet className="w-3 h-3" /> Raw CSV
                 </Button>
               </div>
@@ -1103,7 +1103,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             
             return (
               <div key={category} className="space-y-4">
-                <h4 className="text-sm font-medium text-slate-300 border-b border-slate-700 pb-2 flex items-center gap-2">
+                <h4 className="text-sm font-medium text-foreground/80 border-b border-border pb-2 flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500" />
                   {categoryLabel}
                 </h4>
@@ -1111,10 +1111,10 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
                   {categoryQuestions.map(([questionId, responses]) => {
                     const questionText = getQuestionText(questionId);
                     return (
-                      <Card key={questionId} className="bg-slate-800 border-slate-700">
+                      <Card key={questionId} className="bg-card border-border">
                         <CardHeader>
                           <CardTitle className="text-white text-sm">{questionText}</CardTitle>
-                          <CardDescription className="text-slate-400">{responses.reduce((sum, r) => sum + r.count, 0)} responses</CardDescription>
+                          <CardDescription className="text-muted-foreground">{responses.reduce((sum, r) => sum + r.count, 0)} responses</CardDescription>
                         </CardHeader>
                         <CardContent>
                           <ResponsiveContainer width="100%" height={Math.max(150, responses.length * 35)}>
@@ -1143,15 +1143,15 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
           })}
           
           {perceptionQuestions.length === 0 && (
-            <p className="text-slate-500 text-center py-8">No perception questions</p>
+            <p className="text-muted-foreground/70 text-center py-8">No perception questions</p>
           )}
         </TabsContent>
 
         <TabsContent value="openfeedback" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-sm text-slate-400">Open feedback ({sessionCount.completed} completed participants)</h3>
+            <h3 className="text-sm text-muted-foreground">Open feedback ({sessionCount.completed} completed participants)</h3>
             {permissions.canExportData && (
-              <Button onClick={exportOpenFeedbackCSV} variant="ghost" size="sm" className="gap-1 text-slate-400 hover:text-white h-7 text-xs">
+              <Button onClick={exportOpenFeedbackCSV} variant="ghost" size="sm" className="gap-1 text-muted-foreground hover:text-white h-7 text-xs">
                 <FileSpreadsheet className="w-3 h-3" /> Export CSV
               </Button>
             )}
@@ -1161,33 +1161,33 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
             const questionResponses = openFeedbackData.filter(r => r.question_id === questionId);
             
             return (
-              <Card key={questionId} className="bg-slate-800 border-slate-700">
+              <Card key={questionId} className="bg-card border-border">
                 <CardHeader>
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-purple-400" />
                     <CardTitle className="text-white text-sm">{questionText}</CardTitle>
                   </div>
-                  <CardDescription className="text-slate-400">{questionResponses.length} responses</CardDescription>
+                  <CardDescription className="text-muted-foreground">{questionResponses.length} responses</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {questionResponses.length > 0 ? (
                     <div className="space-y-3 max-h-[400px] overflow-y-auto">
                       {questionResponses.map((response, idx) => (
-                        <div key={idx} className="bg-slate-900/50 rounded-lg p-3 border border-slate-700">
-                          <p className="text-slate-300 text-sm whitespace-pre-wrap">{response.answer}</p>
-                          <p className="text-slate-500 text-xs mt-1">Session: {response.session_id.slice(0, 8)}...</p>
+                        <div key={idx} className="bg-background/50 rounded-lg p-3 border border-border">
+                          <p className="text-foreground/80 text-sm whitespace-pre-wrap">{response.answer}</p>
+                          <p className="text-muted-foreground/70 text-xs mt-1">Session: {response.session_id.slice(0, 8)}...</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-slate-500 text-center py-4">No responses yet</p>
+                    <p className="text-muted-foreground/70 text-center py-4">No responses yet</p>
                   )}
                 </CardContent>
               </Card>
             );
           })}
           {openFeedbackData.length === 0 && (
-            <p className="text-slate-500 text-center py-8">No open feedback data</p>
+            <p className="text-muted-foreground/70 text-center py-8">No open feedback data</p>
           )}
         </TabsContent>
       </Tabs>

@@ -52,7 +52,7 @@ const PermissionsInfo = ({ userEmail }: PermissionsInfoProps) => {
               {impact.label}
             </Badge>
           </TooltipTrigger>
-          <TooltipContent side="left" className="bg-slate-800 border-slate-700">
+          <TooltipContent side="left" className="bg-card border-border">
             <p className="text-sm">{impact.description}</p>
           </TooltipContent>
         </Tooltip>
@@ -61,7 +61,7 @@ const PermissionsInfo = ({ userEmail }: PermissionsInfoProps) => {
   };
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
+    <Card className="bg-card border-border">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -106,7 +106,7 @@ const PermissionsInfo = ({ userEmail }: PermissionsInfoProps) => {
             <AccordionItem 
               key={groupName} 
               value={groupName}
-              className="border border-slate-700 rounded-lg px-4"
+              className="border border-border rounded-lg px-4"
             >
               <AccordionTrigger className="text-white hover:no-underline">
                 <div className="flex items-center gap-2">
@@ -127,18 +127,18 @@ const PermissionsInfo = ({ userEmail }: PermissionsInfoProps) => {
                       <div 
                         key={key} 
                         className={`flex items-center justify-between p-2 rounded ${
-                          hasPermission ? 'bg-slate-700/50' : 'bg-slate-900/50 opacity-60'
+                          hasPermission ? 'bg-muted/50' : 'bg-background/50 opacity-60'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           {hasPermission ? (
                             <CheckCircle2 className="w-4 h-4 text-green-400" />
                           ) : (
-                            <Lock className="w-4 h-4 text-slate-500" />
+                            <Lock className="w-4 h-4 text-muted-foreground/70" />
                           )}
                           <div>
                             <p className="text-sm text-white">{desc.label}</p>
-                            <p className="text-xs text-slate-400">{desc.description}</p>
+                            <p className="text-xs text-muted-foreground">{desc.description}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -153,9 +153,9 @@ const PermissionsInfo = ({ userEmail }: PermissionsInfoProps) => {
           ))}
         </Accordion>
 
-        <div className="pt-4 border-t border-slate-700">
-          <p className="text-xs text-slate-500">
-            Logged in as: <span className="text-slate-300">{userEmail}</span>
+        <div className="pt-4 border-t border-border">
+          <p className="text-xs text-muted-foreground/70">
+            Logged in as: <span className="text-foreground/80">{userEmail}</span>
             {isOwner && <span className="ml-2 text-amber-400">(Owner)</span>}
           </p>
         </div>

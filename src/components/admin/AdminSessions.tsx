@@ -2111,17 +2111,17 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         onAutoRefreshToggle={setAutoRefresh}
       />
 
-      <Card className="bg-slate-800 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-white">Participant Sessions</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardDescription className="text-muted-foreground">
                 Browse and analyze individual study sessions ({filteredSessions.length} total)
               </CardDescription>
             </div>
             {permissions.canExportData && (
-              <Button onClick={exportToCSV} variant="outline" className="border-slate-600">
+              <Button onClick={exportToCSV} variant="outline" className="border-border">
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
               </Button>
@@ -2132,16 +2132,16 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           {/* Filters */}
           <div className="flex flex-wrap gap-4">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
               <Input
                 placeholder="Search by session ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-slate-900 border-slate-600"
+                className="pl-10 bg-background border-border"
               />
             </div>
             <Select value={modeFilter} onValueChange={setModeFilter}>
-              <SelectTrigger className="w-[150px] bg-slate-900 border-slate-600">
+              <SelectTrigger className="w-[150px] bg-background border-border">
                 <SelectValue placeholder="Mode" />
               </SelectTrigger>
               <SelectContent>
@@ -2151,7 +2151,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] bg-slate-900 border-slate-600">
+              <SelectTrigger className="w-[150px] bg-background border-border">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -2163,7 +2163,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
               </SelectContent>
             </Select>
             <Select value={validationFilter} onValueChange={setValidationFilter}>
-              <SelectTrigger className="w-[180px] bg-slate-900 border-slate-600">
+              <SelectTrigger className="w-[180px] bg-background border-border">
                 <SelectValue placeholder="Validation" />
               </SelectTrigger>
               <SelectContent>
@@ -2175,7 +2175,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
               </SelectContent>
             </Select>
             <Select value={dataFilter} onValueChange={setDataFilter}>
-              <SelectTrigger className="w-[180px] bg-slate-900 border-slate-600">
+              <SelectTrigger className="w-[180px] bg-background border-border">
                 <SelectValue placeholder="Data" />
               </SelectTrigger>
               <SelectContent>
@@ -2191,8 +2191,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
           {/* Bulk Actions */}
           {selectedSessionIds.size > 0 && canManageValidation && (
-            <div className="flex items-center gap-4 p-3 bg-slate-900/50 border border-slate-700 rounded-lg">
-              <span className="text-sm text-slate-300">
+            <div className="flex items-center gap-4 p-3 bg-background/50 border border-border rounded-lg">
+              <span className="text-sm text-foreground/80">
                 {selectedSessionIds.size} session(s) selected
               </span>
               <div className="flex gap-2 flex-wrap">
@@ -2238,7 +2238,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  className="text-slate-400"
+                  className="text-muted-foreground"
                   onClick={() => setSelectedSessionIds(new Set())}
                 >
                   Clear
@@ -2248,11 +2248,11 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           )}
 
           {/* Table */}
-          <div className="rounded-md border border-slate-700">
+          <div className="rounded-md border border-border">
             <Table>
               <TableHeader>
-                <TableRow className="border-slate-700 hover:bg-slate-700/50">
-                  <TableHead className="text-slate-400 w-10">
+                <TableRow className="border-border hover:bg-muted/50">
+                  <TableHead className="text-muted-foreground w-10">
                     {canManageValidation && (
                       <TooltipProvider>
                         <Tooltip>
@@ -2266,7 +2266,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                               {paginatedSessions.length > 0 && paginatedSessions.every(s => selectedSessionIds.has(s.id)) ? (
                                 <CheckSquare className="w-4 h-4 text-primary" />
                               ) : (
-                                <Square className="w-4 h-4 text-slate-500" />
+                                <Square className="w-4 h-4 text-muted-foreground/70" />
                               )}
                             </Button>
                           </TooltipTrigger>
@@ -2275,16 +2275,16 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                       </TooltipProvider>
                     )}
                   </TableHead>
-                  <TableHead className="text-slate-400">Session ID</TableHead>
-                  <TableHead className="text-slate-400">Mode</TableHead>
-                  <TableHead className="text-slate-400">Data</TableHead>
-                  <TableHead className="text-slate-400">Started</TableHead>
-                  <TableHead className="text-slate-400">Completed</TableHead>
-                  <TableHead className="text-slate-400">Duration</TableHead>
-                  <TableHead className="text-slate-400">Status</TableHead>
-                  <TableHead className="text-slate-400">Flags</TableHead>
-                  <TableHead className="text-slate-400">Validation</TableHead>
-                  <TableHead className="text-slate-400">Actions</TableHead>
+                  <TableHead className="text-muted-foreground">Session ID</TableHead>
+                  <TableHead className="text-muted-foreground">Mode</TableHead>
+                  <TableHead className="text-muted-foreground">Data</TableHead>
+                  <TableHead className="text-muted-foreground">Started</TableHead>
+                  <TableHead className="text-muted-foreground">Completed</TableHead>
+                  <TableHead className="text-muted-foreground">Duration</TableHead>
+                  <TableHead className="text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-muted-foreground">Flags</TableHead>
+                  <TableHead className="text-muted-foreground">Validation</TableHead>
+                  <TableHead className="text-muted-foreground">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -2316,20 +2316,20 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                   return (
                     <TableRow
                       key={session.id}
-                      className={`border-slate-700 hover:bg-slate-700/50 ${isReset ? 'opacity-40' : isCompleted ? '' : 'opacity-50'} ${selectedSessionIds.has(session.id) ? 'bg-slate-700/30' : ''}`}
+                      className={`border-border hover:bg-muted/50 ${isReset ? 'opacity-40' : isCompleted ? '' : 'opacity-50'} ${selectedSessionIds.has(session.id) ? 'bg-muted/30' : ''}`}
                     >
                       <TableCell>
                         {canManageValidation ? (
                           <Checkbox
                             checked={selectedSessionIds.has(session.id)}
                             onCheckedChange={() => toggleSessionSelection(session.id)}
-                            className="border-slate-500"
+                            className="border-border/70"
                           />
                         ) : (
-                          <span className="text-xs text-slate-600">-</span>
+                          <span className="text-xs text-muted-foreground/60">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-slate-300 break-all">
+                      <TableCell className="font-mono text-xs text-foreground/80 break-all">
                         {session.session_id}
                       </TableCell>
                       <TableCell>
@@ -2362,11 +2362,11 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                                     </span>
                                   </>
                                 ) : (
-                                  <span className="text-xs text-slate-500">...</span>
+                                  <span className="text-xs text-muted-foreground/70">...</span>
                                 )}
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent className="bg-slate-900 border-slate-700">
+                            <TooltipContent className="bg-background border-border">
                               <div className="text-xs space-y-1">
                                 <p className={dataStatus?.hasDemographics ? 'text-green-400' : 'text-red-400'}>
                                   Demographics: {dataStatus?.hasDemographics ? 'Yes' : 'Missing'}
@@ -2385,15 +2385,15 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                           </Tooltip>
                         </TooltipProvider>
                       </TableCell>
-                      <TableCell className="text-slate-300">
+                      <TableCell className="text-foreground/80">
                         {format(new Date(session.started_at), 'dd MMM yyyy HH:mm')}
                       </TableCell>
-                      <TableCell className="text-slate-300">
+                      <TableCell className="text-foreground/80">
                         {session.completed_at 
                           ? format(new Date(session.completed_at), 'dd MMM yyyy HH:mm')
                           : '-'}
                       </TableCell>
-                      <TableCell className="text-slate-300">
+                      <TableCell className="text-foreground/80">
                         {duration ? `${duration} min` : '-'}
                       </TableCell>
                       <TableCell>
@@ -2409,9 +2409,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                                     ⚠️ {suspiciousFlags.length > 0 ? `Flags: ${suspiciousFlags.length}` : 'Flagged'}
                                   </Badge>
                                 </TooltipTrigger>
-                                <TooltipContent className="max-w-md bg-slate-900 border-slate-700 p-3">
+                                <TooltipContent className="max-w-md bg-background border-border p-3">
                                   <p className="font-semibold mb-2 text-white">Flag Reasons</p>
-                                  <div className="text-xs space-y-2 text-slate-300">
+                                  <div className="text-xs space-y-2 text-foreground/80">
                                     <ul className="space-y-1">
                                       {suspiciousFlags.length > 0 ? (
                                         suspiciousFlags.map((flag, i) => {
@@ -2421,7 +2421,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                                             <li key={i}>
                                               <div>• {label}</div>
                                               {details.reason && (
-                                                <div className="text-[11px] text-slate-500 ml-3">{details.reason}</div>
+                                                <div className="text-[11px] text-muted-foreground/70 ml-3">{details.reason}</div>
                                               )}
                                             </li>
                                           );
@@ -2430,7 +2430,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                                         <li className="italic">No detailed flags recorded</li>
                                       )}
                                     </ul>
-                                    <hr className="border-slate-700 my-2" />
+                                    <hr className="border-border my-2" />
                                     <p className="font-semibold text-white">Requirements to avoid flags:</p>
                                     <ul className="space-y-1 text-[11px]">
                                       {getSuspicionRequirements(activeSlides.length).map((req) => (
@@ -2442,7 +2442,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                               </Tooltip>
                             )}
                             {!showFlags && (
-                              <span className="text-xs text-slate-500">-</span>
+                              <span className="text-xs text-muted-foreground/70">-</span>
                             )}
                           </div>
                         </TooltipProvider>
@@ -2491,7 +2491,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                                   </TooltipProvider>
                                 </div>
                               ) : (
-                                <Badge variant="outline" className="text-xs text-slate-500 border-slate-600">
+                                <Badge variant="outline" className="text-xs text-muted-foreground/70 border-border">
                                   Pending
                                 </Badge>
                               )
@@ -2574,7 +2574,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                             ) : null}
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-500">-</span>
+                          <span className="text-xs text-muted-foreground/70">-</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -2615,7 +2615,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
           {/* Pagination */}
           <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted-foreground">
               Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredSessions.length)} of {filteredSessions.length}
             </p>
             <div className="flex gap-2">
@@ -2624,7 +2624,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 size="sm"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="border-slate-600"
+                className="border-border"
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
@@ -2633,7 +2633,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 size="sm"
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="border-slate-600"
+                className="border-border"
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
@@ -2644,7 +2644,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
       {/* Session Details Dialog */}
       <Dialog open={!!selectedSession} onOpenChange={() => setSelectedSession(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-slate-800 border-slate-700">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-card border-border">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="text-white break-all">
@@ -2667,7 +2667,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-slate-600"
+                    className="border-border"
                     onClick={openEditDialog}
                     disabled={!canEditSelectedSession}
                   >
@@ -2680,7 +2680,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-slate-600"
+                      className="border-border"
                       onClick={() => exportSessionToPDF(selectedSession, sessionDetails)}
                     >
                       <FileText className="w-4 h-4 mr-2" />
@@ -2689,7 +2689,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-slate-600"
+                      className="border-border"
                       onClick={() => exportDialogueCSV(selectedSession, sessionDetails)}
                     >
                       <FileSpreadsheet className="w-4 h-4 mr-2" />
@@ -2708,7 +2708,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           ) : sessionDetails ? (
             <div className="space-y-6">
               {/* Session Summary */}
-              <div className="bg-slate-900 p-4 rounded">
+              <div className="bg-background p-4 rounded">
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <h3 className="text-lg font-semibold text-white">Session Summary</h3>
                   {hasLocalOverride && (
@@ -2719,19 +2719,19 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <span className="text-slate-400 block">Mode</span>
+                    <span className="text-muted-foreground block">Mode</span>
                     <span className="text-white">{selectedSession?.modes_used?.join(', ') || selectedSession?.mode}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block">Started</span>
+                    <span className="text-muted-foreground block">Started</span>
                     <span className="text-white">{selectedSession?.started_at ? format(new Date(selectedSession.started_at), 'dd MMM yyyy HH:mm') : '-'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block">Completed</span>
+                    <span className="text-muted-foreground block">Completed</span>
                     <span className="text-white">{selectedSession?.completed_at ? format(new Date(selectedSession.completed_at), 'dd MMM yyyy HH:mm') : 'Not completed'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block">Duration</span>
+                    <span className="text-muted-foreground block">Duration</span>
                     <span className="text-white">
                       {selectedSession?.completed_at && selectedSession?.started_at
                         ? `${Math.round((new Date(selectedSession.completed_at).getTime() - new Date(selectedSession.started_at).getTime()) / 1000 / 60)} min`
@@ -2740,7 +2740,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                   </div>
                   {selectedFlags.length > 0 && (
                     <div>
-                      <span className="text-slate-400 block">Validation</span>
+                      <span className="text-muted-foreground block">Validation</span>
                       <span className="text-white capitalize">{selectedSession?.validation_status || 'pending'}</span>
                     </div>
                   )}
@@ -2760,9 +2760,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
               )}
 
               {selectedFlags.length > 0 && (
-                <div className="bg-slate-900 p-4 rounded">
+                <div className="bg-background p-4 rounded">
                   <h3 className="text-lg font-semibold text-white mb-3">Data Quality Flags</h3>
-                  <div className="space-y-2 text-sm text-slate-300">
+                  <div className="space-y-2 text-sm text-foreground/80">
                     {selectedFlags.map((flag, i) => {
                       const details = describeSuspicionFlag(String(flag));
                       const label = String(details.flag).replace(/_/g, ' ');
@@ -2770,14 +2770,14 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                         <div key={i}>
                           <div>• {label}</div>
                           {details.reason && (
-                            <div className="text-xs text-slate-500 ml-3">{details.reason}</div>
+                            <div className="text-xs text-muted-foreground/70 ml-3">{details.reason}</div>
                           )}
                         </div>
                       );
                     })}
                   </div>
-                  <div className="mt-4 text-xs text-slate-400">
-                    <div className="font-semibold text-slate-300 mb-1">Requirements to avoid flags:</div>
+                  <div className="mt-4 text-xs text-muted-foreground">
+                    <div className="font-semibold text-foreground/80 mb-1">Requirements to avoid flags:</div>
                     <ul className="space-y-1">
                       {getSuspicionRequirements(activeSlides.length).map((req) => (
                         <li key={req.id}>• {req.label}</li>
@@ -2793,31 +2793,31 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                   Demographics ({sessionDetails.demographicResponses.length > 0 ? sessionDetails.demographicResponses.length : (sessionDetails.demographics ? 3 : 0)} responses)
                 </h3>
                 {sessionDetails.demographicResponses.length > 0 ? (
-                  <div className="bg-slate-900 p-4 rounded max-h-40 overflow-y-auto">
+                  <div className="bg-background p-4 rounded max-h-40 overflow-y-auto">
                     {sessionDetails.demographicResponses.map((r, i) => (
-                      <div key={i} className="text-sm mb-2 pb-2 border-b border-slate-700 last:border-0">
-                        <span className="text-slate-400">{r.question_id}:</span>
+                      <div key={i} className="text-sm mb-2 pb-2 border-b border-border last:border-0">
+                        <span className="text-muted-foreground">{r.question_id}:</span>
                         <span className="text-white ml-2">{r.answer}</span>
                       </div>
                     ))}
                   </div>
                 ) : sessionDetails.demographics ? (
                   <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div className="bg-slate-900 p-3 rounded">
-                      <span className="text-slate-400">Age:</span>
+                    <div className="bg-background p-3 rounded">
+                      <span className="text-muted-foreground">Age:</span>
                       <span className="text-white ml-2">{sessionDetails.demographics.age_range || '-'}</span>
                     </div>
-                    <div className="bg-slate-900 p-3 rounded">
-                      <span className="text-slate-400">Education:</span>
+                    <div className="bg-background p-3 rounded">
+                      <span className="text-muted-foreground">Education:</span>
                       <span className="text-white ml-2">{sessionDetails.demographics.education || '-'}</span>
                     </div>
-                    <div className="bg-slate-900 p-3 rounded">
-                      <span className="text-slate-400">Experience:</span>
+                    <div className="bg-background p-3 rounded">
+                      <span className="text-muted-foreground">Experience:</span>
                       <span className="text-white ml-2">{sessionDetails.demographics.digital_experience || '-'}</span>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-slate-500">No demographic data</p>
+                  <p className="text-muted-foreground/70">No demographic data</p>
                 )}
               </div>
 
@@ -2825,16 +2825,16 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
               <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Pre-test ({sessionDetails.preTest.length} responses)</h3>
                 {sessionDetails.preTest.length > 0 ? (
-                  <div className="bg-slate-900 p-4 rounded max-h-40 overflow-y-auto">
+                  <div className="bg-background p-4 rounded max-h-40 overflow-y-auto">
                     {sessionDetails.preTest.map((r, i) => (
-                      <div key={i} className="text-sm mb-2 pb-2 border-b border-slate-700 last:border-0">
-                        <span className="text-slate-400">{r.question_id}:</span>
+                      <div key={i} className="text-sm mb-2 pb-2 border-b border-border last:border-0">
+                        <span className="text-muted-foreground">{r.question_id}:</span>
                         <span className="text-white ml-2">{r.answer}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-slate-500">No responses</p>
+                  <p className="text-muted-foreground/70">No responses</p>
                 )}
               </div>
 
@@ -2842,16 +2842,16 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
               <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Post-test ({sessionDetails.postTest.length} responses)</h3>
                 {sessionDetails.postTest.length > 0 ? (
-                  <div className="bg-slate-900 p-4 rounded max-h-40 overflow-y-auto">
+                  <div className="bg-background p-4 rounded max-h-40 overflow-y-auto">
                     {sessionDetails.postTest.map((r, i) => (
-                      <div key={i} className="text-sm mb-2 pb-2 border-b border-slate-700 last:border-0">
-                        <span className="text-slate-400">{r.question_id}:</span>
+                      <div key={i} className="text-sm mb-2 pb-2 border-b border-border last:border-0">
+                        <span className="text-muted-foreground">{r.question_id}:</span>
                         <span className="text-white ml-2">{r.answer}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-slate-500">No responses</p>
+                  <p className="text-muted-foreground/70">No responses</p>
                 )}
               </div>
 
@@ -2880,18 +2880,18 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                     <div>
                       <h3 className="text-lg font-semibold text-white mb-2">Avatar Interaction Summary</h3>
                       <div className="grid gap-3 md:grid-cols-3">
-                        <div className="bg-slate-900 p-3 rounded text-sm">
-                          <span className="text-slate-400">Slide time:</span>
+                        <div className="bg-background p-3 rounded text-sm">
+                          <span className="text-muted-foreground">Slide time:</span>
                           <span className="text-white ml-2">
                             {Math.round(displayAvatarSeconds / 60)} min
                           </span>
                         </div>
-                        <div className="bg-slate-900 p-3 rounded text-sm">
-                          <span className="text-slate-400">Slides tracked:</span>
+                        <div className="bg-background p-3 rounded text-sm">
+                          <span className="text-muted-foreground">Slides tracked:</span>
                           <span className="text-white ml-2">{avatarGroupsForDetails.length}</span>
                         </div>
-                        <div className="bg-slate-900 p-3 rounded text-sm">
-                          <span className="text-slate-400">Tutor messages:</span>
+                        <div className="bg-background p-3 rounded text-sm">
+                          <span className="text-muted-foreground">Tutor messages:</span>
                           <span className="text-white ml-2">
                             {sessionDetails.tutorDialogueTurns.filter((turn) => turn.role === 'user').length} user / {sessionDetails.tutorDialogueTurns.filter((turn) => turn.role === 'ai').length} AI
                           </span>
@@ -2905,16 +2905,16 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
               {avatarGroupsForDetails.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">Slide Time Breakdown</h3>
-                  <p className="text-xs text-slate-500 mb-2">
+                  <p className="text-xs text-muted-foreground/70 mb-2">
                     Segments appear when a participant returns to the same slide (back/forward or refresh). Times are summed.
                   </p>
-                  <div className="bg-slate-900 p-4 rounded max-h-48 overflow-y-auto">
+                  <div className="bg-background p-4 rounded max-h-48 overflow-y-auto">
                     {avatarGroupsForDetails.map((group) => (
-                      <div key={group.slideId} className="text-sm mb-2 pb-2 border-b border-slate-700 last:border-0">
-                        <span className="text-slate-400">{group.title}:</span>
+                      <div key={group.slideId} className="text-sm mb-2 pb-2 border-b border-border last:border-0">
+                        <span className="text-muted-foreground">{group.title}:</span>
                         <span className="text-white ml-2">{Math.round(group.total)} sec</span>
                         {group.entryIds.length > 1 && (
-                          <span className="text-xs text-slate-500 ml-2">
+                          <span className="text-xs text-muted-foreground/70 ml-2">
                             ({group.entryIds.length} segments)
                           </span>
                         )}
@@ -2927,15 +2927,15 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
               {pageGroupsForDetails.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">Page Time Breakdown</h3>
-                  <div className="bg-slate-900 p-4 rounded max-h-48 overflow-y-auto">
+                  <div className="bg-background p-4 rounded max-h-48 overflow-y-auto">
                     {pageGroupsForDetails.map((group) => (
-                      <div key={group.slideId} className="text-sm mb-2 pb-2 border-b border-slate-700 last:border-0">
-                        <span className="text-slate-400">
+                      <div key={group.slideId} className="text-sm mb-2 pb-2 border-b border-border last:border-0">
+                        <span className="text-muted-foreground">
                           {(group.title || group.slideId).replace(/^Page:\s*/i, '')}:
                         </span>
                         <span className="text-white ml-2">{Math.round(group.total)} sec</span>
                         {group.entryIds.length > 1 && (
-                          <span className="text-xs text-slate-500 ml-2">
+                          <span className="text-xs text-muted-foreground/70 ml-2">
                             ({group.entryIds.length} segments)
                           </span>
                         )}
@@ -2950,18 +2950,18 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 <h3 className="text-lg font-semibold text-white mb-2">
                   Tutor Dialogue (Learning) ({sessionDetails.tutorDialogueTurns.length} messages)
                 </h3>
-                <p className="text-xs text-slate-400 mb-2">
+                <p className="text-xs text-muted-foreground mb-2">
                   Mode: {selectedSession?.mode || 'unknown'}
                 </p>
                 {sessionDetails.tutorDialogueTurns.length > 0 ? (
-                  <div className="bg-slate-900 p-4 rounded max-h-60 overflow-y-auto">
+                  <div className="bg-background p-4 rounded max-h-60 overflow-y-auto">
                     {sessionDetails.tutorDialogueTurns.map((turn, i) => (
-                      <div key={i} className={`text-sm mb-2 p-2 rounded ${turn.role === 'user' ? 'bg-blue-900/30' : 'bg-slate-800'}`}>
+                      <div key={i} className={`text-sm mb-2 p-2 rounded ${turn.role === 'user' ? 'bg-blue-900/30' : 'bg-card'}`}>
                         <span className={`font-semibold ${turn.role === 'user' ? 'text-blue-400' : 'text-green-400'}`}>
                           {turn.role === 'user' ? 'User' : 'Alex (AI)'}:
                         </span>
                         {turn.slide_title || turn.slide_id ? (
-                          <span className="text-slate-400 ml-2">
+                          <span className="text-muted-foreground ml-2">
                             [{turn.slide_title || turn.slide_id}]
                           </span>
                         ) : null}
@@ -2970,7 +2970,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                     ))}
                   </div>
                 ) : (
-                  <p className="text-slate-500">No tutor dialogue recorded</p>
+                  <p className="text-muted-foreground/70">No tutor dialogue recorded</p>
                 )}
               </div>
 
@@ -2980,9 +2980,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                   <h3 className="text-lg font-semibold text-white mb-2">
                     Scenario Dialogue (Legacy) ({sessionDetails.dialogueTurns.length} messages)
                   </h3>
-                  <div className="bg-slate-900 p-4 rounded max-h-60 overflow-y-auto">
+                  <div className="bg-background p-4 rounded max-h-60 overflow-y-auto">
                     {sessionDetails.dialogueTurns.map((turn, i) => (
-                      <div key={i} className={`text-sm mb-2 p-2 rounded ${turn.role === 'user' ? 'bg-blue-900/30' : 'bg-slate-800'}`}>
+                      <div key={i} className={`text-sm mb-2 p-2 rounded ${turn.role === 'user' ? 'bg-blue-900/30' : 'bg-card'}`}>
                         <span className={`font-semibold ${turn.role === 'user' ? 'text-blue-400' : 'text-green-400'}`}>
                           {turn.role === 'user' ? 'User' : 'Alex (AI)'}:
                         </span>
@@ -2999,10 +2999,10 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
       {isOwner && (
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto bg-slate-900 border-slate-700">
+          <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto bg-background border-border">
             <DialogHeader>
               <DialogTitle className="text-white">Owner Session Editor</DialogTitle>
-              <DialogDescription className="text-slate-400">
+              <DialogDescription className="text-muted-foreground">
                 Hidden owner-only editor. Changes apply immediately to reports and statistics.
               </DialogDescription>
               {hasLocalOverride && (
@@ -3018,11 +3018,11 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="bg-slate-800/60 p-4 rounded space-y-4">
+                <div className="bg-card/60 p-4 rounded space-y-4">
                   <h3 className="text-lg font-semibold text-white">Session Timing</h3>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-400">Started At (ISO)</label>
+                      <label className="text-xs text-muted-foreground">Started At (ISO)</label>
                       <Input
                         value={editDraft.session.started_at}
                         onChange={(e) =>
@@ -3033,7 +3033,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-400">Completed At (ISO or blank)</label>
+                      <label className="text-xs text-muted-foreground">Completed At (ISO or blank)</label>
                       <Input
                         value={editDraft.session.completed_at || ''}
                         onChange={(e) =>
@@ -3049,7 +3049,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-400">Last Activity (ISO or blank)</label>
+                      <label className="text-xs text-muted-foreground">Last Activity (ISO or blank)</label>
                       <Input
                         value={editDraft.session.last_activity_at || ''}
                         onChange={(e) =>
@@ -3065,7 +3065,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-400">Status</label>
+                      <label className="text-xs text-muted-foreground">Status</label>
                       <Input
                         value={editDraft.session.status}
                         onChange={(e) =>
@@ -3076,7 +3076,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-400">Mode</label>
+                      <label className="text-xs text-muted-foreground">Mode</label>
                       <Select
                         value={editDraft.session.mode}
                         onValueChange={(value) =>
@@ -3101,7 +3101,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                       </Select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-400">Modes Used (comma separated)</label>
+                      <label className="text-xs text-muted-foreground">Modes Used (comma separated)</label>
                       <Input
                         value={editDraft.session.modes_used.join(', ')}
                         onChange={(e) =>
@@ -3128,12 +3128,12 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-white">Demographics</h3>
                   {editDraft.demographicResponses.length === 0 ? (
-                    <p className="text-slate-500 text-sm">No demographic responses recorded.</p>
+                    <p className="text-muted-foreground/70 text-sm">No demographic responses recorded.</p>
                   ) : (
                     <div className="space-y-3">
                       {editDraft.demographicResponses.map((response, index) => (
-                        <div key={response.id} className="bg-slate-800/60 p-3 rounded space-y-2">
-                          <div className="text-xs text-slate-400">{response.question_id}</div>
+                        <div key={response.id} className="bg-card/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-muted-foreground">{response.question_id}</div>
                           <Textarea
                             value={response.answer}
                             onChange={(e) =>
@@ -3158,12 +3158,12 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-white">Pre-test</h3>
                   {editDraft.preTest.length === 0 ? (
-                    <p className="text-slate-500 text-sm">No pre-test responses recorded.</p>
+                    <p className="text-muted-foreground/70 text-sm">No pre-test responses recorded.</p>
                   ) : (
                     <div className="space-y-3">
                       {editDraft.preTest.map((response, index) => (
-                        <div key={response.id} className="bg-slate-800/60 p-3 rounded space-y-2">
-                          <div className="text-xs text-slate-400">{response.question_id}</div>
+                        <div key={response.id} className="bg-card/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-muted-foreground">{response.question_id}</div>
                           <Textarea
                             value={response.answer}
                             onChange={(e) =>
@@ -3186,12 +3186,12 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-white">Post-test</h3>
                   {editDraft.postTest.length === 0 ? (
-                    <p className="text-slate-500 text-sm">No post-test responses recorded.</p>
+                    <p className="text-muted-foreground/70 text-sm">No post-test responses recorded.</p>
                   ) : (
                     <div className="space-y-3">
                       {editDraft.postTest.map((response, index) => (
-                        <div key={response.id} className="bg-slate-800/60 p-3 rounded space-y-2">
-                          <div className="text-xs text-slate-400">{response.question_id}</div>
+                        <div key={response.id} className="bg-card/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-muted-foreground">{response.question_id}</div>
                           <Textarea
                             value={response.answer}
                             onChange={(e) =>
@@ -3214,15 +3214,15 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-white">Scenarios</h3>
                   {editDraft.scenarios.length === 0 ? (
-                    <p className="text-slate-500 text-sm">No scenario responses recorded.</p>
+                    <p className="text-muted-foreground/70 text-sm">No scenario responses recorded.</p>
                   ) : (
                     <div className="space-y-3">
                       {editDraft.scenarios.map((scenario, index) => (
-                        <div key={scenario.id} className="bg-slate-800/60 p-3 rounded space-y-3">
-                          <div className="text-xs text-slate-400">{scenario.scenario_id}</div>
+                        <div key={scenario.id} className="bg-card/60 p-3 rounded space-y-3">
+                          <div className="text-xs text-muted-foreground">{scenario.scenario_id}</div>
                           <div className="grid md:grid-cols-3 gap-3">
                             <div className="space-y-1">
-                              <label className="text-xs text-slate-400">Trust Rating</label>
+                              <label className="text-xs text-muted-foreground">Trust Rating</label>
                               <Input
                                 type="number"
                                 value={scenario.trust_rating}
@@ -3241,7 +3241,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                               />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-xs text-slate-400">Confidence</label>
+                              <label className="text-xs text-muted-foreground">Confidence</label>
                               <Input
                                 type="number"
                                 value={scenario.confidence_rating}
@@ -3260,7 +3260,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                               />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-xs text-slate-400">Engagement</label>
+                              <label className="text-xs text-muted-foreground">Engagement</label>
                               <div className="flex items-center gap-2 pt-2">
                                 <Checkbox
                                   checked={scenario.engagement_rating}
@@ -3277,14 +3277,14 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                                     )
                                   }
                                 />
-                                <span className="text-sm text-slate-300">
+                                <span className="text-sm text-foreground/80">
                                   {scenario.engagement_rating ? 'Engaged' : 'Not engaged'}
                                 </span>
                               </div>
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <label className="text-xs text-slate-400">Completed At (ISO)</label>
+                            <label className="text-xs text-muted-foreground">Completed At (ISO)</label>
                             <Input
                               value={scenario.completed_at}
                               onChange={(e) =>
@@ -3309,8 +3309,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-white">Avatar Slide Time</h3>
-                  <div className="bg-slate-800/60 p-3 rounded flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <div className="text-sm text-slate-300">
+                  <div className="bg-card/60 p-3 rounded flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div className="text-sm text-foreground/80">
                       <div>
                         Session duration:{' '}
                         <span className="text-white">
@@ -3330,12 +3330,12 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                           min
                         </span>
                       </div>
-                      <div className="text-xs text-slate-400">
+                      <div className="text-xs text-muted-foreground">
                         Auto-distribution caps each slide at {MAX_AVATAR_SLIDE_SECONDS}s.
                       </div>
                     </div>
                     <div className="flex flex-col items-start gap-2">
-                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Checkbox
                           checked={autoDistributeSlides}
                           onCheckedChange={(checked) => setAutoDistributeSlides(Boolean(checked))}
@@ -3345,7 +3345,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-slate-600"
+                        className="border-border"
                         disabled={!sessionDurationSeconds}
                         onClick={() =>
                           setEditDraft((prev) => (prev ? distributeAvatarTime(prev) : prev))
@@ -3356,21 +3356,21 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                     </div>
                   </div>
                   {avatarGroupsForEdit.length === 0 ? (
-                    <p className="text-slate-500 text-sm">No avatar slide timing recorded.</p>
+                    <p className="text-muted-foreground/70 text-sm">No avatar slide timing recorded.</p>
                   ) : (
                     <div className="space-y-3">
                       {avatarGroupsForEdit.map((group) => (
-                        <div key={group.slideId} className="bg-slate-800/60 p-3 rounded space-y-2">
-                          <div className="text-xs text-slate-400">
+                        <div key={group.slideId} className="bg-card/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-muted-foreground">
                             {group.title}
                             {group.entryIds.length > 1 && (
-                              <span className="text-xs text-slate-500 ml-2">
+                              <span className="text-xs text-muted-foreground/70 ml-2">
                                 ({group.entryIds.length} segments)
                               </span>
                             )}
                           </div>
                           <div className="space-y-1">
-                            <label className="text-xs text-slate-400">Total Duration (seconds)</label>
+                            <label className="text-xs text-muted-foreground">Total Duration (seconds)</label>
                             <Input
                               type="number"
                               value={Math.round(group.total)}
@@ -3388,16 +3388,16 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-white">Page Time</h3>
                   {pageGroupsForEdit.length === 0 ? (
-                    <p className="text-slate-500 text-sm">No page timing recorded.</p>
+                    <p className="text-muted-foreground/70 text-sm">No page timing recorded.</p>
                   ) : (
                     <div className="space-y-3">
                       {pageGroupsForEdit.map((group) => (
-                        <div key={group.slideId} className="bg-slate-800/60 p-3 rounded space-y-2">
-                          <div className="text-xs text-slate-400">
+                        <div key={group.slideId} className="bg-card/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-muted-foreground">
                             {(group.title || group.slideId).replace(/^Page:\s*/i, '')}
                           </div>
                           <div className="space-y-1">
-                            <label className="text-xs text-slate-400">Total Duration (seconds)</label>
+                            <label className="text-xs text-muted-foreground">Total Duration (seconds)</label>
                             <Input
                               type="number"
                               value={Math.round(group.total)}
@@ -3415,12 +3415,12 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-white">Tutor Dialogue</h3>
                   {editDraft.tutorDialogueTurns.length === 0 ? (
-                    <p className="text-slate-500 text-sm">No tutor dialogue recorded.</p>
+                    <p className="text-muted-foreground/70 text-sm">No tutor dialogue recorded.</p>
                   ) : (
                     <div className="space-y-3">
                       {editDraft.tutorDialogueTurns.map((turn, index) => (
-                        <div key={turn.id} className="bg-slate-800/60 p-3 rounded space-y-2">
-                          <div className="text-xs text-slate-400">
+                        <div key={turn.id} className="bg-card/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-muted-foreground">
                             {turn.role.toUpperCase()}
                             {turn.slide_title ? ` · ${turn.slide_title}` : ''}
                           </div>
@@ -3448,12 +3448,12 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-white">Scenario Dialogue</h3>
                   {editDraft.dialogueTurns.length === 0 ? (
-                    <p className="text-slate-500 text-sm">No scenario dialogue recorded.</p>
+                    <p className="text-muted-foreground/70 text-sm">No scenario dialogue recorded.</p>
                   ) : (
                     <div className="space-y-3">
                       {editDraft.dialogueTurns.map((turn, index) => (
-                        <div key={turn.id} className="bg-slate-800/60 p-3 rounded space-y-2">
-                          <div className="text-xs text-slate-400">
+                        <div key={turn.id} className="bg-card/60 p-3 rounded space-y-2">
+                          <div className="text-xs text-muted-foreground">
                             {turn.role.toUpperCase()}
                             {turn.scenario_name ? ` · ${turn.scenario_name}` : ''}
                           </div>
@@ -3490,7 +3490,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                   Reset local override
                 </Button>
               )}
-              <Button variant="outline" className="border-slate-600" onClick={() => setIsEditOpen(false)}>
+              <Button variant="outline" className="border-border" onClick={() => setIsEditOpen(false)}>
                 Cancel
               </Button>
               <Button onClick={saveOwnerEdits} disabled={isSavingEdit}>

@@ -46,15 +46,15 @@ const DateRangeFilter = ({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3 p-4 bg-slate-800 rounded-lg border border-slate-700">
+    <div className="flex flex-wrap items-center gap-3 p-4 bg-card rounded-lg border border-border">
       <div className="flex items-center gap-2">
-        <span className="text-sm text-slate-400">From:</span>
+        <span className="text-sm text-muted-foreground">From:</span>
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               className={cn(
-                "w-[140px] justify-start text-left font-normal border-slate-600",
+                "w-[140px] justify-start text-left font-normal border-border",
                 !startDate && "text-muted-foreground"
               )}
             >
@@ -62,7 +62,7 @@ const DateRangeFilter = ({
               {startDate ? format(startDate, "MMM d, yyyy") : "Start date"}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-slate-800 border-slate-700">
+          <PopoverContent className="w-auto p-0 bg-card border-border">
             <Calendar
               mode="single"
               selected={startDate}
@@ -76,13 +76,13 @@ const DateRangeFilter = ({
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-sm text-slate-400">To:</span>
+        <span className="text-sm text-muted-foreground">To:</span>
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               className={cn(
-                "w-[140px] justify-start text-left font-normal border-slate-600",
+                "w-[140px] justify-start text-left font-normal border-border",
                 !endDate && "text-muted-foreground"
               )}
             >
@@ -90,7 +90,7 @@ const DateRangeFilter = ({
               {endDate ? format(endDate, "MMM d, yyyy") : "End date"}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-slate-800 border-slate-700">
+          <PopoverContent className="w-auto p-0 bg-card border-border">
             <Calendar
               mode="single"
               selected={endDate}
@@ -103,14 +103,14 @@ const DateRangeFilter = ({
         </Popover>
       </div>
 
-      <div className="flex items-center gap-2 border-l border-slate-600 pl-3">
+      <div className="flex items-center gap-2 border-l border-border pl-3">
         {presets.map((preset) => (
           <Button
             key={preset.label}
             variant="ghost"
             size="sm"
             onClick={() => handlePreset(preset.days)}
-            className="text-slate-400 hover:text-white hover:bg-slate-700"
+            className="text-muted-foreground hover:text-white hover:bg-muted"
           >
             {preset.label}
           </Button>
@@ -124,7 +124,7 @@ const DateRangeFilter = ({
             size="sm"
             onClick={() => onAutoRefreshToggle(!autoRefreshEnabled)}
             className={cn(
-              "border-slate-600",
+              "border-border",
               autoRefreshEnabled && "bg-green-600 hover:bg-green-700"
             )}
           >
@@ -136,7 +136,7 @@ const DateRangeFilter = ({
           size="sm"
           onClick={onRefresh}
           disabled={isRefreshing}
-          className="border-slate-600"
+          className="border-border"
         >
           <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
           Refresh

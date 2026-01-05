@@ -345,7 +345,7 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
       <AccordionItem 
         key={question.id} 
         value={question.id}
-        className={`border rounded-lg px-4 ${question.is_active ? 'border-slate-700' : 'border-red-900/50 bg-red-900/10'}`}
+        className={`border rounded-lg px-4 ${question.is_active ? 'border-border' : 'border-red-900/50 bg-red-900/10'}`}
       >
         <AccordionTrigger className="text-white hover:no-underline">
           <div className="flex items-center gap-3 flex-1">
@@ -360,24 +360,24 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
         </AccordionTrigger>
         <AccordionContent className="space-y-4 pt-4">
           <div>
-            <Label className="text-slate-300">Question Text</Label>
+            <Label className="text-foreground/80">Question Text</Label>
             <Textarea
               value={isEditing ? data.question_text : question.question_text}
               onChange={(e) => isEditing && setEditedData({ ...editedData, question_text: e.target.value })}
-              className="mt-1 bg-slate-900 border-slate-600"
+              className="mt-1 bg-background border-border"
               disabled={!isEditing}
             />
           </div>
 
           {question.category && question.question_type !== 'open_feedback' && (
             <div>
-              <Label className="text-slate-300">Category</Label>
+              <Label className="text-foreground/80">Category</Label>
               <Select
                 value={isEditing ? data.category || '' : question.category}
                 onValueChange={(value) => isEditing && setEditedData({ ...editedData, category: value })}
                 disabled={!isEditing}
               >
-                <SelectTrigger className="bg-slate-900 border-slate-600">
+                <SelectTrigger className="bg-background border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -396,8 +396,8 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
           {/* Mode Specific - for post-test perception questions */}
           {question.question_type === 'post_test' && ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'].includes(question.category || '') && (
             <div>
-              <Label className="text-slate-300">Show for Mode</Label>
-              <p className="text-slate-500 text-xs mt-1 mb-2">
+              <Label className="text-foreground/80">Show for Mode</Label>
+              <p className="text-muted-foreground/70 text-xs mt-1 mb-2">
                 Control which participants see this question based on their learning mode.
               </p>
               <Select
@@ -405,7 +405,7 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                 onValueChange={(value) => isEditing && setEditedData({ ...editedData, mode_specific: value })}
                 disabled={!isEditing}
               >
-                <SelectTrigger className="bg-slate-900 border-slate-600">
+                <SelectTrigger className="bg-background border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -421,7 +421,7 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
           {question.question_type === 'demographic' && (
             <div className="space-y-3">
               <div>
-                <Label className="text-slate-300">Placeholder Text</Label>
+                <Label className="text-foreground/80">Placeholder Text</Label>
                 <Input
                   value={isEditing ? (editedData.question_meta?.placeholder || '') : (question.question_meta?.placeholder || '')}
                   onChange={(e) =>
@@ -432,7 +432,7 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                     })
                   }
                   placeholder="e.g., Enter your answer..."
-                  className="mt-1 bg-slate-900 border-slate-600"
+                  className="mt-1 bg-background border-border"
                   disabled={!isEditing}
                 />
               </div>
@@ -457,7 +457,7 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                   }}
                   disabled={!isEditing}
                 />
-                <Label htmlFor={`prefer-not-to-say-${question.id}`} className="text-slate-300">
+                <Label htmlFor={`prefer-not-to-say-${question.id}`} className="text-foreground/80">
                   Show “Prefer not to say”
                 </Label>
               </div>
@@ -466,8 +466,8 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
 
           {question.question_type !== 'open_feedback' && (
             <div>
-              <Label className="text-slate-300">Answer Options</Label>
-              <p className="text-slate-500 text-xs mt-1 mb-2">
+              <Label className="text-foreground/80">Answer Options</Label>
+              <p className="text-muted-foreground/70 text-xs mt-1 mb-2">
                 Click ✓ to mark correct answers. You can select multiple correct answers.
               </p>
               <div className="space-y-2 mt-2">
@@ -482,7 +482,7 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                       <Input
                         value={option}
                         onChange={(e) => isEditing && updateOption(oIndex, e.target.value)}
-                        className={`bg-slate-900 border-slate-600 ${isCorrect ? 'border-green-500' : ''}`}
+                        className={`bg-background border-border ${isCorrect ? 'border-green-500' : ''}`}
                         disabled={!isEditing}
                       />
                       {question.correct_answer !== undefined && (
@@ -496,7 +496,7 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                             if (!isEditing) return;
                             toggleCorrectAnswer(option);
                           }}
-                          className={isCorrect ? 'bg-green-600' : 'border-slate-600'}
+                          className={isCorrect ? 'bg-green-600' : 'border-border'}
                           disabled={!isEditing}
                         >
                           ✓
@@ -520,7 +520,7 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                     size="sm"
                     variant="outline"
                     onClick={addOption}
-                    className="border-slate-600"
+                    className="border-border"
                   >
                     <Plus className="w-4 h-4 mr-1" /> Add Option
                   </Button>
@@ -530,12 +530,12 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
           )}
           
           {question.question_type === 'open_feedback' && (
-            <div className="text-slate-400 text-sm bg-slate-800/50 p-3 rounded">
+            <div className="text-muted-foreground text-sm bg-card/50 p-3 rounded">
               <p>📝 Open-ended question - participants provide free-text responses (max 200 characters)</p>
             </div>
           )}
 
-          <div className="flex items-center gap-2 pt-4 border-t border-slate-700">
+          <div className="flex items-center gap-2 pt-4 border-t border-border">
             {isEditing ? (
               <>
                 <Button
@@ -553,7 +553,7 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                 <Button
                   variant="outline"
                   onClick={cancelEditing}
-                  className="border-slate-600"
+                  className="border-border"
                 >
                   <XCircle className="w-4 h-4 mr-2" />
                   Cancel
@@ -573,12 +573,12 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="outline" disabled className="border-slate-600 opacity-50">
+                        <Button variant="outline" disabled className="border-border opacity-50">
                           <Lock className="w-4 h-4 mr-2" />
                           View Only
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600">
+                      <TooltipContent className="bg-muted text-foreground border-border">
                         <p className="text-sm">You have read-only access</p>
                       </TooltipContent>
                     </Tooltip>
@@ -606,12 +606,12 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="ml-auto flex items-center gap-1 text-slate-500 cursor-not-allowed opacity-50 px-3">
+                        <div className="ml-auto flex items-center gap-1 text-muted-foreground/70 cursor-not-allowed opacity-50 px-3">
                           <Lock className="w-4 h-4" />
                           <span className="text-xs">Delete (Owner only)</span>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600 max-w-xs">
+                      <TooltipContent className="bg-muted text-foreground border-border max-w-xs">
                         <p className="text-sm">Deleting questions is restricted to the owner. You can disable them instead.</p>
                       </TooltipContent>
                     </Tooltip>
@@ -655,7 +655,7 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
       </Card>
 
       <Tabs defaultValue="demographics" className="space-y-6">
-        <TabsList className="bg-slate-800 border border-slate-700">
+        <TabsList className="bg-card border border-border">
           <TabsTrigger value="demographics">Demographics ({demographicQuestions.length})</TabsTrigger>
           <TabsTrigger value="pretest">Pre-test ({preTestQuestions.length})</TabsTrigger>
           <TabsTrigger value="posttest">Post-test ({postTestQuestions.length})</TabsTrigger>
@@ -663,11 +663,11 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
 
         {/* Pre-test Questions */}
         <TabsContent value="pretest" className="space-y-4">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-white">Pre-test Questions</CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-muted-foreground">
                   Test questions shown before the learning phase
                 </CardDescription>
               </div>
@@ -691,14 +691,14 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
         {/* Post-test Questions */}
         <TabsContent value="posttest" className="space-y-6">
           {/* Page 1: Experience Assessment */}
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Badge variant="outline" className="bg-blue-900/50 border-blue-500 text-blue-300">Page 1</Badge>
                   Experience Assessment
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-muted-foreground">
                   Likert scale questions about trust, engagement, and satisfaction (shown first)
                 </CardDescription>
               </div>
@@ -726,20 +726,20 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                   .map(renderQuestionEditor)}
               </Accordion>
               {postTestQuestions.filter(q => ['expectations', 'avatar-qualities', 'realism', 'trust', 'engagement', 'satisfaction'].includes(q.category || '')).length === 0 && (
-                <p className="text-slate-500 text-center py-4">No experience questions. Add one above.</p>
+                <p className="text-muted-foreground/70 text-center py-4">No experience questions. Add one above.</p>
               )}
             </CardContent>
           </Card>
 
           {/* Page 2: Knowledge Assessment */}
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Badge variant="outline" className="bg-purple-900/50 border-purple-500 text-purple-300">Page 2</Badge>
                   Knowledge Assessment
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-muted-foreground">
                   Multiple choice knowledge check questions (shown after experience questions)
                 </CardDescription>
               </div>
@@ -759,20 +759,20 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                   .map(renderQuestionEditor)}
               </Accordion>
               {postTestQuestions.filter(q => q.category === 'knowledge').length === 0 && (
-                <p className="text-slate-500 text-center py-4">No knowledge questions. Add one above.</p>
+                <p className="text-muted-foreground/70 text-center py-4">No knowledge questions. Add one above.</p>
               )}
             </CardContent>
           </Card>
 
           {/* Page 3: Open Feedback */}
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Badge variant="outline" className="bg-green-900/50 border-green-500 text-green-300">Page 3</Badge>
                   Open Feedback
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-muted-foreground">
                   Open-ended questions for qualitative feedback (optional for participants)
                 </CardDescription>
               </div>
@@ -792,7 +792,7 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
                   .map(renderQuestionEditor)}
               </Accordion>
               {postTestQuestions.filter(q => q.category === 'open_feedback').length === 0 && (
-                <p className="text-slate-500 text-center py-4">No open feedback questions. Add one above.</p>
+                <p className="text-muted-foreground/70 text-center py-4">No open feedback questions. Add one above.</p>
               )}
             </CardContent>
           </Card>
@@ -800,11 +800,11 @@ const AdminQuestions = ({ userEmail }: AdminQuestionsProps) => {
 
         {/* Demographics */}
         <TabsContent value="demographics" className="space-y-4">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-white">Demographic Questions</CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-muted-foreground">
                   Questions about participant demographics
                 </CardDescription>
               </div>

@@ -268,9 +268,9 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <HelpCircle className="w-4 h-4 text-slate-400 cursor-help ml-1" />
+          <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help ml-1" />
         </TooltipTrigger>
-        <TooltipContent className="max-w-xs bg-slate-700 text-slate-100 border-slate-600">
+        <TooltipContent className="max-w-xs bg-muted text-foreground border-border">
           <p className="text-sm">{content}</p>
         </TooltipContent>
       </Tooltip>
@@ -286,11 +286,11 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
       <AccordionItem 
         key={slide.id} 
         value={slide.id}
-        className={`border rounded-lg px-4 ${slide.is_active ? 'border-slate-700' : 'border-orange-900/50 bg-orange-900/10'}`}
+        className={`border rounded-lg px-4 ${slide.is_active ? 'border-border' : 'border-orange-900/50 bg-orange-900/10'}`}
       >
         <AccordionTrigger className="text-white hover:no-underline">
           <div className="flex items-center gap-3 flex-1">
-            <GripVertical className="w-4 h-4 text-slate-500" />
+            <GripVertical className="w-4 h-4 text-muted-foreground/70" />
             <Badge variant="outline" className="text-xs font-mono">
               #{slideNumber}
             </Badge>
@@ -308,13 +308,13 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
           {/* Title */}
           <div>
             <div className="flex items-center">
-              <Label className="text-slate-300">Slide Title</Label>
+              <Label className="text-foreground/80">Slide Title</Label>
               <HelpTooltip content="The main heading displayed at the top of the slide" />
             </div>
             <Input
               value={isEditing ? data.title : slide.title}
               onChange={(e) => isEditing && setEditedData({ ...editedData, title: e.target.value })}
-              className="mt-1 bg-slate-900 border-slate-600"
+              className="mt-1 bg-background border-border"
               disabled={!isEditing}
             />
           </div>
@@ -323,7 +323,7 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
           <div>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <Label className="text-slate-300">
+                <Label className="text-foreground/80">
                   <BookOpen className="w-4 h-4 inline mr-1" />
                   Slide Content
                 </Label>
@@ -333,8 +333,8 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
             
             {/* Markdown formatting tips */}
             {isEditing && (
-              <div className="mt-2 mb-2 p-3 bg-slate-900/50 rounded-lg border border-slate-700 text-xs text-slate-400">
-                <p className="font-medium text-slate-300 mb-1">Formatting Tips:</p>
+              <div className="mt-2 mb-2 p-3 bg-background/50 rounded-lg border border-border text-xs text-muted-foreground">
+                <p className="font-medium text-foreground/80 mb-1">Formatting Tips:</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                   <span><code className="text-blue-400"># Title</code> → Big section header</span>
                   <span><code className="text-blue-400">## Title</code> → Section header</span>
@@ -356,7 +356,7 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
             <Textarea
               value={isEditing ? data.content : slide.content}
               onChange={(e) => isEditing && setEditedData({ ...editedData, content: e.target.value })}
-              className="mt-1 bg-slate-900 border-slate-600 min-h-[200px] font-mono text-sm"
+              className="mt-1 bg-background border-border min-h-[200px] font-mono text-sm"
               disabled={!isEditing}
             />
           </div>
@@ -364,17 +364,17 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
           {/* Key Points */}
           <div>
             <div className="flex items-center">
-              <Label className="text-slate-300">Key Points</Label>
+              <Label className="text-foreground/80">Key Points</Label>
               <HelpTooltip content="Bullet points summarizing the main concepts. These are displayed prominently on the slide." />
             </div>
             <div className="space-y-2 mt-2">
               {(isEditing ? data.key_points || [] : slide.key_points).map((point, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <span className="text-slate-500 text-sm w-6">•</span>
+                  <span className="text-muted-foreground/70 text-sm w-6">•</span>
                   <Input
                     value={point}
                     onChange={(e) => isEditing && updateKeyPoint(index, e.target.value)}
-                    className="bg-slate-900 border-slate-600"
+                    className="bg-background border-border"
                     disabled={!isEditing}
                   />
                   {isEditing && (
@@ -394,7 +394,7 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
                   size="sm"
                   variant="outline"
                   onClick={addKeyPoint}
-                  className="border-slate-600 mt-2"
+                  className="border-border mt-2"
                 >
                   <Plus className="w-4 h-4 mr-1" /> Add Key Point
                 </Button>
@@ -405,13 +405,13 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
           {/* Image URL */}
           <div>
             <div className="flex items-center">
-              <Label className="text-slate-300">Image URL (optional)</Label>
+              <Label className="text-foreground/80">Image URL (optional)</Label>
               <HelpTooltip content="Full URL to an image to display on this slide. Leave empty for no image." />
             </div>
             <Input
               value={isEditing ? data.image_url || '' : slide.image_url || ''}
               onChange={(e) => isEditing && setEditedData({ ...editedData, image_url: e.target.value || null })}
-              className="mt-1 bg-slate-900 border-slate-600"
+              className="mt-1 bg-background border-border"
               placeholder="https://example.com/image.jpg"
               disabled={!isEditing}
             />
@@ -430,14 +430,14 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
             <Textarea
               value={isEditing ? data.system_prompt_context : slide.system_prompt_context}
               onChange={(e) => isEditing && setEditedData({ ...editedData, system_prompt_context: e.target.value })}
-              className="bg-slate-900 border-blue-700/50 min-h-[150px] text-sm"
+              className="bg-background border-blue-700/50 min-h-[150px] text-sm"
               placeholder="Describe this slide's topic in detail. Include key concepts, definitions, examples, and common misconceptions the AI should know about..."
               disabled={!isEditing}
             />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pt-4 border-t border-slate-700">
+          <div className="flex items-center gap-2 pt-4 border-t border-border">
             {isEditing ? (
               <>
                 <Button
@@ -455,7 +455,7 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
                 <Button
                   variant="outline"
                   onClick={cancelEditing}
-                  className="border-slate-600"
+                  className="border-border"
                 >
                   <XCircle className="w-4 h-4 mr-2" />
                   Cancel
@@ -475,12 +475,12 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="outline" disabled className="border-slate-600 opacity-50">
+                        <Button variant="outline" disabled className="border-border opacity-50">
                           <Lock className="w-4 h-4 mr-2" />
                           View Only
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600">
+                      <TooltipContent className="bg-muted text-foreground border-border">
                         <p className="text-sm">You have read-only access</p>
                       </TooltipContent>
                     </Tooltip>
@@ -512,12 +512,12 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                         <div className="ml-auto flex items-center gap-1 text-slate-500 cursor-not-allowed opacity-50 px-3">
+                         <div className="ml-auto flex items-center gap-1 text-muted-foreground/70 cursor-not-allowed opacity-50 px-3">
                           <Lock className="w-4 h-4" />
                           <span className="text-xs">Delete (Owner only)</span>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600 max-w-xs">
+                      <TooltipContent className="bg-muted text-foreground border-border max-w-xs">
                         <p className="text-sm">Deleting slides is restricted to the owner. You can hide slides instead.</p>
                       </TooltipContent>
                     </Tooltip>
@@ -558,13 +558,13 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
       </Card>
 
       {/* Slide Visual Style Info */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-card/50 border-border">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
             <BookOpen className="w-5 h-5 text-cyan-400 mt-0.5" />
             <div>
-              <p className="text-slate-200 font-medium">Slide Presentation Style</p>
-              <p className="text-slate-400 text-sm mt-1">
+              <p className="text-foreground/90 font-medium">Slide Presentation Style</p>
+              <p className="text-muted-foreground text-sm mt-1">
                 Slides are displayed with a distinctive <strong className="text-cyan-400">presentation-style background</strong> that 
                 visually separates them from the rest of the page. Each slide has corner accents, a gradient header, 
                 and an elevated shadow effect to create a PowerPoint-like feel. Content uses Markdown formatting 
@@ -576,11 +576,11 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
       </Card>
 
       {/* Main Card */}
-      <Card className="bg-slate-800 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-white">Learning Slides ({slides.length})</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-muted-foreground">
               Manage the slide content shown to participants
             </CardDescription>
           </div>
@@ -595,7 +595,7 @@ const AdminSlides = ({ userEmail }: AdminSlidesProps) => {
         </CardHeader>
         <CardContent>
           {slides.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-12 text-muted-foreground">
               <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>No slides yet. Click "Add Slide" to create your first slide.</p>
             </div>

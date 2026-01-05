@@ -270,7 +270,7 @@ const ExportButton = ({ onClick, label, size = "sm", canExport = true }: { onCli
       variant="ghost" 
       size={size === "xs" ? "sm" : size}
       onClick={onClick} 
-      className={`gap-1 text-slate-400 hover:text-white ${size === "xs" ? "h-6 px-2 text-xs" : ""}`}
+      className={`gap-1 text-muted-foreground hover:text-white ${size === "xs" ? "h-6 px-2 text-xs" : ""}`}
     >
       <Download className={size === "xs" ? "w-3 h-3" : "w-4 h-4"} />
       {label}
@@ -2583,7 +2583,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
   }
 
   if (!stats) {
-    return <div className="text-slate-400">Error loading statistics</div>;
+    return <div className="text-muted-foreground">Error loading statistics</div>;
   }
 
   const prePostComparisonData = [
@@ -2599,7 +2599,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
   return (
     <div className="space-y-6">
       {/* Filters & Export Section */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-card/50 border-border">
         <CardContent className="pt-4 space-y-4">
           <div className="flex flex-wrap gap-4 items-end">
             <DateRangeFilter
@@ -2615,9 +2615,9 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
             
             {/* Status Filter */}
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-slate-400" />
+              <Filter className="w-4 h-4 text-muted-foreground" />
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-                <SelectTrigger className="w-[160px] bg-slate-900 border-slate-600">
+                <SelectTrigger className="w-[160px] bg-background border-border">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -2633,13 +2633,13 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 checked={includeFlagged}
                 onCheckedChange={(checked) => setIncludeFlagged(Boolean(checked))}
               />
-              <span className="text-sm text-slate-300">Include flagged (pending)</span>
+              <span className="text-sm text-foreground/80">Include flagged (pending)</span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      className="text-slate-400 hover:text-slate-200 transition"
+                      className="text-muted-foreground hover:text-foreground/90 transition"
                       aria-label="About flagged sessions"
                     >
                       <Info className="w-4 h-4" />
@@ -2654,13 +2654,13 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           </div>
 
           {/* Export Buttons */}
-          <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-slate-700">
-            <span className="text-xs text-slate-500 uppercase tracking-wider mr-2">Export:</span>
-            <Button variant="outline" size="sm" onClick={exportComprehensiveCSV} className="gap-2 border-slate-600 h-8 text-xs">
+          <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-border">
+            <span className="text-xs text-muted-foreground/70 uppercase tracking-wider mr-2">Export:</span>
+            <Button variant="outline" size="sm" onClick={exportComprehensiveCSV} className="gap-2 border-border h-8 text-xs">
               <FileSpreadsheet className="w-3 h-3" />
               Full CSV
             </Button>
-            <Button variant="outline" size="sm" onClick={exportComprehensiveJSON} className="gap-2 border-slate-600 h-8 text-xs">
+            <Button variant="outline" size="sm" onClick={exportComprehensiveJSON} className="gap-2 border-border h-8 text-xs">
               <Download className="w-3 h-3" />
               Full JSON
             </Button>
@@ -2693,18 +2693,18 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       )}
 
       {/* Summary Stats - Combined */}
-      <Card className="bg-gradient-to-r from-slate-800 to-slate-800/80 border-slate-700">
+      <Card className="bg-gradient-to-r from-card to-card/80 border-border">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <BarChart2 className="w-5 h-5 text-primary" />
               Summary Statistics
             </CardTitle>
-            <Badge variant="outline" className="text-slate-400">
+            <Badge variant="outline" className="text-muted-foreground">
               {statusFilter === 'completed' ? 'Completed sessions' : statusFilter === 'incomplete' ? 'Incomplete sessions' : 'All sessions'}
             </Badge>
           </div>
-          <CardDescription className="text-slate-400">
+          <CardDescription className="text-muted-foreground">
             Key metrics for {stats.rawSessions.length} sessions in selected range
             {stats.knowledgeGain.length < stats.rawSessions.length && (
               <span className="text-amber-400"> • {stats.rawSessions.length - stats.knowledgeGain.length} sessions missing score data</span>
@@ -2713,40 +2713,40 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
-            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400 mb-1">Sessions</div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="text-xs text-muted-foreground mb-1">Sessions</div>
               <div className="text-2xl font-bold text-white">{stats.rawSessions.length}</div>
-              <div className="text-[10px] text-slate-500 mt-1">{statusFilter}</div>
+              <div className="text-[10px] text-muted-foreground/70 mt-1">{statusFilter}</div>
             </div>
-            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400 mb-1">Avg Pre-Test</div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="text-xs text-muted-foreground mb-1">Avg Pre-Test</div>
               <div className="text-2xl font-bold text-red-400">{stats.avgPreScore || 0}%</div>
-              <div className="text-[10px] text-slate-500 mt-1">n={stats.knowledgeGain.length}</div>
+              <div className="text-[10px] text-muted-foreground/70 mt-1">n={stats.knowledgeGain.length}</div>
             </div>
-            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400 mb-1">Avg Post-Test</div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="text-xs text-muted-foreground mb-1">Avg Post-Test</div>
               <div className="text-2xl font-bold text-green-400">{stats.avgPostScore || 0}%</div>
-              <div className="text-[10px] text-slate-500 mt-1">n={stats.knowledgeGain.length}</div>
+              <div className="text-[10px] text-muted-foreground/70 mt-1">n={stats.knowledgeGain.length}</div>
             </div>
-            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400 mb-1">Avg Gain</div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="text-xs text-muted-foreground mb-1">Avg Gain</div>
               <div className={`text-2xl font-bold ${stats.avgGain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {stats.avgGain >= 0 ? '+' : ''}{stats.avgGain || 0}%
               </div>
-              <div className="text-[10px] text-slate-500 mt-1">learning effect</div>
+              <div className="text-[10px] text-muted-foreground/70 mt-1">learning effect</div>
             </div>
-            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400 mb-1">Avg Session</div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="text-xs text-muted-foreground mb-1">Avg Session</div>
               <div className="text-2xl font-bold text-yellow-400">{stats.avgSessionDuration} min</div>
-              <div className="text-[10px] text-slate-500 mt-1">duration</div>
+              <div className="text-[10px] text-muted-foreground/70 mt-1">duration</div>
             </div>
-            <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-xs text-slate-400 mb-1">Avg Avatar</div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="text-xs text-muted-foreground mb-1">Avg Avatar</div>
               <div className="text-2xl font-bold text-purple-400">{Math.round(stats.avgAvatarTime / 60)} min</div>
-              <div className="text-[10px] text-slate-500 mt-1">interaction</div>
+              <div className="text-[10px] text-muted-foreground/70 mt-1">interaction</div>
             </div>
-            <div className="bg-slate-700/50 rounded-lg p-3">
-              <div className="text-xs text-slate-400 mb-2">Mode Distribution</div>
+            <div className="bg-muted/50 rounded-lg p-3">
+              <div className="text-xs text-muted-foreground mb-2">Mode Distribution</div>
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between"><span className="text-blue-400">Text:</span><span>{stats.textModeCompleted}</span></div>
                 <div className="flex justify-between"><span className="text-purple-400">Avatar:</span><span>{stats.avatarModeCompleted}</span></div>
@@ -2754,7 +2754,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   <div className="flex justify-between"><span className="text-green-400">Both:</span><span>{stats.bothModesCompleted}</span></div>
                 )}
                 {stats.noModeCount > 0 && (
-                  <div className="flex justify-between"><span className="text-slate-400">No Mode:</span><span>{stats.noModeCount}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">No Mode:</span><span>{stats.noModeCount}</span></div>
                 )}
               </div>
             </div>
@@ -2772,16 +2772,16 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           <Card className={`transition-all duration-300 ${
             hasUnresolvedAlerts 
               ? 'bg-gradient-to-r from-amber-900/30 to-red-900/30 border-amber-700/50' 
-              : 'bg-slate-800/30 border-slate-700/50 opacity-75'
+              : 'bg-card/30 border-border/50 opacity-75'
           }`}>
             <CardHeader className="pb-2">
               <CardTitle className="text-white text-lg flex items-center gap-2">
-                <AlertTriangle className={`w-5 h-5 ${hasUnresolvedAlerts ? 'text-amber-400' : 'text-slate-500'}`} />
+                <AlertTriangle className={`w-5 h-5 ${hasUnresolvedAlerts ? 'text-amber-400' : 'text-muted-foreground/70'}`} />
                 Data Quality Alerts
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                      <Info className="w-4 h-4 text-muted-foreground/70 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
                       <div className="text-xs space-y-2">
@@ -2807,7 +2807,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardDescription className="text-muted-foreground">
                 {hasUnresolvedAlerts 
                   ? 'Sessions flagged for potential data quality issues. Manage validation in the Sessions tab.'
                   : 'All flagged sessions have been reviewed.'
@@ -2816,28 +2816,28 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div className="bg-slate-800/50 rounded-lg p-4 text-center">
-                  <div className="text-xs text-slate-400 mb-1">Flagged</div>
-                  <div className={`text-2xl font-bold ${hasUnresolvedAlerts ? 'text-amber-400' : 'text-slate-500'}`}>{stats.suspiciousCount}</div>
-                  <div className="text-[10px] text-slate-500 mt-1">total alerts</div>
+                <div className="bg-card/50 rounded-lg p-4 text-center">
+                  <div className="text-xs text-muted-foreground mb-1">Flagged</div>
+                  <div className={`text-2xl font-bold ${hasUnresolvedAlerts ? 'text-amber-400' : 'text-muted-foreground/70'}`}>{stats.suspiciousCount}</div>
+                  <div className="text-[10px] text-muted-foreground/70 mt-1">total alerts</div>
                 </div>
-                <div className={`rounded-lg p-4 text-center ${stats.pendingCount > 0 ? 'bg-yellow-900/30 border border-yellow-600/50' : 'bg-slate-800/50'}`}>
-                  <div className="text-xs text-slate-400 mb-1">Pending</div>
-                  <div className={`text-2xl font-bold ${stats.pendingCount > 0 ? 'text-yellow-400 animate-pulse' : 'text-slate-500'}`}>{stats.pendingCount}</div>
-                  <div className="text-[10px] text-slate-500 mt-1">needs review</div>
+                <div className={`rounded-lg p-4 text-center ${stats.pendingCount > 0 ? 'bg-yellow-900/30 border border-yellow-600/50' : 'bg-card/50'}`}>
+                  <div className="text-xs text-muted-foreground mb-1">Pending</div>
+                  <div className={`text-2xl font-bold ${stats.pendingCount > 0 ? 'text-yellow-400 animate-pulse' : 'text-muted-foreground/70'}`}>{stats.pendingCount}</div>
+                  <div className="text-[10px] text-muted-foreground/70 mt-1">needs review</div>
                 </div>
-                <div className="bg-slate-800/50 rounded-lg p-4 text-center">
-                  <div className="text-xs text-slate-400 mb-1">Accepted</div>
+                <div className="bg-card/50 rounded-lg p-4 text-center">
+                  <div className="text-xs text-muted-foreground mb-1">Accepted</div>
                   <div className="text-2xl font-bold text-green-400">{stats.acceptedCount}</div>
-                  <div className="text-[10px] text-slate-500 mt-1">in statistics</div>
+                  <div className="text-[10px] text-muted-foreground/70 mt-1">in statistics</div>
                 </div>
-                <div className="bg-slate-800/50 rounded-lg p-4 text-center">
-                  <div className="text-xs text-slate-400 mb-1">Ignored</div>
+                <div className="bg-card/50 rounded-lg p-4 text-center">
+                  <div className="text-xs text-muted-foreground mb-1">Ignored</div>
                   <div className="text-2xl font-bold text-red-400">{stats.ignoredCount}</div>
-                  <div className="text-[10px] text-slate-500 mt-1">excluded</div>
+                  <div className="text-[10px] text-muted-foreground/70 mt-1">excluded</div>
                 </div>
-                <div className="bg-slate-800/50 rounded-lg p-4">
-                  <div className="text-xs text-slate-400 mb-2">Top Flags</div>
+                <div className="bg-card/50 rounded-lg p-4">
+                  <div className="text-xs text-muted-foreground mb-2">Top Flags</div>
                   <div className="space-y-1 text-xs max-h-16 overflow-y-auto">
                     {stats.suspiciousFlags.slice(0, 3).map(f => {
                       const details = describeSuspicionFlag(f.flag);
@@ -2847,17 +2847,17 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                           <TooltipTrigger asChild>
                             <div className="flex justify-between cursor-help">
                               <span className="text-amber-400 truncate mr-2">{f.flag.replace(/_/g, ' ').slice(0, 20)}...</span>
-                              <span className="text-slate-300">{f.count}</span>
+                              <span className="text-foreground/80">{f.count}</span>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <div className="text-xs space-y-1">
                               <p className="font-medium">{f.flag.replace(/_/g, ' ')}</p>
                               {details.summary && (
-                                <p className="text-slate-300">{details.summary}</p>
+                                <p className="text-foreground/80">{details.summary}</p>
                               )}
                               {details.reason && (
-                                <p className="text-slate-400">{details.reason}</p>
+                                <p className="text-muted-foreground">{details.reason}</p>
                               )}
                             </div>
                           </TooltipContent>
@@ -2866,7 +2866,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                       );
                     })}
                     {stats.suspiciousFlags.length === 0 && (
-                      <div className="text-slate-500">No flags</div>
+                      <div className="text-muted-foreground/70">No flags</div>
                     )}
                   </div>
                 </div>
@@ -2879,15 +2879,15 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 </div>
               )}
               {stats.resetCount > 0 && (
-                <div className="mt-3 pt-3 border-t border-slate-700/50">
+                <div className="mt-3 pt-3 border-t border-border/50">
                   <div className="flex items-center gap-2 text-sm text-red-400">
                     <span className="font-medium">{stats.resetCount}</span>
-                    <span className="text-slate-400">session(s) were reset due to invalid actions (e.g., mode switching attempts)</span>
+                    <span className="text-muted-foreground">session(s) were reset due to invalid actions (e.g., mode switching attempts)</span>
                   </div>
                 </div>
               )}
               {hasUnresolvedAlerts && (
-                <p className="text-xs text-slate-500 mt-3">
+                <p className="text-xs text-muted-foreground/70 mt-3">
                   💡 Tip: Go to the <strong>Sessions</strong> tab, filter by "Suspicious" status, and click the ✓ or ✗ buttons to accept or ignore flagged sessions.
                 </p>
               )}
@@ -2897,7 +2897,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       })()}
 
       {/* Knowledge Gain Analysis */}
-      <Card className="bg-slate-800 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -2908,7 +2908,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                    <Info className="w-4 h-4 text-muted-foreground/70 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
                     <p className="text-xs">Post-Test Score minus Pre-Test Score. Only sessions with BOTH pre-test AND post-test scored responses are included. If you have {stats.rawSessions.length} sessions but only {stats.knowledgeGain.length} with scores, some sessions are missing pre-test or post-test answers, or questions don't have correct answers set.</p>
@@ -2918,7 +2918,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
             </div>
             <ExportButton onClick={exportKnowledgeGainCSV} label="CSV" canExport={permissions.canExportData} />
           </div>
-          <CardDescription className="text-slate-400">
+          <CardDescription className="text-muted-foreground">
             Based on {stats.knowledgeGain.length} of {stats.rawSessions.length} sessions with complete scored data
           </CardDescription>
         </CardHeader>
@@ -2934,19 +2934,19 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                       <div className="w-2 h-2 rounded-full bg-blue-400" />
                       Text Mode
                     </div>
-                    <span className="text-slate-500 text-xs">n={stats.knowledgeGain.filter(k => k.mode === 'text').length}</span>
+                    <span className="text-muted-foreground/70 text-xs">n={stats.knowledgeGain.filter(k => k.mode === 'text').length}</span>
                   </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Pre-Test:</span>
+                      <span className="text-muted-foreground">Pre-Test:</span>
                       <span className="text-red-400">{stats.textModePreScore}%</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Post-Test:</span>
+                      <span className="text-muted-foreground">Post-Test:</span>
                       <span className="text-green-400">{stats.textModePostScore}%</span>
                     </div>
-                    <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
-                      <span className="text-slate-300 font-medium">Gain:</span>
+                    <div className="flex justify-between border-t border-border pt-2 mt-2">
+                      <span className="text-foreground/80 font-medium">Gain:</span>
                       <span className={`font-bold ${stats.textModeGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {stats.textModeGain >= 0 ? '+' : ''}{stats.textModeGain}%
                       </span>
@@ -2961,19 +2961,19 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                       <div className="w-2 h-2 rounded-full bg-purple-400" />
                       Avatar Mode
                     </div>
-                    <span className="text-slate-500 text-xs">n={stats.knowledgeGain.filter(k => k.mode === 'avatar').length}</span>
+                    <span className="text-muted-foreground/70 text-xs">n={stats.knowledgeGain.filter(k => k.mode === 'avatar').length}</span>
                   </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Pre-Test:</span>
+                      <span className="text-muted-foreground">Pre-Test:</span>
                       <span className="text-red-400">{stats.avatarModePreScore}%</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Post-Test:</span>
+                      <span className="text-muted-foreground">Post-Test:</span>
                       <span className="text-green-400">{stats.avatarModePostScore}%</span>
                     </div>
-                    <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
-                      <span className="text-slate-300 font-medium">Gain:</span>
+                    <div className="flex justify-between border-t border-border pt-2 mt-2">
+                      <span className="text-foreground/80 font-medium">Gain:</span>
                       <span className={`font-bold ${stats.avatarModeGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {stats.avatarModeGain >= 0 ? '+' : ''}{stats.avatarModeGain}%
                       </span>
@@ -2985,7 +2985,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="text-sm font-medium text-slate-300 mb-3">Pre-Test vs Post-Test (Overall)</h4>
+                  <h4 className="text-sm font-medium text-foreground/80 mb-3">Pre-Test vs Post-Test (Overall)</h4>
                   <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={prePostComparisonData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -3005,7 +3005,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-slate-300 mb-3">Pre vs Post by Mode</h4>
+                  <h4 className="text-sm font-medium text-foreground/80 mb-3">Pre vs Post by Mode</h4>
                   <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={modeGainData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -3025,13 +3025,13 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
               {/* Statistical Significance Testing */}
               {stats.statisticalTests && (
-                <div className="border-t border-slate-700 pt-4">
+                <div className="border-t border-border pt-4">
                   <div className="flex items-center gap-2 mb-4">
-                    <h4 className="text-sm font-medium text-slate-300">Statistical Analysis (Welch's t-test + Effect Size)</h4>
+                    <h4 className="text-sm font-medium text-foreground/80">Statistical Analysis (Welch's t-test + Effect Size)</h4>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                          <Info className="w-4 h-4 text-muted-foreground/70 cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-sm">
                           <p className="text-xs">
@@ -3045,14 +3045,14 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   </div>
                   
                   {/* Main comparison: Text vs Avatar */}
-                  <div className={`rounded-lg p-4 border mb-4 ${stats.statisticalTests.textVsAvatar.significant ? 'bg-green-900/20 border-green-700/50' : 'bg-slate-700/30 border-slate-600'}`}>
+                  <div className={`rounded-lg p-4 border mb-4 ${stats.statisticalTests.textVsAvatar.significant ? 'bg-green-900/20 border-green-700/50' : 'bg-muted/30 border-border'}`}>
                     <div className="flex items-center justify-between mb-3">
-                      <div className="text-sm font-medium text-slate-200">Text Mode vs Avatar Mode</div>
+                      <div className="text-sm font-medium text-foreground/90">Text Mode vs Avatar Mode</div>
                       <div className={`px-2 py-0.5 rounded text-xs font-medium ${
                         stats.statisticalTests.textVsAvatar.effectSize === 'large' ? 'bg-purple-500/30 text-purple-300' :
                         stats.statisticalTests.textVsAvatar.effectSize === 'medium' ? 'bg-blue-500/30 text-blue-300' :
                         stats.statisticalTests.textVsAvatar.effectSize === 'small' ? 'bg-yellow-500/30 text-yellow-300' :
-                        'bg-slate-600/50 text-slate-400'
+                        'bg-muted-foreground/30 text-muted-foreground'
                       }`}>
                         {stats.statisticalTests.textVsAvatar.effectSize} effect
                       </div>
@@ -3062,43 +3062,43 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                       {/* Left: Descriptive stats */}
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Text Mean (SD):</span>
+                          <span className="text-muted-foreground">Text Mean (SD):</span>
                           <span className="text-blue-400">{stats.statisticalTests.textVsAvatar.textMean}% (±{stats.statisticalTests.textVsAvatar.textStd})</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Avatar Mean (SD):</span>
+                          <span className="text-muted-foreground">Avatar Mean (SD):</span>
                           <span className="text-purple-400">{stats.statisticalTests.textVsAvatar.avatarMean}% (±{stats.statisticalTests.textVsAvatar.avatarStd})</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Sample sizes:</span>
-                          <span className="text-slate-300">n₁={stats.statisticalTests.textVsAvatar.textN}, n₂={stats.statisticalTests.textVsAvatar.avatarN}</span>
+                          <span className="text-muted-foreground">Sample sizes:</span>
+                          <span className="text-foreground/80">n₁={stats.statisticalTests.textVsAvatar.textN}, n₂={stats.statisticalTests.textVsAvatar.avatarN}</span>
                         </div>
                       </div>
                       
                       {/* Right: Inferential stats */}
-                      <div className="space-y-2 text-xs border-l border-slate-600 pl-4">
+                      <div className="space-y-2 text-xs border-l border-border pl-4">
                         <div className="flex justify-between">
-                          <span className="text-slate-400">t-statistic:</span>
+                          <span className="text-muted-foreground">t-statistic:</span>
                           <span className="text-white font-medium">{stats.statisticalTests.textVsAvatar.tStatistic}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">p-value:</span>
-                          <span className={stats.statisticalTests.textVsAvatar.significant ? 'text-green-400 font-medium' : 'text-slate-300'}>
+                          <span className="text-muted-foreground">p-value:</span>
+                          <span className={stats.statisticalTests.textVsAvatar.significant ? 'text-green-400 font-medium' : 'text-foreground/80'}>
                             {stats.statisticalTests.textVsAvatar.pValue < 0.001 ? '<0.001' : stats.statisticalTests.textVsAvatar.pValue}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Cohen's d:</span>
+                          <span className="text-muted-foreground">Cohen's d:</span>
                           <span className="text-white font-medium">{stats.statisticalTests.textVsAvatar.cohensD}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">95% CI:</span>
+                          <span className="text-muted-foreground">95% CI:</span>
                           <span className="text-cyan-400">[{stats.statisticalTests.textVsAvatar.ci95Lower}, {stats.statisticalTests.textVsAvatar.ci95Upper}]</span>
                         </div>
                       </div>
                     </div>
                     
-                    <div className={`mt-3 text-xs text-center py-1.5 rounded ${stats.statisticalTests.textVsAvatar.significant ? 'bg-green-500/20 text-green-400' : 'bg-slate-600/50 text-slate-400'}`}>
+                    <div className={`mt-3 text-xs text-center py-1.5 rounded ${stats.statisticalTests.textVsAvatar.significant ? 'bg-green-500/20 text-green-400' : 'bg-muted-foreground/30 text-muted-foreground'}`}>
                       {stats.statisticalTests.textVsAvatar.significant 
                         ? `✓ Significant (p < 0.05) with ${stats.statisticalTests.textVsAvatar.effectSize} effect size` 
                         : 'Not statistically significant'}
@@ -3109,7 +3109,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-[150px] text-slate-500">
+            <div className="flex flex-col items-center justify-center h-[150px] text-muted-foreground/70">
               <AlertTriangle className="w-8 h-8 mb-2 text-amber-500" />
               <p>No knowledge gain data available</p>
               <p className="text-xs mt-1">Requires both pre-test and post-test questions to have correct answers set</p>
@@ -3120,7 +3120,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
       {/* Correlation Analysis - Scatter Plots */}
       {(stats.correlations.avatarTimeVsGain.length > 0 || stats.correlations.sessionTimeVsGain.length > 0) && (
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -3128,7 +3128,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                      <Info className="w-4 h-4 text-muted-foreground/70 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-sm">
                       <p className="text-xs">
@@ -3142,7 +3142,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               </div>
               <ExportButton onClick={exportCorrelationCSV} label="CSV" size="xs" canExport={permissions.canExportData} />
             </div>
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-muted-foreground">
               Engagement metrics vs knowledge gain with trend lines
             </CardDescription>
           </CardHeader>
@@ -3150,7 +3150,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Avatar Time vs Knowledge Gain */}
               <div>
-                <h4 className="text-sm font-medium text-slate-300 mb-3">Avatar Time vs Knowledge Gain</h4>
+                <h4 className="text-sm font-medium text-foreground/80 mb-3">Avatar Time vs Knowledge Gain</h4>
                 {stats.correlations.avatarTimeVsGain.filter(d => d.x > 0).length > 0 ? (
                   (() => {
                     const data = stats.correlations.avatarTimeVsGain.filter(d => d.x > 0);
@@ -3221,7 +3221,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                     );
                   })()
                 ) : (
-                  <div className="h-[220px] flex items-center justify-center text-slate-500 text-sm">
+                  <div className="h-[220px] flex items-center justify-center text-muted-foreground/70 text-sm">
                     No avatar interaction data
                   </div>
                 )}
@@ -3242,13 +3242,13 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   const r2 = r * r;
                   const strength = Math.abs(r) >= 0.7 ? 'Strong' : Math.abs(r) >= 0.4 ? 'Moderate' : Math.abs(r) >= 0.2 ? 'Weak' : 'Negligible';
                   return (
-                    <div className="mt-2 text-xs text-slate-400 flex items-center gap-4">
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-4">
                       <span>r = <span className="text-white font-medium">{r.toFixed(3)}</span></span>
                       <span>R² = <span className="text-cyan-400 font-medium">{(r2 * 100).toFixed(1)}%</span></span>
-                      <span className={`px-2 py-0.5 rounded ${Math.abs(r) >= 0.4 ? 'bg-green-900/30 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
+                      <span className={`px-2 py-0.5 rounded ${Math.abs(r) >= 0.4 ? 'bg-green-900/30 text-green-400' : 'bg-muted text-muted-foreground'}`}>
                         {strength}
                       </span>
-                      <span className="text-slate-500">n={n}</span>
+                      <span className="text-muted-foreground/70">n={n}</span>
                     </div>
                   );
                 })()}
@@ -3256,7 +3256,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
               {/* Session Duration vs Knowledge Gain */}
               <div>
-                <h4 className="text-sm font-medium text-slate-300 mb-3">Session Duration vs Knowledge Gain</h4>
+                <h4 className="text-sm font-medium text-foreground/80 mb-3">Session Duration vs Knowledge Gain</h4>
                 {stats.correlations.sessionTimeVsGain.length > 0 ? (
                   (() => {
                     const data = stats.correlations.sessionTimeVsGain;
@@ -3327,7 +3327,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                     );
                   })()
                 ) : (
-                  <div className="h-[220px] flex items-center justify-center text-slate-500 text-sm">
+                  <div className="h-[220px] flex items-center justify-center text-muted-foreground/70 text-sm">
                     No session duration data
                   </div>
                 )}
@@ -3348,13 +3348,13 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   const r2 = r * r;
                   const strength = Math.abs(r) >= 0.7 ? 'Strong' : Math.abs(r) >= 0.4 ? 'Moderate' : Math.abs(r) >= 0.2 ? 'Weak' : 'Negligible';
                   return (
-                    <div className="mt-2 text-xs text-slate-400 flex items-center gap-4">
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-4">
                       <span>r = <span className="text-white font-medium">{r.toFixed(3)}</span></span>
                       <span>R² = <span className="text-cyan-400 font-medium">{(r2 * 100).toFixed(1)}%</span></span>
-                      <span className={`px-2 py-0.5 rounded ${Math.abs(r) >= 0.4 ? 'bg-green-900/30 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
+                      <span className={`px-2 py-0.5 rounded ${Math.abs(r) >= 0.4 ? 'bg-green-900/30 text-green-400' : 'bg-muted text-muted-foreground'}`}>
                         {strength}
                       </span>
-                      <span className="text-slate-500">n={n}</span>
+                      <span className="text-muted-foreground/70">n={n}</span>
                     </div>
                   );
                 })()}
@@ -3362,13 +3362,13 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
             </div>
 
             {/* Correlation Comparison Summary */}
-            <div className="mt-6 border-t border-slate-700 pt-4">
-              <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+            <div className="mt-6 border-t border-border pt-4">
+              <h4 className="text-sm font-medium text-foreground/80 mb-3 flex items-center gap-2">
                 Engagement Metrics Comparison
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="w-3 h-3 text-slate-500 cursor-help" />
+                      <Info className="w-3 h-3 text-muted-foreground/70 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-xs">Which engagement metric better predicts learning outcomes</p>
@@ -3406,71 +3406,71 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 return (
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className={`rounded-lg p-3 border ${avatarStronger && !equalStrength ? 'bg-purple-900/20 border-purple-600' : 'bg-slate-700/30 border-slate-600'}`}>
+                      <div className={`rounded-lg p-3 border ${avatarStronger && !equalStrength ? 'bg-purple-900/20 border-purple-600' : 'bg-muted/30 border-border'}`}>
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-2 h-2 rounded-full bg-purple-400" />
-                          <span className="text-sm font-medium text-slate-200">Avatar Time</span>
+                          <span className="text-sm font-medium text-foreground/90">Avatar Time</span>
                           {avatarStronger && !equalStrength && <Badge variant="outline" className="text-[10px] border-purple-500 text-purple-400">Stronger</Badge>}
                         </div>
                         <div className="space-y-1 text-xs">
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Pearson r:</span>
+                            <span className="text-muted-foreground">Pearson r:</span>
                             <span className="text-white">{avatarCorr.r.toFixed(3)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400">R² (variance):</span>
+                            <span className="text-muted-foreground">R² (variance):</span>
                             <span className="text-cyan-400">{(avatarCorr.r2 * 100).toFixed(1)}%</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Direction:</span>
-                            <span className="text-slate-300">{getDirection(avatarCorr.r)}</span>
+                            <span className="text-muted-foreground">Direction:</span>
+                            <span className="text-foreground/80">{getDirection(avatarCorr.r)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Strength:</span>
-                            <span className="text-slate-300">{getStrength(avatarCorr.r)}</span>
+                            <span className="text-muted-foreground">Strength:</span>
+                            <span className="text-foreground/80">{getStrength(avatarCorr.r)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Sample:</span>
-                            <span className="text-slate-500">n={avatarData.length}</span>
+                            <span className="text-muted-foreground">Sample:</span>
+                            <span className="text-muted-foreground/70">n={avatarData.length}</span>
                           </div>
                         </div>
                       </div>
                       
-                      <div className={`rounded-lg p-3 border ${!avatarStronger && !equalStrength ? 'bg-blue-900/20 border-blue-600' : 'bg-slate-700/30 border-slate-600'}`}>
+                      <div className={`rounded-lg p-3 border ${!avatarStronger && !equalStrength ? 'bg-blue-900/20 border-blue-600' : 'bg-muted/30 border-border'}`}>
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-2 h-2 rounded-full bg-blue-400" />
-                          <span className="text-sm font-medium text-slate-200">Session Duration</span>
+                          <span className="text-sm font-medium text-foreground/90">Session Duration</span>
                           {!avatarStronger && !equalStrength && <Badge variant="outline" className="text-[10px] border-blue-500 text-blue-400">Stronger</Badge>}
                         </div>
                         <div className="space-y-1 text-xs">
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Pearson r:</span>
+                            <span className="text-muted-foreground">Pearson r:</span>
                             <span className="text-white">{sessionCorr.r.toFixed(3)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400">R² (variance):</span>
+                            <span className="text-muted-foreground">R² (variance):</span>
                             <span className="text-cyan-400">{(sessionCorr.r2 * 100).toFixed(1)}%</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Direction:</span>
-                            <span className="text-slate-300">{getDirection(sessionCorr.r)}</span>
+                            <span className="text-muted-foreground">Direction:</span>
+                            <span className="text-foreground/80">{getDirection(sessionCorr.r)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Strength:</span>
-                            <span className="text-slate-300">{getStrength(sessionCorr.r)}</span>
+                            <span className="text-muted-foreground">Strength:</span>
+                            <span className="text-foreground/80">{getStrength(sessionCorr.r)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Sample:</span>
-                            <span className="text-slate-500">n={stats.correlations.sessionTimeVsGain.length}</span>
+                            <span className="text-muted-foreground">Sample:</span>
+                            <span className="text-muted-foreground/70">n={stats.correlations.sessionTimeVsGain.length}</span>
                           </div>
                         </div>
                       </div>
                     </div>
                     
                     {/* Key Finding */}
-                    <div className="bg-slate-700/30 rounded-lg p-3 border border-slate-600">
-                      <div className="text-xs font-medium text-slate-300 mb-1">Key Finding</div>
-                      <p className="text-xs text-slate-400">
+                    <div className="bg-muted/30 rounded-lg p-3 border border-border">
+                      <div className="text-xs font-medium text-foreground/80 mb-1">Key Finding</div>
+                      <p className="text-xs text-muted-foreground">
                         {equalStrength 
                           ? 'Both metrics show equal correlation strength with learning outcomes.'
                           : avatarStronger
@@ -3489,7 +3489,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
       {/* Question Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -3497,7 +3497,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                      <Info className="w-4 h-4 text-muted-foreground/70 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
                       <p className="text-xs">% of participants who answered correctly BEFORE learning. Low scores = knowledge gaps.</p>
@@ -3512,8 +3512,8 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
             {stats.preTestQuestionAnalysis.length > 0 ? (
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                 {stats.preTestQuestionAnalysis.map(q => (
-                  <div key={q.questionId} className="bg-slate-700/30 rounded-lg p-3">
-                    <div className="text-xs text-slate-300 mb-2 line-clamp-2" title={q.questionText}>
+                  <div key={q.questionId} className="bg-muted/30 rounded-lg p-3">
+                    <div className="text-xs text-foreground/80 mb-2 line-clamp-2" title={q.questionText}>
                       {q.questionText}
                     </div>
                     <div className="flex items-center gap-3">
@@ -3527,18 +3527,18 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                       ) : (
                         <span className="text-amber-400 text-xs">⚠ No correct answer set</span>
                       )}
-                      <span className="text-slate-500 text-xs">n={q.totalResponses}</span>
+                      <span className="text-muted-foreground/70 text-xs">n={q.totalResponses}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 text-center py-8 text-sm">No pre-test data</p>
+              <p className="text-muted-foreground/70 text-center py-8 text-sm">No pre-test data</p>
             )}
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -3546,7 +3546,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                      <Info className="w-4 h-4 text-muted-foreground/70 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
                       <p className="text-xs">% of participants who answered correctly AFTER learning. Compare with pre-test to measure effectiveness.</p>
@@ -3561,8 +3561,8 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
             {stats.postTestQuestionAnalysis.length > 0 ? (
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                 {stats.postTestQuestionAnalysis.map(q => (
-                  <div key={q.questionId} className="bg-slate-700/30 rounded-lg p-3">
-                    <div className="text-xs text-slate-300 mb-2 line-clamp-2" title={q.questionText}>
+                  <div key={q.questionId} className="bg-muted/30 rounded-lg p-3">
+                    <div className="text-xs text-foreground/80 mb-2 line-clamp-2" title={q.questionText}>
                       {q.questionText}
                     </div>
                     <div className="flex items-center gap-3">
@@ -3576,13 +3576,13 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                       ) : (
                         <span className="text-amber-400 text-xs">⚠ No correct answer set</span>
                       )}
-                      <span className="text-slate-500 text-xs">n={q.totalResponses}</span>
+                      <span className="text-muted-foreground/70 text-xs">n={q.totalResponses}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 text-center py-8 text-sm">No post-test data</p>
+              <p className="text-muted-foreground/70 text-center py-8 text-sm">No post-test data</p>
             )}
           </CardContent>
         </Card>
@@ -3590,7 +3590,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
       {/* Likert Scale Perception Analysis - Trust, Engagement, Satisfaction */}
       {stats.likertAnalysis.length > 0 && (
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -3598,7 +3598,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-slate-500 cursor-help" />
+                      <Info className="w-4 h-4 text-muted-foreground/70 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-sm">
                       <p className="text-xs">5-point Likert scale responses (1=Strongly Disagree, 5=Strongly Agree). Mean closer to 5 = positive perception. Shows participant attitudes toward the learning experience.</p>
@@ -3608,7 +3608,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               </div>
               <div className="flex items-center gap-2">
                 <Select value={likertView} onValueChange={(value) => setLikertView(value as 'overall' | 'text' | 'avatar' | 'both')}>
-                  <SelectTrigger className="w-[140px] bg-slate-900 border-slate-600 h-7 text-xs">
+                  <SelectTrigger className="w-[140px] bg-background border-border h-7 text-xs">
                     <SelectValue placeholder="View mode" />
                   </SelectTrigger>
                   <SelectContent>
@@ -3622,7 +3622,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 <ExportButton onClick={exportLikertByModeCSV} label="By Mode" size="xs" canExport={permissions.canExportData} />
               </div>
             </div>
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-muted-foreground">
               Participant attitudes and perceptions measured on 5-point Likert scale
             </CardDescription>
           </CardHeader>
@@ -3652,14 +3652,14 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                           <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
                           <span className={`text-sm font-medium ${colors.text} capitalize`}>{category}</span>
                         </div>
-                        <span className="text-slate-500 text-xs">n={totalResponses / categoryData.length || 0}</span>
+                        <span className="text-muted-foreground/70 text-xs">n={totalResponses / categoryData.length || 0}</span>
                       </div>
                       <div className="text-3xl font-bold text-white mb-2">{avgMean.toFixed(2)}</div>
                       <div className="flex items-center gap-2">
                         <Progress value={(avgMean / 5) * 100} className="h-2 flex-1" />
-                        <span className="text-xs text-slate-400">/5.0</span>
+                        <span className="text-xs text-muted-foreground">/5.0</span>
                       </div>
-                      <p className="text-xs text-slate-500 mt-2">
+                      <p className="text-xs text-muted-foreground/70 mt-2">
                         {avgMean >= 4 ? 'Very positive' : avgMean >= 3 ? 'Moderately positive' : avgMean >= 2 ? 'Neutral' : 'Needs improvement'}
                       </p>
                       </div>
@@ -3669,13 +3669,13 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
               {/* By Mode Comparison */}
               {likertView === 'overall' && (
-                <div className="border-t border-slate-700 pt-4">
-                <h4 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
+                <div className="border-t border-border pt-4">
+                <h4 className="text-sm font-medium text-foreground/80 mb-4 flex items-center gap-2">
                   Perception by Learning Mode
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Info className="w-3 h-3 text-slate-500 cursor-help" />
+                        <Info className="w-3 h-3 text-muted-foreground/70 cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="text-xs">Compare how participants in each learning mode rated their experience</p>
@@ -3697,12 +3697,12 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                     };
 
                     return (
-                      <div key={mode} className={`bg-slate-700/30 rounded-lg p-4 border-l-4 ${modeColors[mode]}`}>
+                      <div key={mode} className={`bg-muted/30 rounded-lg p-4 border-l-4 ${modeColors[mode]}`}>
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-slate-200 capitalize">{mode} Mode</span>
+                            <span className="text-sm font-medium text-foreground/90 capitalize">{mode} Mode</span>
                           </div>
-                          <span className="text-slate-500 text-xs">n={sampleSize}</span>
+                          <span className="text-muted-foreground/70 text-xs">n={sampleSize}</span>
                         </div>
                         {modeData.length > 0 ? (
                           <div className="space-y-2 text-xs">
@@ -3729,7 +3729,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                             </div>
                           </div>
                         ) : (
-                          <p className="text-slate-500 text-xs">No data</p>
+                          <p className="text-muted-foreground/70 text-xs">No data</p>
                         )}
                       </div>
                     );
@@ -3739,8 +3739,8 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               )}
 
               {/* Individual Questions */}
-              <div className="border-t border-slate-700 pt-4">
-                <h4 className="text-sm font-medium text-slate-300 mb-4">Individual Question Responses</h4>
+              <div className="border-t border-border pt-4">
+                <h4 className="text-sm font-medium text-foreground/80 mb-4">Individual Question Responses</h4>
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                   {(likertView === 'overall' ? stats.likertAnalysis : stats.likertByMode[likertView]).map(l => {
                     const categoryColors = {
@@ -3750,28 +3750,28 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                     };
                     
                     return (
-                      <div key={l.questionId} className={`bg-slate-700/30 rounded-lg p-3 border-l-4 ${categoryColors[l.category]}`}>
+                      <div key={l.questionId} className={`bg-muted/30 rounded-lg p-3 border-l-4 ${categoryColors[l.category]}`}>
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
-                            <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{l.category}</div>
-                            <div className="text-sm text-slate-200 mb-2">{l.questionText}</div>
+                            <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{l.category}</div>
+                            <div className="text-sm text-foreground/90 mb-2">{l.questionText}</div>
                             <div className="flex items-center gap-4 text-xs">
-                              <span className="text-slate-400">Mean: <span className="text-white font-medium">{l.mean.toFixed(2)}</span></span>
-                              <span className="text-slate-400">Median: <span className="text-white font-medium">{l.median}</span></span>
-                              <span className="text-slate-400">SD: <span className="text-white font-medium">{l.std.toFixed(2)}</span></span>
-                              <span className="text-slate-500">n={l.totalResponses}</span>
+                              <span className="text-muted-foreground">Mean: <span className="text-white font-medium">{l.mean.toFixed(2)}</span></span>
+                              <span className="text-muted-foreground">Median: <span className="text-white font-medium">{l.median}</span></span>
+                              <span className="text-muted-foreground">SD: <span className="text-white font-medium">{l.std.toFixed(2)}</span></span>
+                              <span className="text-muted-foreground/70">n={l.totalResponses}</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-1">
                             {[1, 2, 3, 4, 5].map(score => (
                               <div key={score} className="text-center">
-                                <div className="text-[10px] text-slate-500 mb-0.5">{score}</div>
+                                <div className="text-[10px] text-muted-foreground/70 mb-0.5">{score}</div>
                                 <div 
-                                  className="w-6 bg-slate-600 rounded-sm" 
+                                  className="w-6 bg-muted-foreground/40 rounded-sm" 
                                   style={{ height: `${Math.max(4, (l.distribution[score] / l.totalResponses) * 40)}px` }}
                                   title={`${score}: ${l.distribution[score]} responses (${Math.round((l.distribution[score] / l.totalResponses) * 100)}%)`}
                                 />
-                                <div className="text-[9px] text-slate-500 mt-0.5">{l.distribution[score]}</div>
+                                <div className="text-[9px] text-muted-foreground/70 mt-0.5">{l.distribution[score]}</div>
                               </div>
                             ))}
                           </div>
@@ -3785,24 +3785,24 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           </CardContent>
         </Card>
       )}
-      <Card className="bg-slate-800 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-white">Demographic Distribution</CardTitle>
             <ExportButton onClick={exportDemographicsCSV} label="CSV" canExport={permissions.canExportData} />
           </div>
-          <CardDescription className="text-slate-400">Participant background data</CardDescription>
+          <CardDescription className="text-muted-foreground">Participant background data</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Age */}
             <div>
-              <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+              <h4 className="text-sm font-medium text-foreground/80 mb-3 flex items-center gap-2">
                 Age Distribution
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="w-3 h-3 text-slate-500 cursor-help" />
+                      <Info className="w-3 h-3 text-muted-foreground/70 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-xs">Participant age groups (sorted youngest to oldest)</p>
@@ -3824,18 +3824,18 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex items-center justify-center h-[180px] text-slate-500 text-sm">No data</div>
+                <div className="flex items-center justify-center h-[180px] text-muted-foreground/70 text-sm">No data</div>
               )}
             </div>
 
             {/* Education */}
             <div>
-              <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+              <h4 className="text-sm font-medium text-foreground/80 mb-3 flex items-center gap-2">
                 Education Level
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="w-3 h-3 text-slate-500 cursor-help" />
+                      <Info className="w-3 h-3 text-muted-foreground/70 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-xs">Highest education level completed</p>
@@ -3857,18 +3857,18 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex items-center justify-center h-[180px] text-slate-500 text-sm">No data</div>
+                <div className="flex items-center justify-center h-[180px] text-muted-foreground/70 text-sm">No data</div>
               )}
             </div>
 
             {/* Digital Experience */}
             <div>
-              <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+              <h4 className="text-sm font-medium text-foreground/80 mb-3 flex items-center gap-2">
                 Digital Experience
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="w-3 h-3 text-slate-500 cursor-help" />
+                      <Info className="w-3 h-3 text-muted-foreground/70 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-xs">Self-reported digital/AI experience (1=None, 5=Extensive)</p>
@@ -3890,7 +3890,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex items-center justify-center h-[180px] text-slate-500 text-sm">No data</div>
+                <div className="flex items-center justify-center h-[180px] text-muted-foreground/70 text-sm">No data</div>
               )}
             </div>
           </div>
@@ -3900,12 +3900,12 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
       {/* Avatar Time by Slide */}
       {stats.avatarTimeBySlide.length > 0 && (
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-white">Avatar Interaction by Slide</CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-muted-foreground">
                   Avg time participants spent with avatar on each slide
                 </CardDescription>
               </div>
@@ -3934,16 +3934,16 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               </BarChart>
             </ResponsiveContainer>
             <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
-              <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400 text-xs">Total Time</div>
+              <div className="bg-muted/50 rounded p-2 text-center">
+                <div className="text-muted-foreground text-xs">Total Time</div>
                 <div className="text-white font-medium">{Math.round(stats.totalAvatarTime / 60)} min</div>
               </div>
-              <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400 text-xs">Avg per Session</div>
+              <div className="bg-muted/50 rounded p-2 text-center">
+                <div className="text-muted-foreground text-xs">Avg per Session</div>
                 <div className="text-white font-medium">{Math.round(stats.avgAvatarTime / 60)} min</div>
               </div>
-              <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400 text-xs">Sessions Tracked</div>
+              <div className="bg-muted/50 rounded p-2 text-center">
+                <div className="text-muted-foreground text-xs">Sessions Tracked</div>
                 <div className="text-white font-medium">{stats.avatarSessionsTracked}</div>
               </div>
             </div>
@@ -3953,12 +3953,12 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
       {/* Text Time by Slide */}
       {stats.textTimeBySlide.length > 0 && (
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-white">Text Mode Time by Slide</CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-muted-foreground">
                   Avg time participants spent reading each slide (text mode)
                 </CardDescription>
               </div>
@@ -3987,16 +3987,16 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               </BarChart>
             </ResponsiveContainer>
             <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
-              <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400 text-xs">Total Time</div>
+              <div className="bg-muted/50 rounded p-2 text-center">
+                <div className="text-muted-foreground text-xs">Total Time</div>
                 <div className="text-white font-medium">{Math.round(stats.totalTextTime / 60)} min</div>
               </div>
-              <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400 text-xs">Avg per Session</div>
+              <div className="bg-muted/50 rounded p-2 text-center">
+                <div className="text-muted-foreground text-xs">Avg per Session</div>
                 <div className="text-white font-medium">{Math.round(stats.avgTextTime / 60)} min</div>
               </div>
-              <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400 text-xs">Sessions Tracked</div>
+              <div className="bg-muted/50 rounded p-2 text-center">
+                <div className="text-muted-foreground text-xs">Sessions Tracked</div>
                 <div className="text-white font-medium">{stats.textSessionsTracked}</div>
               </div>
             </div>
@@ -4005,12 +4005,12 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       )}
 
       {stats.pageTimeByPage.length > 0 && (
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-white">Time by Page</CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-muted-foreground">
                   Avg time participants spent on each study page
                 </CardDescription>
               </div>
@@ -4039,14 +4039,14 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               </BarChart>
             </ResponsiveContainer>
             <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
-              <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400 text-xs">Total Time</div>
+              <div className="bg-muted/50 rounded p-2 text-center">
+                <div className="text-muted-foreground text-xs">Total Time</div>
                 <div className="text-white font-medium">
                   {Math.round(stats.pageTimeData.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0) / 60)} min
                 </div>
               </div>
-              <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400 text-xs">Avg per Session</div>
+              <div className="bg-muted/50 rounded p-2 text-center">
+                <div className="text-muted-foreground text-xs">Avg per Session</div>
                 <div className="text-white font-medium">
                   {(() => {
                     const sessionsTracked = new Set(stats.pageTimeData.map(entry => entry.session_id)).size;
@@ -4055,8 +4055,8 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   })()}
                 </div>
               </div>
-              <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400 text-xs">Sessions Tracked</div>
+              <div className="bg-muted/50 rounded p-2 text-center">
+                <div className="text-muted-foreground text-xs">Sessions Tracked</div>
                 <div className="text-white font-medium">
                   {new Set(stats.pageTimeData.map(entry => entry.session_id)).size}
                 </div>
@@ -4067,12 +4067,12 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       )}
 
       {stats.dialogueByMode.some((entry) => entry.messages > 0) && (
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-white">Dialogue Volume by Mode</CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-muted-foreground">
                   Total tutor messages logged per session mode (user + AI)
                 </CardDescription>
               </div>
@@ -4089,10 +4089,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                     if (!active || !payload || payload.length === 0) return null;
                     const data = payload[0].payload as { messages: number; sessions: number };
                     return (
-                      <div className="bg-slate-800 border border-slate-700 p-2 text-xs rounded">
-                        <div className="text-slate-200 font-medium">{label}</div>
-                        <div className="text-slate-300">Messages: {data.messages}</div>
-                        <div className="text-slate-400">Sessions with dialogue: {data.sessions}</div>
+                      <div className="bg-card border border-border p-2 text-xs rounded">
+                        <div className="text-foreground/90 font-medium">{label}</div>
+                        <div className="text-foreground/80">Messages: {data.messages}</div>
+                        <div className="text-muted-foreground">Sessions with dialogue: {data.sessions}</div>
                       </div>
                     );
                   }}
@@ -4101,20 +4101,20 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               </BarChart>
             </ResponsiveContainer>
             <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
-              <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400 text-xs">Total Messages</div>
+              <div className="bg-muted/50 rounded p-2 text-center">
+                <div className="text-muted-foreground text-xs">Total Messages</div>
                 <div className="text-white font-medium">
                   {stats.dialogueByMode.reduce((sum, entry) => sum + entry.messages, 0)}
                 </div>
               </div>
-              <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400 text-xs">Sessions with Dialogue</div>
+              <div className="bg-muted/50 rounded p-2 text-center">
+                <div className="text-muted-foreground text-xs">Sessions with Dialogue</div>
                 <div className="text-white font-medium">
                   {stats.dialogueByMode.reduce((sum, entry) => sum + entry.sessions, 0)}
                 </div>
               </div>
-              <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400 text-xs">Avg Messages/Session</div>
+              <div className="bg-muted/50 rounded p-2 text-center">
+                <div className="text-muted-foreground text-xs">Avg Messages/Session</div>
                 <div className="text-white font-medium">
                   {(() => {
                     const totalMessages = stats.dialogueByMode.reduce((sum, entry) => sum + entry.messages, 0);
@@ -4130,12 +4130,12 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
       {/* Sessions per Day */}
       {stats.sessionsPerDay.length > 0 && (
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-white">Sessions Over Time</CardTitle>
-                <CardDescription className="text-slate-400">Daily session count</CardDescription>
+                <CardDescription className="text-muted-foreground">Daily session count</CardDescription>
               </div>
               <ExportButton 
                 onClick={() => downloadCSV(stats.sessionsPerDay.map(s => ({ Date: s.date, SessionCount: s.count })), 'sessions_per_day')} 

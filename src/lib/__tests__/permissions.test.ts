@@ -49,9 +49,9 @@ describe('permissions', () => {
 
       // Can view research data
       expect(permissions.canViewSessions).toBe(true);
-      expect(permissions.canExportData).toBe(true);
-      expect(permissions.canViewSlides).toBe(true);
-      expect(permissions.canViewQuestions).toBe(true);
+      expect(permissions.canExportData).toBe(false);
+      expect(permissions.canViewSlides).toBe(false);
+      expect(permissions.canViewQuestions).toBe(false);
 
       // Cannot edit anything
       expect(permissions.canEditSlides).toBe(false);

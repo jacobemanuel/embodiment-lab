@@ -6,6 +6,7 @@ vi.mock('@/integrations/supabase/client', () => ({
     functions: {
       invoke: vi.fn(),
     },
+    from: vi.fn(),
   },
 }));
 
@@ -67,7 +68,18 @@ describe('studyData functions', () => {
         error: new Error('Network error'),
       });
 
-      await expect(createStudySession('text')).rejects.toThrow('Network error');
+      const mockInsert = vi.fn().mockResolvedValue({ error: null });
+      vi.mocked(supabase.from).mockReturnValue({ insert: mockInsert } as any);
+      const randomSpy = vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('fallback-session-123');
+
+      await expect(createStudySession('text')).resolves.toBe('fallback-session-123');
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+        session_id: 'fallback-session-123',
+        mode: 'text',
+        status: 'active',
+      }));
+
+      randomSpy.mockRestore();
     });
 
     it('throws error when data contains error', async () => {
@@ -77,7 +89,18 @@ describe('studyData functions', () => {
         error: null,
       });
 
-      await expect(createStudySession('text')).rejects.toThrow('Session creation failed');
+      const mockInsert = vi.fn().mockResolvedValue({ error: null });
+      vi.mocked(supabase.from).mockReturnValue({ insert: mockInsert } as any);
+      const randomSpy = vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('fallback-session-456');
+
+      await expect(createStudySession('text')).resolves.toBe('fallback-session-456');
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+        session_id: 'fallback-session-456',
+        mode: 'text',
+        status: 'active',
+      }));
+
+      randomSpy.mockRestore();
     });
   });
 

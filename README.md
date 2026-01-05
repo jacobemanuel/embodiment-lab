@@ -72,46 +72,54 @@ There is no automatic randomization in code. The mode is:
 
 ```mermaid
 flowchart LR
-  User["Participant Browser"] --> CF["Cloudflare (custom domain DNS/TLS)"] --> FE["React + Vite (UI)"]
+  User["Participant Browser"] --> CF["Cloudflare custom domain DNS TLS"] --> FE["React + Vite UI"]
   Admin["Admin/Owner Dashboard"] --> CF --> FE
 
-  FE -->|Study data writes (responses, timing, flags)| Edge["Supabase Edge Functions (Deno)"]
-  Edge -->|Reads/Writes| DB[("Supabase Postgres")]
+  FE -->|Study data writes responses timing flags| Edge["Supabase Edge Functions Deno"]
+  Edge -->|Reads and writes| DB[("Supabase Postgres")]
 
-  FE -->|Text chat (SSE)| ChatFn["/functions/v1/chat"]
-  ChatFn --> LLMApi["OpenAI-compatible API endpoint"]
+  FE -->|Text chat SSE| ChatFn["Edge Function chat v1"]
+  ChatFn --> LLMApi["OpenAI compatible API endpoint"]
   LLMApi --> OpenAI["OpenAI GPT-5 mini"]
 
-  FE -->|Image requests| ImgFn["/functions/v1/generate-image"]
+  FE -->|Image requests| ImgFn["Edge Function generate-image v1"]
   ImgFn --> LLMApi
   LLMApi --> Gemini["Gemini 2.5 Flash Image Preview"]
 
   FE -->|Avatar session init| Anam["Anam AI"]
   Anam -->|Avatar stream| FE
   Anam -->|Transcript events| FE
-  FE -->|Transcript + timing| Edge
+  FE -->|Transcript and timing| Edge
 
-  FE -.->|Fallback direct inserts (if Edge fails)| DB
+  FE -.->|Fallback direct inserts if Edge fails| DB
 ```
+
+Legend:
+- Boxes are UI or services. Cylinders are databases.
+- Solid arrows are primary data flows. Dashed arrows are fallbacks.
 
 ## Data logging and exports diagram
 
 ```mermaid
 flowchart LR
-  User["Participant Browser"] --> FE["React + Vite (study UI)"]
-  FE -->|Responses + timing + transcripts + flags| Edge["Supabase Edge Functions (Deno)"]
+  User["Participant Browser"] --> FE["React + Vite study UI"]
+  FE -->|Responses timing transcripts flags| Edge["Supabase Edge Functions Deno"]
   Edge -->|Writes| DB[("Supabase Postgres")]
-  Edge -->|Reads for stats/exports| DB
+  Edge -->|Reads for stats and exports| DB
 
-  FE -.->|Fallback direct inserts (if Edge fails)| DB
+  FE -.->|Fallback direct inserts if Edge fails| DB
 
-  Admin["Admin/Owner Dashboard"] -->|Review + validate| FE
-  Admin -->|Export PDF/CSV| FE
+  Admin["Admin/Owner Dashboard"] -->|Review and validate| FE
+  Admin -->|Export PDF CSV| FE
   FE -->|Download files| Admin
 
   User -->|Download My Responses| FE
   FE -->|Download file| User
 ```
+
+Legend:
+- Solid arrows are primary data flows. Dashed arrows are fallbacks.
+- Exports are generated in the UI and downloaded by admins/participants.
 
 ## System prompts (full, copy/paste)
 
@@ -498,5 +506,5 @@ Frontend is served on the Cloudflare-managed custom domain. Supabase provides th
 ## Team
 
 - System build: Jakub Majewski
-- Mentor: Efe Bozkir
 - Team members (report, video, analysis): Zeynep Gurlek, Markus Moenckhoff, Michel Alexander, Manuel Peichl
+- Mentor: Efe Bozkir

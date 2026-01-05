@@ -571,10 +571,23 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         return true;
       });
 
+      const dedupeSlideEntries = <T extends { session_id: string; slide_id?: string; started_at?: string | null; ended_at?: string | null; created_at?: string | null }>(entries: T[]) => {
+        const seen = new Set<string>();
+        return entries.filter((entry) => {
+          const stamp = entry.started_at || entry.ended_at || entry.created_at || '';
+          const key = `${entry.session_id}:${entry.slide_id}:${stamp}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      };
+
+      const dedupedSlideTimeEntries = dedupeSlideEntries(slideTimeEntries);
+
       // Avatar & text time calculation - group by session (slides only)
       const avatarTimeBySession: Record<string, number> = {};
       const textTimeBySession: Record<string, number> = {};
-      slideTimeEntries.forEach(t => {
+      dedupedSlideTimeEntries.forEach(t => {
         const mode = sessionModeById.get(t.session_id) || 'none';
         if (mode === 'avatar' || mode === 'both') {
           avatarTimeBySession[t.session_id] = (avatarTimeBySession[t.session_id] || 0) + (t.duration_seconds || 0);
@@ -595,9 +608,9 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         : 0;
 
       // Avatar/text time by slide
-      const avatarSlideMap: Record<string, { total: number; count: number; title: string }> = {};
-      const textSlideMap: Record<string, { total: number; count: number; title: string }> = {};
-      slideTimeEntries.forEach(t => {
+      const avatarSlideMap: Record<string, { total: number; sessionIds: Set<string>; title: string }> = {};
+      const textSlideMap: Record<string, { total: number; sessionIds: Set<string>; title: string }> = {};
+      dedupedSlideTimeEntries.forEach(t => {
         const mode = sessionModeById.get(t.session_id) || 'none';
         const resolved = resolveSlideKey(t.slide_id, t.slide_title, slideLookup);
         if (!resolved.key) return;
@@ -606,10 +619,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
         if (mode === 'avatar' || mode === 'both') {
           if (!avatarSlideMap[key]) {
-            avatarSlideMap[key] = { total: 0, count: 0, title };
+            avatarSlideMap[key] = { total: 0, sessionIds: new Set(), title };
           }
           avatarSlideMap[key].total += t.duration_seconds || 0;
-          avatarSlideMap[key].count += 1;
+          avatarSlideMap[key].sessionIds.add(t.session_id);
           if (title.length > avatarSlideMap[key].title.length) {
             avatarSlideMap[key].title = title;
           }
@@ -617,10 +630,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
         if (mode === 'text') {
           if (!textSlideMap[key]) {
-            textSlideMap[key] = { total: 0, count: 0, title };
+            textSlideMap[key] = { total: 0, sessionIds: new Set(), title };
           }
           textSlideMap[key].total += t.duration_seconds || 0;
-          textSlideMap[key].count += 1;
+          textSlideMap[key].sessionIds.add(t.session_id);
           if (title.length > textSlideMap[key].title.length) {
             textSlideMap[key].title = title;
           }
@@ -646,17 +659,17 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       const avatarTimeBySlide = Object.entries(avatarSlideMap).map(([slideId, data]) => ({
         slideId,
         slide: data.title,
-        avgTime: Math.round(data.total / data.count),
+        avgTime: Math.round(data.total / Math.max(1, data.sessionIds.size)),
         totalTime: data.total,
-        count: data.count,
+        count: data.sessionIds.size,
       })).sort(compareSlideOrder);
 
       const textTimeBySlide = Object.entries(textSlideMap).map(([slideId, data]) => ({
         slideId,
         slide: data.title,
-        avgTime: Math.round(data.total / data.count),
+        avgTime: Math.round(data.total / Math.max(1, data.sessionIds.size)),
         totalTime: data.total,
-        count: data.count,
+        count: data.sessionIds.size,
       })).sort(compareSlideOrder);
 
       const pageTimeMap: Record<string, { total: number; count: number; title: string }> = {};

@@ -124,10 +124,12 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
     }
   }, [currentSlide, isConnected, notifySlideChange]);
 
-  const flushAvatarSlideTime = () => {
-    if (!sessionIdRef.current || !currentSlide || slideExitSavedRef.current) return;
+  const flushAvatarSlideTime = (slide?: Slide | null) => {
+    if (!sessionIdRef.current || slideExitSavedRef.current) return;
+    const targetSlide = slide || prevSlideRef.current || currentSlide;
+    if (!targetSlide) return;
     slideExitSavedRef.current = true;
-    saveSlideTime(currentSlide.id, currentSlide.title, slideStartTimeRef.current);
+    saveSlideTime(targetSlide.id, targetSlide.title, slideStartTimeRef.current);
   };
 
   useEffect(() => {
@@ -162,15 +164,15 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
       if (cameraHideTimerRef.current) {
         clearTimeout(cameraHideTimerRef.current);
       }
-      
+
       // Save time for current slide when leaving avatar mode
       flushAvatarSlideTime();
-      
+
       if (userStreamRef.current) {
         userStreamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, [currentSlide]);
+  }, []);
 
   // Auto-start user camera once avatar is connected (to match mockup UX)
   // ALSO: Re-attach existing stream to video element after slide changes / reconnects

@@ -100,44 +100,44 @@ const AdminLogin = () => {
         <img src={logo} alt="TUM Logo" className="h-8" />
       </div>
 
-      <Card className="relative z-10 w-full max-w-md bg-slate-800/80 border-slate-700 backdrop-blur-md">
+      <Card className="relative z-10 w-full max-w-md bg-card/80 border-border backdrop-blur-md">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
             <Shield className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl text-white">Research Panel</CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardTitle className="text-2xl text-foreground">Research Panel</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Access restricted to authorized team members only
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-300">Email</Label>
+              <Label htmlFor="email" className="text-foreground/80">Email</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  className="pl-10 bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500"
+                  className="pl-10 bg-muted/60 border-border text-foreground placeholder:text-muted-foreground/70"
                   required
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-300">Password</Label>
+              <Label htmlFor="password" className="text-foreground/80">Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                 <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="pl-10 bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500"
+                  className="pl-10 bg-muted/60 border-border text-foreground placeholder:text-muted-foreground/70"
                   required
                 />
               </div>

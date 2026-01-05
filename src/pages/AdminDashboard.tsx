@@ -100,7 +100,7 @@ const AdminDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
@@ -120,7 +120,7 @@ const AdminDashboard = () => {
             {label}
           </TabsTrigger>
         </TooltipTrigger>
-        <TooltipContent className="max-w-xs bg-slate-700 text-slate-100 border-slate-600">
+        <TooltipContent className="max-w-xs bg-popover text-popover-foreground border-border">
           <p className="text-sm">{help}</p>
         </TooltipContent>
       </Tooltip>
@@ -128,21 +128,21 @@ const AdminDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700 px-4 md:px-6 py-3 md:py-4">
+      <header className="bg-card/80 border-b border-border/70 px-4 md:px-6 py-3 md:py-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <BarChart3 className="w-7 h-7 md:w-8 md:h-8 text-primary" />
             <div>
-              <h1 className="text-lg md:text-xl font-bold text-white">Research Panel</h1>
-              <p className="text-xs md:text-sm text-slate-400 hidden sm:block">AI Image Generation Study</p>
+              <h1 className="text-lg md:text-xl font-bold text-foreground">Research Panel</h1>
+              <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">AI Image Generation Study</p>
             </div>
           </div>
           <div className="flex items-center gap-2 md:gap-4 w-full sm:w-auto justify-between sm:justify-end">
             <div className="flex items-center gap-2">
               <PermissionBadge userEmail={userEmail} />
-              <span className="text-xs md:text-sm text-slate-400 truncate max-w-[120px] md:max-w-none">{userEmail}</span>
+              <span className="text-xs md:text-sm text-muted-foreground truncate max-w-[120px] md:max-w-none">{userEmail}</span>
             </div>
             {getPermissionLevel(userEmail) === 'owner' && (
               <TooltipProvider>
@@ -161,13 +161,13 @@ const AdminDashboard = () => {
                             toast.error("Failed to generate PDF. Check console for details.");
                           }
                         }}
-                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                        className="border-border text-muted-foreground hover:bg-muted"
                       >
                         <FileDown className="w-4 h-4 md:mr-2" />
                         <span className="hidden md:inline">System Docs</span>
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600">
+                    <TooltipContent className="bg-popover text-popover-foreground border-border">
                       <p className="text-sm">Download complete system documentation PDF</p>
                     </TooltipContent>
                   </Tooltip>
@@ -185,13 +185,13 @@ const AdminDashboard = () => {
                             toast.error("Failed to generate PDF. Check console for details.");
                           }
                         }}
-                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                        className="border-border text-muted-foreground hover:bg-muted"
                       >
                         <BookOpen className="w-4 h-4 md:mr-2" />
                         <span className="hidden md:inline">Workflow Guide</span>
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600">
+                    <TooltipContent className="bg-popover text-popover-foreground border-border">
                       <p className="text-sm">Download narrative workflow and user journey guide</p>
                     </TooltipContent>
                   </Tooltip>
@@ -201,7 +201,7 @@ const AdminDashboard = () => {
                         asChild
                         variant="outline"
                         size="sm"
-                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                        className="border-border text-muted-foreground hover:bg-muted"
                       >
                         <a href="/testing-evaluation.md" download>
                           <FileText className="w-4 h-4 md:mr-2" />
@@ -209,7 +209,7 @@ const AdminDashboard = () => {
                         </a>
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-slate-700 text-slate-100 border-slate-600">
+                    <TooltipContent className="bg-popover text-popover-foreground border-border">
                       <p className="text-sm">Download testing & evaluation checklist</p>
                     </TooltipContent>
                   </Tooltip>
@@ -220,7 +220,7 @@ const AdminDashboard = () => {
               variant="outline" 
               size="sm" 
               onClick={handleLogout}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="border-border text-muted-foreground hover:bg-muted"
             >
               <LogOut className="w-4 h-4 md:mr-2" />
               <span className="hidden md:inline">Log out</span>
@@ -233,7 +233,7 @@ const AdminDashboard = () => {
       <main className="max-w-7xl mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
         <Tabs defaultValue="overview" className="space-y-4 md:space-y-6">
           <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
-            <TabsList className="bg-slate-800 border border-slate-700 flex-nowrap md:flex-wrap h-auto gap-1 md:gap-1.5 p-1 md:p-1.5 rounded-xl min-w-max md:min-w-0">
+            <TabsList className="bg-card/70 border border-border/70 flex-nowrap md:flex-wrap h-auto gap-1 md:gap-1.5 p-1 md:p-1.5 rounded-xl min-w-max md:min-w-0">
               <TabWithHelp 
                 value="overview" 
                 icon={BarChart3} 
@@ -340,25 +340,25 @@ const AdminDashboard = () => {
       </main>
 
       {/* Footer */}
-      <footer className="mt-8 md:mt-12 border-t border-slate-700 bg-slate-800/50">
+      <footer className="mt-8 md:mt-12 border-t border-border/70 bg-card/50">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
           <div className="flex flex-col items-center text-center gap-2 md:gap-3">
-            <h2 className="text-base md:text-lg font-semibold text-slate-200">
+            <h2 className="text-base md:text-lg font-semibold text-foreground/90">
               P6: AI Study Buddy
             </h2>
-            <p className="text-xs md:text-sm text-slate-400 max-w-2xl px-4">
+            <p className="text-xs md:text-sm text-muted-foreground max-w-2xl px-4">
               Exploring Trust and Engagement toward Embodied AI Agents for AI Literacy
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground/80">
               Mentor: Efe Bozkir
             </p>
           </div>
           
-          <div className="mt-4 md:mt-6 pt-4 border-t border-slate-700/50 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 text-xs text-slate-500">
+          <div className="mt-4 md:mt-6 pt-4 border-t border-border/60 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 text-xs text-muted-foreground/80">
             <span>Technical University of Munich</span>
             <span className="hidden md:inline">•</span>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-accent/70 animate-pulse ring-1 ring-accent/40" />
               <span>System Online</span>
             </div>
             <span className="hidden md:inline">•</span>

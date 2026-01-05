@@ -59,7 +59,7 @@ export const canUseTutorDialogueTable = async (): Promise<boolean> => {
   pendingCheck = (supabase
     .from("tutor_dialogue_turns" as any)
     .select("id", { head: true, count: "exact" })
-    .limit(1) as Promise<{ error?: unknown }>)
+    .limit(1) as unknown as Promise<{ error?: unknown }>)
     .then(({ error }) => {
       if (error && isMissingTableError(error)) {
         cachedStatus = "missing";

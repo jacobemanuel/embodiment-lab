@@ -1,6 +1,4 @@
-// @ts-nocheck
-
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import {
   Clock,
@@ -31,6 +29,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+
+type AuditLogRow = {
+  id: string;
+  created_at: string;
+  admin_email: string;
+  action_type: string;
+  entity_type: string;
+  entity_name: string | null;
+  entity_id: string | null;
+  changes: unknown;
+};
 
 const AdminAuditLog = () => {
   const [logs, setLogs] = useState([]);

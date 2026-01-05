@@ -102,7 +102,7 @@ Legend:
 
 ```mermaid
 flowchart LR
-  User["Participant Browser"] --> FE["React + Vite study UI"]
+  User["Participant Browser"] -->|Study UI| FE["React + Vite study UI"]
   FE -->|Responses timing transcripts flags| Edge["Supabase Edge Functions Deno"]
   Edge -->|Writes| DB[("Supabase Postgres")]
   Edge -->|Reads for stats and exports| DB

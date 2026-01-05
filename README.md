@@ -498,6 +498,10 @@ npx vitest run
 - Unit + integration: core UI + data/edge-function contracts (Vitest).
 - E2E smoke: app routing sanity checks live in `src/test/e2e/AppSmoke.test.tsx`.
 - User-based evaluation checklist: see `docs/testing-evaluation.md` for the structured pilot flow + reporting checklist.
+- Manual smoke test (text + avatar) before release:
+  - `/study/text`: consent → demographics → pre-test → learning (text) → post-tests → completion.
+  - `/study/avatar`: same flow, plus verify avatar stream + transcript events.
+  - Verify exports (PDF/CSV + Dialogue CSV) and confirm sessions appear in the admin dashboard.
 
 ## Deployment
 

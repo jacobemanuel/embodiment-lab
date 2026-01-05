@@ -1075,7 +1075,7 @@ This appendix provides a detailed, page by page specification. Each page include
 Purpose
 
 - Provide a public entry point with a concise overview of the study.
-- Reinforce privacy and anonymity and the estimated time (~20 minutes).
+- Reinforce privacy and anonymity and the estimated time (~15 minutes).
 - Prevent repeat participation on the same device.
 
 UI layout

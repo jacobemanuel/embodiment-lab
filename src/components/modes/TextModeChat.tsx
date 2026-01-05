@@ -48,7 +48,7 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
       
       if (isInitialLoad && isFirstSlide) {
         // First slide greeting - like Avatar
-        const greeting = `Hey! Nice to see you! 👋 I'm Alex, your AI tutor for learning about AI image generation. We're starting with \"${currentSlide.title}\" - feel free to ask me anything!`;
+        const greeting = `Hey there! I'm Alex, ready to help you learn about AI art! We're starting with \"${currentSlide.title}\" - feel free to ask me anything!`;
         const greetingTimestamp = Date.now();
         let shouldAppend = true;
         setMessages((prev) => {

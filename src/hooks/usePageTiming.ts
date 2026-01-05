@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { appendTimingEntry, saveTelemetryMeta } from "@/lib/sessionTelemetry";
 import { StudyMode } from "@/types/study";
+import { enqueueEdgeCall } from "@/lib/edgeQueue";
 
 const MIN_SECONDS = 2;
 
@@ -47,6 +48,15 @@ export const usePageTiming = (pageId: string, pageTitle: string, enabled: boolea
         },
       }).catch((error) => {
         console.error('Failed to save page timing:', error);
+        enqueueEdgeCall('save-avatar-time', {
+          sessionId,
+          slideId: `page:${pageId}`,
+          slideTitle: `Page: ${pageTitle}`,
+          startedAt: startRef.current.toISOString(),
+          endedAt: endTime.toISOString(),
+          durationSeconds,
+          mode: 'page',
+        });
       });
     };
 

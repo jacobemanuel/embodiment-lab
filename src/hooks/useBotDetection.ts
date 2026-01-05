@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SUSPICION_THRESHOLDS } from '@/lib/suspicion';
+import { enqueueEdgeCall } from '@/lib/edgeQueue';
 
 const {
   minTimePerQuestionMs,
@@ -216,29 +217,13 @@ export async function logSuspiciousActivity(
       score: result.score,
     });
   } catch (error) {
-    console.warn('save-study-data report_suspicious failed, falling back to direct update:', error);
-    try {
-      const { data: session } = await supabase
-        .from('study_sessions')
-        .select('suspicious_flags, suspicion_score')
-        .eq('session_id', sessionId)
-        .maybeSingle();
-
-      const existingFlags = Array.isArray(session?.suspicious_flags) ? session?.suspicious_flags : [];
-      const mergedFlags = Array.from(new Set([...existingFlags, ...result.flags]));
-      const existingScore = typeof session?.suspicion_score === 'number' ? session.suspicion_score : 0;
-      const nextScore = Math.max(existingScore, result.score);
-
-      await supabase
-        .from('study_sessions')
-        .update({
-          suspicious_flags: mergedFlags,
-          suspicion_score: nextScore,
-          last_activity_at: new Date().toISOString(),
-        })
-        .eq('session_id', sessionId);
-    } catch (fallbackError) {
-      console.error('Failed to log suspicious activity via fallback:', fallbackError);
-    }
+    console.warn('save-study-data report_suspicious failed, queueing retry:', error);
+    enqueueEdgeCall('save-study-data', {
+      action: 'report_suspicious',
+      sessionId,
+      flags: result.flags,
+      score: result.score,
+      pageType,
+    });
   }
 }

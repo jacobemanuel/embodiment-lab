@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StudyMode } from "@/types/study";
 import { getTimingLog, META_DIALOGUE_ID, META_TIMING_ID } from "@/lib/sessionTelemetry";
 import { getTutorDialogueLog } from "@/lib/tutorDialogue";
+import { enqueueEdgeCall } from "@/lib/edgeQueue";
 
 const resolveSessionUuid = async (sessionId: string) => {
   const { data, error } = await supabase
@@ -151,21 +152,28 @@ const fallbackCompleteSession = async (sessionId: string) => {
 };
 
 export const createStudySession = async (mode: StudyMode) => {
+  const localSessionId = crypto.randomUUID();
   try {
     const { data, error } = await supabase.functions.invoke('save-study-data', {
       body: {
         action: 'create_session',
         mode,
+        sessionId: localSessionId,
       }
     });
 
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
 
-    return data.sessionId as string;
+    return (data?.sessionId as string) || localSessionId;
   } catch (error) {
-    console.warn('save-study-data create_session failed, falling back to direct insert:', error);
-    return await fallbackCreateSession(mode);
+    console.warn('save-study-data create_session failed, queueing retry:', error);
+    enqueueEdgeCall(
+      'save-study-data',
+      { action: 'create_session', mode, sessionId: localSessionId },
+      { dedupeKey: `create_session:${localSessionId}` }
+    );
+    return localSessionId;
   }
 };
 
@@ -182,8 +190,12 @@ export const updateStudyMode = async (sessionId: string, mode: StudyMode) => {
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
   } catch (error) {
-    console.warn('save-study-data update_mode failed, falling back to direct update:', error);
-    await fallbackUpdateMode(sessionId, mode);
+    console.warn('save-study-data update_mode failed, queueing retry:', error);
+    enqueueEdgeCall(
+      'save-study-data',
+      { action: 'update_mode', sessionId, mode },
+      { dedupeKey: `update_mode:${sessionId}` }
+    );
   }
 };
 
@@ -200,8 +212,12 @@ export const saveDemographics = async (sessionId: string, demographics: Record<s
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
   } catch (error) {
-    console.warn('save-study-data save_demographics failed, falling back to direct insert:', error);
-    await fallbackSaveDemographics(sessionId, demographics);
+    console.warn('save-study-data save_demographics failed, queueing retry:', error);
+    enqueueEdgeCall('save-study-data', {
+      action: 'save_demographics',
+      sessionId,
+      demographics,
+    });
   }
 };
 
@@ -223,8 +239,12 @@ export const savePreTestResponses = async (sessionId: string, responses: Record<
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
   } catch (error) {
-    console.warn('save-study-data save_pre_test failed, falling back to direct insert:', error);
-    await fallbackSavePreTest(sessionId, responses);
+    console.warn('save-study-data save_pre_test failed, queueing retry:', error);
+    enqueueEdgeCall('save-study-data', {
+      action: 'save_pre_test',
+      sessionId,
+      preTestResponses,
+    });
   }
 };
 
@@ -254,8 +274,18 @@ export const saveScenarioData = async (
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
   } catch (error) {
-    console.warn('save-study-data save_scenario failed, falling back to direct insert:', error);
-    await fallbackSaveScenario(sessionId, scenarioId, messages, confidenceRating, trustRating, engagementRating);
+    console.warn('save-study-data save_scenario failed, queueing retry:', error);
+    enqueueEdgeCall('save-study-data', {
+      action: 'save_scenario',
+      sessionId,
+      scenarioData: {
+        scenarioId,
+        messages,
+        confidenceRating,
+        trustRating,
+        engagementRating,
+      },
+    });
   }
 };
 
@@ -338,35 +368,34 @@ export const savePostTestResponses = async (
   }
 
   const maxEdgeResponses = 200;
-  if (telemetryResponses.length > 0 && postTestResponses.length + telemetryResponses.length > maxEdgeResponses) {
-    const metaMap = Object.fromEntries(
-      telemetryResponses.map((entry) => [entry.questionId, entry.answer])
-    );
-    await fallbackSavePostTest(sessionId, { ...responses, ...metaMap });
-    return;
+  const allResponses = [...postTestResponses, ...telemetryResponses];
+  const batches: Array<typeof postTestResponses> = [];
+  for (let i = 0; i < allResponses.length; i += maxEdgeResponses) {
+    batches.push(allResponses.slice(i, i + maxEdgeResponses));
   }
 
   try {
-    const { data, error } = await supabase.functions.invoke('save-study-data', {
-      body: {
+    for (const batch of batches) {
+      const { data, error } = await supabase.functions.invoke('save-study-data', {
+        body: {
+          action: 'save_post_test',
+          sessionId,
+          postTestResponses: batch,
+        }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    }
+  } catch (error) {
+    console.warn('save-study-data save_post_test failed, queueing retry:', error);
+    batches.forEach((batch) => {
+      enqueueEdgeCall('save-study-data', {
         action: 'save_post_test',
         sessionId,
-        postTestResponses: [...postTestResponses, ...telemetryResponses],
-      }
+        postTestResponses: batch,
+      });
     });
-
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-  } catch (error) {
-    console.warn('save-study-data save_post_test failed, falling back to direct insert:', error);
-    if (telemetryResponses.length > 0) {
-      const metaMap = Object.fromEntries(
-        telemetryResponses.map((entry) => [entry.questionId, entry.answer])
-      );
-      await fallbackSavePostTest(sessionId, { ...responses, ...metaMap });
-    } else {
-      await fallbackSavePostTest(sessionId, responses);
-    }
   }
 };
 
@@ -379,8 +408,8 @@ export const completeStudySession = async (sessionId: string) => {
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
   } catch (error) {
-    console.warn('complete-session failed, falling back to direct update:', error);
-    await fallbackCompleteSession(sessionId);
+    console.warn('complete-session failed, queueing retry:', error);
+    enqueueEdgeCall('complete-session', { sessionId });
   }
 };
 

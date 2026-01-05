@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { clearTelemetrySavedFlag, clearTimingLog } from "@/lib/sessionTelemetry";
+import { enqueueEdgeCall } from "@/lib/edgeQueue";
 
 interface ExitStudyButtonProps {
   variant?: "default" | "ghost" | "outline";
@@ -43,13 +44,23 @@ const ExitStudyButton = ({
       // If there's a session, mark it as withdrawn (not suspicious, not reset)
       // This is a legitimate withdrawal, different from cheating attempts
       if (sessionId) {
-        await supabase
-          .from('study_sessions')
-          .update({ 
-            status: 'withdrawn',
-            completed_at: null // Ensure it's not marked as completed
-          })
-          .eq('session_id', sessionId);
+        try {
+          const { data, error } = await supabase.functions.invoke('save-study-data', {
+            body: {
+              action: 'withdraw_session',
+              sessionId,
+            },
+          });
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+        } catch (error) {
+          console.error('Failed to mark session as withdrawn:', error);
+          enqueueEdgeCall(
+            'save-study-data',
+            { action: 'withdraw_session', sessionId },
+            { dedupeKey: `withdraw_session:${sessionId}` }
+          );
+        }
       }
       
       // Clear all session data

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { clearStudySession } from './useStudyFlowGuard';
+import { enqueueEdgeCall } from '@/lib/edgeQueue';
 
 const TIMEOUT_DURATION = 30 * 60 * 1000; // 30 minutes
 const WARNING_BEFORE_TIMEOUT = 5 * 60 * 1000; // 5 minutes before timeout
@@ -20,6 +21,7 @@ export function useSessionTimeout(options: UseSessionTimeoutOptions = {}) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const warningRef = useRef<NodeJS.Timeout | null>(null);
   const activityUpdateRef = useRef<NodeJS.Timeout | null>(null);
+  const warningCountdownRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
   const [showWarning, setShowWarning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(TIMEOUT_DURATION);
@@ -37,6 +39,11 @@ export function useSessionTimeout(options: UseSessionTimeoutOptions = {}) {
       });
     } catch (error) {
       console.error('Failed to update activity:', error);
+      enqueueEdgeCall(
+        'save-study-data',
+        { action: 'update_activity', sessionId },
+        { dedupeKey: `update_activity:${sessionId}` }
+      );
     }
   }, []);
 
@@ -55,6 +62,11 @@ export function useSessionTimeout(options: UseSessionTimeoutOptions = {}) {
         });
       } catch (error) {
         console.error('Failed to mark session as timed out:', error);
+        enqueueEdgeCall('save-study-data', {
+          action: 'reset_session',
+          sessionId,
+          reason: 'timeout',
+        });
       }
     }
 
@@ -79,17 +91,21 @@ export function useSessionTimeout(options: UseSessionTimeoutOptions = {}) {
     });
 
     // Start countdown
-    const countdownInterval = setInterval(() => {
+    if (warningCountdownRef.current) {
+      clearInterval(warningCountdownRef.current);
+    }
+    warningCountdownRef.current = setInterval(() => {
       setTimeRemaining(prev => {
         const newTime = prev - 1000;
         if (newTime <= 0) {
-          clearInterval(countdownInterval);
+          if (warningCountdownRef.current) {
+            clearInterval(warningCountdownRef.current);
+            warningCountdownRef.current = null;
+          }
         }
         return newTime;
       });
     }, 1000);
-
-    return () => clearInterval(countdownInterval);
   }, [onWarning]);
 
   const resetTimeout = useCallback(() => {
@@ -100,6 +116,10 @@ export function useSessionTimeout(options: UseSessionTimeoutOptions = {}) {
     // Clear existing timers
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (warningRef.current) clearTimeout(warningRef.current);
+    if (warningCountdownRef.current) {
+      clearInterval(warningCountdownRef.current);
+      warningCountdownRef.current = null;
+    }
 
     // Set warning timer (25 minutes)
     warningRef.current = setTimeout(() => {
@@ -149,6 +169,10 @@ export function useSessionTimeout(options: UseSessionTimeoutOptions = {}) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (warningRef.current) clearTimeout(warningRef.current);
       if (activityUpdateRef.current) clearInterval(activityUpdateRef.current);
+      if (warningCountdownRef.current) {
+        clearInterval(warningCountdownRef.current);
+        warningCountdownRef.current = null;
+      }
     };
   }, [enabled, resetTimeout, updateServerActivity]);
 

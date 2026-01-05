@@ -17,6 +17,7 @@ import { saveTutorDialogue } from "@/lib/studyData";
 import { getTutorDialogueLog } from "@/lib/tutorDialogue";
 import { usePageTiming } from "@/hooks/usePageTiming";
 import { appendTimingEntry, getTimingLog, saveTelemetryMeta } from "@/lib/sessionTelemetry";
+import { enqueueEdgeCall } from "@/lib/edgeQueue";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Learning = () => {
@@ -105,6 +106,15 @@ const Learning = () => {
       });
     } catch (error) {
       console.error('Failed to save slide time:', error);
+      enqueueEdgeCall('save-avatar-time', {
+        sessionId: sessionIdRef.current,
+        slideId: slide.id,
+        slideTitle: slide.title,
+        startedAt: startTime.toISOString(),
+        endedAt: endTime.toISOString(),
+        durationSeconds,
+        mode: 'text',
+      });
     }
   };
 

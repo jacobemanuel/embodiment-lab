@@ -8,62 +8,62 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Modern dark 3D-inspired design system with AI theme */
-    --background: 220 25% 6%;
+    /* Minimal black design system with warm accent */
+    --background: 0 0% 4%;
     --foreground: 0 0% 98%;
     
-    /* AI-themed cyan-blue gradient */
-    --primary: 200 95% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 190 100% 65%;
+    /* Warm accent */
+    --primary: 28 90% 55%;
+    --primary-foreground: 0 0% 10%;
+    --primary-glow: 35 95% 65%;
     
-    /* AI secondary - cyan/blue theme */
-    --ai-primary: 195 100% 60%;
-    --ai-secondary: 210 80% 65%;
-    --ai-accent: 230 70% 60%;
-    --ai-glow: 190 100% 70%;
+    /* Accent family */
+    --ai-primary: 28 90% 55%;
+    --ai-secondary: 45 90% 55%;
+    --ai-accent: 10 80% 55%;
+    --ai-glow: 35 100% 70%;
     
-    /* Enhanced dark surfaces with depth */
-    --secondary: 220 20% 14%;
+    /* Neutral surfaces */
+    --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 98%;
     
-    --muted: 220 20% 16%;
-    --muted-foreground: 220 15% 70%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 68%;
     
-    --accent: 230 70% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 28 90% 55%;
+    --accent-foreground: 0 0% 10%;
     
-    /* 3D elevated cards */
-    --card: 220 25% 10%;
+    /* Elevated cards */
+    --card: 0 0% 8%;
     --card-foreground: 0 0% 98%;
     
-    --popover: 220 25% 10%;
+    --popover: 0 0% 8%;
     --popover-foreground: 0 0% 98%;
     
-    --border: 220 20% 22%;
-    --input: 220 20% 22%;
-    --ring: 200 95% 55%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 28 90% 55%;
     
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 52%;
     --destructive-foreground: 0 0% 100%;
     
     --radius: 1rem;
     
-    /* AI-themed gradients - cyan/blue */
-    --gradient-primary: linear-gradient(135deg, hsl(195 100% 60%) 0%, hsl(230 70% 60%) 100%);
-    --gradient-ai: linear-gradient(135deg, hsl(195 100% 60%) 0%, hsl(210 80% 65%) 50%, hsl(230 70% 60%) 100%);
-    --gradient-surface: linear-gradient(145deg, hsl(220 25% 12%) 0%, hsl(220 25% 8%) 100%);
-    --gradient-mesh: radial-gradient(at 0% 0%, hsl(195 100% 60% / 0.2) 0px, transparent 50%),
-                      radial-gradient(at 100% 0%, hsl(210 80% 65% / 0.15) 0px, transparent 50%),
-                      radial-gradient(at 100% 100%, hsl(230 70% 60% / 0.1) 0px, transparent 50%);
+    /* Minimal warm gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(28 90% 55%) 0%, hsl(45 90% 55%) 100%);
+    --gradient-ai: linear-gradient(135deg, hsl(28 90% 55%) 0%, hsl(44 90% 55%) 50%, hsl(10 80% 55%) 100%);
+    --gradient-surface: linear-gradient(145deg, hsl(0 0% 10%) 0%, hsl(0 0% 5%) 100%);
+    --gradient-mesh: radial-gradient(at 0% 0%, hsl(28 90% 55% / 0.14) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, hsl(45 90% 55% / 0.12) 0px, transparent 50%),
+                      radial-gradient(at 100% 100%, hsl(10 80% 55% / 0.1) 0px, transparent 50%);
     
-    /* AI-themed shadows with cyan/blue glow */
+    /* Shadows with warm glow */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --shadow-subtle: 0 2px 8px -2px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
     --shadow-medium: 0 8px 24px -4px rgb(0 0 0 / 0.5), 0 4px 8px rgb(0 0 0 / 0.4);
     --shadow-large: 0 20px 40px -8px rgb(0 0 0 / 0.6), 0 10px 20px rgb(0 0 0 / 0.5);
-    --shadow-glow: 0 0 60px hsl(195 100% 60% / 0.4), 0 0 30px hsl(210 80% 65% / 0.3);
-    --shadow-ai-glow: 0 0 40px hsl(195 100% 60% / 0.35), 0 0 20px hsl(190 100% 70% / 0.25);
+    --shadow-glow: 0 0 60px hsl(28 90% 55% / 0.35), 0 0 30px hsl(45 90% 55% / 0.25);
+    --shadow-ai-glow: 0 0 40px hsl(28 90% 55% / 0.3), 0 0 20px hsl(35 95% 65% / 0.2);
     --shadow-inset: inset 0 2px 8px rgb(0 0 0 / 0.3);
     
     /* 3D elevation effects */
@@ -71,58 +71,57 @@ All colors MUST be HSL.
     --elevation-2: 0 4px 8px rgb(0 0 0 / 0.3);
     --elevation-3: 0 8px 16px rgb(0 0 0 / 0.4);
     
-    /* Slide presentation background - distinct from page */
-    --slide-bg: 220 20% 18%;
-    --slide-border: 220 25% 28%;
-    --slide-shadow: 0 20px 60px rgb(0 0 0 / 0.5), 0 0 80px hsl(200 95% 55% / 0.15);
+    /* Slide presentation background */
+    --slide-bg: 0 0% 10%;
+    --slide-border: 0 0% 22%;
+    --slide-shadow: 0 20px 60px rgb(0 0 0 / 0.6), 0 0 80px hsl(28 90% 55% / 0.12);
   }
   
   .dark {
-    --background: 220 25% 5%;
+    --background: 0 0% 3%;
     --foreground: 0 0% 98%;
     
-    --primary: 200 95% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 190 100% 65%;
+    --primary: 28 90% 55%;
+    --primary-foreground: 0 0% 10%;
+    --primary-glow: 35 95% 65%;
     
-    --ai-primary: 195 100% 60%;
-    --ai-secondary: 210 80% 65%;
-    --ai-accent: 230 70% 60%;
-    --ai-glow: 190 100% 70%;
+    --ai-primary: 28 90% 55%;
+    --ai-secondary: 45 90% 55%;
+    --ai-accent: 10 80% 55%;
+    --ai-glow: 35 100% 70%;
     
-    --secondary: 220 20% 12%;
+    --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 98%;
     
-    --muted: 220 20% 14%;
-    --muted-foreground: 220 15% 70%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 68%;
     
-    --accent: 230 70% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 28 90% 55%;
+    --accent-foreground: 0 0% 10%;
     
-    --card: 220 25% 9%;
+    --card: 0 0% 7%;
     --card-foreground: 0 0% 98%;
     
-    --popover: 220 25% 9%;
+    --popover: 0 0% 7%;
     --popover-foreground: 0 0% 98%;
     
-    --border: 220 20% 20%;
-    --input: 220 20% 20%;
-    --ring: 200 95% 55%;
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
+    --ring: 28 90% 55%;
     
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 52%;
     --destructive-foreground: 0 0% 100%;
     
-    --gradient-primary: linear-gradient(135deg, hsl(195 100% 60%) 0%, hsl(230 70% 60%) 100%);
-    --gradient-ai: linear-gradient(135deg, hsl(195 100% 60%) 0%, hsl(210 80% 65%) 50%, hsl(230 70% 60%) 100%);
-    --gradient-surface: linear-gradient(145deg, hsl(220 25% 11%) 0%, hsl(220 25% 7%) 100%);
-    --gradient-mesh: radial-gradient(at 0% 0%, hsl(195 100% 60% / 0.2) 0px, transparent 50%),
-                      radial-gradient(at 100% 0%, hsl(210 80% 65% / 0.15) 0px, transparent 50%),
-                      radial-gradient(at 100% 100%, hsl(230 70% 60% / 0.1) 0px, transparent 50%);
+    --gradient-primary: linear-gradient(135deg, hsl(28 90% 55%) 0%, hsl(45 90% 55%) 100%);
+    --gradient-ai: linear-gradient(135deg, hsl(28 90% 55%) 0%, hsl(44 90% 55%) 50%, hsl(10 80% 55%) 100%);
+    --gradient-surface: linear-gradient(145deg, hsl(0 0% 9%) 0%, hsl(0 0% 4%) 100%);
+    --gradient-mesh: radial-gradient(at 0% 0%, hsl(28 90% 55% / 0.14) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, hsl(45 90% 55% / 0.12) 0px, transparent 50%),
+                      radial-gradient(at 100% 100%, hsl(10 80% 55% / 0.1) 0px, transparent 50%);
     
-    /* Slide presentation background - distinct from page */
-    --slide-bg: 220 20% 16%;
-    --slide-border: 220 25% 26%;
-    --slide-shadow: 0 20px 60px rgb(0 0 0 / 0.6), 0 0 80px hsl(200 95% 55% / 0.12);
+    --slide-bg: 0 0% 9%;
+    --slide-border: 0 0% 20%;
+    --slide-shadow: 0 20px 60px rgb(0 0 0 / 0.7), 0 0 80px hsl(28 90% 55% / 0.12);
   }
 }
 
@@ -219,7 +218,7 @@ All colors MUST be HSL.
   .glass-card:hover {
     transform: translateY(-2px);
     box-shadow: 
-      0 12px 40px rgba(102, 126, 234, 0.2),
+      0 12px 40px hsl(28 90% 55% / 0.18),
       0 8px 32px rgba(0, 0, 0, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
@@ -234,7 +233,7 @@ All colors MUST be HSL.
   
   .dark .glass-card:hover {
     box-shadow: 
-      0 12px 40px rgba(102, 126, 234, 0.25),
+      0 12px 40px hsl(28 90% 55% / 0.22),
       0 8px 32px rgba(0, 0, 0, 0.6),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }

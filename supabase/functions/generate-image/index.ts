@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,9 +18,48 @@ const generateImageSchema = z.object({
   height: z.number().min(256).max(2048).optional(),
 });
 
+async function isApiEnabled(): Promise<boolean> {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("app_settings")
+      .select("key, value")
+      .in("key", ["api_enabled", "openai_api_enabled"]);
+
+    if (error) {
+      console.error("Error checking API status:", error);
+      return false;
+    }
+
+    const settings: Record<string, any> = {};
+    for (const row of data || []) {
+      settings[row.key] = row.value;
+    }
+
+    const masterEnabled = settings.api_enabled?.enabled ?? false;
+    const openaiEnabled = settings.openai_api_enabled?.enabled ?? true;
+
+    return masterEnabled && openaiEnabled;
+  } catch (e) {
+    console.error("Error in isApiEnabled:", e);
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const apiEnabled = await isApiEnabled();
+  if (!apiEnabled) {
+    return new Response(
+      JSON.stringify({ error: "Service temporarily unavailable. Please try again later." }),
+      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
   try {

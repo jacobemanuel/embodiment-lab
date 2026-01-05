@@ -8,6 +8,7 @@ import { TranscriptPanel, TranscriptMessage } from "@/components/TranscriptPanel
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { appendTimingEntry } from "@/lib/sessionTelemetry";
+import { enqueueEdgeCall } from "@/lib/edgeQueue";
 
 interface AvatarModePanelProps {
   currentSlide: Slide;
@@ -98,6 +99,15 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
       console.log(`Avatar time saved: ${slideTitle} - ${durationSeconds}s`);
     } catch (err) {
       console.error('Failed to save avatar time:', err);
+      enqueueEdgeCall('save-avatar-time', {
+        sessionId: sessionIdRef.current,
+        slideId,
+        slideTitle,
+        startedAt: startTime.toISOString(),
+        endedAt: endTime.toISOString(),
+        durationSeconds,
+        mode: 'avatar',
+      });
     }
   };
 

@@ -2,7 +2,8 @@ import { Message } from "@/types/study";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
-type Msg = { role: "user" | "assistant"; content: string };
+type ChatMessage = Message | { role: "system"; content: string; timestamp?: number };
+type Msg = { role: "user" | "assistant" | "system"; content: string };
 
 export async function streamChat({
   messages,
@@ -10,16 +11,21 @@ export async function streamChat({
   onDone,
   onError,
 }: {
-  messages: Message[];
+  messages: ChatMessage[];
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError?: (error: Error) => void;
 }) {
   try {
-    const formattedMessages: Msg[] = messages.map(msg => ({
-      role: msg.role === 'ai' ? 'assistant' : 'user',
-      content: msg.content
-    }));
+    const formattedMessages: Msg[] = messages.map((msg) => {
+      if (msg.role === 'system') {
+        return { role: 'system', content: msg.content };
+      }
+      return {
+        role: msg.role === 'ai' ? 'assistant' : 'user',
+        content: msg.content,
+      };
+    });
 
     // Get pre-test data from sessionStorage if available
     const preTestData = sessionStorage.getItem('preTest') 

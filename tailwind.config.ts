@@ -108,20 +108,20 @@ export default {
         },
         "gentle-glow": {
           "0%, 100%": { 
-            boxShadow: "0 0 15px rgba(0, 191, 255, 0.2), 0 0 30px rgba(0, 191, 255, 0.1)" 
+            boxShadow: "0 0 15px hsl(28 90% 55% / 0.2), 0 0 30px hsl(45 90% 55% / 0.1)" 
           },
           "50%": { 
-            boxShadow: "0 0 25px rgba(0, 191, 255, 0.4), 0 0 45px rgba(0, 191, 255, 0.2)" 
+            boxShadow: "0 0 25px hsl(28 90% 55% / 0.4), 0 0 45px hsl(45 90% 55% / 0.2)" 
           }
         },
         "attention-pulse": {
           "0%, 100%": { 
             transform: "scale(1)",
-            boxShadow: "0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3)"
+            boxShadow: "0 0 20px hsl(28 90% 55% / 0.5), 0 0 40px hsl(45 90% 55% / 0.3)"
           },
           "50%": { 
             transform: "scale(1.05)",
-            boxShadow: "0 0 30px rgba(59, 130, 246, 0.8), 0 0 60px rgba(59, 130, 246, 0.5)"
+            boxShadow: "0 0 30px hsl(28 90% 55% / 0.8), 0 0 60px hsl(45 90% 55% / 0.5)"
           }
         }
       },

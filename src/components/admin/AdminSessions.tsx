@@ -71,6 +71,13 @@ interface SessionDataStatus {
   isComplete: boolean;
 }
 
+type AvatarGroup = {
+  slideId: string;
+  title: string;
+  total: number;
+  entryIds: string[];
+};
+
 interface SessionEditDraft {
   session: {
     started_at: string;
@@ -167,6 +174,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editDraft, setEditDraft] = useState<SessionEditDraft | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [restoringSessionId, setRestoringSessionId] = useState<string | null>(null);
   const [autoDistributeSlides, setAutoDistributeSlides] = useState(false);
   const [hasLocalOverride, setHasLocalOverride] = useState(false);
   const itemsPerPage = 10;
@@ -772,8 +780,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
   const buildAvatarGroups = (
     entries: SessionEditDraft['avatarTimeTracking'],
     resolveGroupKey: (entry: SessionEditDraft['avatarTimeTracking'][number]) => { key: string; title: string }
-  ) => {
-    const groups = new Map<string, { slideId: string; title: string; total: number; entryIds: string[] }>();
+  ): AvatarGroup[] => {
+    const groups = new Map<string, AvatarGroup>();
     entries.forEach((entry) => {
       const resolved = resolveGroupKey(entry);
       if (!resolved.key) return;
@@ -1131,6 +1139,54 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     await fetchSessions();
     await fetchSessionDetails(selectedSession);
     toast.success('Local override cleared.');
+  };
+
+  const restoreSession = async (session: Session) => {
+    if (!isOwner) return;
+    if (new Date(session.created_at) < OWNER_EDIT_MIN_DATE) {
+      toast.error('Restoring is only enabled for sessions from 24 Dec 2025');
+      return;
+    }
+
+    setRestoringSessionId(session.id);
+    const restoredAt = new Date().toISOString();
+    try {
+      const { data, error } = await supabase.functions.invoke('owner-edit-session', {
+        body: {
+          sessionId: session.id,
+          updates: {
+            session: {
+              status: 'active',
+              last_activity_at: restoredAt,
+            },
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setSessions((prev) =>
+        prev.map((entry) =>
+          entry.id === session.id
+            ? { ...entry, status: 'active', last_activity_at: restoredAt }
+            : entry
+        )
+      );
+
+      setSelectedSession((prev) =>
+        prev && prev.id === session.id
+          ? { ...prev, status: 'active', last_activity_at: restoredAt }
+          : prev
+      );
+
+      toast.success('Session restored');
+    } catch (error) {
+      console.error('Failed to restore session:', error);
+      toast.error('Failed to restore session');
+    } finally {
+      setRestoringSessionId(null);
+    }
   };
 
   // Update session validation status via edge function
@@ -1994,7 +2050,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
   activeSlides.forEach((slide, index) => {
     slideOrder.set(slide.slide_id, slide.sort_order ?? index);
   });
-  const sortSlideGroups = (groups: Array<{ slideId: string; title: string }>) => {
+  const sortSlideGroups = <T extends { slideId: string; title: string }>(groups: T[]): T[] => {
     return [...groups].sort((a, b) => {
       const orderA = slideOrder.get(a.slideId);
       const orderB = slideOrder.get(b.slideId);
@@ -2273,8 +2329,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                           <span className="text-xs text-slate-600">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="font-mono text-sm text-slate-300">
-                        {session.session_id.slice(0, 8)}...
+                      <TableCell className="font-mono text-xs text-slate-300 break-all">
+                        {session.session_id}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
@@ -2522,13 +2578,33 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                         )}
                       </TableCell>
                       <TableCell>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => fetchSessionDetails(session)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => fetchSessionDetails(session)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          {isOwner && isReset && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-emerald-400 hover:text-emerald-300"
+                                    onClick={() => restoreSession(session)}
+                                    disabled={restoringSessionId === session.id}
+                                  >
+                                    <RefreshCw className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Restore session</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -2571,10 +2647,22 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-slate-800 border-slate-700">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-white">
-                Session Details: {selectedSession?.session_id.slice(0, 12)}...
+              <DialogTitle className="text-white break-all">
+                Session Details: {selectedSession?.session_id}
               </DialogTitle>
               <div className="flex items-center gap-2">
+                {isOwner && selectedSession?.status === 'reset' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-emerald-500/60 text-emerald-300 hover:text-emerald-200"
+                    onClick={() => restoreSession(selectedSession)}
+                    disabled={restoringSessionId === selectedSession.id}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Restore
+                  </Button>
+                )}
                 {isOwner && selectedSession && (
                   <Button
                     size="sm"

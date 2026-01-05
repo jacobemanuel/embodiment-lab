@@ -11,6 +11,7 @@ import ExitStudyButton from "@/components/ExitStudyButton";
 import ParticipantFooter from "@/components/ParticipantFooter";
 import { usePageTiming } from "@/hooks/usePageTiming";
 import { updateStudyMode } from "@/lib/studyData";
+import { enqueueEdgeCall } from "@/lib/edgeQueue";
 import { clearTelemetrySavedFlag, clearTimingLog } from "@/lib/sessionTelemetry";
 
 const ModeAssignment = () => {
@@ -110,6 +111,14 @@ const ModeAssignment = () => {
       }
     } catch (error) {
       console.error('Error handling mode selection:', error);
+      const sessionIdForRetry = sessionStorage.getItem('sessionId');
+      if (sessionIdForRetry) {
+        enqueueEdgeCall(
+          'save-study-data',
+          { action: 'update_mode', sessionId: sessionIdForRetry, mode },
+          { dedupeKey: `update_mode:${sessionIdForRetry}` }
+        );
+      }
       sessionStorage.setItem('studyMode', mode);
       navigate(`/learning/${mode}`);
     } finally {

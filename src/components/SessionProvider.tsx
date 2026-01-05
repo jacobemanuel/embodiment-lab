@@ -1,5 +1,6 @@
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useEffect } from 'react';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
+import { processEdgeQueue } from '@/lib/edgeQueue';
 
 interface SessionContextValue {
   showTimeoutWarning: boolean;
@@ -25,6 +26,14 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const { showWarning, timeRemaining, resetTimeout } = useSessionTimeout({
     enabled: true,
   });
+
+  useEffect(() => {
+    processEdgeQueue();
+    const intervalId = setInterval(() => {
+      processEdgeQueue();
+    }, 15000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   return (
     <SessionContext.Provider

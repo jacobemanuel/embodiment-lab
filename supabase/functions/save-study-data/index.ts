@@ -13,6 +13,7 @@ const modeSchema = z.enum(['text', 'voice', 'avatar']);
 const createSessionSchema = z.object({
   action: z.literal('create_session'),
   mode: modeSchema,
+  sessionId: z.string().uuid().optional(),
 });
 
 const demographicsSchema = z.object({
@@ -69,6 +70,11 @@ const resetSessionSchema = z.object({
 
 const updateActivitySchema = z.object({
   action: z.literal('update_activity'),
+  sessionId: z.string().min(10).max(100),
+});
+
+const withdrawSessionSchema = z.object({
+  action: z.literal('withdraw_session'),
   sessionId: z.string().min(10).max(100),
 });
 
@@ -150,21 +156,31 @@ serve(async (req) => {
           );
         }
 
-        const sessionId = crypto.randomUUID();
-        const { error } = await supabase
-          .from('study_sessions')
-          .insert({ 
-            session_id: sessionId, 
-            mode: validated.mode,
-            modes_used: [validated.mode]
-          });
+        const sessionId = validated.sessionId || crypto.randomUUID();
 
-        if (error) {
-          console.error('Failed to create session:', error);
-          return new Response(
-            JSON.stringify({ error: "Unable to create session. Please try again." }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+        const { data: existing } = await supabase
+          .from('study_sessions')
+          .select('session_id')
+          .eq('session_id', sessionId)
+          .maybeSingle();
+
+        if (!existing) {
+          const { error } = await supabase
+            .from('study_sessions')
+            .insert({ 
+              session_id: sessionId, 
+              mode: validated.mode,
+              modes_used: [validated.mode],
+              last_activity_at: new Date().toISOString(),
+            });
+
+          if (error) {
+            console.error('Failed to create session:', error);
+            return new Response(
+              JSON.stringify({ error: "Unable to create session. Please try again." }),
+              { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
         }
 
         return new Response(
@@ -564,6 +580,64 @@ serve(async (req) => {
 
         return new Response(
           JSON.stringify({ success: true, reason: validated.reason }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'withdraw_session': {
+        let validated;
+        try {
+          validated = withdrawSessionSchema.parse(body);
+        } catch (error) {
+          console.error('Validation error:', error);
+          return new Response(
+            JSON.stringify({ error: "Invalid request data" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { data: session, error: sessionError } = await supabase
+          .from('study_sessions')
+          .select('completed_at, status')
+          .eq('session_id', validated.sessionId)
+          .single();
+
+        if (sessionError) {
+          console.error('Failed to load session for withdrawal:', sessionError);
+          return new Response(
+            JSON.stringify({ error: "Unable to withdraw session" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (session?.completed_at || session?.status === 'completed') {
+          return new Response(
+            JSON.stringify({ success: true, ignored: true, reason: 'already_completed' }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { error: updateError } = await supabase
+          .from('study_sessions')
+          .update({ 
+            status: 'withdrawn',
+            completed_at: null,
+            last_activity_at: new Date().toISOString()
+          })
+          .eq('session_id', validated.sessionId);
+
+        if (updateError) {
+          console.error('Failed to withdraw session:', updateError);
+          return new Response(
+            JSON.stringify({ error: "Unable to withdraw session" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        console.log(`Session ${validated.sessionId} marked as withdrawn.`);
+
+        return new Response(
+          JSON.stringify({ success: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

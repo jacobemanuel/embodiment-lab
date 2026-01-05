@@ -144,8 +144,8 @@ export const TextModeChat = ({ currentSlide }: TextModeChatProps) => {
     };
 
     // Build message history for the AI - include slide context with priority like Avatar mode
-    const systemContext: Message = {
-      role: 'ai',
+    const systemContext = {
+      role: 'system' as const,
       content: `[PRIORITY #1 - CURRENT SLIDE CONTEXT]
 You are currently teaching slide: "${currentSlide.title}"
 Slide content context: ${currentSlide.systemPromptContext}

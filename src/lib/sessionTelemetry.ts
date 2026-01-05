@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { StudyMode } from "@/types/study";
 import { getTutorDialogueLog } from "@/lib/tutorDialogue";
+import { enqueueEdgeCall } from "@/lib/edgeQueue";
 
 const TIMING_KEY = 'sessionTimingLog';
 const TELEMETRY_SAVED_KEY = 'sessionTelemetrySaved';
@@ -53,23 +54,28 @@ export const clearTelemetrySavedFlag = () => {
 export const isTelemetryMetaQuestionId = (questionId?: string | null) =>
   typeof questionId === 'string' && questionId.startsWith('__meta_');
 
-const fetchSessionUuid = async (sessionId: string) => {
-  if (!sessionId) return null;
-  const { data, error } = await supabase
-    .from('study_sessions')
-    .select('id')
-    .eq('session_id', sessionId)
-    .maybeSingle();
-  if (error) {
-    console.error('Failed to load session UUID for telemetry:', error);
-    return null;
-  }
-  return data?.id || null;
-};
-
 type SaveTelemetryOptions = {
   final?: boolean;
   throttleMs?: number;
+};
+
+const MAX_EDGE_RESPONSES = 200;
+const CHUNK_LIMIT = 1800;
+
+const chunkPayload = (baseId: string, payload: string) => {
+  if (payload.length <= CHUNK_LIMIT) {
+    return [{ questionId: baseId, answer: payload }];
+  }
+  const batchId = Date.now().toString(36);
+  const chunks: Array<{ questionId: string; answer: string }> = [];
+  for (let i = 0; i < payload.length; i += CHUNK_LIMIT) {
+    const partIndex = Math.floor(i / CHUNK_LIMIT) + 1;
+    chunks.push({
+      questionId: `${baseId}__batch_${batchId}__part_${partIndex}`,
+      answer: payload.slice(i, i + CHUNK_LIMIT),
+    });
+  }
+  return chunks;
 };
 
 export const saveTelemetryMeta = async (
@@ -87,50 +93,61 @@ export const saveTelemetryMeta = async (
   const lastSavedAt = lastSavedRaw ? Number(lastSavedRaw) : 0;
   if (!final && Date.now() - lastSavedAt < throttleMs) return;
 
-  const sessionUuid = await fetchSessionUuid(sessionId);
-  if (!sessionUuid) return;
-
   const timingEntries = getTimingLog();
   const dialogueEntries = getTutorDialogueLog();
   const capturedAt = new Date().toISOString();
 
-  const inserts: Array<{ session_id: string; question_id: string; answer: string }> = [];
+  const inserts: Array<{ questionId: string; answer: string }> = [];
 
   if (timingEntries.length > 0) {
-    inserts.push({
-      session_id: sessionUuid,
-      question_id: META_TIMING_ID,
-      answer: JSON.stringify({
-        version: 1,
-        capturedAt,
-        mode,
-        entries: timingEntries,
-      }),
+    const payload = JSON.stringify({
+      version: 1,
+      capturedAt,
+      mode,
+      entries: timingEntries,
     });
+    inserts.push(...chunkPayload(META_TIMING_ID, payload));
   }
 
   if (dialogueEntries.length > 0) {
-    inserts.push({
-      session_id: sessionUuid,
-      question_id: META_DIALOGUE_ID,
-      answer: JSON.stringify({
-        version: 1,
-        capturedAt,
-        mode,
-        messages: dialogueEntries,
-      }),
+    const payload = JSON.stringify({
+      version: 1,
+      capturedAt,
+      mode,
+      messages: dialogueEntries,
     });
+    inserts.push(...chunkPayload(META_DIALOGUE_ID, payload));
   }
 
   if (inserts.length === 0) return;
 
-  const { error } = await supabase
-    .from('post_test_responses')
-    .insert(inserts);
+  const batches: Array<typeof inserts> = [];
+  for (let i = 0; i < inserts.length; i += MAX_EDGE_RESPONSES) {
+    batches.push(inserts.slice(i, i + MAX_EDGE_RESPONSES));
+  }
 
-  if (error) {
-    console.error('Failed to store telemetry fallback:', error);
-    return;
+  try {
+    for (const batch of batches) {
+      const { data, error } = await supabase.functions.invoke('save-study-data', {
+        body: {
+          action: 'save_post_test',
+          sessionId,
+          postTestResponses: batch,
+        }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    }
+  } catch (error) {
+    console.error('Failed to store telemetry via edge function:', error);
+    batches.forEach((batch) => {
+      enqueueEdgeCall('save-study-data', {
+        action: 'save_post_test',
+        sessionId,
+        postTestResponses: batch,
+      });
+    });
   }
 
   sessionStorage.setItem(TELEMETRY_LAST_SAVED_AT, Date.now().toString());

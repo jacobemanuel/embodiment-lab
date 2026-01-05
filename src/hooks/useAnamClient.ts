@@ -100,6 +100,24 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
     });
   }, []);
 
+  const finalizeTranscriptMessage = useCallback((role: 'user' | 'avatar', content: string) => {
+    if (!content || !content.trim()) return;
+    setTranscriptMessages(prev => {
+      const indexFromEnd = [...prev].reverse().findIndex((msg) => msg.role === role);
+      if (indexFromEnd < 0) return prev;
+      const targetIndex = prev.length - 1 - indexFromEnd;
+      const target = prev[targetIndex];
+      if (target.isFinal && target.content === content) return prev;
+      const next = [...prev];
+      next[targetIndex] = {
+        ...target,
+        content,
+        isFinal: true,
+      };
+      return next;
+    });
+  }, []);
+
   const logTutorDialogue = useCallback((role: 'user' | 'avatar', content: string, isFinal: boolean) => {
     if (!content || !content.trim()) return;
     const now = Date.now();
@@ -139,6 +157,7 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
       pendingTranscriptRef.current[role] = undefined;
       if (role === 'avatar') {
         avatarBufferRef.current = '';
+        setState(prev => ({ ...prev, isTalking: false }));
       } else {
         userBufferRef.current = '';
       }
@@ -156,17 +175,19 @@ export const useAnamClient = ({ onTranscriptUpdate, currentSlide, videoElementId
         slideTitle: slideSnapshot.title,
         mode: 'avatar',
       });
+      finalizeTranscriptMessage(role, current.content);
       pendingTranscriptRef.current[role] = undefined;
       if (role === 'avatar') {
         avatarBufferRef.current = '';
+        setState(prev => ({ ...prev, isTalking: false }));
       } else {
         userBufferRef.current = '';
       }
     }, TRANSCRIPT_IDLE_FLUSH_MS);
-  }, []);
+  }, [finalizeTranscriptMessage]);
 
   const handleStreamEvent = useCallback((event: any) => {
-    const isFinal = event.endOfSpeech === true;
+    const isFinal = event.endOfSpeech === true || event.interrupted === true;
     const contentChunk = event.content || '';
     const trimmed = contentChunk.trim();
 

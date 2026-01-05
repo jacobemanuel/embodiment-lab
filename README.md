@@ -72,13 +72,13 @@ There is no automatic randomization in code. The mode is:
 
 ```mermaid
 flowchart LR
-  U["Participant Browser"] --> FE["React + Vite"]
-  Admin["Admin/Owner Dashboard"] --> FE
+  User["Participant Browser"] --> CF["Cloudflare (custom domain DNS/TLS)"] --> FE["React + Vite (UI)"]
+  Admin["Admin/Owner Dashboard"] --> CF --> FE
 
-  FE -->|API calls| Edge["Supabase Edge Functions (Deno)"]
-  Edge --> DB[("Supabase Postgres")]
+  FE -->|Study data writes (responses, timing, flags)| Edge["Supabase Edge Functions (Deno)"]
+  Edge -->|Reads/Writes| DB[("Supabase Postgres")]
 
-  FE -->|Text chat| ChatFn["/functions/v1/chat"]
+  FE -->|Text chat (SSE)| ChatFn["/functions/v1/chat"]
   ChatFn --> LLMApi["OpenAI-compatible API endpoint"]
   LLMApi --> OpenAI["OpenAI GPT-5 mini"]
 
@@ -90,18 +90,27 @@ flowchart LR
   Anam -->|Avatar stream| FE
   Anam -->|Transcript events| FE
   FE -->|Transcript + timing| Edge
+
+  FE -.->|Fallback direct inserts (if Edge fails)| DB
 ```
 
 ## Data logging and exports diagram
 
 ```mermaid
 flowchart LR
-  FE["React + Vite"] -->|Responses + timing + transcripts| Edge["Supabase Edge Functions (Deno)"]
-  Edge --> DB[("Supabase Postgres")]
+  User["Participant Browser"] --> FE["React + Vite (study UI)"]
+  FE -->|Responses + timing + transcripts + flags| Edge["Supabase Edge Functions (Deno)"]
+  Edge -->|Writes| DB[("Supabase Postgres")]
+  Edge -->|Reads for stats/exports| DB
+
+  FE -.->|Fallback direct inserts (if Edge fails)| DB
+
   Admin["Admin/Owner Dashboard"] -->|Review + validate| FE
   Admin -->|Export PDF/CSV| FE
-  FE -->|Download| Admin
-  DB -->|Queries for stats/exports| Edge
+  FE -->|Download files| Admin
+
+  User -->|Download My Responses| FE
+  FE -->|Download file| User
 ```
 
 ## System prompts (full, copy/paste)

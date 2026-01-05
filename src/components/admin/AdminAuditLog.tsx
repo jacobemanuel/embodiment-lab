@@ -18,7 +18,7 @@ interface AuditLogEntry {
   entity_type: string;
   entity_id: string | null;
   entity_name: string | null;
-  changes: any;
+  changes: unknown;
   created_at: string;
 }
 
@@ -51,7 +51,6 @@ const AdminAuditLog = () => {
     fetchLogs();
   }, []);
 
-  // Real-time subscription for audit logs
   useEffect(() => {
     const channel = supabase
       .channel('audit-log-realtime')
@@ -102,9 +101,18 @@ const AdminAuditLog = () => {
     return matchesSearch && matchesType && matchesAction;
   });
 
-  const renderChangesPreview = (changes: any) => {
-    // Parse if string
-    const parsedChanges = typeof changes === 'string' ? JSON.parse(changes) : changes as Record<string, any> | null;
+  const renderChangesPreview = (changes: unknown) => {
+    let parsedChanges: Record<string, unknown> | null = null;
+    if (typeof changes === 'string') {
+      try {
+        parsedChanges = JSON.parse(changes);
+      } catch {
+        parsedChanges = null;
+      }
+    } else if (changes && typeof changes === 'object') {
+      parsedChanges = changes as Record<string, unknown>;
+    }
+    
     if (!parsedChanges) return <span className="text-muted-foreground/70">-</span>;
     
     const keys = Object.keys(parsedChanges);
@@ -134,13 +142,17 @@ const AdminAuditLog = () => {
                       <div className="bg-red-900/20 border border-red-800/30 rounded p-2">
                         <p className="text-xs text-red-400 mb-1">Old value:</p>
                         <pre className="text-xs text-foreground/80 whitespace-pre-wrap overflow-x-auto">
-                          {typeof value.old === 'object' ? JSON.stringify(value.old, null, 2) : String(value.old || '-')}
+                          {typeof (value as { old: unknown }).old === 'object' 
+                            ? JSON.stringify((value as { old: unknown }).old, null, 2) 
+                            : String((value as { old: unknown }).old || '-')}
                         </pre>
                       </div>
                       <div className="bg-green-900/20 border border-green-800/30 rounded p-2">
                         <p className="text-xs text-green-400 mb-1">New value:</p>
                         <pre className="text-xs text-foreground/80 whitespace-pre-wrap overflow-x-auto">
-                          {typeof value.new === 'object' ? JSON.stringify(value.new, null, 2) : String(value.new || '-')}
+                          {typeof (value as { new: unknown }).new === 'object' 
+                            ? JSON.stringify((value as { new: unknown }).new, null, 2) 
+                            : String((value as { new: unknown }).new || '-')}
                         </pre>
                       </div>
                     </div>
@@ -207,7 +219,6 @@ const AdminAuditLog = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Filters */}
           <div className="flex flex-wrap gap-4 mb-6">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
@@ -244,7 +255,6 @@ const AdminAuditLog = () => {
             </Select>
           </div>
 
-          {/* Table */}
           {filteredLogs.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />

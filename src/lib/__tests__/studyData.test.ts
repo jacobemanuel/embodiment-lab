@@ -70,11 +70,11 @@ describe('studyData functions', () => {
 
       const mockInsert = vi.fn().mockResolvedValue({ error: null });
       vi.mocked(supabase.from).mockReturnValue({ insert: mockInsert } as any);
-      const randomSpy = vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('fallback-session-123');
+      const randomSpy = vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('12345678-1234-1234-1234-123456789012' as `${string}-${string}-${string}-${string}-${string}`);
 
-      await expect(createStudySession('text')).resolves.toBe('fallback-session-123');
+      await expect(createStudySession('text')).resolves.toBe('12345678-1234-1234-1234-123456789012');
       expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
-        session_id: 'fallback-session-123',
+        session_id: '12345678-1234-1234-1234-123456789012',
         mode: 'text',
         status: 'active',
       }));
@@ -91,11 +91,11 @@ describe('studyData functions', () => {
 
       const mockInsert = vi.fn().mockResolvedValue({ error: null });
       vi.mocked(supabase.from).mockReturnValue({ insert: mockInsert } as any);
-      const randomSpy = vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('fallback-session-456');
+      const randomSpy = vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('87654321-4321-4321-4321-210987654321' as `${string}-${string}-${string}-${string}-${string}`);
 
-      await expect(createStudySession('text')).resolves.toBe('fallback-session-456');
+      await expect(createStudySession('text')).resolves.toBe('87654321-4321-4321-4321-210987654321');
       expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
-        session_id: 'fallback-session-456',
+        session_id: '87654321-4321-4321-4321-210987654321',
         mode: 'text',
         status: 'active',
       }));

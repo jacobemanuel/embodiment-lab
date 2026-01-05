@@ -18,7 +18,8 @@ const pickFields = (source: Record<string, unknown>, fields: string[]) => {
 };
 
 const updateRows = async (
-  supabase: ReturnType<typeof createClient>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   table: string,
   rows: Array<Record<string, unknown>> | undefined,
   fields: string[]

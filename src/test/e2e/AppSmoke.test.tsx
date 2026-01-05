@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, cleanup } from '@testing-library/react';
 import App from '@/App';
 
 const renderAt = (path: string) => {
@@ -14,13 +14,13 @@ afterEach(() => {
 
 describe('App smoke', () => {
   it('renders the welcome screen', () => {
-    renderAt('/');
-    expect(screen.getByText(/AI Image Generation Study/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /continue to consent/i })).toBeInTheDocument();
+    const { getByText, getByRole } = renderAt('/');
+    expect(getByText(/AI Image Generation Study/i)).toBeInTheDocument();
+    expect(getByRole('button', { name: /continue to consent/i })).toBeInTheDocument();
   });
 
   it('renders the consent screen', () => {
-    renderAt('/consent');
-    expect(screen.getByText(/Informed Consent/i)).toBeInTheDocument();
+    const { getByText } = renderAt('/consent');
+    expect(getByText(/Informed Consent/i)).toBeInTheDocument();
   });
 });

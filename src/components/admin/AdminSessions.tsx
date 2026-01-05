@@ -370,14 +370,14 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         supabase.from('pre_test_responses').select('session_id').in('session_id', sessionIds),
         supabase.from('post_test_responses').select('session_id').in('session_id', sessionIds),
         supabase.from('scenarios').select('session_id').in('session_id', sessionIds),
-        supabase.from('tutor_dialogue_turns').select('session_id').in('session_id', sessionIds),
+        (supabase.from('tutor_dialogue_turns' as any) as any).select('session_id').in('session_id', sessionIds),
       ]);
 
       const demoSessions = new Set((demoRes.data || []).map(d => d.session_id));
       const preSessions = new Set((preRes.data || []).map(d => d.session_id));
       const postSessions = new Set((postRes.data || []).map(d => d.session_id));
       const scenarioSessions = new Set((scenarioRes.data || []).map(d => d.session_id));
-      const tutorSessions = new Set((tutorRes.data || []).map(d => d.session_id));
+      const tutorSessions = new Set(((tutorRes.data || []) as any[]).map((d: any) => d.session_id));
 
       const statusMap = new Map<string, SessionDataStatus>();
       sessionIds.forEach(id => {
@@ -480,8 +480,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         }
       }
 
-      const { data: tutorDialogueTurns } = await supabase
-        .from('tutor_dialogue_turns')
+      const { data: tutorDialogueTurns } = await (supabase
+        .from('tutor_dialogue_turns' as any) as any)
         .select('*')
         .eq('session_id', session.id)
         .order('timestamp', { ascending: true });

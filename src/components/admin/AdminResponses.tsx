@@ -602,7 +602,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       let preTestQuery = supabase.from('pre_test_responses').select('*');
       let postTestQuery = supabase.from('post_test_responses').select('*');
       let scenariosQuery = supabase.from('scenarios').select('*');
-      let tutorDialogueQuery = supabase.from('tutor_dialogue_turns').select('*');
+      let tutorDialogueQuery = (supabase.from('tutor_dialogue_turns' as any) as any).select('*');
       let avatarTimeQuery = supabase.from('avatar_time_tracking').select('*');
 
       if (sessionIds.length > 0) {
@@ -610,7 +610,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
         preTestQuery = preTestQuery.in('session_id', sessionIds);
         postTestQuery = postTestQuery.in('session_id', sessionIds);
         scenariosQuery = scenariosQuery.in('session_id', sessionIds);
-        tutorDialogueQuery = tutorDialogueQuery.in('session_id', sessionIds);
+        tutorDialogueQuery = (tutorDialogueQuery as any).in('session_id', sessionIds);
         avatarTimeQuery = avatarTimeQuery.in('session_id', sessionIds);
       }
 

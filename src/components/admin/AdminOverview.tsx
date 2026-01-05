@@ -366,7 +366,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           supabase.from('post_test_responses').select('*').in('session_id', sessionIds),
           supabase.from('avatar_time_tracking').select('*').in('session_id', sessionIds),
           supabase.from('study_slides').select('slide_id, title, sort_order, is_active').order('sort_order'),
-          supabase.from('tutor_dialogue_turns').select('session_id').in('session_id', sessionIds),
+          (supabase.from('tutor_dialogue_turns' as any) as any).select('session_id').in('session_id', sessionIds),
         ]);
         
         const rawDemographicResponses = demoRes.data || [];

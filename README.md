@@ -3,6 +3,28 @@
 
 This repository contains the full study system for P6: AI Study Buddy. It includes the participant flow (consent, study, post-test) and the admin/owner dashboard for data quality review, validation, and exports.
 
+## Table of contents
+
+- [What this is](#what-this-is)
+- [Participant flow](#participant-flow)
+- [Roles and access](#roles-and-access)
+- [Admin dashboard & analytics](#admin-dashboard--analytics)
+- [Eligibility](#eligibility)
+- [Architecture and implementation](#architecture-and-implementation)
+- [Architecture diagram](#architecture-diagram)
+- [Data logging and exports diagram](#data-logging-and-exports-diagram)
+- [System prompts (full, copy/paste)](#system-prompts-full-copypaste)
+- [Data logging and privacy](#data-logging-and-privacy)
+- [Guardrails and data quality](#guardrails-and-data-quality)
+- [Telemetry and fallbacks](#telemetry-and-fallbacks)
+- [Supabase migrations for analytics](#supabase-migrations-for-analytics)
+- [Exports](#exports)
+- [Local development](#local-development)
+- [Tests](#tests)
+- [Testing and evaluation](#testing-and-evaluation)
+- [Deployment](#deployment)
+- [Team](#team)
+
 ## What this is
 
 AI Study Buddy compares two learning modes:
@@ -29,6 +51,24 @@ Participants complete a structured study; admins/owners validate sessions and ex
 
 Access is enforced via Supabase Auth and role checks in `src/lib/permissions.ts`.
 
+## Admin dashboard & analytics
+
+The dashboard is the research control center. Admins/owners can review data quality, validate sessions, and export clean datasets; viewers/mentors have read-only access to analytics.
+
+What the dashboard covers:
+- Session overview with status, validation, suspicious flags, and data completeness.
+- Dialogue/transcript review for both text and avatar modes.
+- Timing analytics (per slide and per page), plus aggregates.
+- Knowledge gain analysis (pre-test vs post-test) with mode comparisons.
+- Engagement time relationships vs learning outcomes (trend lines + correlation stats).
+- Data quality gates (flags, thresholds, validation workflow).
+- Exports and reports: PDF, CSV, JSON, dialogue logs, and full datasets.
+
+Time-based metrics used in analytics:
+- Avatar Slide Time: sum of slide timing entries where mode = avatar (multiple passes add up).
+- Learning Slides Time: sum of all slide timing entries across modes (slides only, pages excluded).
+- Session Duration: full session from started_at to completed_at (includes consent, pre/post).
+
 ## Eligibility
 
 - 18+ only: the consent statement (main consent page + consent sidebar) explicitly requires participants to confirm they are at least 18.
@@ -41,6 +81,7 @@ Access is enforced via Supabase Auth and role checks in `src/lib/permissions.ts`
 
 ### Backend
 - Supabase Edge Functions (Deno) + Supabase Postgres
+- Browser access uses CORS headers so the frontend domain can call Edge Functions directly.
 
 ### Hosting
 - The custom domain `majewski.studio` is managed in Cloudflare (DNS + TLS).
@@ -463,13 +504,6 @@ Primary writes go through Supabase Edge Functions (`chat`, `save-study-data`, `s
 
 If edge functions fail, the app queues retries and stores telemetry as `__meta_timing_v1` and `__meta_dialogue_v1` rows in `post_test_responses`. There is no direct client insert fallback for core writes.
 
-## Correlation metrics (admin overview)
-
-The overview dashboard includes correlations between knowledge gain and time-based metrics:
-- Avatar Slide Time: sum of slide timing entries where mode = avatar (multiple passes add up).
-- Learning Slides Time: sum of all slide timing entries across modes (slides only, pages excluded).
-- Session Duration: full session from started_at to completed_at (includes consent, pre/post).
-
 ## Supabase migrations for analytics
 
 Some analytics rely on schema updates. The current requirement is:
@@ -483,10 +517,6 @@ Admins/owners can export:
 - Dialogue CSV (per session)
 - Per-page and per-slide timing
 - Question-level stats
-
-## CORS (browser access)
-
-Browsers enforce CORS. Edge Functions must return CORS headers so the frontend domain can call them directly.
 
 ## Local development
 

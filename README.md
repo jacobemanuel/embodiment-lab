@@ -22,7 +22,7 @@ Participants complete a structured study; admins/owners validate sessions and ex
 
 ## Roles and access
 
-- Participant: no login required, can complete the study once per device.
+- Participant: no login required, can complete the study once per device (client-side soft gate via localStorage; clearing storage allows another run).
 - Admin: edits content, reviews sessions, exports data, requests validation.
 - Owner: full control (accept/ignore sessions, delete sessions, export everything).
 - Mentor / Viewer: read-only access to results and dashboards.
@@ -91,12 +91,12 @@ flowchart LR
   Anam -->|Transcript events| FE
   FE -->|Transcript and timing| Edge
 
-  FE -.->|Fallback direct inserts if Edge fails| DB
+  FE -.->|Fallback retry queue + __meta telemetry| DB
 ```
 
 Legend:
 - Boxes are UI or services. Cylinders are databases.
-- Solid arrows are primary data flows. Dashed arrows are fallbacks.
+- Solid arrows are primary data flows. Dashed arrows are fallbacks (retry queue + telemetry meta).
 
 ## Data logging and exports diagram
 
@@ -107,7 +107,7 @@ flowchart LR
   Edge -->|Writes| DB[("Supabase Postgres")]
   Edge -->|Reads for stats and exports| DB
 
-  FE -.->|Fallback direct inserts if Edge fails| DB
+  FE -.->|Fallback retry queue + __meta telemetry| DB
 
   Admin["Admin/Owner Dashboard"] -->|Review and validate| FE
   Admin -->|Export PDF CSV| FE
@@ -118,7 +118,7 @@ flowchart LR
 ```
 
 Legend:
-- Solid arrows are primary data flows. Dashed arrows are fallbacks.
+- Solid arrows are primary data flows. Dashed arrows are fallbacks (retry queue + telemetry meta).
 - Exports are generated in the UI and downloaded by admins/participants.
 
 ## System prompts (full, copy/paste)
@@ -418,7 +418,7 @@ Where data goes:
 - `study_sessions` (session metadata + status)
 - `demographic_responses`, `pre_test_responses`, `post_test_responses`
 - `tutor_dialogue_turns` (chat + transcript logs)
-- `avatar_time_tracking` (per-slide + per-page timing)
+- `avatar_time_tracking` (per-slide + per-page timing, with per-entry mode: text/avatar/page)
 
 Captured data (besides answers):
 - timestamps per message (user + AI)
@@ -462,7 +462,19 @@ Sessions with flags require validation:
 
 Primary writes go through Supabase Edge Functions (`chat`, `save-study-data`, `save-avatar-time`, `complete-session`, `anam-session`).
 
-If edge functions fail, the app falls back to direct inserts and stores telemetry as `__meta_timing_v1` and `__meta_dialogue_v1` rows in `post_test_responses`.
+If edge functions fail, the app queues retries and stores telemetry as `__meta_timing_v1` and `__meta_dialogue_v1` rows in `post_test_responses`. There is no direct client insert fallback for core writes.
+
+## Correlation metrics (admin overview)
+
+The overview dashboard includes correlations between knowledge gain and time-based metrics:
+- Avatar Slide Time: sum of slide timing entries where mode = avatar (multiple passes add up).
+- Learning Slides Time: sum of all slide timing entries across modes (slides only, pages excluded).
+- Session Duration: full session from started_at to completed_at (includes consent, pre/post).
+
+## Supabase migrations for analytics
+
+Some analytics rely on schema updates. The current requirement is:
+- `avatar_time_tracking.mode` to separate text/avatar/page timing per entry.
 
 ## Exports
 
@@ -472,6 +484,10 @@ Admins/owners can export:
 - Dialogue CSV (per session)
 - Per-page and per-slide timing
 - Question-level stats
+
+## CORS (browser access)
+
+Browsers enforce CORS. Edge Functions must return CORS headers so the frontend domain can call them directly.
 
 ## Local development
 

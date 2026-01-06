@@ -52,13 +52,13 @@ const Learning = () => {
     return () => clearTimeout(timer);
   }, [isPlaygroundVisible]);
 
-  // Make Finish button prominent after 60 seconds
+  // Make Finish button prominent when on last slide
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowFinishProminent(true);
-    }, 60000); // 60 seconds
-    return () => clearTimeout(timer);
-  }, []);
+    if (slides.length > 0 && currentSlide) {
+      const isLastSlide = slides[slides.length - 1].id === currentSlide.id;
+      setShowFinishProminent(isLastSlide);
+    }
+  }, [slides, currentSlide]);
 
   const handleSlideChange = (slide: Slide) => {
     setCurrentSlide(slide);

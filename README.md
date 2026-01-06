@@ -33,6 +33,8 @@ AI Study Buddy compares two learning modes:
 
 Participants complete a structured study; admins/owners validate sessions and export clean datasets.
 
+![Study landing screen](docs/media/hero-welcome.png)
+
 ## Participant flow
 
 1. Welcome + consent
@@ -41,6 +43,10 @@ Participants complete a structured study; admins/owners validate sessions and ex
 4. Learning session (Text or Avatar mode)
 5. Post-test (Likert + knowledge + open feedback)
 6. Completion + optional download of responses
+
+![Participant flow collage](docs/media/participant-flow-collage.png)
+
+Suggested collage layout: Welcome → Consent → Demographics → Pre-test → Learning → Post-test → Completion (6–7 tiles with arrows).
 
 ## Roles and access
 
@@ -63,6 +69,10 @@ What the dashboard covers:
 - Engagement time relationships vs learning outcomes (trend lines + correlation stats).
 - Data quality gates (flags, thresholds, validation workflow).
 - Exports and reports: PDF, CSV, JSON, dialogue logs, and full datasets.
+
+![Admin overview analytics](docs/media/admin-overview.png)
+
+![Sessions table and validation](docs/media/sessions-table-validation.png)
 
 Time-based metrics used in analytics:
 - Avatar Slide Time: sum of slide timing entries where mode = avatar (multiple passes add up).
@@ -93,11 +103,15 @@ There is no automatic randomization in code. The mode is:
 - chosen by the user in `src/pages/ModeAssignment.tsx`, or
 - pre-assigned by link: `/study/text` or `/study/avatar` (`src/pages/StudyEntry.tsx`).
 
+![Mode assignment screen](docs/media/mode-assignment.png)
+
 ### LLM and prompting
 - Text mode uses OpenAI GPT-5 mini via an OpenAI-compatible API endpoint (configured in `supabase/functions/chat/index.ts`).
 - Avatar mode uses the LLM configured in Anam. For consistency, set the Anam LLM to the GPT-5 family (for example GPT-5 mini). This project expects both modes to be aligned. You can change this in the Anam dashboard under LLM settings. Suggested setting: GPT-5 mini for parity with text mode.
 - API parameters (temperature, top_p, max_tokens) are not set explicitly, so provider defaults apply.
 - Context window: the edge function accepts up to 100 messages; the client sends the full session history up to that cap.
+
+![Text mode tutor chat](docs/media/text-mode-chat.png)
 
 ### Avatar and TTS
 - Avatar tool: Anam AI (`@anam-ai/js-sdk`).
@@ -105,9 +119,13 @@ There is no automatic randomization in code. The mode is:
 - TTS + lip-sync: handled by Anam (we do not manage visemes or audio pipeline).
 - Latency: text mode streams via SSE; avatar mode streams via Anam. No extra latency tricks beyond streaming.
 
+![Avatar mode session](docs/media/avatar-mode.png)
+
 ### Image Playground
 - Image generation uses `google/gemini-2.5-flash-image-preview` through the configured AI API endpoint.
 - CFG scale is capped at 15 in the UI to match slide guidance.
+
+![Image playground](docs/media/image-playground.png)
 
 ## Architecture diagram
 

@@ -376,7 +376,7 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
                 "rounded-full w-14 h-14 shadow-lg transition-all border-2",
                 isListening 
                   ? "bg-primary text-primary-foreground border-primary ring-4 ring-primary/30" 
-                  : "bg-destructive text-destructive-foreground border-destructive hover:bg-destructive/90"
+                  : "bg-destructive text-destructive-foreground border-destructive hover:bg-destructive/90 ring-4 ring-destructive/40 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)]"
               )}
               onClick={handleToggleListening}
               title={isListening ? "Click to mute" : "Click to speak"}
@@ -387,7 +387,10 @@ export const AvatarModePanel = ({ currentSlide, onSlideChange }: AvatarModePanel
                 <MicOff className="w-6 h-6" />
               )}
             </Button>
-            <p className="text-xs text-center mt-1 text-muted-foreground w-32">
+            <p className={cn(
+              "text-xs text-center mt-1 w-32 font-medium",
+              isListening ? "text-muted-foreground" : "text-destructive animate-pulse"
+            )}>
               {isListening ? "Listening mode" : "Tap to talk"}
             </p>
           </div>

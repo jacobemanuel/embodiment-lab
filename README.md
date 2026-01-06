@@ -75,7 +75,7 @@ flowchart LR
   User["Participant Browser"] --> CF["Cloudflare custom domain DNS TLS"] --> FE["React + Vite UI"]
   Admin["Admin/Owner Dashboard"] --> CF --> FE
 
-  FE -->|Study data writes responses timing flags| Edge["Supabase Edge Functions Deno"]
+  FE -->|Study data writes, transcripts, timing, flags| Edge["Supabase Edge Functions Deno"]
   Edge -->|Reads and writes| DB[("Supabase Postgres")]
 
   FE -->|Text chat SSE| ChatFn["Edge Function chat v1"]
@@ -89,7 +89,6 @@ flowchart LR
   FE -->|Avatar session init| Anam["Anam AI"]
   Anam -->|Avatar stream| FE
   Anam -->|Transcript events| FE
-  FE -->|Transcript and timing| Edge
 
   FE -.->|Fallback retry queue + __meta telemetry| DB
 ```

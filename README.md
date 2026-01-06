@@ -45,9 +45,24 @@ Participants complete a structured study; admins/owners validate sessions and ex
 5. Post-test (Likert + knowledge + open feedback)
 6. Completion + optional download of responses
 
-![Participant flow collage](docs/media/participant-flow-collage.png)
-*Participant flow collage (6–7 tiles with arrows).*
-Suggested collage layout: Welcome → Consent → Demographics → Pre-test → Learning → Post-test → Completion.
+Screens (order: left-to-right, top-to-bottom). Mode selection happens before the learning session.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/media/participant-flow-collage1.png" width="220" alt="Consent screen"><br><sub>Consent</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage2.png" width="220" alt="Demographics screen"><br><sub>Demographics</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage3.png" width="220" alt="Pre-test screen"><br><sub>Pre-test</sub></td>
+    <td align="center"><img src="docs/media/learning-mode.png" width="220" alt="Mode selection screen"><br><sub>Mode selection</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/media/participant-flow-collage10.png" width="220" alt="Experience assessment screen"><br><sub>Experience assessment</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage11.png" width="220" alt="Knowledge check screen"><br><sub>Knowledge check</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage12.png" width="220" alt="Open feedback screen"><br><sub>Open feedback</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage13.png" width="220" alt="Completion screen"><br><sub>Completion</sub></td>
+  </tr>
+</table>
+
+Learning session screens (text + avatar) are shown in the sections below.
 
 ## Roles and access
 
@@ -71,11 +86,32 @@ What the dashboard covers:
 - Data quality gates (flags, thresholds, validation workflow).
 - Exports and reports: PDF, CSV, JSON, dialogue logs, and full datasets.
 
-![Admin overview analytics](docs/media/admin-overview.png)
-*Admin analytics overview (summary + charts).*
+### Overview snapshots
 
-![Sessions table and validation](docs/media/sessions-table-validation.png)
-*Sessions table with validation and actions.*
+<table>
+  <tr>
+    <td align="center"><img src="docs/media/admin-overview.png" width="320" alt="Admin overview summary"><br><sub>Summary stats + data quality alerts.</sub></td>
+    <td align="center"><img src="docs/media/admin-overview-stats.png" width="320" alt="Perception analysis"><br><sub>Trust, engagement, and satisfaction breakdown.</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/media/admin-overview-time.png" width="320" alt="Time analytics"><br><sub>Time-by-slide and time-by-page analytics.</sub></td>
+    <td align="center"><img src="docs/media/admin-overview-correlation.png" width="320" alt="Correlation analysis"><br><sub>Engagement metrics vs knowledge gain.</sub></td>
+  </tr>
+</table>
+
+### Session review and validation
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/media/sessions-table-validation.png" width="320" alt="Sessions table"><br><sub>Sessions list with validation actions.</sub></td>
+    <td align="center"><img src="docs/media/sessions-table-validation-details.png" width="320" alt="Session details"><br><sub>Flag details and session summary.</sub></td>
+  </tr>
+</table>
+
+### API settings and master switch
+
+![Admin API settings](docs/media/admin-API.png)
+*API settings with master switch, OpenAI, and Anam configuration.*
 
 Time-based metrics used in analytics:
 - Avatar Slide Time: sum of slide timing entries where mode = avatar (multiple passes add up).
@@ -106,7 +142,7 @@ There is no automatic randomization in code. The mode is:
 - chosen by the user in `src/pages/ModeAssignment.tsx`, or
 - pre-assigned by link: `/study/text` or `/study/avatar` (`src/pages/StudyEntry.tsx`).
 
-![Mode assignment screen](docs/media/mode-assignment.png)
+![Mode assignment screen](docs/media/learning-mode.png)
 *Mode selection screen (Text vs Avatar).*
 
 ### LLM and prompting
@@ -115,8 +151,8 @@ There is no automatic randomization in code. The mode is:
 - API parameters (temperature, top_p, max_tokens) are not set explicitly, so provider defaults apply.
 - Context window: the edge function accepts up to 100 messages; the client sends the full session history up to that cap.
 
-![Text mode tutor chat](docs/media/text-mode-chat.png)
-*Text mode tutor chat view.*
+![Text mode tutor chat](docs/media/participant-flow-collage4.png)
+*Text mode tutor chat alongside the learning slides.*
 
 ### Avatar and TTS
 - Avatar tool: Anam AI (`@anam-ai/js-sdk`).
@@ -124,15 +160,24 @@ There is no automatic randomization in code. The mode is:
 - TTS + lip-sync: handled by Anam (we do not manage visemes or audio pipeline).
 - Latency: text mode streams via SSE; avatar mode streams via Anam. No extra latency tricks beyond streaming.
 
-![Avatar mode session](docs/media/avatar-mode.png)
-*Avatar mode session view (video + transcript).*
+<table>
+  <tr>
+    <td align="center"><img src="docs/media/participant-flow-collage7.png" width="320" alt="Avatar session camera"><br><sub>Avatar session with camera indicator.</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage8.png" width="320" alt="Avatar transcript"><br><sub>Avatar dialogue + transcript panel.</sub></td>
+  </tr>
+</table>
 
 ### Image Playground
 - Image generation uses `google/gemini-2.5-flash-image-preview` through the configured AI API endpoint.
 - CFG scale is capped at 15 in the UI to match slide guidance.
 
-![Image playground](docs/media/image-playground.png)
-*Image Playground UI (generation controls + preview).*
+<table>
+  <tr>
+    <td align="center"><img src="docs/media/participant-flow-collage5.png" width="260" alt="Image playground prompt"><br><sub>Prompt + negative prompt controls.</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage6.png" width="260" alt="Image playground advanced"><br><sub>Advanced settings and output preview.</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage9.png" width="260" alt="Image playground in avatar mode"><br><sub>Prompting while in avatar mode.</sub></td>
+  </tr>
+</table>
 
 ## Architecture diagram
 

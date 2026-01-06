@@ -204,7 +204,7 @@ To reduce distraction, the self-view camera preview is shown only briefly; keepi
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
     <td align="center"><img src="docs/media/participant-flow-collage7.png" width="320" alt="Avatar session camera"><br><sub>Avatar session with camera indicator</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage8.png" width="320" alt="Avatar transcript"><br><sub>Avatar dialogue + transcript panel</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage8.png" width="320" alt="Avatar transcript"><br><sub>Avatar dialogue + transcript with Playground drawer highlighted</sub></td>
   </tr>
 </table>
 </div>

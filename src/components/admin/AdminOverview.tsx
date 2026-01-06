@@ -1782,6 +1782,21 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
     downloadCSV(data, 'question_performance');
   };
 
+  const renderTimeGainTooltip =
+    (timeLabel: string) =>
+    ({ active, payload }: { active?: boolean; payload?: Array<{ payload?: { x?: number; y?: number } }> }) => {
+      if (!active || !payload || payload.length === 0) return null;
+      const point = payload.find((entry) => typeof entry?.payload?.x === 'number')?.payload ?? payload[0]?.payload;
+      const x = typeof point?.x === 'number' ? point.x : 0;
+      const y = typeof point?.y === 'number' ? point.y : 0;
+      return (
+        <div className="rounded-md border border-slate-700/80 bg-slate-900/95 px-3 py-2 text-xs text-white shadow-lg">
+          <div className="text-muted-foreground">{timeLabel}: <span className="text-white">{x.toFixed(1)} min</span></div>
+          <div className="text-muted-foreground">Knowledge Gain: <span className="text-white">{y.toFixed(1)}%</span></div>
+        </div>
+      );
+    };
+
   const exportLikertCSV = () => {
     if (!stats) return;
     const data = stats.likertAnalysis.map(l => ({
@@ -3329,13 +3344,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                             label={{ value: 'Gain %', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: 10 } }}
                           />
                           <ZAxis range={[50, 50]} />
-                          <ChartTooltip 
-                            contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                            formatter={(value: number, name: string) => [
-                              name === 'x' ? `${value.toFixed(1)} min` : `${value.toFixed(1)}%`,
-                              name === 'x' ? 'Avatar Slide Time' : 'Knowledge Gain'
-                            ]}
-                          />
+                          <ChartTooltip content={renderTimeGainTooltip('Avatar Slide Time')} />
                           <Scatter 
                             data={data} 
                             fill="#8b5cf6"
@@ -3434,13 +3443,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                             label={{ value: 'Gain %', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: 10 } }}
                           />
                           <ZAxis range={[50, 50]} />
-                          <ChartTooltip 
-                            contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                            formatter={(value: number, name: string) => [
-                              name === 'x' ? `${value.toFixed(1)} min` : `${value.toFixed(1)}%`,
-                              name === 'x' ? 'Learning Slides Time' : 'Knowledge Gain'
-                            ]}
-                          />
+                          <ChartTooltip content={renderTimeGainTooltip('Learning Slides Time')} />
                           <Scatter 
                             data={data} 
                             fill="#10b981"
@@ -3540,13 +3543,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                             label={{ value: 'Gain %', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: 10 } }}
                           />
                           <ZAxis range={[50, 50]} />
-                          <ChartTooltip 
-                            contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                            formatter={(value: number, name: string) => [
-                              name === 'x' ? `${value.toFixed(1)} min` : `${value.toFixed(1)}%`,
-                              name === 'x' ? 'Session Duration' : 'Knowledge Gain'
-                            ]}
-                          />
+                          <ChartTooltip content={renderTimeGainTooltip('Session Duration')} />
                           <Scatter 
                             data={data} 
                             fill="#3b82f6"

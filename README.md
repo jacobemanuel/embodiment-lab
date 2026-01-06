@@ -6,7 +6,7 @@ This repository contains the full study system for P6: AI Study Buddy. It includ
 <p align="center">
   <img src="docs/media/hero-welcome.png" width="640" alt="Landing page">
   <br>
-  <sub>Landing page (participant entry).</sub>
+  <sub>Landing page (participant entry)</sub>
 </p>
 
 ## Table of contents
@@ -49,47 +49,53 @@ Participants complete a structured study; admins/owners validate sessions and ex
 5. Post-test (Likert + knowledge + open feedback)
 6. Completion + optional download of responses
 
-Before learning (welcome to pre-test).
+Before learning (welcome to pre-test)
 
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
-    <td align="center"><img src="docs/media/hero-welcome.png" width="220" alt="Welcome screen"><br><sub>Welcome</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage1.png" width="220" alt="Consent screen"><br><sub>Consent</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage2.png" width="220" alt="Demographics screen"><br><sub>Demographics</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage3.png" width="220" alt="Pre-test screen"><br><sub>Pre-test</sub></td>
+    <td align="center"><img src="docs/media/hero-welcome.png" width="220" alt="Welcome screen"><br><sub>Welcome (study intro)</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage1.png" width="220" alt="Consent screen"><br><sub>Consent (study details + privacy)</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage2.png" width="220" alt="Demographics screen"><br><sub>Demographics (background questions)</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage3.png" width="220" alt="Pre-test screen"><br><sub>Pre-test (baseline knowledge)</sub></td>
   </tr>
 </table>
 </div>
 
-Mode selection (small).
+Mode selection
 
 <p align="center">
   <img src="docs/media/learning-mode.png" width="420" alt="Mode selection screen">
   <br>
-  <sub>Choose Text vs Avatar mode.</sub>
+  <sub>Choose Text vs Avatar mode for the study</sub>
 </p>
 
-Learning session (Text vs Avatar).
+Learning session (Text vs Avatar) - the tutor chat is always visible and the Playground opens from a side panel
 
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
-    <td align="center"><img src="docs/media/participant-flow-collage4.png" width="360" alt="Text mode learning"><br><sub>Text mode chat + slides.</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage7.png" width="360" alt="Avatar mode learning"><br><sub>Avatar mode with live transcript.</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage4.png" width="360" alt="Text mode learning"><br><sub>Text mode chat + slides (red marker: open the Playground drawer)</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage7.png" width="360" alt="Avatar mode learning"><br><sub>Avatar mode + live transcript (mic toggle, default off; brief self-view to reduce distraction)</sub></td>
   </tr>
 </table>
 </div>
 
-After learning (post-test to completion).
+<p align="center">
+  <img src="docs/media/participant-flow-collage5.png" width="520" alt="AI Playground panel">
+  <br>
+  <sub>AI Playground in-session (prompt, negative prompt, and controls)</sub>
+</p>
+
+After learning (post-test to completion)
 
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
-    <td align="center"><img src="docs/media/participant-flow-collage10.png" width="200" alt="Experience assessment screen"><br><sub>Experience assessment</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage11.png" width="200" alt="Knowledge check screen"><br><sub>Knowledge check</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage12.png" width="200" alt="Open feedback screen"><br><sub>Open feedback</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage13.png" width="200" alt="Completion screen"><br><sub>Completion</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage10.png" width="200" alt="Experience assessment screen"><br><sub>Experience assessment (Likert ratings)</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage11.png" width="200" alt="Knowledge check screen"><br><sub>Knowledge check (post-test quiz)</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage12.png" width="200" alt="Open feedback screen"><br><sub>Open feedback (short answers)</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage13.png" width="200" alt="Completion screen"><br><sub>Completion (summary + optional download)</sub></td>
   </tr>
 </table>
 </div>
@@ -121,12 +127,12 @@ What the dashboard covers:
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
-    <td align="center"><img src="docs/media/admin-overview.png" width="320" alt="Admin overview summary"><br><sub>Summary stats + data quality alerts.</sub></td>
-    <td align="center"><img src="docs/media/admin-overview-stats.png" width="320" alt="Perception analysis"><br><sub>Trust, engagement, and satisfaction breakdown.</sub></td>
+    <td align="center"><img src="docs/media/admin-overview.png" width="320" alt="Admin overview summary"><br><sub>Summary stats + data quality alerts</sub></td>
+    <td align="center"><img src="docs/media/admin-overview-stats.png" width="320" alt="Perception analysis"><br><sub>Trust, engagement, and satisfaction breakdown</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/media/admin-overview-time.png" width="320" alt="Time analytics"><br><sub>Time-by-slide and time-by-page analytics.</sub></td>
-    <td align="center"><img src="docs/media/admin-overview-correlation.png" width="320" alt="Correlation analysis"><br><sub>Engagement metrics vs knowledge gain.</sub></td>
+    <td align="center"><img src="docs/media/admin-overview-time.png" width="320" alt="Time analytics"><br><sub>Time-by-slide and time-by-page analytics</sub></td>
+    <td align="center"><img src="docs/media/admin-overview-correlation.png" width="320" alt="Correlation analysis"><br><sub>Engagement metrics vs knowledge gain</sub></td>
   </tr>
 </table>
 </div>
@@ -136,7 +142,7 @@ What the dashboard covers:
 <p align="center">
   <img src="docs/media/admin-API.png" width="820" alt="Admin API settings">
   <br>
-  <sub>API settings with master switch, OpenAI, and Anam configuration.</sub>
+  <sub>API settings with master switch, OpenAI, and Anam configuration</sub>
 </p>
 
 Time-based metrics used in analytics:
@@ -171,7 +177,7 @@ There is no automatic randomization in code. The mode is:
 <p align="center">
   <img src="docs/media/learning-mode.png" width="720" alt="Mode assignment screen">
   <br>
-  <sub>Mode selection screen (Text vs Avatar).</sub>
+  <sub>Mode selection screen (Text vs Avatar)</sub>
 </p>
 
 ### LLM and prompting
@@ -183,7 +189,7 @@ There is no automatic randomization in code. The mode is:
 <p align="center">
   <img src="docs/media/participant-flow-collage4.png" width="860" alt="Text mode tutor chat">
   <br>
-  <sub>Text mode tutor chat alongside the learning slides.</sub>
+  <sub>Text mode tutor chat alongside the learning slides (Playground drawer on the right)</sub>
 </p>
 
 ### Avatar and TTS
@@ -195,8 +201,8 @@ There is no automatic randomization in code. The mode is:
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
-    <td align="center"><img src="docs/media/participant-flow-collage7.png" width="320" alt="Avatar session camera"><br><sub>Avatar session with camera indicator.</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage8.png" width="320" alt="Avatar transcript"><br><sub>Avatar dialogue + transcript panel.</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage7.png" width="320" alt="Avatar session camera"><br><sub>Avatar session with camera indicator</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage8.png" width="320" alt="Avatar transcript"><br><sub>Avatar dialogue + transcript panel</sub></td>
   </tr>
 </table>
 </div>
@@ -208,9 +214,9 @@ There is no automatic randomization in code. The mode is:
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
-    <td align="center"><img src="docs/media/participant-flow-collage5.png" width="260" alt="Image playground prompt"><br><sub>Prompt + negative prompt controls.</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage6.png" width="260" alt="Image playground advanced"><br><sub>Advanced settings and output preview.</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage9.png" width="260" alt="Image playground in avatar mode"><br><sub>Prompting while in avatar mode.</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage5.png" width="260" alt="Image playground prompt"><br><sub>Prompt + negative prompt controls</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage6.png" width="260" alt="Image playground advanced"><br><sub>Advanced settings and output preview</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage9.png" width="260" alt="Image playground in avatar mode"><br><sub>Prompting while in avatar mode</sub></td>
   </tr>
 </table>
 </div>
@@ -597,8 +603,8 @@ Admins/owners review sessions with automatic flags, then accept or ignore them f
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
-    <td align="center"><img src="docs/media/sessions-table-validation.png" width="320" alt="Sessions table"><br><sub>Sessions list with validation actions.</sub></td>
-    <td align="center"><img src="docs/media/sessions-table-validation-details.png" width="320" alt="Session details"><br><sub>Flag details and session summary.</sub></td>
+    <td align="center"><img src="docs/media/sessions-table-validation.png" width="320" alt="Sessions table"><br><sub>Sessions list with validation actions (accept/ignore)</sub></td>
+    <td align="center"><img src="docs/media/sessions-table-validation-details.png" width="320" alt="Session details"><br><sub>Flag details and session summary (why flagged)</sub></td>
   </tr>
 </table>
 </div>

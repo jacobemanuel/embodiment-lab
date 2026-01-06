@@ -34,6 +34,7 @@ AI Study Buddy compares two learning modes:
 Participants complete a structured study; admins/owners validate sessions and export clean datasets.
 
 ![Study landing screen](docs/media/hero-welcome.png)
+*Landing screen (participant entry).*
 
 ## Participant flow
 
@@ -45,8 +46,8 @@ Participants complete a structured study; admins/owners validate sessions and ex
 6. Completion + optional download of responses
 
 ![Participant flow collage](docs/media/participant-flow-collage.png)
-
-Suggested collage layout: Welcome → Consent → Demographics → Pre-test → Learning → Post-test → Completion (6–7 tiles with arrows).
+*Participant flow collage (6–7 tiles with arrows).*
+Suggested collage layout: Welcome → Consent → Demographics → Pre-test → Learning → Post-test → Completion.
 
 ## Roles and access
 
@@ -71,8 +72,10 @@ What the dashboard covers:
 - Exports and reports: PDF, CSV, JSON, dialogue logs, and full datasets.
 
 ![Admin overview analytics](docs/media/admin-overview.png)
+*Admin analytics overview (summary + charts).*
 
 ![Sessions table and validation](docs/media/sessions-table-validation.png)
+*Sessions table with validation and actions.*
 
 Time-based metrics used in analytics:
 - Avatar Slide Time: sum of slide timing entries where mode = avatar (multiple passes add up).
@@ -104,6 +107,7 @@ There is no automatic randomization in code. The mode is:
 - pre-assigned by link: `/study/text` or `/study/avatar` (`src/pages/StudyEntry.tsx`).
 
 ![Mode assignment screen](docs/media/mode-assignment.png)
+*Mode selection screen (Text vs Avatar).*
 
 ### LLM and prompting
 - Text mode uses OpenAI GPT-5 mini via an OpenAI-compatible API endpoint (configured in `supabase/functions/chat/index.ts`).
@@ -112,6 +116,7 @@ There is no automatic randomization in code. The mode is:
 - Context window: the edge function accepts up to 100 messages; the client sends the full session history up to that cap.
 
 ![Text mode tutor chat](docs/media/text-mode-chat.png)
+*Text mode tutor chat view.*
 
 ### Avatar and TTS
 - Avatar tool: Anam AI (`@anam-ai/js-sdk`).
@@ -120,12 +125,14 @@ There is no automatic randomization in code. The mode is:
 - Latency: text mode streams via SSE; avatar mode streams via Anam. No extra latency tricks beyond streaming.
 
 ![Avatar mode session](docs/media/avatar-mode.png)
+*Avatar mode session view (video + transcript).*
 
 ### Image Playground
 - Image generation uses `google/gemini-2.5-flash-image-preview` through the configured AI API endpoint.
 - CFG scale is capped at 15 in the UI to match slide guidance.
 
 ![Image playground](docs/media/image-playground.png)
+*Image Playground UI (generation controls + preview).*
 
 ## Architecture diagram
 

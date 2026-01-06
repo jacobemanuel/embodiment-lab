@@ -3,6 +3,12 @@
 
 This repository contains the full study system for P6: AI Study Buddy. It includes the participant flow (consent, study, post-test) and the admin/owner dashboard for data quality review, validation, and exports.
 
+<p align="center">
+  <img src="docs/media/learning-mode.png" width="720" alt="Mode selection screen">
+  <br>
+  <sub>Mode selection (Text vs Avatar).</sub>
+</p>
+
 ## Table of contents
 
 - [What this is](#what-this-is)
@@ -33,8 +39,6 @@ AI Study Buddy compares two learning modes:
 
 Participants complete a structured study; admins/owners validate sessions and export clean datasets.
 
-![Study landing screen](docs/media/hero-welcome.png)
-*Landing screen (participant entry).*
 
 ## Participant flow
 
@@ -45,14 +49,15 @@ Participants complete a structured study; admins/owners validate sessions and ex
 5. Post-test (Likert + knowledge + open feedback)
 6. Completion + optional download of responses
 
-Screens (order: left-to-right, top-to-bottom). Mode selection happens before the learning session.
+Screens (order: left-to-right, top-to-bottom). Learning session screens are shown below.
 
-<table>
+<div align="center">
+<table align="center">
   <tr>
+    <td align="center"><img src="docs/media/hero-welcome.png" width="220" alt="Welcome screen"><br><sub>Welcome</sub></td>
     <td align="center"><img src="docs/media/participant-flow-collage1.png" width="220" alt="Consent screen"><br><sub>Consent</sub></td>
     <td align="center"><img src="docs/media/participant-flow-collage2.png" width="220" alt="Demographics screen"><br><sub>Demographics</sub></td>
     <td align="center"><img src="docs/media/participant-flow-collage3.png" width="220" alt="Pre-test screen"><br><sub>Pre-test</sub></td>
-    <td align="center"><img src="docs/media/learning-mode.png" width="220" alt="Mode selection screen"><br><sub>Mode selection</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/media/participant-flow-collage10.png" width="220" alt="Experience assessment screen"><br><sub>Experience assessment</sub></td>
@@ -61,6 +66,7 @@ Screens (order: left-to-right, top-to-bottom). Mode selection happens before the
     <td align="center"><img src="docs/media/participant-flow-collage13.png" width="220" alt="Completion screen"><br><sub>Completion</sub></td>
   </tr>
 </table>
+</div>
 
 Learning session screens (text + avatar) are shown in the sections below.
 
@@ -88,7 +94,8 @@ What the dashboard covers:
 
 ### Overview snapshots
 
-<table>
+<div align="center">
+<table align="center">
   <tr>
     <td align="center"><img src="docs/media/admin-overview.png" width="320" alt="Admin overview summary"><br><sub>Summary stats + data quality alerts.</sub></td>
     <td align="center"><img src="docs/media/admin-overview-stats.png" width="320" alt="Perception analysis"><br><sub>Trust, engagement, and satisfaction breakdown.</sub></td>
@@ -98,20 +105,26 @@ What the dashboard covers:
     <td align="center"><img src="docs/media/admin-overview-correlation.png" width="320" alt="Correlation analysis"><br><sub>Engagement metrics vs knowledge gain.</sub></td>
   </tr>
 </table>
+</div>
 
 ### Session review and validation
 
-<table>
+<div align="center">
+<table align="center">
   <tr>
     <td align="center"><img src="docs/media/sessions-table-validation.png" width="320" alt="Sessions table"><br><sub>Sessions list with validation actions.</sub></td>
     <td align="center"><img src="docs/media/sessions-table-validation-details.png" width="320" alt="Session details"><br><sub>Flag details and session summary.</sub></td>
   </tr>
 </table>
+</div>
 
 ### API settings and master switch
 
-![Admin API settings](docs/media/admin-API.png)
-*API settings with master switch, OpenAI, and Anam configuration.*
+<p align="center">
+  <img src="docs/media/admin-API.png" width="820" alt="Admin API settings">
+  <br>
+  <sub>API settings with master switch, OpenAI, and Anam configuration.</sub>
+</p>
 
 Time-based metrics used in analytics:
 - Avatar Slide Time: sum of slide timing entries where mode = avatar (multiple passes add up).
@@ -142,8 +155,11 @@ There is no automatic randomization in code. The mode is:
 - chosen by the user in `src/pages/ModeAssignment.tsx`, or
 - pre-assigned by link: `/study/text` or `/study/avatar` (`src/pages/StudyEntry.tsx`).
 
-![Mode assignment screen](docs/media/learning-mode.png)
-*Mode selection screen (Text vs Avatar).*
+<p align="center">
+  <img src="docs/media/learning-mode.png" width="720" alt="Mode assignment screen">
+  <br>
+  <sub>Mode selection screen (Text vs Avatar).</sub>
+</p>
 
 ### LLM and prompting
 - Text mode uses OpenAI GPT-5 mini via an OpenAI-compatible API endpoint (configured in `supabase/functions/chat/index.ts`).
@@ -151,8 +167,11 @@ There is no automatic randomization in code. The mode is:
 - API parameters (temperature, top_p, max_tokens) are not set explicitly, so provider defaults apply.
 - Context window: the edge function accepts up to 100 messages; the client sends the full session history up to that cap.
 
-![Text mode tutor chat](docs/media/participant-flow-collage4.png)
-*Text mode tutor chat alongside the learning slides.*
+<p align="center">
+  <img src="docs/media/participant-flow-collage4.png" width="860" alt="Text mode tutor chat">
+  <br>
+  <sub>Text mode tutor chat alongside the learning slides.</sub>
+</p>
 
 ### Avatar and TTS
 - Avatar tool: Anam AI (`@anam-ai/js-sdk`).
@@ -160,24 +179,28 @@ There is no automatic randomization in code. The mode is:
 - TTS + lip-sync: handled by Anam (we do not manage visemes or audio pipeline).
 - Latency: text mode streams via SSE; avatar mode streams via Anam. No extra latency tricks beyond streaming.
 
-<table>
+<div align="center">
+<table align="center">
   <tr>
     <td align="center"><img src="docs/media/participant-flow-collage7.png" width="320" alt="Avatar session camera"><br><sub>Avatar session with camera indicator.</sub></td>
     <td align="center"><img src="docs/media/participant-flow-collage8.png" width="320" alt="Avatar transcript"><br><sub>Avatar dialogue + transcript panel.</sub></td>
   </tr>
 </table>
+</div>
 
 ### Image Playground
 - Image generation uses `google/gemini-2.5-flash-image-preview` through the configured AI API endpoint.
 - CFG scale is capped at 15 in the UI to match slide guidance.
 
-<table>
+<div align="center">
+<table align="center">
   <tr>
     <td align="center"><img src="docs/media/participant-flow-collage5.png" width="260" alt="Image playground prompt"><br><sub>Prompt + negative prompt controls.</sub></td>
     <td align="center"><img src="docs/media/participant-flow-collage6.png" width="260" alt="Image playground advanced"><br><sub>Advanced settings and output preview.</sub></td>
     <td align="center"><img src="docs/media/participant-flow-collage9.png" width="260" alt="Image playground in avatar mode"><br><sub>Prompting while in avatar mode.</sub></td>
   </tr>
 </table>
+</div>
 
 ## Architecture diagram
 

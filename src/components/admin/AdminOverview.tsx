@@ -25,6 +25,7 @@ interface AvatarTimeData {
   slide_title: string;
   duration_seconds: number;
   started_at: string;
+  mode?: string | null;
 }
 
 interface KnowledgeGainData {
@@ -38,6 +39,7 @@ interface KnowledgeGainData {
   postCorrect: number;
   postTotal: number;
   avatarTime: number;
+  learningTime: number;
 }
 
 interface QuestionAnalysis {
@@ -63,6 +65,7 @@ interface LikertAnalysis {
 
 interface CorrelationData {
   avatarTimeVsGain: { x: number; y: number; mode: string }[];
+  learningTimeVsGain: { x: number; y: number; mode: string }[];
   sessionTimeVsGain: { x: number; y: number; mode: string }[];
 }
 
@@ -188,6 +191,18 @@ const resolveSessionMode = (session: { modes_used?: string[] | null; mode?: stri
 
 const isPageEntry = (entry: { slide_id?: string }) =>
   typeof entry.slide_id === 'string' && entry.slide_id.startsWith('page:');
+const resolveTimingMode = (
+  entryMode: unknown,
+  sessionMode: 'text' | 'avatar' | 'both' | 'none'
+): 'text' | 'avatar' | 'page' | null => {
+  if (entryMode === 'text' || entryMode === 'avatar' || entryMode === 'page') {
+    return entryMode;
+  }
+  if (sessionMode === 'text' || sessionMode === 'avatar') {
+    return sessionMode;
+  }
+  return null;
+};
 const isDemoFallbackQuestionId = (questionId: string) => questionId.startsWith('demo-');
 const normalizeDemoQuestionId = (questionId: string) =>
   questionId.startsWith('demo-demo-') ? questionId.replace(/^demo-/, '') : questionId;
@@ -450,6 +465,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               slide_title: entry.slideTitle || entry.slideId,
               duration_seconds: entry.durationSeconds ?? 0,
               started_at: entry.startedAt || null,
+              mode: entry.mode || null,
             }))
         );
 
@@ -593,13 +609,17 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       // Avatar & text time calculation - group by session (slides only)
       const avatarTimeBySession: Record<string, number> = {};
       const textTimeBySession: Record<string, number> = {};
+      const learningTimeBySession: Record<string, number> = {};
       dedupedSlideTimeEntries.forEach(t => {
-        const mode = sessionModeById.get(t.session_id) || 'none';
-        if (mode === 'avatar' || mode === 'both') {
-          avatarTimeBySession[t.session_id] = (avatarTimeBySession[t.session_id] || 0) + (t.duration_seconds || 0);
+        const duration = t.duration_seconds || 0;
+        learningTimeBySession[t.session_id] = (learningTimeBySession[t.session_id] || 0) + duration;
+        const sessionMode = sessionModeById.get(t.session_id) || 'none';
+        const resolvedMode = resolveTimingMode(t.mode, sessionMode);
+        if (resolvedMode === 'avatar') {
+          avatarTimeBySession[t.session_id] = (avatarTimeBySession[t.session_id] || 0) + duration;
         }
-        if (mode === 'text') {
-          textTimeBySession[t.session_id] = (textTimeBySession[t.session_id] || 0) + (t.duration_seconds || 0);
+        if (resolvedMode === 'text') {
+          textTimeBySession[t.session_id] = (textTimeBySession[t.session_id] || 0) + duration;
         }
       });
       
@@ -617,13 +637,14 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       const avatarSlideMap: Record<string, { total: number; sessionIds: Set<string>; title: string }> = {};
       const textSlideMap: Record<string, { total: number; sessionIds: Set<string>; title: string }> = {};
       dedupedSlideTimeEntries.forEach(t => {
-        const mode = sessionModeById.get(t.session_id) || 'none';
+        const sessionMode = sessionModeById.get(t.session_id) || 'none';
+        const resolvedMode = resolveTimingMode(t.mode, sessionMode);
         const resolved = resolveSlideKey(t.slide_id, t.slide_title, slideLookup);
         if (!resolved.key) return;
         const key = resolved.key;
         const title = resolved.title || t.slide_title || t.slide_id;
 
-        if (mode === 'avatar' || mode === 'both') {
+        if (resolvedMode === 'avatar') {
           if (!avatarSlideMap[key]) {
             avatarSlideMap[key] = { total: 0, sessionIds: new Set(), title };
           }
@@ -634,7 +655,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           }
         }
 
-        if (mode === 'text') {
+        if (resolvedMode === 'text') {
           if (!textSlideMap[key]) {
             textSlideMap[key] = { total: 0, sessionIds: new Set(), title };
           }
@@ -847,6 +868,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           
           const mode = resolveSessionMode(s);
           const avatarTime = avatarTimeBySession[s.id] || 0;
+          const learningTime = learningTimeBySession[s.id] || 0;
           
           // Skip sessions with no mode for knowledge gain analysis
           if (mode === 'none') return;
@@ -862,6 +884,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
             postCorrect: postScores.correct,
             postTotal: postScores.total,
             avatarTime,
+            learningTime,
           });
         }
       });
@@ -1106,11 +1129,20 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
       // Correlation data - include ALL sessions with knowledge gain data
       const correlations: CorrelationData = {
-        avatarTimeVsGain: knowledgeGain.filter(k => k.avatarTime > 0).map(k => ({
-          x: Math.round((k.avatarTime / 60) * 100) / 100,
-          y: k.gain,
-          mode: k.mode,
-        })),
+        avatarTimeVsGain: knowledgeGain
+          .filter(k => k.avatarTime > 0)
+          .map(k => ({
+            x: Math.round((k.avatarTime / 60) * 100) / 100,
+            y: k.gain,
+            mode: k.mode,
+          })),
+        learningTimeVsGain: knowledgeGain
+          .filter(k => k.learningTime > 0)
+          .map(k => ({
+            x: Math.round((k.learningTime / 60) * 100) / 100,
+            y: k.gain,
+            mode: k.mode,
+          })),
         sessionTimeVsGain: knowledgeGain.map(k => {
           const session = sessionsToAnalyze.find(s => s.session_id === k.sessionId);
           const duration = session?.completed_at 
@@ -1700,18 +1732,31 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       PostCorrect: k.postCorrect,
       PostTotal: k.postTotal,
       AvatarTimeSeconds: k.avatarTime,
+      LearningSlidesSeconds: k.learningTime,
     }));
     downloadCSV(data, 'knowledge_gain');
   };
 
   const exportCorrelationCSV = () => {
     if (!stats) return;
-    const data = stats.correlations.sessionTimeVsGain.map(c => ({
-      SessionDurationMinutes: c.x,
-      KnowledgeGainPercent: c.y,
-      Mode: c.mode,
+    const sessionDurationById = new Map(
+      stats.rawSessions.map((s) => [
+        s.session_id,
+        s.completed_at
+          ? Math.round(((new Date(s.completed_at).getTime() - new Date(s.started_at).getTime()) / 1000 / 60) * 10) / 10
+          : 0,
+      ])
+    );
+    const toMinutes = (seconds: number) => Math.round((seconds / 60) * 100) / 100;
+    const data = stats.knowledgeGain.map((k) => ({
+      SessionID: k.sessionId,
+      Mode: k.mode,
+      KnowledgeGainPercent: k.gain,
+      AvatarTimeMinutes: toMinutes(k.avatarTime),
+      LearningSlidesMinutes: toMinutes(k.learningTime),
+      SessionDurationMinutes: sessionDurationById.get(k.sessionId) || 0,
     }));
-    downloadCSV(data, 'correlation_session_time_vs_gain');
+    downloadCSV(data, 'correlation_metrics');
   };
 
   const exportQuestionPerformanceCSV = () => {
@@ -2188,7 +2233,6 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       doc.text('5. Correlation Analysis', 14, yPos);
       yPos += 8;
       
-      // Filter to only include avatar mode participants for avatar time correlation
       const avatarTimeData = stats.correlations.avatarTimeVsGain.filter(d => d.x > 0);
       yPos = drawScatterPlot(
         doc, 
@@ -2197,8 +2241,8 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         yPos, 
         180, 
         70, 
-        'Avatar Interaction Time vs Knowledge Gain', 
-        'Avatar Time (minutes)', 
+        'Avatar Slide Time vs Knowledge Gain', 
+        'Avatar Slide Time (minutes)', 
         'Knowledge Gain (%)'
       );
       
@@ -2222,7 +2266,52 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         doc.setTextColor(80);
         const interpretation = Math.abs(r) >= 0.7 ? 'strong' : Math.abs(r) >= 0.4 ? 'moderate' : Math.abs(r) >= 0.2 ? 'weak' : 'negligible';
         const direction = r > 0 ? 'positive' : r < 0 ? 'negative' : 'no';
-        doc.text(`Interpretation: ${interpretation} ${direction} correlation between avatar interaction time and learning outcomes.`, 14, yPos);
+        doc.text(`Interpretation: ${interpretation} ${direction} correlation between avatar slide time and learning outcomes.`, 14, yPos);
+        yPos += 8;
+      }
+    }
+
+    // Learning Slides Time vs Knowledge Gain Scatter Plot
+    if (stats.correlations.learningTimeVsGain.length > 0) {
+      // Check page break
+      if (yPos > 180) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      const learningTimeData = stats.correlations.learningTimeVsGain.filter(d => d.x > 0);
+      yPos = drawScatterPlot(
+        doc,
+        learningTimeData,
+        14,
+        yPos,
+        180,
+        70,
+        'Learning Slides Time vs Knowledge Gain',
+        'Learning Slides Time (minutes)',
+        'Knowledge Gain (%)'
+      );
+
+      if (learningTimeData.length >= 3) {
+        const xValues = learningTimeData.map(d => d.x);
+        const yValues = learningTimeData.map(d => d.y);
+        const n = learningTimeData.length;
+        const sumX = xValues.reduce((a, b) => a + b, 0);
+        const sumY = yValues.reduce((a, b) => a + b, 0);
+        const sumXY = learningTimeData.reduce((a, d) => a + d.x * d.y, 0);
+        const sumX2 = xValues.reduce((a, b) => a + b * b, 0);
+        const sumY2 = yValues.reduce((a, b) => a + b * b, 0);
+
+        const numerator = n * sumXY - sumX * sumY;
+        const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+        const r = denominator !== 0 ? numerator / denominator : 0;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(80);
+        const interpretation = Math.abs(r) >= 0.7 ? 'strong' : Math.abs(r) >= 0.4 ? 'moderate' : Math.abs(r) >= 0.2 ? 'weak' : 'negligible';
+        const direction = r > 0 ? 'positive' : r < 0 ? 'negative' : 'no';
+        doc.text(`Interpretation: ${interpretation} ${direction} correlation between learning slides time and learning outcomes.`, 14, yPos);
         yPos += 8;
       }
     }
@@ -2242,8 +2331,8 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         yPos, 
         180, 
         70, 
-        'Session Duration vs Knowledge Gain', 
-        'Session Duration (minutes)', 
+        'Full Session Duration vs Knowledge Gain', 
+        'Session Duration (minutes, full)', 
         'Knowledge Gain (%)'
       );
       
@@ -2267,7 +2356,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         doc.setTextColor(80);
         const interpretation = Math.abs(r) >= 0.7 ? 'strong' : Math.abs(r) >= 0.4 ? 'moderate' : Math.abs(r) >= 0.2 ? 'weak' : 'negligible';
         const direction = r > 0 ? 'positive' : r < 0 ? 'negative' : 'no';
-        doc.text(`Interpretation: ${interpretation} ${direction} correlation between session duration and learning outcomes.`, 14, yPos);
+        doc.text(`Interpretation: ${interpretation} ${direction} correlation between full session duration and learning outcomes.`, 14, yPos);
         yPos += 8;
       }
     }
@@ -2465,7 +2554,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
     }
 
     // Engagement Metrics Correlation Comparison Summary
-    if (stats.correlations.avatarTimeVsGain.length >= 2 || stats.correlations.sessionTimeVsGain.length >= 2) {
+    if (stats.correlations.avatarTimeVsGain.length >= 2 || stats.correlations.learningTimeVsGain.length >= 2 || stats.correlations.sessionTimeVsGain.length >= 2) {
       // Check page break
       if (yPos > 180) {
         doc.addPage();
@@ -2501,8 +2590,11 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       };
       
       const avatarTimeData = stats.correlations.avatarTimeVsGain.filter(d => d.x > 0);
+      const learningTimeData = stats.correlations.learningTimeVsGain.filter(d => d.x > 0);
+      const sessionTimeData = stats.correlations.sessionTimeVsGain;
       const avatarCorr = calcCorrelation(avatarTimeData);
-      const sessionCorr = calcCorrelation(stats.correlations.sessionTimeVsGain);
+      const learningCorr = calcCorrelation(learningTimeData);
+      const sessionCorr = calcCorrelation(sessionTimeData);
       
       const getInterpretation = (r: number) => {
         const absR = Math.abs(r);
@@ -2514,33 +2606,35 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       
       const getDirection = (r: number) => r > 0 ? 'Positive' : r < 0 ? 'Negative' : 'None';
       
-      // Determine which metric has stronger correlation
-      const avatarStrength = Math.abs(avatarCorr.r);
-      const sessionStrength = Math.abs(sessionCorr.r);
-      const strongerMetric = avatarStrength > sessionStrength ? 'Avatar Interaction Time' : 
-                             sessionStrength > avatarStrength ? 'Session Duration' : 'Equal';
+      const metrics = [
+        { label: 'Avatar Slide Time', corr: avatarCorr, data: avatarTimeData },
+        { label: 'Learning Slides Time', corr: learningCorr, data: learningTimeData },
+        { label: 'Session Duration', corr: sessionCorr, data: sessionTimeData },
+      ];
+
+      const metricsWithData = metrics.filter(m => m.data.length >= 2);
+      const maxStrength = metricsWithData.length > 0
+        ? Math.max(...metricsWithData.map(m => Math.abs(m.corr.r)))
+        : 0;
+      const eps = 1e-6;
+      const strongestMetrics = metricsWithData.filter(m => Math.abs(Math.abs(m.corr.r) - maxStrength) < eps);
+      const strongerMetric = strongestMetrics.length === 1 ? strongestMetrics[0].label : 'Equal';
+      const strongestEntry = strongerMetric === 'Equal' ? null : metrics.find(m => m.label === strongerMetric);
       
       autoTable(doc, {
         startY: yPos,
         head: [['Metric', 'Pearson r', 'R²', 'Direction', 'Strength', 'Sample Size']],
-        body: [
-          [
-            'Avatar Interaction Time',
-            avatarCorr.r.toFixed(3),
-            (avatarCorr.r2 * 100).toFixed(1) + '%',
-            getDirection(avatarCorr.r),
-            getInterpretation(avatarCorr.r),
-            avatarTimeData.length.toString()
-          ],
-          [
-            'Session Duration',
-            sessionCorr.r.toFixed(3),
-            (sessionCorr.r2 * 100).toFixed(1) + '%',
-            getDirection(sessionCorr.r),
-            getInterpretation(sessionCorr.r),
-            stats.correlations.sessionTimeVsGain.length.toString()
-          ],
-        ],
+        body: metrics.map((metric) => {
+          const hasData = metric.data.length >= 2;
+          return [
+            metric.label,
+            hasData ? metric.corr.r.toFixed(3) : 'n/a',
+            hasData ? (metric.corr.r2 * 100).toFixed(1) + '%' : 'n/a',
+            hasData ? getDirection(metric.corr.r) : 'n/a',
+            hasData ? getInterpretation(metric.corr.r) : 'n/a',
+            metric.data.length.toString(),
+          ];
+        }),
         theme: 'striped',
         headStyles: { fillColor: [6, 182, 212] },
         margin: { left: 14, right: 14 },
@@ -2556,12 +2650,12 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      if (strongerMetric === 'Equal') {
-        doc.text('Both engagement metrics show equal correlation strength with learning outcomes.', 14, yPos);
+      if (metricsWithData.length === 0) {
+        doc.text('Not enough data to compare engagement metrics.', 14, yPos);
+      } else if (strongerMetric === 'Equal') {
+        doc.text('Engagement metrics show similar correlation strength with learning outcomes.', 14, yPos);
       } else {
-        const variance = strongerMetric === 'Avatar Interaction Time' 
-          ? (avatarCorr.r2 * 100).toFixed(1) 
-          : (sessionCorr.r2 * 100).toFixed(1);
+        const variance = strongestEntry ? (strongestEntry.corr.r2 * 100).toFixed(1) : '0';
         doc.text(`${strongerMetric} shows the stronger correlation with knowledge gain (R² = ${variance}%),`, 14, yPos);
         yPos += 5;
         doc.text(`explaining ${variance}% of the variance in learning outcomes.`, 14, yPos);
@@ -2576,7 +2670,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      if (avatarStrength > 0.3 || sessionStrength > 0.3) {
+      if (maxStrength > 0.3) {
         doc.text('• Engagement time is a meaningful predictor of learning success.', 14, yPos);
         yPos += 4;
         doc.text('• Consider strategies to increase participant engagement duration.', 14, yPos);
@@ -3146,7 +3240,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       </Card>
 
       {/* Correlation Analysis - Scatter Plots */}
-      {(stats.correlations.avatarTimeVsGain.length > 0 || stats.correlations.sessionTimeVsGain.length > 0) && (
+      {(stats.correlations.avatarTimeVsGain.length > 0 || stats.correlations.learningTimeVsGain.length > 0 || stats.correlations.sessionTimeVsGain.length > 0) && (
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -3159,7 +3253,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                     </TooltipTrigger>
                     <TooltipContent className="max-w-sm">
                       <p className="text-xs">
-                        Scatter plots showing relationship between engagement metrics and learning outcomes.<br/>
+                        Time-based engagement vs learning outcomes.<br/>
+                        Avatar Time = slide time while avatar is active (per-entry mode).<br/>
+                        Learning Slides Time = sum of slide time across modes.<br/>
+                        Session Duration = full session (start to completion).<br/>
                         <strong>r:</strong> Correlation coefficient (-1 to 1).<br/>
                         <strong>R²:</strong> Variance explained by the relationship.
                       </p>
@@ -3170,14 +3267,22 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               <ExportButton onClick={exportCorrelationCSV} label="CSV" size="xs" canExport={permissions.canExportData} />
             </div>
             <CardDescription className="text-muted-foreground">
-              Engagement metrics vs knowledge gain with trend lines
+              Time metrics vs knowledge gain with trend lines
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="mb-4 rounded-lg border border-border/60 bg-muted/20 p-3">
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p><span className="text-foreground/80">Avatar Time:</span> sum of slide time while avatar is active (multiple passes add up).</p>
+                <p><span className="text-foreground/80">Learning Slides Time:</span> sum of slide time across modes (slides only, pages excluded).</p>
+                <p><span className="text-foreground/80">Session Duration:</span> full session time from start to completion (includes consent/pre/post).</p>
+                <p>Only sessions with both pre-test and post-test scores are included; sample sizes can differ per metric.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {/* Avatar Time vs Knowledge Gain */}
               <div>
-                <h4 className="text-sm font-medium text-foreground/80 mb-3">Avatar Time vs Knowledge Gain</h4>
+                <h4 className="text-sm font-medium text-foreground/80 mb-3">Avatar Slide Time vs Knowledge Gain</h4>
                 {stats.correlations.avatarTimeVsGain.filter(d => d.x > 0).length > 0 ? (
                   (() => {
                     const data = stats.correlations.avatarTimeVsGain.filter(d => d.x > 0);
@@ -3210,10 +3315,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                           <XAxis 
                             type="number" 
                             dataKey="x" 
-                            name="Avatar Time" 
+                            name="Avatar Slide Time" 
                             stroke="#9ca3af" 
                             fontSize={11}
-                            label={{ value: 'Avatar Time (min)', position: 'bottom', offset: 0, style: { fill: '#9ca3af', fontSize: 10 } }}
+                            label={{ value: 'Avatar Slide Time (min)', position: 'bottom', offset: 0, style: { fill: '#9ca3af', fontSize: 10 } }}
                           />
                           <YAxis 
                             type="number" 
@@ -3228,7 +3333,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                             contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
                             formatter={(value: number, name: string) => [
                               name === 'x' ? `${value.toFixed(1)} min` : `${value.toFixed(1)}%`,
-                              name === 'x' ? 'Avatar Time' : 'Knowledge Gain'
+                              name === 'x' ? 'Avatar Slide Time' : 'Knowledge Gain'
                             ]}
                           />
                           <Scatter 
@@ -3249,7 +3354,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   })()
                 ) : (
                   <div className="h-[220px] flex items-center justify-center text-muted-foreground/70 text-sm">
-                    No avatar interaction data
+                    No avatar-only slide timing data
                   </div>
                 )}
                 {(() => {
@@ -3281,9 +3386,114 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 })()}
               </div>
 
+              {/* Learning Slides Time vs Knowledge Gain */}
+              <div>
+                <h4 className="text-sm font-medium text-foreground/80 mb-3">Learning Slides Time vs Knowledge Gain</h4>
+                {stats.correlations.learningTimeVsGain.filter(d => d.x > 0).length > 0 ? (
+                  (() => {
+                    const data = stats.correlations.learningTimeVsGain.filter(d => d.x > 0);
+                    let trendLine: { x: number; y: number }[] = [];
+                    if (data.length >= 2) {
+                      const n = data.length;
+                      const xVals = data.map(d => d.x);
+                      const yVals = data.map(d => d.y);
+                      const sumX = xVals.reduce((a, b) => a + b, 0);
+                      const sumY = yVals.reduce((a, b) => a + b, 0);
+                      const sumXY = data.reduce((a, d) => a + d.x * d.y, 0);
+                      const sumX2 = xVals.reduce((a, b) => a + b * b, 0);
+                      const denomSlope = n * sumX2 - sumX * sumX;
+                      if (denomSlope !== 0) {
+                        const slope = (n * sumXY - sumX * sumY) / denomSlope;
+                        const intercept = (sumY - slope * sumX) / n;
+                        const minX = Math.min(...xVals);
+                        const maxX = Math.max(...xVals);
+                        trendLine = [
+                          { x: minX, y: slope * minX + intercept },
+                          { x: maxX, y: slope * maxX + intercept }
+                        ];
+                      }
+                    }
+                    return (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                          <XAxis 
+                            type="number" 
+                            dataKey="x" 
+                            name="Learning Slides Time" 
+                            stroke="#9ca3af" 
+                            fontSize={11}
+                            label={{ value: 'Learning Slides Time (min)', position: 'bottom', offset: 0, style: { fill: '#9ca3af', fontSize: 10 } }}
+                          />
+                          <YAxis 
+                            type="number" 
+                            dataKey="y" 
+                            name="Knowledge Gain" 
+                            stroke="#9ca3af" 
+                            fontSize={11}
+                            label={{ value: 'Gain %', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: 10 } }}
+                          />
+                          <ZAxis range={[50, 50]} />
+                          <ChartTooltip 
+                            contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                            formatter={(value: number, name: string) => [
+                              name === 'x' ? `${value.toFixed(1)} min` : `${value.toFixed(1)}%`,
+                              name === 'x' ? 'Learning Slides Time' : 'Knowledge Gain'
+                            ]}
+                          />
+                          <Scatter 
+                            data={data} 
+                            fill="#10b981"
+                          />
+                          {trendLine.length === 2 && (
+                            <Scatter 
+                              data={trendLine} 
+                              fill="none"
+                              line={{ stroke: '#ef4444', strokeWidth: 2 }}
+                              shape={() => null}
+                            />
+                          )}
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    );
+                  })()
+                ) : (
+                  <div className="h-[220px] flex items-center justify-center text-muted-foreground/70 text-sm">
+                    No learning slides timing data
+                  </div>
+                )}
+                {(() => {
+                  const data = stats.correlations.learningTimeVsGain.filter(d => d.x > 0);
+                  if (data.length < 2) return null;
+                  const n = data.length;
+                  const xVals = data.map(d => d.x);
+                  const yVals = data.map(d => d.y);
+                  const sumX = xVals.reduce((a, b) => a + b, 0);
+                  const sumY = yVals.reduce((a, b) => a + b, 0);
+                  const sumXY = data.reduce((a, d) => a + d.x * d.y, 0);
+                  const sumX2 = xVals.reduce((a, b) => a + b * b, 0);
+                  const sumY2 = yVals.reduce((a, b) => a + b * b, 0);
+                  const num = n * sumXY - sumX * sumY;
+                  const den = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                  const r = den !== 0 ? num / den : 0;
+                  const r2 = r * r;
+                  const strength = Math.abs(r) >= 0.7 ? 'Strong' : Math.abs(r) >= 0.4 ? 'Moderate' : Math.abs(r) >= 0.2 ? 'Weak' : 'Negligible';
+                  return (
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-4">
+                      <span>r = <span className="text-white font-medium">{r.toFixed(3)}</span></span>
+                      <span>R² = <span className="text-cyan-400 font-medium">{(r2 * 100).toFixed(1)}%</span></span>
+                      <span className={`px-2 py-0.5 rounded ${Math.abs(r) >= 0.4 ? 'bg-green-900/30 text-green-400' : 'bg-muted text-muted-foreground'}`}>
+                        {strength}
+                      </span>
+                      <span className="text-muted-foreground/70">n={n}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+
               {/* Session Duration vs Knowledge Gain */}
               <div>
-                <h4 className="text-sm font-medium text-foreground/80 mb-3">Session Duration vs Knowledge Gain</h4>
+                <h4 className="text-sm font-medium text-foreground/80 mb-3">Full Session Duration vs Knowledge Gain</h4>
                 {stats.correlations.sessionTimeVsGain.length > 0 ? (
                   (() => {
                     const data = stats.correlations.sessionTimeVsGain;
@@ -3319,7 +3529,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                             name="Session Duration" 
                             stroke="#9ca3af" 
                             fontSize={11}
-                            label={{ value: 'Session (min)', position: 'bottom', offset: 0, style: { fill: '#9ca3af', fontSize: 10 } }}
+                            label={{ value: 'Session Duration (min, full)', position: 'bottom', offset: 0, style: { fill: '#9ca3af', fontSize: 10 } }}
                           />
                           <YAxis 
                             type="number" 
@@ -3398,7 +3608,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                       <Info className="w-3 h-3 text-muted-foreground/70 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="text-xs">Which engagement metric better predicts learning outcomes</p>
+                      <p className="text-xs">Which time-based metric best aligns with learning outcomes (may have different sample sizes)</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -3419,92 +3629,115 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   const r = den !== 0 ? num / den : 0;
                   return { r, r2: r * r };
                 };
-                
+
                 const avatarData = stats.correlations.avatarTimeVsGain.filter(d => d.x > 0);
+                const learningData = stats.correlations.learningTimeVsGain.filter(d => d.x > 0);
+                const sessionData = stats.correlations.sessionTimeVsGain;
                 const avatarCorr = calcCorr(avatarData);
-                const sessionCorr = calcCorr(stats.correlations.sessionTimeVsGain);
-                
+                const learningCorr = calcCorr(learningData);
+                const sessionCorr = calcCorr(sessionData);
+
                 const getStrength = (r: number) => Math.abs(r) >= 0.7 ? 'Strong' : Math.abs(r) >= 0.4 ? 'Moderate' : Math.abs(r) >= 0.2 ? 'Weak' : 'Negligible';
                 const getDirection = (r: number) => r > 0 ? 'Positive' : r < 0 ? 'Negative' : 'None';
-                
-                const avatarStronger = Math.abs(avatarCorr.r) > Math.abs(sessionCorr.r);
-                const equalStrength = Math.abs(avatarCorr.r) === Math.abs(sessionCorr.r);
-                
+
+                const metrics = [
+                  {
+                    key: 'avatar',
+                    label: 'Avatar Slide Time',
+                    dotClass: 'bg-purple-400',
+                    highlightClass: 'bg-purple-900/20 border-purple-600',
+                    badgeClass: 'border-purple-500 text-purple-400',
+                    data: avatarData,
+                    corr: avatarCorr,
+                  },
+                  {
+                    key: 'learning',
+                    label: 'Learning Slides Time',
+                    dotClass: 'bg-emerald-400',
+                    highlightClass: 'bg-emerald-900/20 border-emerald-600',
+                    badgeClass: 'border-emerald-500 text-emerald-400',
+                    data: learningData,
+                    corr: learningCorr,
+                  },
+                  {
+                    key: 'session',
+                    label: 'Session Duration',
+                    dotClass: 'bg-blue-400',
+                    highlightClass: 'bg-blue-900/20 border-blue-600',
+                    badgeClass: 'border-blue-500 text-blue-400',
+                    data: sessionData,
+                    corr: sessionCorr,
+                  },
+                ];
+
+                const metricsWithData = metrics.filter(m => m.data.length >= 2);
+                const maxAbs = metricsWithData.length > 0
+                  ? Math.max(...metricsWithData.map(m => Math.abs(m.corr.r)))
+                  : 0;
+                const eps = 1e-6;
+                const strongestMetrics = metricsWithData.filter(m => Math.abs(Math.abs(m.corr.r) - maxAbs) < eps);
+                const strongestKey = strongestMetrics.length === 1 ? strongestMetrics[0].key : null;
+                const hasTie = strongestMetrics.length > 1;
+                const strongestMetric = metrics.find(m => m.key === strongestKey);
+
+                let keyFinding = 'Not enough data to compare metrics.';
+                if (metricsWithData.length === 1) {
+                  keyFinding = `Only ${metricsWithData[0].label} has enough data for correlation.`;
+                } else if (metricsWithData.length > 1) {
+                  keyFinding = hasTie
+                    ? 'Metrics show similar correlation strength with learning outcomes.'
+                    : `${strongestMetric?.label} shows stronger correlation (R²=${((strongestMetric?.corr.r2 || 0) * 100).toFixed(1)}%) with knowledge gain, explaining more variance in learning outcomes.`;
+                }
+
                 return (
                   <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className={`rounded-lg p-3 border ${avatarStronger && !equalStrength ? 'bg-purple-900/20 border-purple-600' : 'bg-muted/30 border-border'}`}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-2 h-2 rounded-full bg-purple-400" />
-                          <span className="text-sm font-medium text-foreground/90">Avatar Time</span>
-                          {avatarStronger && !equalStrength && <Badge variant="outline" className="text-[10px] border-purple-500 text-purple-400">Stronger</Badge>}
-                        </div>
-                        <div className="space-y-1 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Pearson r:</span>
-                            <span className="text-white">{avatarCorr.r.toFixed(3)}</span>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      {metrics.map((metric) => {
+                        const hasData = metric.data.length >= 2;
+                        const isStrongest = strongestKey === metric.key;
+                        return (
+                          <div
+                            key={metric.key}
+                            className={`rounded-lg p-3 border ${isStrongest ? metric.highlightClass : 'bg-muted/30 border-border'}`}
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className={`w-2 h-2 rounded-full ${metric.dotClass}`} />
+                              <span className="text-sm font-medium text-foreground/90">{metric.label}</span>
+                              {isStrongest && !hasTie && (
+                                <Badge variant="outline" className={`text-[10px] ${metric.badgeClass}`}>Stronger</Badge>
+                              )}
+                            </div>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Pearson r:</span>
+                                <span className="text-white">{hasData ? metric.corr.r.toFixed(3) : 'n/a'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">R² (variance):</span>
+                                <span className="text-cyan-400">{hasData ? `${(metric.corr.r2 * 100).toFixed(1)}%` : 'n/a'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Direction:</span>
+                                <span className="text-foreground/80">{hasData ? getDirection(metric.corr.r) : 'n/a'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Strength:</span>
+                                <span className="text-foreground/80">{hasData ? getStrength(metric.corr.r) : 'n/a'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Sample:</span>
+                                <span className="text-muted-foreground/70">n={metric.data.length}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">R² (variance):</span>
-                            <span className="text-cyan-400">{(avatarCorr.r2 * 100).toFixed(1)}%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Direction:</span>
-                            <span className="text-foreground/80">{getDirection(avatarCorr.r)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Strength:</span>
-                            <span className="text-foreground/80">{getStrength(avatarCorr.r)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Sample:</span>
-                            <span className="text-muted-foreground/70">n={avatarData.length}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className={`rounded-lg p-3 border ${!avatarStronger && !equalStrength ? 'bg-blue-900/20 border-blue-600' : 'bg-muted/30 border-border'}`}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-2 h-2 rounded-full bg-blue-400" />
-                          <span className="text-sm font-medium text-foreground/90">Session Duration</span>
-                          {!avatarStronger && !equalStrength && <Badge variant="outline" className="text-[10px] border-blue-500 text-blue-400">Stronger</Badge>}
-                        </div>
-                        <div className="space-y-1 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Pearson r:</span>
-                            <span className="text-white">{sessionCorr.r.toFixed(3)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">R² (variance):</span>
-                            <span className="text-cyan-400">{(sessionCorr.r2 * 100).toFixed(1)}%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Direction:</span>
-                            <span className="text-foreground/80">{getDirection(sessionCorr.r)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Strength:</span>
-                            <span className="text-foreground/80">{getStrength(sessionCorr.r)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Sample:</span>
-                            <span className="text-muted-foreground/70">n={stats.correlations.sessionTimeVsGain.length}</span>
-                          </div>
-                        </div>
-                      </div>
+                        );
+                      })}
                     </div>
-                    
+
                     {/* Key Finding */}
                     <div className="bg-muted/30 rounded-lg p-3 border border-border">
                       <div className="text-xs font-medium text-foreground/80 mb-1">Key Finding</div>
-                      <p className="text-xs text-muted-foreground">
-                        {equalStrength 
-                          ? 'Both metrics show equal correlation strength with learning outcomes.'
-                          : avatarStronger
-                            ? `Avatar interaction time shows stronger correlation (R²=${(avatarCorr.r2 * 100).toFixed(1)}%) with knowledge gain, explaining more variance in learning outcomes.`
-                            : `Session duration shows stronger correlation (R²=${(sessionCorr.r2 * 100).toFixed(1)}%) with knowledge gain, explaining more variance in learning outcomes.`
-                        }
-                      </p>
+                      <p className="text-xs text-muted-foreground">{keyFinding}</p>
                     </div>
                   </div>
                 );

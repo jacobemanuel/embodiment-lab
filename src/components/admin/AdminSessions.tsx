@@ -592,6 +592,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
             started_at: entry.startedAt || null,
             ended_at: entry.endedAt || null,
             duration_seconds: entry.durationSeconds ?? null,
+            mode: entry.mode || null,
           }))
         : [];
 

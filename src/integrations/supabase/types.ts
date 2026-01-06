@@ -95,6 +95,7 @@ export type Database = {
           duration_seconds: number | null
           ended_at: string | null
           id: string
+          mode: string | null
           session_id: string
           slide_id: string
           slide_title: string
@@ -105,6 +106,7 @@ export type Database = {
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
+          mode?: string | null
           session_id: string
           slide_id: string
           slide_title: string
@@ -115,6 +117,7 @@ export type Database = {
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
+          mode?: string | null
           session_id?: string
           slide_id?: string
           slide_title?: string

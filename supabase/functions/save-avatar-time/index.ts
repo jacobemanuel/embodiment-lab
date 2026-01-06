@@ -48,7 +48,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Saving avatar time tracking:', { sessionId, slideId, slideTitle, durationSeconds });
+    console.log('Saving avatar time tracking:', { sessionId, slideId, slideTitle, durationSeconds, mode });
 
     // First, find the UUID id from the session_id string
     const { data: session, error: sessionError } = await supabase
@@ -74,6 +74,7 @@ serve(async (req) => {
         started_at: startedAt,
         ended_at: endedAt,
         duration_seconds: durationSeconds,
+        mode,
       })
       .select()
       .single();

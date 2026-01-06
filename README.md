@@ -167,8 +167,7 @@ Below are the exact system prompts as they live in the code.
 
 ### Text Mode system prompt
 
-Source: `supabase/functions/chat/index.ts`  
-Note: `${userKnowledgeContext}` is dynamically appended based on pre-test results.
+Source: `supabase/functions/chat/index.ts`
 
 ```text
 # WHO YOU ARE

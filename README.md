@@ -51,18 +51,22 @@ Participants complete a structured study; admins/owners validate sessions and ex
 
 Before learning (welcome to pre-test)
 
+This block establishes consent and a baseline (demographics + pre-test) so knowledge gain can be measured later.
+
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
-    <td align="center"><img src="docs/media/hero-welcome.png" width="220" alt="Welcome screen"><br><sub>Welcome (study intro)</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage1.png" width="220" alt="Consent screen"><br><sub>Consent (study details + privacy)</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage2.png" width="220" alt="Demographics screen"><br><sub>Demographics (background questions)</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage3.png" width="220" alt="Pre-test screen"><br><sub>Pre-test (baseline knowledge)</sub></td>
+    <td align="center"><img src="docs/media/hero-welcome.png" width="220" alt="Welcome screen"><br><sub>Welcome - study intro</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage1.png" width="220" alt="Consent screen"><br><sub>Consent - study details + privacy</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage2.png" width="220" alt="Demographics screen"><br><sub>Demographics - background questions</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage3.png" width="220" alt="Pre-test screen"><br><sub>Pre-test - baseline knowledge</sub></td>
   </tr>
 </table>
 </div>
 
 Mode selection
+
+Participants choose the learning interface; the selected mode drives which tutor experience is shown next.
 
 <p align="center">
   <img src="docs/media/learning-mode.png" width="420" alt="Mode selection screen">
@@ -72,30 +76,28 @@ Mode selection
 
 Learning session (Text vs Avatar) - the tutor chat is always visible and the Playground opens from a side panel
 
+Red markers highlight key controls: the small drawer handle opens the Image Playground, and the avatar view shows the mic toggle plus a brief self-view indicator.
+
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
-    <td align="center"><img src="docs/media/participant-flow-collage4.png" width="360" alt="Text mode learning"><br><sub>Text mode chat + slides (red marker: open the Playground drawer)</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage7.png" width="360" alt="Avatar mode learning"><br><sub>Avatar mode + live transcript (mic toggle, default off; brief self-view to reduce distraction)</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage4.png" width="360" alt="Text mode learning"><br><sub>Text mode chat + slides - Playground drawer highlighted</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage7.png" width="360" alt="Avatar mode learning"><br><sub>Avatar mode + live transcript - mic toggle, brief self-view</sub></td>
   </tr>
 </table>
 </div>
 
-<p align="center">
-  <img src="docs/media/participant-flow-collage5.png" width="520" alt="AI Playground panel">
-  <br>
-  <sub>AI Playground in-session (prompt, negative prompt, and controls)</sub>
-</p>
-
 After learning (post-test to completion)
+
+This block captures experience ratings, post-test knowledge, and final feedback before completion.
 
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
-    <td align="center"><img src="docs/media/participant-flow-collage10.png" width="200" alt="Experience assessment screen"><br><sub>Experience assessment (Likert ratings)</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage11.png" width="200" alt="Knowledge check screen"><br><sub>Knowledge check (post-test quiz)</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage12.png" width="200" alt="Open feedback screen"><br><sub>Open feedback (short answers)</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage13.png" width="200" alt="Completion screen"><br><sub>Completion (summary + optional download)</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage10.png" width="200" alt="Experience assessment screen"><br><sub>Experience assessment - Likert ratings</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage11.png" width="200" alt="Knowledge check screen"><br><sub>Knowledge check - post-test quiz</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage12.png" width="200" alt="Open feedback screen"><br><sub>Open feedback - short answers</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage13.png" width="200" alt="Completion screen"><br><sub>Completion - summary + optional download</sub></td>
   </tr>
 </table>
 </div>
@@ -137,10 +139,14 @@ What the dashboard covers:
 </table>
 </div>
 
+Red callouts in the screenshots mark the panels used most often during review (summary, timing, and correlation blocks).
+
 ### API settings and master switch
 
+API access is role-gated: the owner can toggle the master switch and OpenAI, while admins can toggle Anam and set a custom Anam API key. When the master switch is off, all API calls are blocked and controls are locked.
+
 <p align="center">
-  <img src="docs/media/admin-API.png" width="820" alt="Admin API settings">
+  <img src="docs/media/admin-API.png" width="560" alt="Admin API settings">
   <br>
   <sub>API settings with master switch, OpenAI, and Anam configuration</sub>
 </p>
@@ -177,7 +183,7 @@ There is no automatic randomization in code. The mode is:
 <p align="center">
   <img src="docs/media/learning-mode.png" width="720" alt="Mode assignment screen">
   <br>
-  <sub>Mode selection screen (Text vs Avatar)</sub>
+  <sub>Mode selection screen - Text vs Avatar</sub>
 </p>
 
 ### LLM and prompting
@@ -186,17 +192,13 @@ There is no automatic randomization in code. The mode is:
 - API parameters (temperature, top_p, max_tokens) are not set explicitly, so provider defaults apply.
 - Context window: the edge function accepts up to 100 messages; the client sends the full session history up to that cap.
 
-<p align="center">
-  <img src="docs/media/participant-flow-collage4.png" width="860" alt="Text mode tutor chat">
-  <br>
-  <sub>Text mode tutor chat alongside the learning slides (Playground drawer on the right)</sub>
-</p>
-
 ### Avatar and TTS
 - Avatar tool: Anam AI (`@anam-ai/js-sdk`).
 - Rendering: streaming video into a `<video>` element.
 - TTS + lip-sync: handled by Anam (we do not manage visemes or audio pipeline).
 - Latency: text mode streams via SSE; avatar mode streams via Anam. No extra latency tricks beyond streaming.
+
+To reduce distraction, the self-view camera preview is shown only briefly; keeping it visible for the full session draws attention away from the avatar and learning content (consistent with attention research). The mic is user-controlled and starts off by default.
 
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
@@ -214,9 +216,12 @@ There is no automatic randomization in code. The mode is:
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
-    <td align="center"><img src="docs/media/participant-flow-collage5.png" width="260" alt="Image playground prompt"><br><sub>Prompt + negative prompt controls</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage6.png" width="260" alt="Image playground advanced"><br><sub>Advanced settings and output preview</sub></td>
-    <td align="center"><img src="docs/media/participant-flow-collage9.png" width="260" alt="Image playground in avatar mode"><br><sub>Prompting while in avatar mode</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage4.png" width="240" alt="Playground drawer"><br><sub>Open the Playground from the right-side drawer</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage5.png" width="240" alt="Image playground prompt"><br><sub>Prompt + negative prompt controls</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/media/participant-flow-collage6.png" width="240" alt="Image playground advanced"><br><sub>Advanced settings and output preview</sub></td>
+    <td align="center"><img src="docs/media/participant-flow-collage9.png" width="240" alt="Image playground in avatar mode"><br><sub>Prompting while in avatar mode</sub></td>
   </tr>
 </table>
 </div>
@@ -603,8 +608,8 @@ Admins/owners review sessions with automatic flags, then accept or ignore them f
 <div align="center">
 <table align="center" style="margin-left:auto;margin-right:auto;">
   <tr>
-    <td align="center"><img src="docs/media/sessions-table-validation.png" width="320" alt="Sessions table"><br><sub>Sessions list with validation actions (accept/ignore)</sub></td>
-    <td align="center"><img src="docs/media/sessions-table-validation-details.png" width="320" alt="Session details"><br><sub>Flag details and session summary (why flagged)</sub></td>
+    <td align="center"><img src="docs/media/sessions-table-validation.png" width="320" alt="Sessions table"><br><sub>Sessions list with validation actions - accept or ignore</sub></td>
+    <td align="center"><img src="docs/media/sessions-table-validation-details.png" width="320" alt="Session details"><br><sub>Flag details and session summary - why flagged</sub></td>
   </tr>
 </table>
 </div>

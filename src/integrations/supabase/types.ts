@@ -95,10 +95,12 @@ export type Database = {
           duration_seconds: number | null
           ended_at: string | null
           id: string
+          is_imputed: boolean | null
           mode: string | null
           session_id: string
           slide_id: string
           slide_title: string
+          source: string | null
           started_at: string
         }
         Insert: {
@@ -106,10 +108,12 @@ export type Database = {
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
+          is_imputed?: boolean | null
           mode?: string | null
           session_id: string
           slide_id: string
           slide_title: string
+          source?: string | null
           started_at?: string
         }
         Update: {
@@ -117,10 +121,12 @@ export type Database = {
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
+          is_imputed?: boolean | null
           mode?: string | null
           session_id?: string
           slide_id?: string
           slide_title?: string
+          source?: string | null
           started_at?: string
         }
         Relationships: [
@@ -240,22 +246,28 @@ export type Database = {
           answer: string
           created_at: string
           id: string
+          is_imputed: boolean | null
           question_id: string
           session_id: string
+          source: string | null
         }
         Insert: {
           answer: string
           created_at?: string
           id?: string
+          is_imputed?: boolean | null
           question_id: string
           session_id: string
+          source?: string | null
         }
         Update: {
           answer?: string
           created_at?: string
           id?: string
+          is_imputed?: boolean | null
           question_id?: string
           session_id?: string
+          source?: string | null
         }
         Relationships: [
           {
@@ -272,22 +284,28 @@ export type Database = {
           answer: string
           created_at: string
           id: string
+          is_imputed: boolean | null
           question_id: string
           session_id: string
+          source: string | null
         }
         Insert: {
           answer: string
           created_at?: string
           id?: string
+          is_imputed?: boolean | null
           question_id: string
           session_id: string
+          source?: string | null
         }
         Update: {
           answer?: string
           created_at?: string
           id?: string
+          is_imputed?: boolean | null
           question_id?: string
           session_id?: string
+          source?: string | null
         }
         Relationships: [
           {

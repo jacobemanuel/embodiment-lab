@@ -532,42 +532,6 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     dialogueTurns: Object.fromEntries(draft.dialogueTurns.map((t) => [t.id, t.content])),
   });
 
-  const fetchSessions = useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      let query = supabase
-        .from('study_sessions')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (startDate) {
-        query = query.gte('created_at', startOfDay(startDate).toISOString());
-      }
-      if (endDate) {
-        query = query.lte('created_at', endOfDay(endDate).toISOString());
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      const overrides = loadOwnerOverrides();
-      const resolvedSessions = (data || []).map((session) =>
-        applySessionOverride(session, overrides[session.id])
-      );
-      setSessions(resolvedSessions);
-      
-      // Fetch data completeness for all sessions
-      if (data && data.length > 0) {
-        await fetchDataStatuses(data.map(s => s.id));
-      }
-    } catch (error) {
-      console.error('Error fetching sessions:', error);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, [startDate, endDate, fetchDataStatuses]);
-
   // Fetch data completeness for sessions
   const fetchDataStatuses = useCallback(
     async (sessionIds: string[], options?: { merge?: boolean }) => {
@@ -625,6 +589,42 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     []
   );
 
+  const fetchSessions = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      let query = supabase
+        .from('study_sessions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (startDate) {
+        query = query.gte('created_at', startOfDay(startDate).toISOString());
+      }
+      if (endDate) {
+        query = query.lte('created_at', endOfDay(endDate).toISOString());
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      const overrides = loadOwnerOverrides();
+      const resolvedSessions = (data || []).map((session) =>
+        applySessionOverride(session, overrides[session.id])
+      );
+      setSessions(resolvedSessions);
+      
+      // Fetch data completeness for all sessions
+      if (data && data.length > 0) {
+        await fetchDataStatuses(data.map(s => s.id));
+      }
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [startDate, endDate, fetchDataStatuses]);
+
   const queueStatusRefresh = useCallback(
     (sessionId?: string | null) => {
       if (!sessionId) return;
@@ -678,29 +678,29 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'demographic_responses' },
-          (payload) => queueStatusRefresh(payload.new?.session_id ?? payload.old?.session_id)
+          (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => queueStatusRefresh((payload.new?.session_id ?? payload.old?.session_id) as string | null)
         )
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'pre_test_responses' },
-          (payload) => queueStatusRefresh(payload.new?.session_id ?? payload.old?.session_id)
+          (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => queueStatusRefresh((payload.new?.session_id ?? payload.old?.session_id) as string | null)
         )
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'post_test_responses' },
-          (payload) => queueStatusRefresh(payload.new?.session_id ?? payload.old?.session_id)
+          (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => queueStatusRefresh((payload.new?.session_id ?? payload.old?.session_id) as string | null)
         )
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'scenarios' },
-          (payload) => queueStatusRefresh(payload.new?.session_id ?? payload.old?.session_id)
+          (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => queueStatusRefresh((payload.new?.session_id ?? payload.old?.session_id) as string | null)
         );
 
       if (canUseTutorDialogue) {
         nextChannel = nextChannel.on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'tutor_dialogue_turns' },
-          (payload) => queueStatusRefresh(payload.new?.session_id ?? payload.old?.session_id)
+          (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => queueStatusRefresh((payload.new?.session_id ?? payload.old?.session_id) as string | null)
         );
       }
 

@@ -2846,6 +2846,9 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
               <span className="text-amber-400"> • {stats.rawSessions.length - stats.knowledgeGain.length} sessions missing score data</span>
             )}
           </CardDescription>
+          <div className="mt-1 text-xs text-muted-foreground/70">
+            Sample sizes: Pre/Post/Gain use sessions with scored knowledge answers (n={stats.knowledgeGain.length}). Avatar time uses sessions with slide timing (n={stats.avatarSessionsTracked}). Session duration uses completed sessions (n={stats.totalCompleted}).
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
@@ -3291,7 +3294,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 <p><span className="text-foreground/80">Avatar Time:</span> sum of slide time while avatar is active (multiple passes add up).</p>
                 <p><span className="text-foreground/80">Learning Slides Time:</span> sum of slide time across modes (slides only, pages excluded).</p>
                 <p><span className="text-foreground/80">Session Duration:</span> full session time from start to completion (includes consent/pre/post).</p>
-                <p>Only sessions with both pre-test and post-test scores are included; sample sizes can differ per metric.</p>
+                <p>Only sessions with both pre-test and post-test scores are included; each plot's n counts sessions with non-zero time for that metric.</p>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">

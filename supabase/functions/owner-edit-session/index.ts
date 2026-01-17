@@ -46,6 +46,42 @@ const updateRows = async (
   }
 };
 
+const insertRows = async (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  table: string,
+  rows: Array<Record<string, unknown>> | undefined,
+  fields: string[],
+  sessionId: string
+) => {
+  if (!rows || rows.length === 0) return;
+
+  const payload = rows
+    .map((row) => {
+      const base = pickFields(row as Record<string, unknown>, fields);
+      const questionId = base["question_id"];
+      const slideId = base["slide_id"];
+      if (!questionId && !slideId) return null;
+      if (Object.prototype.hasOwnProperty.call(base, "answer")) {
+        const answer = base["answer"];
+        if (!answer || String(answer).trim() === "") return null;
+      }
+      return {
+        ...base,
+        session_id: sessionId,
+      };
+    })
+    .filter(Boolean);
+
+  if (payload.length === 0) return;
+
+  const { error } = await supabase.from(table).insert(payload);
+  if (error) {
+    console.error(`Failed to insert into ${table}`, { error });
+    throw error;
+  }
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -177,6 +213,41 @@ Deno.serve(async (req) => {
     await updateRows(supabase, "avatar_time_tracking", updates?.avatarTimeTracking, ["duration_seconds"]);
     await updateRows(supabase, "tutor_dialogue_turns", updates?.tutorDialogueTurns, ["content"]);
     await updateRows(supabase, "dialogue_turns", updates?.dialogueTurns, ["content"]);
+
+    if (updates?.insertAvatarTimeTracking) {
+      updates.insertAvatarTimeTracking = updates.insertAvatarTimeTracking.map((entry: Record<string, unknown>) => {
+        const rawDuration = entry.duration_seconds;
+        if (typeof rawDuration === "number") {
+          return {
+            ...entry,
+            duration_seconds: Math.min(Math.max(rawDuration, 0), 180),
+          };
+        }
+        return entry;
+      });
+    }
+
+    await insertRows(
+      supabase,
+      "avatar_time_tracking",
+      updates?.insertAvatarTimeTracking,
+      ["slide_id", "slide_title", "duration_seconds", "started_at", "ended_at", "mode", "source", "is_imputed"],
+      sessionId
+    );
+    await insertRows(
+      supabase,
+      "pre_test_responses",
+      updates?.insertPreTest,
+      ["question_id", "answer", "source", "is_imputed"],
+      sessionId
+    );
+    await insertRows(
+      supabase,
+      "post_test_responses",
+      updates?.insertPostTest,
+      ["question_id", "answer", "source", "is_imputed"],
+      sessionId
+    );
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

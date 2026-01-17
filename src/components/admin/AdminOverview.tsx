@@ -311,6 +311,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('completed');
   const [activeSlideCount, setActiveSlideCount] = useState(0);
   const [includeFlagged, setIncludeFlagged] = useState(false);
+  const [includeImputed, setIncludeImputed] = useState(true);
   const [likertView, setLikertView] = useState<'overall' | 'text' | 'avatar' | 'both'>('overall');
 
   const fetchStats = useCallback(async () => {
@@ -395,8 +396,12 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         const rawPostTestResponses = postRes.data || [];
         const rawAvatarTimeData = avatarRes.data || [];
         const rawTutorDialogueRows = tutorDialogueRes.data || [];
+        const includeRow = (row: any) => includeImputed || !row?.is_imputed;
+        const filteredPreTestRaw = rawPreTestResponses.filter(includeRow);
+        const filteredPostTestRaw = rawPostTestResponses.filter(includeRow);
+        const filteredAvatarRaw = rawAvatarTimeData.filter(includeRow);
 
-        const demoFallbackRows = rawPreTestResponses.filter((r) => isDemoFallbackQuestionId(r.question_id));
+        const demoFallbackRows = filteredPreTestRaw.filter((r) => isDemoFallbackQuestionId(r.question_id));
         const normalizedDemoFallback = demoFallbackRows.map((row) => ({
           ...row,
           question_id: normalizeDemoQuestionId(row.question_id),
@@ -414,15 +419,15 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         });
 
         demographicResponses = Array.from(demographicMap.values());
-        preTestResponses = rawPreTestResponses.filter((r) => !isDemoFallbackQuestionId(r.question_id));
-        postTestResponses = rawPostTestResponses.filter((r) => !isTelemetryMetaQuestionId(r.question_id));
+        preTestResponses = filteredPreTestRaw.filter((r) => !isDemoFallbackQuestionId(r.question_id));
+        postTestResponses = filteredPostTestRaw.filter((r) => !isTelemetryMetaQuestionId(r.question_id));
 
-        const timingMetaRows = rawPostTestResponses.filter(
+        const timingMetaRows = filteredPostTestRaw.filter(
           (r) =>
             typeof r.question_id === 'string' &&
             (r.question_id === META_TIMING_ID || r.question_id.startsWith(`${META_TIMING_ID}__batch_`))
         );
-        const dialogueMetaRows = rawPostTestResponses.filter(
+        const dialogueMetaRows = filteredPostTestRaw.filter(
           (r) =>
             typeof r.question_id === 'string' &&
             (r.question_id === META_DIALOGUE_ID || r.question_id.startsWith(`${META_DIALOGUE_ID}__batch_`))
@@ -471,7 +476,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
         const rawSlideIdsBySession = new Map<string, Set<string>>();
         const rawPageIdsBySession = new Map<string, Set<string>>();
-        rawAvatarTimeData.forEach((entry: any) => {
+        filteredAvatarRaw.forEach((entry: any) => {
           const targetMap = isPageEntry(entry) ? rawPageIdsBySession : rawSlideIdsBySession;
           const slideId = entry.slide_id;
           if (!slideId) return;
@@ -480,7 +485,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           targetMap.set(entry.session_id, existing);
         });
 
-        avatarTimeData = [...rawAvatarTimeData];
+        avatarTimeData = [...filteredAvatarRaw];
         fallbackAvatarTimeData.forEach((entry: any) => {
           const slideId = entry.slide_id;
           if (!slideId) return;
@@ -1323,7 +1328,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [startDate, endDate, statusFilter, includeFlagged]);
+  }, [startDate, endDate, statusFilter, includeFlagged, includeImputed]);
 
   useEffect(() => {
     fetchStats();
@@ -2787,6 +2792,30 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 </Tooltip>
               </TooltipProvider>
             </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={includeImputed}
+                onCheckedChange={(checked) => setIncludeImputed(Boolean(checked))}
+              />
+              <span className="text-sm text-foreground/80">Include owner backfills</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground/90 transition"
+                      aria-label="About owner backfills"
+                    >
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    Includes owner-imputed timing and manually backfilled pre/post answers in charts and exports.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
 
           {/* Export Buttons */}
@@ -2848,6 +2877,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           </CardDescription>
           <div className="mt-1 text-xs text-muted-foreground/70">
             Sample sizes: Pre/Post/Gain use sessions with scored knowledge answers (n={stats.knowledgeGain.length}). Avatar time uses sessions with slide timing (n={stats.avatarSessionsTracked}). Session duration uses completed sessions (n={stats.totalCompleted}).
+            {!includeImputed && <span> Owner backfills excluded.</span>}
           </div>
         </CardHeader>
         <CardContent>

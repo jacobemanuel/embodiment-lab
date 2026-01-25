@@ -303,6 +303,9 @@ export const savePostTestResponses = async (
     questionId,
     answer
   }));
+  if (postTestResponses.length === 0) {
+    throw new Error('No post-test responses to save');
+  }
   const telemetryResponses: Array<{ questionId: string; answer: string }> = [];
 
   if (options.includeTelemetry) {
@@ -374,6 +377,7 @@ export const savePostTestResponses = async (
     batches.push(allResponses.slice(i, i + maxEdgeResponses));
   }
 
+  let edgeError: unknown = null;
   try {
     for (const batch of batches) {
       const { data, error } = await supabase.functions.invoke('save-study-data', {
@@ -388,15 +392,27 @@ export const savePostTestResponses = async (
       if (data?.error) throw new Error(data.error);
     }
   } catch (error) {
-    console.warn('save-study-data save_post_test failed, queueing retry:', error);
-    batches.forEach((batch) => {
-      enqueueEdgeCall('save-study-data', {
-        action: 'save_post_test',
-        sessionId,
-        postTestResponses: batch,
-      });
-    });
+    edgeError = error;
   }
+
+  if (!edgeError) return;
+
+  try {
+    await fallbackSavePostTest(sessionId, responses);
+    return;
+  } catch (fallbackError) {
+    console.warn('fallback save_post_test failed, queueing retry:', fallbackError);
+  }
+
+  batches.forEach((batch) => {
+    enqueueEdgeCall('save-study-data', {
+      action: 'save_post_test',
+      sessionId,
+      postTestResponses: batch,
+    });
+  });
+
+  throw edgeError;
 };
 
 export const completeStudySession = async (sessionId: string) => {

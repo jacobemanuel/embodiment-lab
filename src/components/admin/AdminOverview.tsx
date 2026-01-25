@@ -18,6 +18,7 @@ import { describeSuspicionFlag, getSuspicionRequirements } from "@/lib/suspicion
 import { META_DIALOGUE_ID, META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 import { buildSlideLookup, resolveSlideKey } from "@/lib/slideTiming";
 import { canUseTutorDialogueTable } from "@/lib/tutorDialogueAvailability";
+import { fetchAllPages } from "@/lib/fetchAllPages";
 
 interface AvatarTimeData {
   session_id: string;
@@ -395,23 +396,34 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       if (sessionIds.length > 0) {
         const canUseTutorDialogue = await canUseTutorDialogueTable();
         const [demoRes, preRes, postRes, avatarRes, slideRes, tutorDialogueRes] = await Promise.all([
-          supabase.from('demographic_responses').select('*').in('session_id', sessionIds),
-          supabase.from('pre_test_responses').select('*').in('session_id', sessionIds),
-          supabase.from('post_test_responses').select('*').in('session_id', sessionIds),
-          supabase.from('avatar_time_tracking').select('*').in('session_id', sessionIds),
+            fetchAllPages(async (from, to) =>
+              await supabase.from('demographic_responses').select('*').in('session_id', sessionIds).range(from, to)
+            ),
+            fetchAllPages(async (from, to) =>
+              await supabase.from('pre_test_responses').select('*').in('session_id', sessionIds).range(from, to)
+            ),
+            fetchAllPages(async (from, to) =>
+              await supabase.from('post_test_responses').select('*').in('session_id', sessionIds).range(from, to)
+            ),
+            fetchAllPages(async (from, to) =>
+              await supabase.from('avatar_time_tracking').select('*').in('session_id', sessionIds).range(from, to)
+            ),
           supabase.from('study_slides').select('slide_id, title, sort_order, is_active').order('sort_order'),
           canUseTutorDialogue
-            ? (supabase.from('tutor_dialogue_turns' as any) as any)
-                .select('session_id')
-                .in('session_id', sessionIds)
-            : Promise.resolve({ data: [] as any[] }),
+              ? fetchAllPages(async (from, to) =>
+                  await (supabase.from('tutor_dialogue_turns' as any) as any)
+                    .select('session_id')
+                    .in('session_id', sessionIds)
+                    .range(from, to)
+                )
+              : Promise.resolve([] as any[]),
         ]);
         
-        const rawDemographicResponses = demoRes.data || [];
-        const rawPreTestResponses = preRes.data || [];
-        const rawPostTestResponses = postRes.data || [];
-        const rawAvatarTimeData = avatarRes.data || [];
-        const rawTutorDialogueRows = tutorDialogueRes.data || [];
+          const rawDemographicResponses = (demoRes as any[]) || [];
+          const rawPreTestResponses = (preRes as any[]) || [];
+          const rawPostTestResponses = (postRes as any[]) || [];
+          const rawAvatarTimeData = (avatarRes as any[]) || [];
+          const rawTutorDialogueRows = (tutorDialogueRes as any[]) || [];
         const includeRow = (row: any) => includeImputed || !row?.is_imputed;
         const filteredPreTestRaw = rawPreTestResponses.filter(includeRow);
         const filteredPostTestRaw = rawPostTestResponses.filter(includeRow);

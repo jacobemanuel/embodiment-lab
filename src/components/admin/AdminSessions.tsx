@@ -19,6 +19,7 @@ import { describeSuspicionFlag, getSuspicionRequirements } from "@/lib/suspicion
 import { META_DIALOGUE_ID, META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 import { buildSlideLookup, resolveSlideKey } from "@/lib/slideTiming";
 import { canUseTutorDialogueTable } from "@/lib/tutorDialogueAvailability";
+import { fetchAllPages } from "@/lib/fetchAllPages";
 import { toast } from "sonner";
 
 interface AdminSessionsProps {
@@ -660,37 +661,68 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         const canUseTutorDialogue = await canUseTutorDialogueTable();
         const questions = questionBank.length > 0 ? questionBank : await loadQuestionBank();
         const hasQuestionBank = questions.length > 0;
-        const tutorDialogueQuery = canUseTutorDialogue
-          ? (supabase.from('tutor_dialogue_turns' as any) as any)
+        // Fetch counts for each data type.
+        // IMPORTANT: We must paginate using .range() because the backend caps rows per request (often 1000).
+        const [demoRows, oldDemoRows, preRows, postRows, scenarioRows, tutorRows] = await Promise.all([
+          fetchAllPages(async (from, to) =>
+            await supabase
+              .from('demographic_responses')
+              .select('session_id, question_id, answer')
+              .in('session_id', sessionIds)
+              .range(from, to)
+          ),
+          fetchAllPages(async (from, to) =>
+            await supabase
+              .from('demographics')
               .select('session_id')
               .in('session_id', sessionIds)
-          : Promise.resolve({ data: [] as any[] });
-
-        // Fetch counts for each data type
-        // IMPORTANT: Increase limits to avoid Supabase's default 1000-row cap truncating results
-        const [demoRes, oldDemoRes, preRes, postRes, scenarioRes, tutorRes] = await Promise.all([
-          supabase.from('demographic_responses').select('session_id, question_id, answer').in('session_id', sessionIds).limit(10000),
-          supabase.from('demographics').select('session_id').in('session_id', sessionIds).limit(5000),
-          supabase.from('pre_test_responses').select('session_id, question_id, answer').in('session_id', sessionIds).limit(10000),
-          supabase.from('post_test_responses').select('session_id, question_id, answer').in('session_id', sessionIds).limit(10000),
-          supabase.from('scenarios').select('session_id').in('session_id', sessionIds).limit(5000),
-          tutorDialogueQuery,
+              .range(from, to)
+          ),
+          fetchAllPages(async (from, to) =>
+            await supabase
+              .from('pre_test_responses')
+              .select('session_id, question_id, answer')
+              .in('session_id', sessionIds)
+              .range(from, to)
+          ),
+          fetchAllPages(async (from, to) =>
+            await supabase
+              .from('post_test_responses')
+              .select('session_id, question_id, answer')
+              .in('session_id', sessionIds)
+              .range(from, to)
+          ),
+          fetchAllPages(async (from, to) =>
+            await supabase
+              .from('scenarios')
+              .select('session_id')
+              .in('session_id', sessionIds)
+              .range(from, to)
+          ),
+          canUseTutorDialogue
+            ? fetchAllPages(async (from, to) =>
+                await (supabase.from('tutor_dialogue_turns' as any) as any)
+                  .select('session_id')
+                  .in('session_id', sessionIds)
+                  .range(from, to)
+              )
+            : Promise.resolve([] as any[]),
         ]);
 
-        const demoSessions = new Set((demoRes.data || []).map(d => d.session_id));
-        (oldDemoRes.data || []).forEach((d: any) => demoSessions.add(d.session_id));
-        const scenarioSessions = new Set((scenarioRes.data || []).map(d => d.session_id));
-        const tutorSessions = new Set(((tutorRes.data || []) as any[]).map((d: any) => d.session_id));
+        const demoSessions = new Set((demoRows || []).map((d: any) => d.session_id));
+        (oldDemoRows || []).forEach((d: any) => demoSessions.add(d.session_id));
+        const scenarioSessions = new Set((scenarioRows || []).map((d: any) => d.session_id));
+        const tutorSessions = new Set((tutorRows || []).map((d: any) => d.session_id));
 
         const preResponsesBySession = new Map<string, Array<{ question_id: string; answer?: string | null }>>();
-        (preRes.data || []).forEach((row: any) => {
+        (preRows || []).forEach((row: any) => {
           const list = preResponsesBySession.get(row.session_id) || [];
           list.push({ question_id: row.question_id, answer: row.answer });
           preResponsesBySession.set(row.session_id, list);
         });
 
         const postResponsesBySession = new Map<string, Array<{ question_id: string; answer?: string | null }>>();
-        (postRes.data || []).forEach((row: any) => {
+        (postRows || []).forEach((row: any) => {
           if (isTelemetryMetaQuestionId(row.question_id)) return;
           const list = postResponsesBySession.get(row.session_id) || [];
           list.push({ question_id: row.question_id, answer: row.answer });
@@ -699,8 +731,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
         const responseQuestionIds = Array.from(
           new Set([
-            ...((preRes.data || []).map((row: any) => row.question_id)),
-            ...((postRes.data || []).map((row: any) => row.question_id)),
+            ...((preRows || []).map((row: any) => row.question_id)),
+            ...((postRows || []).map((row: any) => row.question_id)),
           ])
         );
         const { data: questionRows } = responseQuestionIds.length > 0

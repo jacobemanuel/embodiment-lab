@@ -73,10 +73,12 @@ interface LikertAnalysis {
   responses: number[];
 }
 
+type CorrelationPoint = { x: number; y: number; mode: string; imputed?: boolean };
+
 interface CorrelationData {
-  avatarTimeVsGain: { x: number; y: number; mode: string }[];
-  learningTimeVsGain: { x: number; y: number; mode: string }[];
-  sessionTimeVsGain: { x: number; y: number; mode: string }[];
+  avatarTimeVsGain: CorrelationPoint[];
+  learningTimeVsGain: CorrelationPoint[];
+  sessionTimeVsGain: CorrelationPoint[];
 }
 
 interface StatisticalTest {
@@ -618,14 +620,20 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
       // Average session duration
       let avgDuration = 0;
+      const sessionDurationMinutesById: Record<string, number> = {};
       const sessionsWithDuration = sessionsToAnalyze.filter(s => s.completed_at);
       if (sessionsWithDuration.length > 0) {
-        const totalDuration = sessionsWithDuration.reduce((sum, s) => {
+        const totalDurationMinutes = sessionsWithDuration.reduce((sum, s) => {
           const start = new Date(s.started_at).getTime();
           const end = new Date(s.completed_at!).getTime();
-          return sum + (end - start);
+          const minutesRaw = (end - start) / 1000 / 60;
+          const minutes = Number.isFinite(minutesRaw) && minutesRaw >= 0 ? minutesRaw : 0;
+          if (minutes > 0) {
+            sessionDurationMinutesById[s.id] = minutes;
+          }
+          return sum + minutes;
         }, 0);
-        avgDuration = Math.round(totalDuration / sessionsWithDuration.length / 1000 / 60);
+        avgDuration = Math.round(totalDurationMinutes / sessionsWithDuration.length);
       }
 
       const sessionModeById = new Map<string, 'text' | 'avatar' | 'both' | 'none'>();
@@ -953,6 +961,16 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         }
       });
 
+      const resolveKnowledgeGainMode = (sessionId: string, mode: ReturnType<typeof resolveSessionMode>) => {
+        if (mode !== 'none') return mode;
+        const hasAvatarTime = (avatarTimeBySession[sessionId] || 0) > 0;
+        const hasTextTime = (textTimeBySession[sessionId] || 0) > 0;
+        if (hasAvatarTime && hasTextTime) return 'both';
+        if (hasAvatarTime) return 'avatar';
+        if (hasTextTime) return 'text';
+        return 'text';
+      };
+
       // Build knowledge gain array
       const knowledgeGain: KnowledgeGainData[] = [];
       sessionsToAnalyze.forEach(s => {
@@ -963,12 +981,9 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           const preScore = (preScores.correct / preScores.total) * 100;
           const postScore = (postScores.correct / postScores.total) * 100;
           
-          const mode = resolveSessionMode(s);
+          const mode = resolveKnowledgeGainMode(s.id, resolveSessionMode(s));
           const avatarTime = avatarTimeBySession[s.id] || 0;
           const learningTime = learningTimeBySession[s.id] || 0;
-          
-          // Skip sessions with no mode for knowledge gain analysis
-          if (mode === 'none') return;
           
           knowledgeGain.push({
             sessionId: s.session_id,
@@ -985,6 +1000,11 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           });
         }
       });
+
+      const resolveDurationMinutes = (sessionId: string) => {
+        const internalId = sessionIdAliases.get(sessionId) || sessionId;
+        return sessionDurationMinutesById[internalId] || 0;
+      };
 
       const preAnswerCountBySession = new Map<string, number>();
       preTestResponses.forEach((row) => {
@@ -1274,17 +1294,20 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
             mode: k.mode,
           })),
         learningTimeVsGain: knowledgeGain
-          .filter(k => k.learningTime > 0)
-          .map(k => ({
-            x: Math.round((k.learningTime / 60) * 100) / 100,
-            y: k.gain,
-            mode: k.mode,
-          })),
+          .map(k => {
+            const durationMinutes = resolveDurationMinutes(k.sessionId);
+            const isImputed = k.learningTime <= 0 && durationMinutes > 0;
+            const learningMinutes = k.learningTime > 0 ? k.learningTime / 60 : durationMinutes;
+            return {
+              x: Math.round(learningMinutes * 100) / 100,
+              y: k.gain,
+              mode: k.mode,
+              imputed: isImputed ? true : undefined,
+            };
+          })
+          .filter(d => d.x > 0),
         sessionTimeVsGain: knowledgeGain.map(k => {
-          const session = sessionsToAnalyze.find(s => s.session_id === k.sessionId);
-          const duration = session?.completed_at 
-            ? (new Date(session.completed_at).getTime() - new Date(session.started_at).getTime()) / 1000 / 60 
-            : 0;
+          const duration = resolveDurationMinutes(k.sessionId);
           return {
             x: Math.round(duration * 10) / 10,
             y: k.gain,
@@ -1926,15 +1949,17 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
   const renderTimeGainTooltip =
     (timeLabel: string) =>
-    ({ active, payload }: { active?: boolean; payload?: Array<{ payload?: { x?: number; y?: number } }> }) => {
+    ({ active, payload }: { active?: boolean; payload?: Array<{ payload?: { x?: number; y?: number; imputed?: boolean } }> }) => {
       if (!active || !payload || payload.length === 0) return null;
       const point = payload.find((entry) => typeof entry?.payload?.x === 'number')?.payload ?? payload[0]?.payload;
       const x = typeof point?.x === 'number' ? point.x : 0;
       const y = typeof point?.y === 'number' ? point.y : 0;
+      const imputed = Boolean(point?.imputed);
       return (
         <div className="rounded-md border border-slate-700/80 bg-slate-900/95 px-3 py-2 text-xs text-white shadow-lg">
           <div className="text-muted-foreground">{timeLabel}: <span className="text-white">{x.toFixed(1)} min</span></div>
           <div className="text-muted-foreground">Knowledge Gain: <span className="text-white">{y.toFixed(1)}%</span></div>
+          {imputed && <div className="text-[10px] text-amber-300">Estimated timing</div>}
         </div>
       );
     };
@@ -3677,14 +3702,22 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   const r = den !== 0 ? num / den : 0;
                   const r2 = r * r;
                   const strength = Math.abs(r) >= 0.7 ? 'Strong' : Math.abs(r) >= 0.4 ? 'Moderate' : Math.abs(r) >= 0.2 ? 'Weak' : 'Negligible';
+                  const imputedCount = data.filter(d => d.imputed).length;
                   return (
-                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-4">
-                      <span>r = <span className="text-white font-medium">{r.toFixed(3)}</span></span>
-                      <span>R² = <span className="text-cyan-400 font-medium">{(r2 * 100).toFixed(1)}%</span></span>
-                      <span className={`px-2 py-0.5 rounded ${Math.abs(r) >= 0.4 ? 'bg-green-900/30 text-green-400' : 'bg-muted text-muted-foreground'}`}>
-                        {strength}
-                      </span>
-                      <span className="text-muted-foreground/70">n={n}</span>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-4">
+                        <span>r = <span className="text-white font-medium">{r.toFixed(3)}</span></span>
+                        <span>R² = <span className="text-cyan-400 font-medium">{(r2 * 100).toFixed(1)}%</span></span>
+                        <span className={`px-2 py-0.5 rounded ${Math.abs(r) >= 0.4 ? 'bg-green-900/30 text-green-400' : 'bg-muted text-muted-foreground'}`}>
+                          {strength}
+                        </span>
+                        <span className="text-muted-foreground/70">n={n}</span>
+                      </div>
+                      {imputedCount > 0 && (
+                        <div className="mt-1 text-[10px] text-muted-foreground/70">
+                          Includes estimated learning time for {imputedCount} sessions without slide timing.
+                        </div>
+                      )}
                     </div>
                   );
                 })()}

@@ -61,10 +61,12 @@ interface StudyQuestionRow {
   category: string | null;
 }
 
+type LikertCategory = 'trust' | 'engagement' | 'satisfaction';
+
 interface LikertAnalysis {
   questionId: string;
   questionText: string;
-  category: 'trust' | 'engagement' | 'satisfaction';
+  category: LikertCategory;
   mean: number;
   median: number;
   std: number;
@@ -174,6 +176,7 @@ interface StudyStats {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
 type StatusFilter = 'completed' | 'all' | 'incomplete' | 'reset';
+type LikertView = 'overall' | 'text' | 'avatar' | 'both';
 
 // Sorting helpers
 const AGE_ORDER = ['18-24', '25-34', '35-44', '45-54', '55-64', '65-69', '70+', 'Prefer not to say'];
@@ -200,12 +203,6 @@ const resolveSessionMode = (session: { modes_used?: string[] | null; mode?: stri
   if (modesUsed.includes('avatar')) return 'avatar';
   if (modesUsed.includes('text')) return 'text';
   return 'none';
-};
-
-const hasMeaningfulAnswer = (answer: unknown) => {
-  if (answer === null || answer === undefined) return false;
-  if (typeof answer === 'string') return answer.trim() !== '';
-  return true;
 };
 
 const isPageEntry = (entry: { slide_id?: string }) =>
@@ -297,6 +294,79 @@ const extractMetaPayload = (rows: any[], baseId: string) => {
   return latestBatch.createdAt >= directTime ? combined : directPayload;
 };
 
+const LIKERT_QUESTIONS: { id: string; text: string; category: LikertCategory }[] = [
+  { id: 'trust-1', text: 'I trust the AI system to provide accurate information', category: 'trust' },
+  { id: 'trust-2', text: 'I would rely on this AI system for learning complex topics', category: 'trust' },
+  { id: 'trust-3', text: "The AI system's explanations were credible and trustworthy", category: 'trust' },
+  { id: 'engagement-1', text: 'The learning experience kept me engaged throughout', category: 'engagement' },
+  { id: 'engagement-2', text: 'I felt motivated to complete all the slides', category: 'engagement' },
+  { id: 'engagement-3', text: 'The interactive format was more engaging than traditional reading', category: 'engagement' },
+  { id: 'satisfaction-1', text: 'Overall, I am satisfied with this learning experience', category: 'satisfaction' },
+  { id: 'satisfaction-2', text: 'I would recommend this learning format to other students', category: 'satisfaction' },
+  { id: 'satisfaction-3', text: 'The learning mode I used was effective for understanding AI concepts', category: 'satisfaction' },
+];
+
+const LIKERT_CATEGORY_BY_ID: Record<string, LikertCategory> = {};
+LIKERT_QUESTIONS.forEach((question) => {
+  LIKERT_CATEGORY_BY_ID[question.id] = question.category;
+});
+
+const buildLikertSessionCounts = (
+  sessions: Array<{ id: string; mode?: string | null; modes_used?: string[] | null }>,
+  responses: Array<{ session_id: string; question_id: string; answer?: string | null }>
+): Record<LikertView, { eligibleSessions: number; totalSessions: number; categoryCounts: Record<LikertCategory, number> }> => {
+  const sessionIdsByView: Record<LikertView, Set<string>> = {
+    overall: new Set<string>(),
+    text: new Set<string>(),
+    avatar: new Set<string>(),
+    both: new Set<string>(),
+  };
+
+  sessions.forEach((session) => {
+    const mode = resolveSessionMode(session);
+    sessionIdsByView.overall.add(session.id);
+    if (mode === 'text') sessionIdsByView.text.add(session.id);
+    if (mode === 'avatar') sessionIdsByView.avatar.add(session.id);
+    if (mode === 'both') sessionIdsByView.both.add(session.id);
+  });
+
+  const initCategorySets = () => ({
+    trust: new Set<string>(),
+    engagement: new Set<string>(),
+    satisfaction: new Set<string>(),
+  });
+
+  const summaries = {} as Record<LikertView, { eligibleSessions: number; totalSessions: number; categoryCounts: Record<LikertCategory, number> }>;
+  (Object.keys(sessionIdsByView) as LikertView[]).forEach((view) => {
+    const allowedSessions = sessionIdsByView[view];
+    const categorySets = initCategorySets();
+    const respondedSessions = new Set<string>();
+
+    responses.forEach((row) => {
+      if (!allowedSessions.has(row.session_id)) return;
+      const questionId = typeof row.question_id === 'string' ? row.question_id : '';
+      const category = LIKERT_CATEGORY_BY_ID[questionId];
+      if (!category) return;
+      const value = Number.parseInt(String(row.answer ?? ''), 10);
+      if (!Number.isFinite(value) || value < 1 || value > 5) return;
+      categorySets[category].add(row.session_id);
+      respondedSessions.add(row.session_id);
+    });
+
+    summaries[view] = {
+      eligibleSessions: allowedSessions.size,
+      totalSessions: respondedSessions.size,
+      categoryCounts: {
+        trust: categorySets.trust.size,
+        engagement: categorySets.engagement.size,
+        satisfaction: categorySets.satisfaction.size,
+      },
+    };
+  });
+
+  return summaries;
+};
+
 // Helper component for section CSV export - accepts canExport to hide for viewers
 const ExportButton = ({ onClick, label, size = "sm", canExport = true }: { onClick: () => void; label: string; size?: "sm" | "xs"; canExport?: boolean }) => {
   if (!canExport) return null;
@@ -332,7 +402,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
   const [includeFlagged, setIncludeFlagged] = useState(false);
   const [includeImputed, setIncludeImputed] = useState(true);
   const [showMissingScores, setShowMissingScores] = useState(false);
-  const [likertView, setLikertView] = useState<'overall' | 'text' | 'avatar' | 'both'>('overall');
+  const [likertView, setLikertView] = useState<LikertView>('overall');
 
   const fetchStats = useCallback(async () => {
     setIsRefreshing(true);
@@ -1011,7 +1081,6 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
       const preAnswerCountBySession = new Map<string, number>();
       preTestResponses.forEach((row) => {
-        if (!hasMeaningfulAnswer(row.answer)) return;
         preAnswerCountBySession.set(
           row.session_id,
           (preAnswerCountBySession.get(row.session_id) || 0) + 1
@@ -1021,7 +1090,6 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       const postAnswerCountBySession = new Map<string, number>();
       postTestResponses.forEach((row) => {
         if (isTelemetryMetaQuestionId(row.question_id)) return;
-        if (!hasMeaningfulAnswer(row.answer)) return;
         postAnswerCountBySession.set(
           row.session_id,
           (postAnswerCountBySession.get(row.session_id) || 0) + 1
@@ -1417,18 +1485,6 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       };
 
       // Likert Scale Analysis (trust, engagement, satisfaction questions)
-      const LIKERT_QUESTIONS: { id: string; text: string; category: 'trust' | 'engagement' | 'satisfaction' }[] = [
-        { id: 'trust-1', text: 'I trust the AI system to provide accurate information', category: 'trust' },
-        { id: 'trust-2', text: 'I would rely on this AI system for learning complex topics', category: 'trust' },
-        { id: 'trust-3', text: "The AI system's explanations were credible and trustworthy", category: 'trust' },
-        { id: 'engagement-1', text: 'The learning experience kept me engaged throughout', category: 'engagement' },
-        { id: 'engagement-2', text: 'I felt motivated to complete all the slides', category: 'engagement' },
-        { id: 'engagement-3', text: 'The interactive format was more engaging than traditional reading', category: 'engagement' },
-        { id: 'satisfaction-1', text: 'Overall, I am satisfied with this learning experience', category: 'satisfaction' },
-        { id: 'satisfaction-2', text: 'I would recommend this learning format to other students', category: 'satisfaction' },
-        { id: 'satisfaction-3', text: 'The learning mode I used was effective for understanding AI concepts', category: 'satisfaction' },
-      ];
-
       const analyzeLikertForSessions = (sessionIds: string[]): LikertAnalysis[] => {
         const relevantResponses = postTestResponses.filter(r => 
           sessionIds.includes(r.session_id) && 
@@ -2998,6 +3054,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
     { name: 'Text Mode', gain: stats.textModeGain, preScore: stats.textModePreScore, postScore: stats.textModePostScore, count: stats.textModeCompleted },
     { name: 'Avatar Mode', gain: stats.avatarModeGain, preScore: stats.avatarModePreScore, postScore: stats.avatarModePostScore, count: stats.avatarModeCompleted },
   ];
+  const likertSessionCounts = buildLikertSessionCounts(stats.rawSessions, stats.rawPostTest);
 
   return (
     <div className="space-y-6">
@@ -4198,7 +4255,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 </TooltipProvider>
               </div>
               <div className="flex items-center gap-2">
-                <Select value={likertView} onValueChange={(value) => setLikertView(value as 'overall' | 'text' | 'avatar' | 'both')}>
+                <Select value={likertView} onValueChange={(value) => setLikertView(value as LikertView)}>
                   <SelectTrigger className="w-[140px] bg-background border-border h-7 text-xs">
                     <SelectValue placeholder="View mode" />
                   </SelectTrigger>
@@ -4227,7 +4284,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                   const avgMean = categoryData.length > 0
                     ? Math.round((categoryData.reduce((sum, l) => sum + l.mean, 0) / categoryData.length) * 100) / 100
                     : 0;
-                  const totalResponses = categoryData.reduce((sum, l) => sum + l.totalResponses, 0);
+                  const categorySummary = likertSessionCounts[likertView];
+                  const categorySample = categorySummary?.categoryCounts[category] ?? 0;
+                  const eligibleSessions = categorySummary?.eligibleSessions ?? 0;
+                  const sampleLabel = eligibleSessions > 0 ? `${categorySample}/${eligibleSessions}` : `${categorySample}`;
                   
                   const categoryColors = {
                     trust: { bg: 'bg-blue-900/20', border: 'border-blue-700/50', text: 'text-blue-400', dot: 'bg-blue-400' },
@@ -4243,7 +4303,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                           <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
                           <span className={`text-sm font-medium ${colors.text} capitalize`}>{category}</span>
                         </div>
-                        <span className="text-muted-foreground/70 text-xs">n={totalResponses / categoryData.length || 0}</span>
+                        <span className="text-muted-foreground/70 text-xs">n={sampleLabel}</span>
                       </div>
                       <div className="text-3xl font-bold text-white mb-2">{avgMean.toFixed(2)}</div>
                       <div className="flex items-center gap-2">
@@ -4280,7 +4340,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                     const trustAvg = modeData.filter(l => l.category === 'trust').reduce((sum, l) => sum + l.mean, 0) / Math.max(modeData.filter(l => l.category === 'trust').length, 1);
                     const engagementAvg = modeData.filter(l => l.category === 'engagement').reduce((sum, l) => sum + l.mean, 0) / Math.max(modeData.filter(l => l.category === 'engagement').length, 1);
                     const satisfactionAvg = modeData.filter(l => l.category === 'satisfaction').reduce((sum, l) => sum + l.mean, 0) / Math.max(modeData.filter(l => l.category === 'satisfaction').length, 1);
-                    const sampleSize = modeData.length > 0 ? modeData[0].totalResponses : 0;
+                    const modeSummary = likertSessionCounts[mode];
+                    const sampleLabel = modeSummary
+                      ? (modeSummary.eligibleSessions > 0 ? `${modeSummary.totalSessions}/${modeSummary.eligibleSessions}` : `${modeSummary.totalSessions}`)
+                      : '0';
 
                     const modeColors = {
                       text: 'border-blue-600',
@@ -4293,7 +4356,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-foreground/90 capitalize">{mode} Mode</span>
                           </div>
-                          <span className="text-muted-foreground/70 text-xs">n={sampleSize}</span>
+                          <span className="text-muted-foreground/70 text-xs">n={sampleLabel}</span>
                         </div>
                         {modeData.length > 0 ? (
                           <div className="space-y-2 text-xs">

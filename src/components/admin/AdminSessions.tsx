@@ -656,7 +656,16 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         ? sessionsRef.current.filter((session) => (sessionInput as string[]).includes(session.id))
         : (sessionInput as Session[]);
       if (sessionList.length === 0) return;
-      const sessionIds = sessionList.map((session) => session.id);
+      const sessionIdAliases = new Map<string, string>();
+      sessionList.forEach((session) => {
+        sessionIdAliases.set(session.id, session.id);
+        if (session.session_id) {
+          sessionIdAliases.set(session.session_id, session.id);
+        }
+      });
+      const sessionIdFilter = Array.from(sessionIdAliases.keys());
+      const normalizeSessionId = (value?: string | null) =>
+        value ? sessionIdAliases.get(value) || value : value;
       try {
         const canUseTutorDialogue = await canUseTutorDialogueTable();
         const questions = questionBank.length > 0 ? questionBank : await loadQuestionBank();
@@ -668,61 +677,72 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
             await supabase
               .from('demographic_responses')
               .select('session_id, question_id, answer')
-              .in('session_id', sessionIds)
+              .in('session_id', sessionIdFilter)
               .range(from, to)
           ),
           fetchAllPages(async (from, to) =>
             await supabase
               .from('demographics')
               .select('session_id')
-              .in('session_id', sessionIds)
+              .in('session_id', sessionIdFilter)
               .range(from, to)
           ),
           fetchAllPages(async (from, to) =>
             await supabase
               .from('pre_test_responses')
               .select('session_id, question_id, answer')
-              .in('session_id', sessionIds)
+              .in('session_id', sessionIdFilter)
               .range(from, to)
           ),
           fetchAllPages(async (from, to) =>
             await supabase
               .from('post_test_responses')
               .select('session_id, question_id, answer')
-              .in('session_id', sessionIds)
+              .in('session_id', sessionIdFilter)
               .range(from, to)
           ),
           fetchAllPages(async (from, to) =>
             await supabase
               .from('scenarios')
               .select('session_id')
-              .in('session_id', sessionIds)
+              .in('session_id', sessionIdFilter)
               .range(from, to)
           ),
           canUseTutorDialogue
             ? fetchAllPages(async (from, to) =>
                 await (supabase.from('tutor_dialogue_turns' as any) as any)
                   .select('session_id')
-                  .in('session_id', sessionIds)
+                  .in('session_id', sessionIdFilter)
                   .range(from, to)
               )
             : Promise.resolve([] as any[]),
         ]);
 
-        const demoSessions = new Set((demoRows || []).map((d: any) => d.session_id));
-        (oldDemoRows || []).forEach((d: any) => demoSessions.add(d.session_id));
-        const scenarioSessions = new Set((scenarioRows || []).map((d: any) => d.session_id));
-        const tutorSessions = new Set((tutorRows || []).map((d: any) => d.session_id));
+        const normalizeRows = <T extends { session_id?: string | null }>(rows: T[]) =>
+          rows.map((row) =>
+            row?.session_id ? { ...row, session_id: normalizeSessionId(row.session_id) } : row
+          );
+        const normalizedDemoRows = normalizeRows((demoRows || []) as any[]);
+        const normalizedOldDemoRows = normalizeRows((oldDemoRows || []) as any[]);
+        const normalizedPreRows = normalizeRows((preRows || []) as any[]);
+        const normalizedPostRows = normalizeRows((postRows || []) as any[]);
+        const normalizedScenarioRows = normalizeRows((scenarioRows || []) as any[]);
+        const normalizedTutorRows = normalizeRows((tutorRows || []) as any[]);
+
+        const demoSessions = new Set(normalizedDemoRows.map((d: any) => d.session_id));
+        normalizedOldDemoRows.forEach((d: any) => demoSessions.add(d.session_id));
+        const scenarioSessions = new Set(normalizedScenarioRows.map((d: any) => d.session_id));
+        const tutorSessions = new Set(normalizedTutorRows.map((d: any) => d.session_id));
 
         const preResponsesBySession = new Map<string, Array<{ question_id: string; answer?: string | null }>>();
-        (preRows || []).forEach((row: any) => {
+        normalizedPreRows.forEach((row: any) => {
           const list = preResponsesBySession.get(row.session_id) || [];
           list.push({ question_id: row.question_id, answer: row.answer });
           preResponsesBySession.set(row.session_id, list);
         });
 
         const postResponsesBySession = new Map<string, Array<{ question_id: string; answer?: string | null }>>();
-        (postRows || []).forEach((row: any) => {
+        normalizedPostRows.forEach((row: any) => {
           if (isTelemetryMetaQuestionId(row.question_id)) return;
           const list = postResponsesBySession.get(row.session_id) || [];
           list.push({ question_id: row.question_id, answer: row.answer });
@@ -731,8 +751,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
         const responseQuestionIds = Array.from(
           new Set([
-            ...((preRows || []).map((row: any) => row.question_id)),
-            ...((postRows || []).map((row: any) => row.question_id)),
+            ...normalizedPreRows.map((row: any) => row.question_id),
+            ...normalizedPostRows.map((row: any) => row.question_id),
           ])
         );
         const { data: questionRows } = responseQuestionIds.length > 0
@@ -814,7 +834,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
             const question = questionInfo.get(row.question_id);
             return isScoredPostQuestion(question) && hasMeaningfulAnswer(row.answer);
           }).length;
-          const hasScoreData = preScoreAnswered > 0 && postScoreAnswered > 0;
+          const hasScoreData = preAnsweredAny > 0 && postAnsweredAny > 0;
           statusMap.set(session.id, {
             hasDemographics,
             hasPreTest,
@@ -1008,35 +1028,39 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
   const fetchSessionDetails = async (session: Session) => {
     setIsDetailsLoading(true);
     setSelectedSession(session);
+    const sessionIdCandidates = [session.id, session.session_id].filter(Boolean) as string[];
 
     try {
       // Fetch new demographic_responses (flexible schema)
       const { data: demographicResponses } = await supabase
         .from('demographic_responses')
         .select('*')
-        .eq('session_id', session.id);
+        .in('session_id', sessionIdCandidates);
 
       // Also fetch old demographics table for backwards compatibility
-      const { data: oldDemographics } = await supabase
+      const { data: oldDemographicsRows } = await supabase
         .from('demographics')
         .select('*')
-        .eq('session_id', session.id)
-        .maybeSingle();
+        .in('session_id', sessionIdCandidates);
+      const oldDemographics =
+        (oldDemographicsRows || []).find((row: any) => row.session_id === session.id) ||
+        (oldDemographicsRows || [])[0] ||
+        null;
 
       const { data: preTest } = await supabase
         .from('pre_test_responses')
         .select('*')
-        .eq('session_id', session.id);
+        .in('session_id', sessionIdCandidates);
 
       const { data: postTest } = await supabase
         .from('post_test_responses')
         .select('*')
-        .eq('session_id', session.id);
+        .in('session_id', sessionIdCandidates);
 
       const { data: scenarios } = await supabase
         .from('scenarios')
         .select('*')
-        .eq('session_id', session.id);
+        .in('session_id', sessionIdCandidates);
 
       let dialogueTurns: any[] = [];
       if (scenarios && scenarios.length > 0) {
@@ -1058,7 +1082,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         const { data } = await (supabase
           .from('tutor_dialogue_turns' as any) as any)
           .select('*')
-          .eq('session_id', session.id)
+          .in('session_id', sessionIdCandidates)
           .order('timestamp', { ascending: true });
         tutorDialogueTurns = data || [];
       }
@@ -1066,7 +1090,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       const { data: avatarTimeTracking } = await supabase
         .from('avatar_time_tracking')
         .select('*')
-        .eq('session_id', session.id)
+        .in('session_id', sessionIdCandidates)
         .order('started_at', { ascending: true });
 
       const { data: activeSlides } = await supabase
@@ -2907,7 +2931,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 <SelectItem value="all">All Data</SelectItem>
                 <SelectItem value="complete">Complete Data</SelectItem>
                 <SelectItem value="missing">Missing Data</SelectItem>
-                <SelectItem value="missing_score">Missing Score Data</SelectItem>
+                <SelectItem value="missing_score">Missing Responses</SelectItem>
                 <SelectItem value="no_demographics">No Demographics</SelectItem>
                 <SelectItem value="no_pretest">No Pre-test</SelectItem>
                 <SelectItem value="no_posttest">No Post-test</SelectItem>
@@ -3044,7 +3068,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                   const postAnswered = dataStatus?.postTestAnswered ?? 0;
                   const preScoreAnswered = dataStatus?.preScoreAnswered ?? 0;
                   const postScoreAnswered = dataStatus?.postScoreAnswered ?? 0;
-                  const scoreStatusLabel = !dataStatus
+                  const responseStatusLabel = !dataStatus
                     ? 'Loading'
                     : dataStatus.hasScoreData
                       ? 'Yes'
@@ -3153,8 +3177,10 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                                   {postCountLabel ? ` (${postCountLabel})` : ''}
                                 </p>
                                 <p className={dataStatus?.hasScoreData ? 'text-green-400' : 'text-red-400'}>
-                                  Score data: {scoreStatusLabel}
-                                  {dataStatus ? ` (${scoreCountLabel} scored)` : ''}
+                                  Responses: {responseStatusLabel}
+                                </p>
+                                <p className="text-muted-foreground">
+                                  Scored answers: {scoreCountLabel || 'n/a'}
                                 </p>
                                 <p className={dataStatus?.hasDialogue ? 'text-green-400' : 'text-muted-foreground'}>
                                   Dialogue: {dataStatus?.hasDialogue ? 'Yes' : 'None'} (info only)

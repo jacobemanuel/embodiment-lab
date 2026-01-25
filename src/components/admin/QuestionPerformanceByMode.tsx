@@ -7,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, Re
 import { Download, TrendingUp, TrendingDown, Minus, Info, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { startOfDay, endOfDay, format } from "date-fns";
+import { fetchAllPages } from "@/lib/fetchAllPages";
 
 interface QuestionModePerformance {
   questionId: string;
@@ -40,7 +41,7 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
       // Fetch sessions with mode info
       let sessionQuery = supabase
         .from('study_sessions')
-        .select('id, mode, modes_used, completed_at')
+        .select('id, session_id, mode, modes_used, completed_at')
         .not('completed_at', 'is', null);
 
       if (startDate) {
@@ -65,6 +66,17 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
         return 'text';
       };
 
+      const sessionIdAliases = new Map<string, string>();
+      sessions.forEach((session: any) => {
+        sessionIdAliases.set(session.id, session.id);
+        if (session.session_id) {
+          sessionIdAliases.set(session.session_id, session.id);
+        }
+      });
+      const sessionIdFilter = Array.from(sessionIdAliases.keys());
+      const normalizeSessionId = (value?: string | null) =>
+        value ? sessionIdAliases.get(value) || value : value;
+
       const textSessionIds = sessions.filter(s => getSessionMode(s) === 'text').map(s => s.id);
       const avatarSessionIds = sessions.filter(s => getSessionMode(s) === 'avatar').map(s => s.id);
 
@@ -78,14 +90,36 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
       const questionMap = new Map(questions?.map(q => [q.question_id, q]) || []);
 
       // Fetch responses
+      if (sessionIdFilter.length === 0) {
+        setData([]);
+        setIsLoading(false);
+        return;
+      }
+
       const [preTestRes, postTestRes] = await Promise.all([
-        supabase.from('pre_test_responses').select('*').in('session_id', [...textSessionIds, ...avatarSessionIds]),
-        supabase.from('post_test_responses').select('*').in('session_id', [...textSessionIds, ...avatarSessionIds]),
+        fetchAllPages(async (from, to) =>
+          await supabase
+            .from('pre_test_responses')
+            .select('*')
+            .in('session_id', sessionIdFilter)
+            .range(from, to)
+        ),
+        fetchAllPages(async (from, to) =>
+          await supabase
+            .from('post_test_responses')
+            .select('*')
+            .in('session_id', sessionIdFilter)
+            .range(from, to)
+        ),
       ]);
 
       const allResponses = [
-        ...(preTestRes.data || []).map(r => ({ ...r, type: 'pre_test' })),
-        ...(postTestRes.data || []).filter(r => r.question_id.startsWith('knowledge-')).map(r => ({ ...r, type: 'post_test' })),
+        ...(preTestRes || []).map((r: any) => ({ ...r, session_id: normalizeSessionId(r.session_id), type: 'pre_test' })),
+        ...(postTestRes || []).filter((r: any) => r.question_id.startsWith('knowledge-')).map((r: any) => ({
+          ...r,
+          session_id: normalizeSessionId(r.session_id),
+          type: 'post_test'
+        })),
       ];
 
       // Group by question and mode

@@ -11,6 +11,7 @@ import { startOfDay, endOfDay, format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 import { canUseTutorDialogueTable } from "@/lib/tutorDialogueAvailability";
+import { fetchAllPages } from "@/lib/fetchAllPages";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 const CORRECT_COLOR = '#22c55e';
@@ -92,7 +93,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
     setIsRefreshing(true);
     try {
       // First get session IDs that match the date filter, mode filter, and status filter
-      let sessionQuery = supabase.from('study_sessions').select('id, mode, modes_used, completed_at, created_at, status, suspicion_score, validation_status');
+      let sessionQuery = supabase.from('study_sessions').select('id, session_id, mode, modes_used, completed_at, created_at, status, suspicion_score, validation_status');
       if (startDate) {
         sessionQuery = sessionQuery.gte('created_at', startOfDay(startDate).toISOString());
       }
@@ -138,23 +139,28 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
         });
       }
       
-      const sessionIds = filteredSessions.map(s => s.id);
+      const sessionIdAliases = new Map<string, string>();
+      const sessionDisplayMap = new Map<string, string>();
+      filteredSessions.forEach((session) => {
+        sessionIdAliases.set(session.id, session.id);
+        sessionDisplayMap.set(session.id, session.session_id);
+        if (session.session_id) {
+          sessionIdAliases.set(session.session_id, session.id);
+          sessionDisplayMap.set(session.session_id, session.session_id);
+        }
+      });
+      const sessionIdFilter = Array.from(sessionIdAliases.keys());
+      const normalizeSessionId = (value?: string | null) =>
+        value ? sessionIdAliases.get(value) || value : value;
+      const displaySessionId = (value?: string | null) =>
+        value ? sessionDisplayMap.get(value) || value : value;
 
       // Update session counts based on filtered sessions
       const completedCount = filteredSessions.filter(s => s.completed_at).length;
       const incompleteCount = filteredSessions.filter(s => !s.completed_at).length;
       setSessionCount({ total: filteredSessions.length, completed: completedCount, incomplete: incompleteCount });
 
-      // Build queries with date filter
-      let preTestQuery = supabase.from('pre_test_responses').select('question_id, answer, session_id');
-      let postTestQuery = supabase.from('post_test_responses').select('question_id, answer, session_id');
-      let demoQuery = supabase.from('demographic_responses').select('question_id, answer, session_id');
-
-      if (sessionIds.length > 0) {
-        preTestQuery = preTestQuery.in('session_id', sessionIds);
-        postTestQuery = postTestQuery.in('session_id', sessionIds);
-        demoQuery = demoQuery.in('session_id', sessionIds);
-      } else if (startDate || endDate || modeFilter !== 'all' || statusFilter !== 'all') {
+      if (sessionIdFilter.length === 0 && (startDate || endDate || modeFilter !== 'all' || statusFilter !== 'all')) {
         // No matching sessions, return empty
         setPreTestData({});
         setPostTestData({});
@@ -166,9 +172,38 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
         return;
       }
 
-      const { data: preTestRaw } = await preTestQuery;
-      const { data: postTestRaw } = await postTestQuery;
-      const { data: demographicsRaw } = await demoQuery;
+      const [preTestRaw, postTestRaw, demographicsRaw] = await Promise.all([
+        fetchAllPages(async (from, to) => {
+          let query = supabase
+            .from('pre_test_responses')
+            .select('question_id, answer, session_id')
+            .range(from, to);
+          if (sessionIdFilter.length > 0) {
+            query = query.in('session_id', sessionIdFilter);
+          }
+          return await query;
+        }),
+        fetchAllPages(async (from, to) => {
+          let query = supabase
+            .from('post_test_responses')
+            .select('question_id, answer, session_id')
+            .range(from, to);
+          if (sessionIdFilter.length > 0) {
+            query = query.in('session_id', sessionIdFilter);
+          }
+          return await query;
+        }),
+        fetchAllPages(async (from, to) => {
+          let query = supabase
+            .from('demographic_responses')
+            .select('question_id, answer, session_id')
+            .range(from, to);
+          if (sessionIdFilter.length > 0) {
+            query = query.in('session_id', sessionIdFilter);
+          }
+          return await query;
+        }),
+      ]);
 
       // Deduplicate responses per session/question to avoid double-counting
       const dedupeResponses = (rows: any[] | null | undefined) => {
@@ -181,9 +216,14 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
         return Array.from(map.values());
       };
 
-      const preTestAll = dedupeResponses(preTestRaw);
-      const postTestAll = dedupeResponses(postTestRaw);
-      const demographicsBase = dedupeResponses(demographicsRaw);
+      const normalizeResponseSession = (rows: any[]) =>
+        rows.map((row) => ({ ...row, session_id: normalizeSessionId(row.session_id) }));
+      const toDisplaySession = (rows: any[]) =>
+        rows.map((row) => ({ ...row, session_id: displaySessionId(row.session_id) }));
+
+      const preTestAll = toDisplaySession(dedupeResponses(normalizeResponseSession(preTestRaw || [])));
+      const postTestAll = toDisplaySession(dedupeResponses(normalizeResponseSession(postTestRaw || [])));
+      const demographicsBase = toDisplaySession(dedupeResponses(normalizeResponseSession(demographicsRaw || [])));
 
       const demoFallbackRows = preTestAll.filter((r) => isDemoFallbackQuestionId(r.question_id));
       const normalizedDemoFallback = demoFallbackRows.map((row) => ({

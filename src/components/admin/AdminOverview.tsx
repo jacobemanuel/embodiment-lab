@@ -382,7 +382,16 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         sessionsToAnalyze = resetSessions;
       }
       
-      const sessionIds = sessionsToAnalyze.map(s => s.id);
+      const sessionIdAliases = new Map<string, string>();
+      sessionsToAnalyze.forEach((session) => {
+        sessionIdAliases.set(session.id, session.id);
+        if (session.session_id) {
+          sessionIdAliases.set(session.session_id, session.id);
+        }
+      });
+      const sessionIdFilter = Array.from(sessionIdAliases.keys());
+      const normalizeSessionId = (value?: string | null) =>
+        value ? sessionIdAliases.get(value) || value : value;
 
       // Fetch all related data for sessions
       let demographicResponses: any[] = [];
@@ -393,37 +402,42 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
       let activeSlides: { slide_id: string; title: string; sort_order: number; is_active: boolean }[] = [];
       let latestDialogueBySession = new Map<string, any>();
-      if (sessionIds.length > 0) {
+      if (sessionIdFilter.length > 0) {
         const canUseTutorDialogue = await canUseTutorDialogueTable();
         const [demoRes, preRes, postRes, avatarRes, slideRes, tutorDialogueRes] = await Promise.all([
             fetchAllPages(async (from, to) =>
-              await supabase.from('demographic_responses').select('*').in('session_id', sessionIds).range(from, to)
+              await supabase.from('demographic_responses').select('*').in('session_id', sessionIdFilter).range(from, to)
             ),
             fetchAllPages(async (from, to) =>
-              await supabase.from('pre_test_responses').select('*').in('session_id', sessionIds).range(from, to)
+              await supabase.from('pre_test_responses').select('*').in('session_id', sessionIdFilter).range(from, to)
             ),
             fetchAllPages(async (from, to) =>
-              await supabase.from('post_test_responses').select('*').in('session_id', sessionIds).range(from, to)
+              await supabase.from('post_test_responses').select('*').in('session_id', sessionIdFilter).range(from, to)
             ),
             fetchAllPages(async (from, to) =>
-              await supabase.from('avatar_time_tracking').select('*').in('session_id', sessionIds).range(from, to)
+              await supabase.from('avatar_time_tracking').select('*').in('session_id', sessionIdFilter).range(from, to)
             ),
           supabase.from('study_slides').select('slide_id, title, sort_order, is_active').order('sort_order'),
           canUseTutorDialogue
               ? fetchAllPages(async (from, to) =>
                   await (supabase.from('tutor_dialogue_turns' as any) as any)
                     .select('session_id')
-                    .in('session_id', sessionIds)
+                    .in('session_id', sessionIdFilter)
                     .range(from, to)
                 )
               : Promise.resolve([] as any[]),
         ]);
-        
-          const rawDemographicResponses = (demoRes as any[]) || [];
-          const rawPreTestResponses = (preRes as any[]) || [];
-          const rawPostTestResponses = (postRes as any[]) || [];
-          const rawAvatarTimeData = (avatarRes as any[]) || [];
-          const rawTutorDialogueRows = (tutorDialogueRes as any[]) || [];
+
+        const normalizeRows = <T extends { session_id?: string | null }>(rows: T[]) =>
+          rows.map((row) =>
+            row?.session_id ? { ...row, session_id: normalizeSessionId(row.session_id) } : row
+          );
+
+        const rawDemographicResponses = normalizeRows((demoRes as any[]) || []);
+        const rawPreTestResponses = normalizeRows((preRes as any[]) || []);
+        const rawPostTestResponses = normalizeRows((postRes as any[]) || []);
+        const rawAvatarTimeData = normalizeRows((avatarRes as any[]) || []);
+        const rawTutorDialogueRows = normalizeRows((tutorDialogueRes as any[]) || []);
         const includeRow = (row: any) => includeImputed || !row?.is_imputed;
         const filteredPreTestRaw = rawPreTestResponses.filter(includeRow);
         const filteredPostTestRaw = rawPostTestResponses.filter(includeRow);
@@ -960,23 +974,14 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       });
 
       const missingScoreSessions = sessionsToAnalyze.flatMap((session) => {
-        const preScores = sessionPreScores[session.id];
-        const postScores = sessionPostScores[session.id];
-        const preTotal = preScores?.total ?? 0;
-        const postTotal = postScores?.total ?? 0;
-
-        if (preTotal > 0 && postTotal > 0) return [];
-
-        const reasons: string[] = [];
         const preAnswers = preAnswerCountBySession.get(session.id) || 0;
         const postAnswers = postAnswerCountBySession.get(session.id) || 0;
 
-        if (preTotal === 0) {
-          reasons.push(preAnswers === 0 ? 'No pre-test answers' : 'Pre-test answers not scorable');
-        }
-        if (postTotal === 0) {
-          reasons.push(postAnswers === 0 ? 'No post-test answers' : 'Post-test answers not scorable');
-        }
+        if (preAnswers > 0 && postAnswers > 0) return [];
+
+        const reasons: string[] = [];
+        if (preAnswers === 0) reasons.push('No pre-test answers');
+        if (postAnswers === 0) reasons.push('No post-test answers');
 
         if (reasons.length === 0) return [];
         return [
@@ -2968,7 +2973,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           <CardDescription className="text-muted-foreground">
             Key metrics for {stats.rawSessions.length} sessions in selected range
             {stats.missingScoreSessions.length > 0 && (
-              <span className="text-amber-400"> • {stats.missingScoreSessions.length} sessions missing score data</span>
+              <span className="text-amber-400"> • {stats.missingScoreSessions.length} sessions missing pre/post responses</span>
             )}
           </CardDescription>
           <div className="mt-1 text-xs text-muted-foreground/70">
@@ -2978,7 +2983,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           {stats.missingScoreSessions.length > 0 && (
             <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-100">
               <div className="flex items-center justify-between gap-2">
-                <span>Missing score data sessions (n={stats.missingScoreSessions.length})</span>
+                <span>Missing response data (n={stats.missingScoreSessions.length})</span>
                 <Button
                   variant="ghost"
                   size="sm"

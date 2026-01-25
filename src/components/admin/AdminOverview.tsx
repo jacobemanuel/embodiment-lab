@@ -506,11 +506,19 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         tutorDialogueRows = rawTutorDialogueRows;
       }
 
-      // Fetch questions with correct answers
-      const { data: questionsData } = await supabase
-        .from('study_questions')
-        .select('question_id, question_text, correct_answer, question_type')
-        .eq('is_active', true);
+      // Fetch questions with correct answers (include inactive if they appear in responses)
+      const responseQuestionIds = Array.from(
+        new Set([
+          ...preTestResponses.map((r) => r.question_id),
+          ...postTestResponses.map((r) => r.question_id),
+        ])
+      );
+      const { data: questionsData } = responseQuestionIds.length > 0
+        ? await supabase
+            .from('study_questions')
+            .select('question_id, question_text, correct_answer, question_type')
+            .in('question_id', responseQuestionIds)
+        : { data: [] };
 
       const questionMap = new Map(questionsData?.map(q => [q.question_id, q]) || []);
       
@@ -826,7 +834,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           sessionPreScores[r.session_id].total++;
           
           const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
-          const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
+          const userAnswers = String(r.answer ?? '')
+            .split('|||')
+            .map((a: string) => a.trim().toLowerCase())
+            .filter((a: string) => a.length > 0);
           
           const allCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca));
           const noExtra = userAnswers.every((ua: string) => correctAnswers.includes(ua));
@@ -840,24 +851,25 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       // POST-TEST scoring (knowledge questions)
       const sessionPostScores: Record<string, { correct: number; total: number }> = {};
       postTestResponses.forEach(r => {
-        if (r.question_id.startsWith('knowledge-')) {
-          const question = questionMap.get(r.question_id);
-          if (question?.correct_answer) {
-            if (!sessionPostScores[r.session_id]) {
-              sessionPostScores[r.session_id] = { correct: 0, total: 0 };
-            }
-            sessionPostScores[r.session_id].total++;
-            
-            const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
-            const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
-            
-            const allCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca));
-            const noExtra = userAnswers.every((ua: string) => correctAnswers.includes(ua));
-            
-            if (allCorrect && noExtra) {
-              sessionPostScores[r.session_id].correct++;
-            }
-          }
+        const question = questionMap.get(r.question_id);
+        if (question?.question_type !== 'post_test') return;
+        if (!question.correct_answer) return;
+        if (!sessionPostScores[r.session_id]) {
+          sessionPostScores[r.session_id] = { correct: 0, total: 0 };
+        }
+        sessionPostScores[r.session_id].total++;
+        
+        const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
+        const userAnswers = String(r.answer ?? '')
+          .split('|||')
+          .map((a: string) => a.trim().toLowerCase())
+          .filter((a: string) => a.length > 0);
+        
+        const allCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca));
+        const noExtra = userAnswers.every((ua: string) => correctAnswers.includes(ua));
+        
+        if (allCorrect && noExtra) {
+          sessionPostScores[r.session_id].correct++;
         }
       });
 

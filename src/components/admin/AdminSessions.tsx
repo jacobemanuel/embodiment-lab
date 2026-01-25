@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -70,25 +70,6 @@ interface SessionDataStatus {
   hasPostTest: boolean;
   hasDialogue: boolean;
   isComplete: boolean;
-  preTestExpected?: number | null;
-  preTestAnswered?: number;
-  postTestExpected?: number | null;
-  postTestAnswered?: number;
-}
-
-interface StudyQuestion {
-  question_id: string;
-  question_text: string;
-  question_type: string;
-  is_active?: boolean;
-  created_at?: string | null;
-  mode_specific?: string | null;
-}
-
-interface BackfillAnswer {
-  question_id: string;
-  question_text: string;
-  answer: string;
 }
 
 type AvatarGroup = {
@@ -197,298 +178,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
   const [restoringSessionId, setRestoringSessionId] = useState<string | null>(null);
   const [autoDistributeSlides, setAutoDistributeSlides] = useState(false);
   const [hasLocalOverride, setHasLocalOverride] = useState(false);
-  const [questionBank, setQuestionBank] = useState<StudyQuestion[]>([]);
-  const [isBackfillOpen, setIsBackfillOpen] = useState(false);
-  const [backfillPreTest, setBackfillPreTest] = useState<BackfillAnswer[]>([]);
-  const [backfillPostTest, setBackfillPostTest] = useState<BackfillAnswer[]>([]);
-  const [isBackfillSaving, setIsBackfillSaving] = useState(false);
-  const [isBackfillTiming, setIsBackfillTiming] = useState(false);
-  const [startBackfillAtZero, setStartBackfillAtZero] = useState(false);
   const itemsPerPage = 10;
-  const pendingStatusRefresh = useRef<Set<string>>(new Set());
-  const pendingStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sessionsRef = useRef<Session[]>([]);
-
-  const mergeSessionDataStatus = (sessionId: string, patch: Partial<SessionDataStatus>) => {
-    setSessionDataStatuses((prev) => {
-      const next = new Map(prev);
-      const current = next.get(sessionId) || {
-        hasDemographics: false,
-        hasPreTest: false,
-        hasPostTest: false,
-        hasDialogue: false,
-        isComplete: false,
-        preTestExpected: null,
-        preTestAnswered: 0,
-        postTestExpected: null,
-        postTestAnswered: 0,
-      };
-      const updated = { ...current, ...patch };
-      updated.isComplete = updated.hasDemographics && updated.hasPreTest && updated.hasPostTest;
-      next.set(sessionId, updated);
-      return next;
-    });
-  };
-
-  type SessionQuestionContext = {
-    mode?: string;
-    modes_used?: string[] | null;
-    started_at?: string | null;
-    created_at?: string | null;
-    completed_at?: string | null;
-  };
-
-  const hasMeaningfulAnswer = (answer: unknown) =>
-    typeof answer === 'string' ? answer.trim() !== '' : answer !== null && answer !== undefined;
-
-  const resolveSessionModes = (session: SessionQuestionContext) => {
-    if (session.mode) return new Set([session.mode]);
-    const modes = session.modes_used && session.modes_used.length > 0
-      ? session.modes_used
-      : [];
-    return new Set(modes);
-  };
-
-  const resolveSessionCutoff = (session: SessionQuestionContext) => {
-    const raw = session.started_at || session.created_at || session.completed_at;
-    if (!raw) return null;
-    const value = Date.parse(raw);
-    return Number.isNaN(value) ? null : value;
-  };
-
-  const filterQuestionsForSession = (
-    questions: StudyQuestion[],
-    session: SessionQuestionContext,
-    questionType: 'pre_test' | 'post_test' | 'demographic'
-  ) => {
-    const cutoff = resolveSessionCutoff(session);
-    const sessionModes = resolveSessionModes(session);
-    return questions.filter((question) => {
-      if (question.question_type !== questionType) return false;
-      if (question.is_active === false) return false;
-      const modeSpecific = question.mode_specific || 'both';
-      if (modeSpecific !== 'both' && !sessionModes.has(modeSpecific)) return false;
-      if (cutoff && question.created_at) {
-        const questionTime = Date.parse(question.created_at);
-        if (!Number.isNaN(questionTime) && questionTime > cutoff) return false;
-      }
-      return true;
-    });
-  };
-
-  const computeResponseCounts = (
-    session: SessionQuestionContext,
-    questions: StudyQuestion[],
-    questionType: 'pre_test' | 'post_test',
-    responses: Array<{ question_id: string; answer?: string | null }>
-  ) => {
-    if (!questions.length) {
-      const answered = responses.filter((r) => hasMeaningfulAnswer(r.answer)).length;
-      return { expected: 0, answered, has: answered > 0 };
-    }
-    const expectedQuestions = filterQuestionsForSession(questions, session, questionType);
-    if (expectedQuestions.length === 0) {
-      return { expected: 0, answered: 0, has: true };
-    }
-    const expectedIds = new Set(expectedQuestions.map((q) => q.question_id));
-    const answeredIds = new Set(
-      responses
-        .filter((r) => hasMeaningfulAnswer(r.answer) && expectedIds.has(r.question_id))
-        .map((r) => r.question_id)
-    );
-    const answered = answeredIds.size;
-    return { expected: expectedIds.size, answered, has: answered >= expectedIds.size };
-  };
-
-  const loadQuestionBank = useCallback(async (): Promise<StudyQuestion[]> => {
-    try {
-      const { data, error } = await supabase
-        .from('study_questions')
-        .select('question_id, question_text, question_type, is_active, created_at, mode_specific')
-        .eq('is_active', true);
-      if (error) throw error;
-      const rows = (data || []) as StudyQuestion[];
-      setQuestionBank(rows);
-      return rows;
-    } catch (error) {
-      console.error('Failed to load questions:', error);
-      return [];
-    }
-  }, []);
-
-  const buildMissingBackfill = (
-    draft: SessionEditDraft,
-    questions: StudyQuestion[],
-    sessionContext?: SessionQuestionContext | null
-  ) => {
-    const preQuestions = sessionContext
-      ? filterQuestionsForSession(questions, sessionContext, 'pre_test')
-      : questions.filter((q) => q.question_type === 'pre_test');
-    const postQuestions = sessionContext
-      ? filterQuestionsForSession(questions, sessionContext, 'post_test')
-      : questions.filter((q) => q.question_type === 'post_test');
-    const existingPre = new Set(draft.preTest.map((r) => r.question_id));
-    const existingPost = new Set(draft.postTest.map((r) => r.question_id));
-
-    const missingPre = preQuestions
-      .filter((q) => !existingPre.has(q.question_id))
-      .map((q) => ({
-        question_id: q.question_id,
-        question_text: q.question_text,
-        answer: '',
-      }));
-
-    const missingPost = postQuestions
-      .filter((q) => !existingPost.has(q.question_id))
-      .map((q) => ({
-        question_id: q.question_id,
-        question_text: q.question_text,
-        answer: '',
-      }));
-
-    return { missingPre, missingPost };
-  };
-
-  const openBackfillDialog = async () => {
-    if (!isOwner || !editDraft) return;
-    const questions = questionBank.length > 0 ? questionBank : await loadQuestionBank();
-    const sessionContext: SessionQuestionContext | null = selectedSession
-      ? {
-          mode: selectedSession.mode,
-          modes_used: selectedSession.modes_used,
-          started_at: selectedSession.started_at,
-          created_at: selectedSession.created_at,
-          completed_at: selectedSession.completed_at,
-        }
-      : editDraft?.session
-        ? {
-            mode: editDraft.session.mode,
-            modes_used: editDraft.session.modes_used,
-            started_at: editDraft.session.started_at,
-          }
-        : null;
-    const { missingPre, missingPost } = buildMissingBackfill(editDraft, questions, sessionContext);
-    setBackfillPreTest(missingPre);
-    setBackfillPostTest(missingPost);
-    setIsBackfillOpen(true);
-  };
-
-  const submitBackfillResponses = async () => {
-    if (!selectedSession) return;
-    const preToInsert = backfillPreTest
-      .filter((entry) => entry.answer.trim() !== '')
-      .map((entry) => ({
-        question_id: entry.question_id,
-        answer: entry.answer,
-        source: 'owner_backfill',
-        is_imputed: true,
-      }));
-    const postToInsert = backfillPostTest
-      .filter((entry) => entry.answer.trim() !== '')
-      .map((entry) => ({
-        question_id: entry.question_id,
-        answer: entry.answer,
-        source: 'owner_backfill',
-        is_imputed: true,
-      }));
-
-    if (preToInsert.length === 0 && postToInsert.length === 0) {
-      toast.error('Enter at least one missing response before saving.');
-      return;
-    }
-
-    setIsBackfillSaving(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('owner-edit-session', {
-        body: {
-          sessionId: selectedSession.id,
-          updates: {
-            insertPreTest: preToInsert,
-            insertPostTest: postToInsert,
-          },
-        },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      await fetchSessions();
-      await fetchSessionDetails(selectedSession);
-      setIsBackfillOpen(false);
-      toast.success('Missing responses saved');
-    } catch (error) {
-      console.error('Backfill save failed:', error);
-      toast.error('Failed to save missing responses');
-    } finally {
-      setIsBackfillSaving(false);
-    }
-  };
-
-  const backfillAvatarTiming = async () => {
-    if (!isOwner || !selectedSession || !editDraft) return;
-    if (!sessionDurationSeconds) {
-      toast.error('Session duration is required to backfill timing.');
-      return;
-    }
-    if (!activeSlides || activeSlides.length === 0) {
-      toast.error('No active slides available for timing backfill.');
-      return;
-    }
-
-    const existingSlideIds = new Set(
-      editDraft.avatarTimeTracking
-        .filter((entry) => !isPageId(entry.slide_id))
-        .map((entry) => entry.slide_id)
-    );
-    const missingSlides = activeSlides.filter((slide) => !existingSlideIds.has(slide.slide_id));
-    if (missingSlides.length === 0) {
-      toast('All active slides already have timing entries.');
-      return;
-    }
-
-    const existingTotal = editDraft.avatarTimeTracking
-      .filter((entry) => !isPageId(entry.slide_id))
-      .reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0);
-    const remaining = Math.max(0, sessionDurationSeconds - existingTotal);
-    const durations = startBackfillAtZero
-      ? new Array(missingSlides.length).fill(0)
-      : distributeSlideDurations(missingSlides.length, remaining || sessionDurationSeconds);
-
-    const modeHint = editDraft.session.mode || 'avatar';
-    const startedAt = editDraft.session.started_at || new Date().toISOString();
-
-    const entries = missingSlides.map((slide, index) => ({
-      slide_id: slide.slide_id,
-      slide_title: slide.title,
-      duration_seconds: durations[index] ?? 0,
-      started_at: startedAt,
-      mode: modeHint,
-      source: 'owner_imputed',
-      is_imputed: true,
-    }));
-
-    setIsBackfillTiming(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('owner-edit-session', {
-        body: {
-          sessionId: selectedSession.id,
-          updates: {
-            insertAvatarTimeTracking: entries,
-          },
-        },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      await fetchSessions();
-      await fetchSessionDetails(selectedSession);
-      toast.success('Slide timing backfilled');
-    } catch (error) {
-      console.error('Backfill timing failed:', error);
-      toast.error('Failed to backfill slide timing');
-    } finally {
-      setIsBackfillTiming(false);
-    }
-  };
 
   const loadOwnerOverrides = () => {
     if (!isOwner || typeof window === 'undefined') return {};
@@ -636,113 +326,6 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     dialogueTurns: Object.fromEntries(draft.dialogueTurns.map((t) => [t.id, t.content])),
   });
 
-  // Fetch data completeness for sessions
-  const fetchDataStatuses = useCallback(
-    async (sessionInput: Session[] | string[], options?: { merge?: boolean }) => {
-      if (!sessionInput || sessionInput.length === 0) return;
-      const sessionList = typeof sessionInput[0] === 'string'
-        ? sessionsRef.current.filter((session) => (sessionInput as string[]).includes(session.id))
-        : (sessionInput as Session[]);
-      if (sessionList.length === 0) return;
-      const sessionIds = sessionList.map((session) => session.id);
-      try {
-        const canUseTutorDialogue = await canUseTutorDialogueTable();
-        const questions = questionBank.length > 0 ? questionBank : await loadQuestionBank();
-        const hasQuestionBank = questions.length > 0;
-        const tutorDialogueQuery = canUseTutorDialogue
-          ? (supabase.from('tutor_dialogue_turns' as any) as any)
-              .select('session_id')
-              .in('session_id', sessionIds)
-          : Promise.resolve({ data: [] as any[] });
-
-        // Fetch counts for each data type
-        const [demoRes, oldDemoRes, preRes, postRes, scenarioRes, tutorRes] = await Promise.all([
-          supabase.from('demographic_responses').select('session_id, question_id, answer').in('session_id', sessionIds),
-          supabase.from('demographics').select('session_id').in('session_id', sessionIds),
-          supabase.from('pre_test_responses').select('session_id, question_id, answer').in('session_id', sessionIds),
-          supabase.from('post_test_responses').select('session_id, question_id, answer').in('session_id', sessionIds),
-          supabase.from('scenarios').select('session_id').in('session_id', sessionIds),
-          tutorDialogueQuery,
-        ]);
-
-        const demoSessions = new Set((demoRes.data || []).map(d => d.session_id));
-        (oldDemoRes.data || []).forEach((d: any) => demoSessions.add(d.session_id));
-        const scenarioSessions = new Set((scenarioRes.data || []).map(d => d.session_id));
-        const tutorSessions = new Set(((tutorRes.data || []) as any[]).map((d: any) => d.session_id));
-
-        const preResponsesBySession = new Map<string, Array<{ question_id: string; answer?: string | null }>>();
-        (preRes.data || []).forEach((row: any) => {
-          const list = preResponsesBySession.get(row.session_id) || [];
-          list.push({ question_id: row.question_id, answer: row.answer });
-          preResponsesBySession.set(row.session_id, list);
-        });
-
-        const postResponsesBySession = new Map<string, Array<{ question_id: string; answer?: string | null }>>();
-        (postRes.data || []).forEach((row: any) => {
-          if (isTelemetryMetaQuestionId(row.question_id)) return;
-          const list = postResponsesBySession.get(row.session_id) || [];
-          list.push({ question_id: row.question_id, answer: row.answer });
-          postResponsesBySession.set(row.session_id, list);
-        });
-
-        const statusMap = new Map<string, SessionDataStatus>();
-        sessionList.forEach((session) => {
-          const hasDemographics = demoSessions.has(session.id);
-          const preCounts = computeResponseCounts(
-            {
-              mode: session.mode,
-              modes_used: session.modes_used,
-              started_at: session.started_at,
-              created_at: session.created_at,
-              completed_at: session.completed_at,
-            },
-            questions,
-            'pre_test',
-            preResponsesBySession.get(session.id) || []
-          );
-          const postCounts = computeResponseCounts(
-            {
-              mode: session.mode,
-              modes_used: session.modes_used,
-              started_at: session.started_at,
-              created_at: session.created_at,
-              completed_at: session.completed_at,
-            },
-            questions,
-            'post_test',
-            postResponsesBySession.get(session.id) || []
-          );
-          const hasPreTest = hasQuestionBank ? preCounts.has : preCounts.answered > 0;
-          const hasPostTest = hasQuestionBank ? postCounts.has : postCounts.answered > 0;
-          const hasDialogue = scenarioSessions.has(session.id) || tutorSessions.has(session.id);
-          statusMap.set(session.id, {
-            hasDemographics,
-            hasPreTest,
-            hasPostTest,
-            hasDialogue,
-            isComplete: hasDemographics && hasPreTest && hasPostTest,
-            preTestExpected: hasQuestionBank ? preCounts.expected : null,
-            preTestAnswered: preCounts.answered,
-            postTestExpected: hasQuestionBank ? postCounts.expected : null,
-            postTestAnswered: postCounts.answered,
-          });
-        });
-
-        setSessionDataStatuses((prev) => {
-          if (!options?.merge) return statusMap;
-          const next = new Map(prev);
-          statusMap.forEach((value, key) => {
-            next.set(key, value);
-          });
-          return next;
-        });
-      } catch (error) {
-        console.error('Error fetching data statuses:', error);
-      }
-    },
-    [loadQuestionBank, questionBank]
-  );
-
   const fetchSessions = useCallback(async () => {
     setIsRefreshing(true);
     try {
@@ -766,11 +349,10 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         applySessionOverride(session, overrides[session.id])
       );
       setSessions(resolvedSessions);
-      sessionsRef.current = resolvedSessions;
       
       // Fetch data completeness for all sessions
       if (data && data.length > 0) {
-        await fetchDataStatuses(resolvedSessions);
+        await fetchDataStatuses(data.map(s => s.id));
       }
     } catch (error) {
       console.error('Error fetching sessions:', error);
@@ -778,43 +360,56 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [startDate, endDate, fetchDataStatuses]);
+  }, [startDate, endDate]);
 
-  const queueStatusRefresh = useCallback(
-    (sessionId?: string | null) => {
-      if (!sessionId) return;
-      if (!sessionsRef.current.some((session) => session.id === sessionId)) return;
-      pendingStatusRefresh.current.add(sessionId);
-      if (pendingStatusTimer.current) return;
-      pendingStatusTimer.current = setTimeout(() => {
-        const ids = Array.from(pendingStatusRefresh.current);
-        pendingStatusRefresh.current.clear();
-        pendingStatusTimer.current = null;
-        if (ids.length > 0) {
-          fetchDataStatuses(ids, { merge: true });
-        }
-      }, 300);
-    },
-    [fetchDataStatuses]
-  );
+  // Fetch data completeness for sessions
+  const fetchDataStatuses = async (sessionIds: string[]) => {
+    try {
+      const canUseTutorDialogue = await canUseTutorDialogueTable();
+      const tutorDialogueQuery = canUseTutorDialogue
+        ? (supabase.from('tutor_dialogue_turns' as any) as any)
+            .select('session_id')
+            .in('session_id', sessionIds)
+        : Promise.resolve({ data: [] as any[] });
+
+      // Fetch counts for each data type
+      const [demoRes, preRes, postRes, scenarioRes, tutorRes] = await Promise.all([
+        supabase.from('demographic_responses').select('session_id').in('session_id', sessionIds),
+        supabase.from('pre_test_responses').select('session_id').in('session_id', sessionIds),
+        supabase.from('post_test_responses').select('session_id').in('session_id', sessionIds),
+        supabase.from('scenarios').select('session_id').in('session_id', sessionIds),
+        tutorDialogueQuery,
+      ]);
+
+      const demoSessions = new Set((demoRes.data || []).map(d => d.session_id));
+      const preSessions = new Set((preRes.data || []).map(d => d.session_id));
+      const postSessions = new Set((postRes.data || []).map(d => d.session_id));
+      const scenarioSessions = new Set((scenarioRes.data || []).map(d => d.session_id));
+      const tutorSessions = new Set(((tutorRes.data || []) as any[]).map((d: any) => d.session_id));
+
+      const statusMap = new Map<string, SessionDataStatus>();
+      sessionIds.forEach(id => {
+        const hasDemographics = demoSessions.has(id);
+        const hasPreTest = preSessions.has(id);
+        const hasPostTest = postSessions.has(id);
+        const hasDialogue = scenarioSessions.has(id) || tutorSessions.has(id);
+        statusMap.set(id, {
+          hasDemographics,
+          hasPreTest,
+          hasPostTest,
+          hasDialogue,
+          isComplete: hasDemographics && hasPreTest && hasPostTest,
+        });
+      });
+      setSessionDataStatuses(statusMap);
+    } catch (error) {
+      console.error('Error fetching data statuses:', error);
+    }
+  };
 
   useEffect(() => {
     fetchSessions();
   }, [fetchSessions]);
-
-  useEffect(() => {
-    if (questionBank.length > 0) return;
-    loadQuestionBank();
-  }, [loadQuestionBank, questionBank.length]);
-
-  useEffect(() => {
-    sessionsRef.current = sessions;
-  }, [sessions]);
-
-  useEffect(() => {
-    if (sessions.length === 0 || questionBank.length === 0) return;
-    fetchDataStatuses(sessions);
-  }, [fetchDataStatuses, questionBank.length, sessions]);
 
   // Real-time subscription for sessions
   useEffect(() => {
@@ -833,62 +428,6 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       supabase.removeChannel(channel);
     };
   }, [fetchSessions]);
-
-  useEffect(() => {
-    let isActive = true;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-
-    const setup = async () => {
-      const canUseTutorDialogue = await canUseTutorDialogueTable();
-      if (!isActive) return;
-
-      let nextChannel = supabase
-        .channel('sessions-data-statuses')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'demographic_responses' },
-          (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => queueStatusRefresh((payload.new?.session_id ?? payload.old?.session_id) as string | null)
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'pre_test_responses' },
-          (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => queueStatusRefresh((payload.new?.session_id ?? payload.old?.session_id) as string | null)
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'post_test_responses' },
-          (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => queueStatusRefresh((payload.new?.session_id ?? payload.old?.session_id) as string | null)
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'scenarios' },
-          (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => queueStatusRefresh((payload.new?.session_id ?? payload.old?.session_id) as string | null)
-        );
-
-      if (canUseTutorDialogue) {
-        nextChannel = nextChannel.on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'tutor_dialogue_turns' },
-          (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => queueStatusRefresh((payload.new?.session_id ?? payload.old?.session_id) as string | null)
-        );
-      }
-
-      channel = nextChannel.subscribe();
-    };
-
-    setup();
-
-    return () => {
-      isActive = false;
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-      if (pendingStatusTimer.current) {
-        clearTimeout(pendingStatusTimer.current);
-        pendingStatusTimer.current = null;
-      }
-    };
-  }, [queueStatusRefresh]);
 
   // Auto-refresh every 30 seconds if enabled
   useEffect(() => {
@@ -967,8 +506,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
       const { data: activeSlides } = await supabase
         .from('study_slides')
-        .select('slide_id, title, is_active')
-        .eq('is_active', true);
+        .select('slide_id, title, sort_order, is_active')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
 
       const rawPreTest = preTest || [];
       const rawPostTest = postTest || [];
@@ -1101,49 +641,6 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         },
         sessionOverride
       );
-
-      const preCounts = questionBank.length
-        ? computeResponseCounts(
-            {
-              mode: resolvedSession.mode,
-              modes_used: resolvedSession.modes_used,
-              started_at: resolvedSession.started_at,
-              created_at: resolvedSession.created_at,
-              completed_at: resolvedSession.completed_at,
-            },
-            questionBank,
-            'pre_test',
-            resolvedDetails.preTest || []
-          )
-        : { expected: 0, answered: resolvedDetails.preTest?.length || 0, has: (resolvedDetails.preTest?.length || 0) > 0 };
-      const postCounts = questionBank.length
-        ? computeResponseCounts(
-            {
-              mode: resolvedSession.mode,
-              modes_used: resolvedSession.modes_used,
-              started_at: resolvedSession.started_at,
-              created_at: resolvedSession.created_at,
-              completed_at: resolvedSession.completed_at,
-            },
-            questionBank,
-            'post_test',
-            resolvedDetails.postTest || []
-          )
-        : { expected: 0, answered: resolvedDetails.postTest?.length || 0, has: (resolvedDetails.postTest?.length || 0) > 0 };
-
-      mergeSessionDataStatus(session.id, {
-        hasDemographics:
-          (resolvedDetails.demographicResponses?.length || 0) > 0 || Boolean(resolvedDetails.demographics),
-        hasPreTest: questionBank.length ? preCounts.has : preCounts.answered > 0,
-        hasPostTest: questionBank.length ? postCounts.has : postCounts.answered > 0,
-        hasDialogue:
-          (resolvedDetails.dialogueTurns?.length || 0) > 0 ||
-          (resolvedDetails.tutorDialogueTurns?.length || 0) > 0,
-        preTestExpected: questionBank.length ? preCounts.expected : null,
-        preTestAnswered: preCounts.answered,
-        postTestExpected: questionBank.length ? postCounts.expected : null,
-        postTestAnswered: postCounts.answered,
-      });
 
       setSelectedSession(resolvedSession);
       setSessionDetails(resolvedDetails);
@@ -1292,45 +789,6 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         duration_seconds: durations[index],
       })),
     };
-  };
-
-  const distributeSlideDurations = (slideCount: number, totalSeconds: number) => {
-    if (slideCount <= 0) return [] as number[];
-    const maxTotal = slideCount * MAX_AVATAR_SLIDE_SECONDS;
-    const targetTotal = Math.min(totalSeconds, maxTotal);
-    if (targetTotal <= 0) return new Array(slideCount).fill(0);
-
-    const weights = Array.from({ length: slideCount }, () => Math.random() + 0.2);
-    const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
-    const durations = weights.map((weight) =>
-      Math.min(
-        MAX_AVATAR_SLIDE_SECONDS,
-        Math.max(0, Math.round((weight / weightSum) * targetTotal))
-      )
-    );
-    let currentTotal = durations.reduce((sum, value) => sum + value, 0);
-
-    while (currentTotal !== targetTotal) {
-      if (currentTotal < targetTotal) {
-        const candidates = durations
-          .map((value, index) => ({ value, index }))
-          .filter((entry) => entry.value < MAX_AVATAR_SLIDE_SECONDS);
-        if (candidates.length === 0) break;
-        const pick = candidates[Math.floor(Math.random() * candidates.length)];
-        durations[pick.index] += 1;
-        currentTotal += 1;
-      } else {
-        const candidates = durations
-          .map((value, index) => ({ value, index }))
-          .filter((entry) => entry.value > 0);
-        if (candidates.length === 0) break;
-        const pick = candidates[Math.floor(Math.random() * candidates.length)];
-        durations[pick.index] -= 1;
-        currentTotal -= 1;
-      }
-    }
-
-    return durations;
   };
 
   const buildAvatarGroups = (
@@ -1550,9 +1008,6 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       toast.error('Editing is only enabled for sessions from 24 Dec 2025');
       return;
     }
-    if (isOwner && questionBank.length === 0) {
-      loadQuestionBank();
-    }
     setEditDraft(buildEditDraft(selectedSession, sessionDetails));
     setIsEditOpen(true);
   };
@@ -1681,17 +1136,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         )
       );
       if (sessionDetails) {
-        const nextDetails = applyDetailsOverride(sessionDetails, override);
-        setSessionDetails(nextDetails);
-        mergeSessionDataStatus(selectedSession.id, {
-          hasDemographics:
-            (nextDetails.demographicResponses?.length || 0) > 0 || Boolean(nextDetails.demographics),
-          hasPreTest: (nextDetails.preTest?.length || 0) > 0,
-          hasPostTest: (nextDetails.postTest?.length || 0) > 0,
-          hasDialogue:
-            (nextDetails.dialogueTurns?.length || 0) > 0 ||
-            (nextDetails.tutorDialogueTurns?.length || 0) > 0,
-        });
+        setSessionDetails(applyDetailsOverride(sessionDetails, override));
       }
 
       toast('Saved locally on this device (Supabase not available).');
@@ -2620,26 +2065,6 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
   }
 
   const sessionDurationSeconds = editDraft ? getSessionDurationSeconds(editDraft) : null;
-  const missingBackfill =
-    editDraft && questionBank.length > 0
-      ? buildMissingBackfill(
-          editDraft,
-          questionBank,
-          selectedSession
-            ? {
-                mode: selectedSession.mode,
-                modes_used: selectedSession.modes_used,
-                started_at: selectedSession.started_at,
-                created_at: selectedSession.created_at,
-                completed_at: selectedSession.completed_at,
-              }
-            : {
-                mode: editDraft.session.mode,
-                modes_used: editDraft.session.modes_used,
-                started_at: editDraft.session.started_at,
-              }
-        )
-      : { missingPre: [] as BackfillAnswer[], missingPost: [] as BackfillAnswer[] };
   const slideOrder = new Map<string, number>();
   activeSlides.forEach((slide, index) => {
     slideOrder.set(slide.slide_id, slide.sort_order ?? index);
@@ -2906,40 +2331,6 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
                   // Get data status for this session
                   const dataStatus = sessionDataStatuses.get(session.id);
-                  const preExpected = dataStatus?.preTestExpected;
-                  const postExpected = dataStatus?.postTestExpected;
-                  const preAnswered = dataStatus?.preTestAnswered ?? 0;
-                  const postAnswered = dataStatus?.postTestAnswered ?? 0;
-                  const preStatusLabel = !dataStatus
-                    ? 'Loading'
-                    : preExpected === 0
-                      ? 'Not required'
-                      : dataStatus.hasPreTest
-                        ? 'Yes'
-                        : 'Missing';
-                  const postStatusLabel = !dataStatus
-                    ? 'Loading'
-                    : postExpected === 0
-                      ? 'Not required'
-                      : dataStatus.hasPostTest
-                        ? 'Yes'
-                        : 'Missing';
-                  const preCountLabel =
-                    preExpected === 0
-                      ? ''
-                      : preExpected != null
-                        ? `${preAnswered}/${preExpected}`
-                        : preAnswered
-                          ? `${preAnswered} answered`
-                          : '';
-                  const postCountLabel =
-                    postExpected === 0
-                      ? ''
-                      : postExpected != null
-                        ? `${postAnswered}/${postExpected}`
-                        : postAnswered
-                          ? `${postAnswered} answered`
-                          : '';
 
                   return (
                     <TableRow
@@ -3000,12 +2391,10 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                                   Demographics: {dataStatus?.hasDemographics ? 'Yes' : 'Missing'}
                                 </p>
                                 <p className={dataStatus?.hasPreTest ? 'text-green-400' : 'text-red-400'}>
-                                  Pre-test: {preStatusLabel}
-                                  {preCountLabel ? ` (${preCountLabel})` : ''}
+                                  Pre-test: {dataStatus?.hasPreTest ? 'Yes' : 'Missing'}
                                 </p>
                                 <p className={dataStatus?.hasPostTest ? 'text-green-400' : 'text-red-400'}>
-                                  Post-test: {postStatusLabel}
-                                  {postCountLabel ? ` (${postCountLabel})` : ''}
+                                  Post-test: {dataStatus?.hasPostTest ? 'Yes' : 'Missing'}
                                 </p>
                                 <p className={dataStatus?.hasDialogue ? 'text-green-400' : 'text-yellow-400'}>
                                   Dialogue: {dataStatus?.hasDialogue ? 'Yes' : 'None'}
@@ -3841,28 +3230,6 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                   )}
                 </div>
 
-                {isOwner && (
-                  <div className="space-y-3 bg-card/60 p-4 rounded border border-border/60">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-white">Owner Validation Tools</h3>
-                      <Badge variant="outline" className="border-amber-500 text-amber-300">
-                        Owner only
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground/80">
-                      Use only when you have the participant’s actual answers. Backfilled responses are marked as owner-provided.
-                    </p>
-                    <div className="flex flex-wrap gap-3 items-center">
-                      <Button size="sm" variant="outline" className="border-border" onClick={openBackfillDialog}>
-                        Backfill missing pre/post answers
-                      </Button>
-                      <span className="text-xs text-muted-foreground/70">
-                        Missing pre-test: {missingBackfill.missingPre.length} • Missing post-test: {missingBackfill.missingPost.length}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-white">Scenarios</h3>
                   {editDraft.scenarios.length === 0 ? (
@@ -4005,29 +3372,6 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                       >
                         Auto-distribute slide time
                       </Button>
-                      {isOwner && (
-                        <div className="pt-2 border-t border-border/50 w-full space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Checkbox
-                              checked={startBackfillAtZero}
-                              onCheckedChange={(checked) => setStartBackfillAtZero(Boolean(checked))}
-                            />
-                            <span>Start backfill at 0s (manual fill)</span>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-border"
-                            disabled={!sessionDurationSeconds || isBackfillTiming}
-                            onClick={backfillAvatarTiming}
-                          >
-                            {isBackfillTiming ? 'Backfilling…' : 'Backfill missing slide timing'}
-                          </Button>
-                          <p className="text-[11px] text-muted-foreground/70">
-                            Creates owner-imputed timing rows for active slides without entries.
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </div>
                   {avatarGroupsForEdit.length === 0 ? (
@@ -4170,89 +3514,6 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
               </Button>
               <Button onClick={saveOwnerEdits} disabled={isSavingEdit}>
                 {isSavingEdit ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {isOwner && (
-        <Dialog open={isBackfillOpen} onOpenChange={setIsBackfillOpen}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-background border-border">
-            <DialogHeader>
-              <DialogTitle className="text-white">Backfill Missing Responses</DialogTitle>
-              <DialogDescription className="text-muted-foreground">
-                Owner-only backfill. Use only when you have the participant’s actual answers.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6">
-              {backfillPreTest.length === 0 && backfillPostTest.length === 0 && (
-                <div className="text-sm text-muted-foreground">
-                  No missing pre-test or post-test questions detected for this session.
-                </div>
-              )}
-
-              {backfillPreTest.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-white">
-                    Pre-test (missing {backfillPreTest.length})
-                  </h3>
-                  <div className="space-y-3">
-                    {backfillPreTest.map((entry, index) => (
-                      <div key={entry.question_id} className="bg-card/60 p-3 rounded space-y-2">
-                        <div className="text-xs text-muted-foreground">{entry.question_id}</div>
-                        <div className="text-sm text-foreground/80">{entry.question_text}</div>
-                        <Textarea
-                          value={entry.answer}
-                          onChange={(e) =>
-                            setBackfillPreTest((prev) =>
-                              prev.map((row, rowIndex) =>
-                                rowIndex === index ? { ...row, answer: e.target.value } : row
-                              )
-                            )
-                          }
-                          placeholder="Enter participant answer"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {backfillPostTest.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-white">
-                    Post-test (missing {backfillPostTest.length})
-                  </h3>
-                  <div className="space-y-3">
-                    {backfillPostTest.map((entry, index) => (
-                      <div key={entry.question_id} className="bg-card/60 p-3 rounded space-y-2">
-                        <div className="text-xs text-muted-foreground">{entry.question_id}</div>
-                        <div className="text-sm text-foreground/80">{entry.question_text}</div>
-                        <Textarea
-                          value={entry.answer}
-                          onChange={(e) =>
-                            setBackfillPostTest((prev) =>
-                              prev.map((row, rowIndex) =>
-                                rowIndex === index ? { ...row, answer: e.target.value } : row
-                              )
-                            )
-                          }
-                          placeholder="Enter participant answer"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setIsBackfillOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={submitBackfillResponses} disabled={isBackfillSaving}>
-                {isBackfillSaving ? 'Saving…' : 'Save responses'}
               </Button>
             </div>
           </DialogContent>

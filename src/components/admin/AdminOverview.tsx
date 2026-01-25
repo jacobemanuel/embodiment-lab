@@ -506,17 +506,30 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         tutorDialogueRows = rawTutorDialogueRows;
       }
 
-      // Fetch questions with correct answers
-      const { data: questionsData } = await supabase
-        .from('study_questions')
-        .select('question_id, question_text, correct_answer, question_type')
-        .eq('is_active', true);
+      // Fetch questions referenced by current responses (include inactive ones for scoring consistency)
+      const responseQuestionIds = Array.from(
+        new Set([
+          ...preTestResponses.map((r) => r.question_id),
+          ...postTestResponses.map((r) => r.question_id),
+        ])
+      );
+      const { data: questionsData } = responseQuestionIds.length > 0
+        ? await supabase
+            .from('study_questions')
+            .select('question_id, question_text, correct_answer, question_type, category')
+            .in('question_id', responseQuestionIds)
+        : { data: [] };
 
       const questionMap = new Map(questionsData?.map(q => [q.question_id, q]) || []);
       
       // Count missing correct answers
       const preTestQuestions = questionsData?.filter(q => q.question_type === 'pre_test') || [];
-      const postTestKnowledgeQuestions = questionsData?.filter(q => q.question_id.startsWith('knowledge-')) || [];
+      const postTestKnowledgeQuestions =
+        questionsData?.filter(
+          (q) =>
+            q.question_type === 'post_test' &&
+            (q.category === 'knowledge' || Boolean(q.correct_answer) || q.question_id.startsWith('knowledge-'))
+        ) || [];
       const missingPreTest = preTestQuestions.filter(q => !q.correct_answer).length;
       const missingPostTest = postTestKnowledgeQuestions.filter(q => !q.correct_answer).length;
 
@@ -840,24 +853,26 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       // POST-TEST scoring (knowledge questions)
       const sessionPostScores: Record<string, { correct: number; total: number }> = {};
       postTestResponses.forEach(r => {
-        if (r.question_id.startsWith('knowledge-')) {
-          const question = questionMap.get(r.question_id);
-          if (question?.correct_answer) {
-            if (!sessionPostScores[r.session_id]) {
-              sessionPostScores[r.session_id] = { correct: 0, total: 0 };
-            }
-            sessionPostScores[r.session_id].total++;
-            
-            const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
-            const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
-            
-            const allCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca));
-            const noExtra = userAnswers.every((ua: string) => correctAnswers.includes(ua));
-            
-            if (allCorrect && noExtra) {
-              sessionPostScores[r.session_id].correct++;
-            }
-          }
+        const question = questionMap.get(r.question_id);
+        if (question?.question_type !== 'post_test') return;
+        if (!(question.category === 'knowledge' || question.question_id.startsWith('knowledge-') || question.correct_answer)) return;
+        if (!question.correct_answer) return;
+        if (!sessionPostScores[r.session_id]) {
+          sessionPostScores[r.session_id] = { correct: 0, total: 0 };
+        }
+        sessionPostScores[r.session_id].total++;
+        
+        const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
+        const userAnswers = String(r.answer ?? '')
+          .split('|||')
+          .map((a: string) => a.trim().toLowerCase())
+          .filter((a: string) => a.length > 0);
+        
+        const allCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca));
+        const noExtra = userAnswers.every((ua: string) => correctAnswers.includes(ua));
+        
+        if (allCorrect && noExtra) {
+          sessionPostScores[r.session_id].correct++;
         }
       });
 
@@ -1090,27 +1105,28 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       // Post-test question analysis (knowledge questions only)
       const postTestQuestionStats: Record<string, { correct: number; total: number; text: string; hasCorrectAnswer: boolean }> = {};
       postTestResponses.forEach(r => {
-        if (r.question_id.startsWith('knowledge-')) {
-          const question = questionMap.get(r.question_id);
-          if (question) {
-            if (!postTestQuestionStats[r.question_id]) {
-              postTestQuestionStats[r.question_id] = { 
-                correct: 0, 
-                total: 0, 
-                text: question.question_text,
-                hasCorrectAnswer: !!question.correct_answer
-              };
-            }
-            postTestQuestionStats[r.question_id].total++;
-            
-            if (question.correct_answer) {
-              const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
-              const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
-              const isCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca)) && 
-                               userAnswers.every((ua: string) => correctAnswers.includes(ua));
-              if (isCorrect) postTestQuestionStats[r.question_id].correct++;
-            }
-          }
+        const question = questionMap.get(r.question_id);
+        if (!question || question.question_type !== 'post_test') return;
+        if (!(question.category === 'knowledge' || question.question_id.startsWith('knowledge-') || question.correct_answer)) return;
+        if (!postTestQuestionStats[r.question_id]) {
+          postTestQuestionStats[r.question_id] = {
+            correct: 0,
+            total: 0,
+            text: question.question_text,
+            hasCorrectAnswer: !!question.correct_answer,
+          };
+        }
+        postTestQuestionStats[r.question_id].total++;
+        
+        if (question.correct_answer) {
+          const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
+          const userAnswers = String(r.answer ?? '')
+            .split('|||')
+            .map((a: string) => a.trim().toLowerCase())
+            .filter((a: string) => a.length > 0);
+          const isCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca)) &&
+                           userAnswers.every((ua: string) => correctAnswers.includes(ua));
+          if (isCorrect) postTestQuestionStats[r.question_id].correct++;
         }
       });
 
@@ -3638,7 +3654,11 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                       <Info className="w-3 h-3 text-muted-foreground/70 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="text-xs">Which time-based metric best aligns with learning outcomes (may have different sample sizes)</p>
+                      <p className="text-xs">
+                        Compares correlations between time metrics and learning gain. "Strongest" means the highest
+                        absolute |r| among these metrics (relative comparison), even if the absolute strength is weak.
+                        Sample sizes can differ by metric.
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -3716,7 +3736,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 } else if (metricsWithData.length > 1) {
                   keyFinding = hasTie
                     ? 'Metrics show similar correlation strength with learning outcomes.'
-                    : `${strongestMetric?.label} shows stronger correlation (R²=${((strongestMetric?.corr.r2 || 0) * 100).toFixed(1)}%) with knowledge gain, explaining more variance in learning outcomes.`;
+                    : `${strongestMetric?.label} has the highest |r| among these metrics (R²=${((strongestMetric?.corr.r2 || 0) * 100).toFixed(1)}%), indicating the strongest relative association in this set.`;
                 }
 
                 return (
@@ -3734,7 +3754,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                               <div className={`w-2 h-2 rounded-full ${metric.dotClass}`} />
                               <span className="text-sm font-medium text-foreground/90">{metric.label}</span>
                               {isStrongest && !hasTie && (
-                                <Badge variant="outline" className={`text-[10px] ${metric.badgeClass}`}>Stronger</Badge>
+                                <Badge variant="outline" className={`text-[10px] ${metric.badgeClass}`}>Strongest (relative)</Badge>
                               )}
                             </div>
                             <div className="space-y-1 text-xs">

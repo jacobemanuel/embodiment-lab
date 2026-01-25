@@ -64,11 +64,10 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
 
   const fetchQuestionData = async () => {
     try {
-      // Only fetch ACTIVE questions - hidden/disabled questions should not appear in stats
+      // Fetch all questions referenced in responses so historical sessions remain accurate
       const { data } = await supabase
         .from('study_questions')
         .select('question_id, question_text, correct_answer, question_type, category, question_meta, sort_order, is_active')
-        .eq('is_active', true);
       
       const questions: Record<string, QuestionData> = {};
       data?.forEach(q => {

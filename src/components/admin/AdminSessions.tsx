@@ -967,8 +967,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
       const { data: activeSlides } = await supabase
         .from('study_slides')
-        .select('slide_id, title, is_active')
-        .eq('is_active', true);
+        .select('slide_id, title, sort_order, is_active')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
 
       const rawPreTest = preTest || [];
       const rawPostTest = postTest || [];

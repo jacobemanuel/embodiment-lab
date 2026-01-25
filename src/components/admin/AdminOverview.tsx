@@ -114,6 +114,7 @@ interface StudyStats {
   avatarTimeData: AvatarTimeData[];
   pageTimeData: AvatarTimeData[];
   knowledgeGain: KnowledgeGainData[];
+  missingScoreSessions: Array<{ sessionId: string; mode: string; reasons: string[] }>;
   avgPreScore: number;
   avgPostScore: number;
   avgGain: number;
@@ -187,6 +188,12 @@ const resolveSessionMode = (session: { modes_used?: string[] | null; mode?: stri
   if (modesUsed.includes('avatar')) return 'avatar';
   if (modesUsed.includes('text')) return 'text';
   return 'none';
+};
+
+const hasMeaningfulAnswer = (answer: unknown) => {
+  if (answer === null || answer === undefined) return false;
+  if (typeof answer === 'string') return answer.trim() !== '';
+  return true;
 };
 
 const isPageEntry = (entry: { slide_id?: string }) =>
@@ -312,6 +319,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
   const [activeSlideCount, setActiveSlideCount] = useState(0);
   const [includeFlagged, setIncludeFlagged] = useState(false);
   const [includeImputed, setIncludeImputed] = useState(true);
+  const [showMissingScores, setShowMissingScores] = useState(false);
   const [likertView, setLikertView] = useState<'overall' | 'text' | 'avatar' | 'both'>('overall');
 
   const fetchStats = useCallback(async () => {
@@ -909,6 +917,54 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         }
       });
 
+      const preAnswerCountBySession = new Map<string, number>();
+      preTestResponses.forEach((row) => {
+        if (!hasMeaningfulAnswer(row.answer)) return;
+        preAnswerCountBySession.set(
+          row.session_id,
+          (preAnswerCountBySession.get(row.session_id) || 0) + 1
+        );
+      });
+
+      const postAnswerCountBySession = new Map<string, number>();
+      postTestResponses.forEach((row) => {
+        if (isTelemetryMetaQuestionId(row.question_id)) return;
+        if (!hasMeaningfulAnswer(row.answer)) return;
+        postAnswerCountBySession.set(
+          row.session_id,
+          (postAnswerCountBySession.get(row.session_id) || 0) + 1
+        );
+      });
+
+      const missingScoreSessions = sessionsToAnalyze.flatMap((session) => {
+        const preScores = sessionPreScores[session.id];
+        const postScores = sessionPostScores[session.id];
+        const preTotal = preScores?.total ?? 0;
+        const postTotal = postScores?.total ?? 0;
+
+        if (preTotal > 0 && postTotal > 0) return [];
+
+        const reasons: string[] = [];
+        const preAnswers = preAnswerCountBySession.get(session.id) || 0;
+        const postAnswers = postAnswerCountBySession.get(session.id) || 0;
+
+        if (preTotal === 0) {
+          reasons.push(preAnswers === 0 ? 'No pre-test answers' : 'Pre-test answers not scorable');
+        }
+        if (postTotal === 0) {
+          reasons.push(postAnswers === 0 ? 'No post-test answers' : 'Post-test answers not scorable');
+        }
+
+        if (reasons.length === 0) return [];
+        return [
+          {
+            sessionId: session.session_id,
+            mode: resolveSessionMode(session),
+            reasons,
+          },
+        ];
+      });
+
       // Calculate averages
       let avgPreScore = 0, avgPostScore = 0, avgGain = 0;
       if (knowledgeGain.length > 0) {
@@ -1304,6 +1360,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         avatarTimeData,
         pageTimeData: pageTimeEntries,
         knowledgeGain,
+        missingScoreSessions,
         avgPreScore,
         avgPostScore,
         avgGain,
@@ -2887,14 +2944,40 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           </div>
           <CardDescription className="text-muted-foreground">
             Key metrics for {stats.rawSessions.length} sessions in selected range
-            {stats.knowledgeGain.length < stats.rawSessions.length && (
-              <span className="text-amber-400"> • {stats.rawSessions.length - stats.knowledgeGain.length} sessions missing score data</span>
+            {stats.missingScoreSessions.length > 0 && (
+              <span className="text-amber-400"> • {stats.missingScoreSessions.length} sessions missing score data</span>
             )}
           </CardDescription>
           <div className="mt-1 text-xs text-muted-foreground/70">
             Sample sizes: Pre/Post/Gain use sessions with scored knowledge answers (n={stats.knowledgeGain.length}). Avatar time uses sessions with slide timing (n={stats.avatarSessionsTracked}). Session duration uses completed sessions (n={stats.totalCompleted}).
             {!includeImputed && <span> Owner backfills excluded.</span>}
           </div>
+          {stats.missingScoreSessions.length > 0 && (
+            <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-100">
+              <div className="flex items-center justify-between gap-2">
+                <span>Missing score data sessions (n={stats.missingScoreSessions.length})</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-amber-100"
+                  onClick={() => setShowMissingScores((prev) => !prev)}
+                >
+                  {showMissingScores ? 'Hide' : 'Show'}
+                </Button>
+              </div>
+              {showMissingScores && (
+                <div className="mt-2 space-y-1 text-[11px] text-amber-100/90">
+                  {stats.missingScoreSessions.map((entry) => (
+                    <div key={entry.sessionId} className="flex flex-wrap gap-x-2">
+                      <span className="font-mono">{entry.sessionId}</span>
+                      <span className="uppercase text-[10px] text-amber-200/70">{entry.mode}</span>
+                      <span>{entry.reasons.join(' • ')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">

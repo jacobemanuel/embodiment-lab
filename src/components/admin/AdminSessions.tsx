@@ -70,10 +70,14 @@ interface SessionDataStatus {
   hasPostTest: boolean;
   hasDialogue: boolean;
   isComplete: boolean;
+  isCompleteCheckFinal?: boolean;
   preTestExpected?: number | null;
   preTestAnswered?: number;
   postTestExpected?: number | null;
   postTestAnswered?: number;
+  hasScoreData?: boolean;
+  preScoreAnswered?: number;
+  postScoreAnswered?: number;
 }
 
 interface StudyQuestion {
@@ -218,13 +222,20 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         hasPostTest: false,
         hasDialogue: false,
         isComplete: false,
+        isCompleteCheckFinal: false,
         preTestExpected: null,
         preTestAnswered: 0,
         postTestExpected: null,
         postTestAnswered: 0,
+        hasScoreData: false,
+        preScoreAnswered: 0,
+        postScoreAnswered: 0,
       };
       const updated = { ...current, ...patch };
       updated.isComplete = updated.hasDemographics && updated.hasPreTest && updated.hasPostTest;
+      if (patch.preTestExpected !== undefined || patch.postTestExpected !== undefined) {
+        updated.isCompleteCheckFinal = true;
+      }
       next.set(sessionId, updated);
       return next;
     });
@@ -685,6 +696,29 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           postResponsesBySession.set(row.session_id, list);
         });
 
+        const responseQuestionIds = Array.from(
+          new Set([
+            ...((preRes.data || []).map((row: any) => row.question_id)),
+            ...((postRes.data || []).map((row: any) => row.question_id)),
+          ])
+        );
+        const { data: questionRows } = responseQuestionIds.length > 0
+          ? await supabase
+              .from('study_questions')
+              .select('question_id, question_type, correct_answer, category')
+              .in('question_id', responseQuestionIds)
+          : { data: [] };
+        const questionInfo = new Map<string, { question_id: string; question_type: string; correct_answer: string | null; category: string | null }>();
+        (questionRows || []).forEach((row: any) => {
+          questionInfo.set(row.question_id, row);
+        });
+        const isScoredPreQuestion = (question?: { question_type?: string; correct_answer?: string | null }) =>
+          question?.question_type === 'pre_test' && Boolean(question.correct_answer);
+        const isScoredPostQuestion = (question?: { question_type?: string; correct_answer?: string | null; category?: string | null; question_id?: string }) =>
+          question?.question_type === 'post_test' &&
+          (question?.category === 'knowledge' || Boolean(question?.correct_answer) || String(question?.question_id || '').startsWith('knowledge-')) &&
+          Boolean(question?.correct_answer);
+
         const statusMap = new Map<string, SessionDataStatus>();
         sessionList.forEach((session) => {
           const hasDemographics = demoSessions.has(session.id);
@@ -712,19 +746,56 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
             'post_test',
             postResponsesBySession.get(session.id) || []
           );
-          const hasPreTest = hasQuestionBank ? preCounts.has : preCounts.answered > 0;
-          const hasPostTest = hasQuestionBank ? postCounts.has : postCounts.answered > 0;
+          const preAnsweredAny = (preResponsesBySession.get(session.id) || []).filter((row) =>
+            hasMeaningfulAnswer(row.answer)
+          ).length;
+          const postAnsweredAny = (postResponsesBySession.get(session.id) || []).filter((row) =>
+            hasMeaningfulAnswer(row.answer)
+          ).length;
+          const hasPreTest = preCounts.expected === 0 ? true : preAnsweredAny > 0;
+          const hasPostTest = postCounts.expected === 0 ? true : postAnsweredAny > 0;
           const hasDialogue = scenarioSessions.has(session.id) || tutorSessions.has(session.id);
+          let preTestExpected = hasQuestionBank ? preCounts.expected : null;
+          let postTestExpected = hasQuestionBank ? postCounts.expected : null;
+          let preTestAnswered = preCounts.answered;
+          let postTestAnswered = postCounts.answered;
+          if (preTestExpected === 0 && preAnsweredAny > 0) {
+            preTestExpected = null;
+            preTestAnswered = preAnsweredAny;
+          } else if (preTestExpected && preTestAnswered === 0 && preAnsweredAny > 0) {
+            preTestExpected = null;
+            preTestAnswered = preAnsweredAny;
+          }
+          if (postTestExpected === 0 && postAnsweredAny > 0) {
+            postTestExpected = null;
+            postTestAnswered = postAnsweredAny;
+          } else if (postTestExpected && postTestAnswered === 0 && postAnsweredAny > 0) {
+            postTestExpected = null;
+            postTestAnswered = postAnsweredAny;
+          }
+          const preScoreAnswered = (preResponsesBySession.get(session.id) || []).filter((row) => {
+            const question = questionInfo.get(row.question_id);
+            return isScoredPreQuestion(question) && hasMeaningfulAnswer(row.answer);
+          }).length;
+          const postScoreAnswered = (postResponsesBySession.get(session.id) || []).filter((row) => {
+            const question = questionInfo.get(row.question_id);
+            return isScoredPostQuestion(question) && hasMeaningfulAnswer(row.answer);
+          }).length;
+          const hasScoreData = preScoreAnswered > 0 && postScoreAnswered > 0;
           statusMap.set(session.id, {
             hasDemographics,
             hasPreTest,
             hasPostTest,
             hasDialogue,
             isComplete: hasDemographics && hasPreTest && hasPostTest,
-            preTestExpected: hasQuestionBank ? preCounts.expected : null,
-            preTestAnswered: preCounts.answered,
-            postTestExpected: hasQuestionBank ? postCounts.expected : null,
-            postTestAnswered: postCounts.answered,
+            isCompleteCheckFinal: hasQuestionBank,
+            preTestExpected,
+            preTestAnswered,
+            postTestExpected,
+            postTestAnswered,
+            hasScoreData,
+            preScoreAnswered,
+            postScoreAnswered,
           });
         });
 
@@ -1103,7 +1174,8 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         sessionOverride
       );
 
-      const preCounts = questionBank.length
+      const hasQuestionBank = questionBank.length > 0;
+      const preCounts = hasQuestionBank
         ? computeResponseCounts(
             {
               mode: resolvedSession.mode,
@@ -1117,7 +1189,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
             resolvedDetails.preTest || []
           )
         : { expected: 0, answered: resolvedDetails.preTest?.length || 0, has: (resolvedDetails.preTest?.length || 0) > 0 };
-      const postCounts = questionBank.length
+      const postCounts = hasQuestionBank
         ? computeResponseCounts(
             {
               mode: resolvedSession.mode,
@@ -1131,19 +1203,41 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
             resolvedDetails.postTest || []
           )
         : { expected: 0, answered: resolvedDetails.postTest?.length || 0, has: (resolvedDetails.postTest?.length || 0) > 0 };
+      const preAnsweredAny = resolvedDetails.preTest?.length || 0;
+      const postAnsweredAny = resolvedDetails.postTest?.length || 0;
+      const hasPreTest = preCounts.expected === 0 ? true : preAnsweredAny > 0;
+      const hasPostTest = postCounts.expected === 0 ? true : postAnsweredAny > 0;
+      let preTestExpected = hasQuestionBank ? preCounts.expected : null;
+      let postTestExpected = hasQuestionBank ? postCounts.expected : null;
+      let preTestAnswered = preCounts.answered;
+      let postTestAnswered = postCounts.answered;
+      if (preTestExpected === 0 && preAnsweredAny > 0) {
+        preTestExpected = null;
+        preTestAnswered = preAnsweredAny;
+      } else if (preTestExpected && preTestAnswered === 0 && preAnsweredAny > 0) {
+        preTestExpected = null;
+        preTestAnswered = preAnsweredAny;
+      }
+      if (postTestExpected === 0 && postAnsweredAny > 0) {
+        postTestExpected = null;
+        postTestAnswered = postAnsweredAny;
+      } else if (postTestExpected && postTestAnswered === 0 && postAnsweredAny > 0) {
+        postTestExpected = null;
+        postTestAnswered = postAnsweredAny;
+      }
 
       mergeSessionDataStatus(session.id, {
         hasDemographics:
           (resolvedDetails.demographicResponses?.length || 0) > 0 || Boolean(resolvedDetails.demographics),
-        hasPreTest: questionBank.length ? preCounts.has : preCounts.answered > 0,
-        hasPostTest: questionBank.length ? postCounts.has : postCounts.answered > 0,
+        hasPreTest,
+        hasPostTest,
         hasDialogue:
           (resolvedDetails.dialogueTurns?.length || 0) > 0 ||
           (resolvedDetails.tutorDialogueTurns?.length || 0) > 0,
-        preTestExpected: questionBank.length ? preCounts.expected : null,
-        preTestAnswered: preCounts.answered,
-        postTestExpected: questionBank.length ? postCounts.expected : null,
-        postTestAnswered: postCounts.answered,
+        preTestExpected,
+        preTestAnswered,
+        postTestExpected,
+        postTestAnswered,
       });
 
       setSelectedSession(resolvedSession);
@@ -2082,6 +2176,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         case 'missing':
           matchesData = !dataStatus.isComplete;
           break;
+        case 'missing_score':
+          matchesData = !dataStatus.hasScoreData;
+          break;
         case 'no_demographics':
           matchesData = !dataStatus.hasDemographics;
           break;
@@ -2777,6 +2874,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                 <SelectItem value="all">All Data</SelectItem>
                 <SelectItem value="complete">Complete Data</SelectItem>
                 <SelectItem value="missing">Missing Data</SelectItem>
+                <SelectItem value="missing_score">Missing Score Data</SelectItem>
                 <SelectItem value="no_demographics">No Demographics</SelectItem>
                 <SelectItem value="no_pretest">No Pre-test</SelectItem>
                 <SelectItem value="no_posttest">No Post-test</SelectItem>
@@ -2911,6 +3009,16 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                   const postExpected = dataStatus?.postTestExpected;
                   const preAnswered = dataStatus?.preTestAnswered ?? 0;
                   const postAnswered = dataStatus?.postTestAnswered ?? 0;
+                  const preScoreAnswered = dataStatus?.preScoreAnswered ?? 0;
+                  const postScoreAnswered = dataStatus?.postScoreAnswered ?? 0;
+                  const scoreStatusLabel = !dataStatus
+                    ? 'Loading'
+                    : dataStatus.hasScoreData
+                      ? 'Yes'
+                      : 'Missing';
+                  const scoreCountLabel = dataStatus
+                    ? `${preScoreAnswered}/${postScoreAnswered}`
+                    : '';
                   const preStatusLabel = !dataStatus
                     ? 'Loading'
                     : preExpected === 0
@@ -2989,6 +3097,9 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                                     <span className={`text-xs ${dataStatus.hasPostTest ? 'text-green-500' : 'text-red-500'}`}>
                                       T{dataStatus.hasPostTest ? '✓' : '✗'}
                                     </span>
+                                    <span className={`text-xs ${dataStatus.hasScoreData ? 'text-green-500' : 'text-red-500'}`}>
+                                      S{dataStatus.hasScoreData ? '✓' : '✗'}
+                                    </span>
                                   </>
                                 ) : (
                                   <span className="text-xs text-muted-foreground/70">...</span>
@@ -3008,8 +3119,12 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
                                   Post-test: {postStatusLabel}
                                   {postCountLabel ? ` (${postCountLabel})` : ''}
                                 </p>
-                                <p className={dataStatus?.hasDialogue ? 'text-green-400' : 'text-yellow-400'}>
-                                  Dialogue: {dataStatus?.hasDialogue ? 'Yes' : 'None'}
+                                <p className={dataStatus?.hasScoreData ? 'text-green-400' : 'text-red-400'}>
+                                  Score data: {scoreStatusLabel}
+                                  {dataStatus ? ` (${scoreCountLabel} scored)` : ''}
+                                </p>
+                                <p className={dataStatus?.hasDialogue ? 'text-green-400' : 'text-muted-foreground'}>
+                                  Dialogue: {dataStatus?.hasDialogue ? 'Yes' : 'None'} (info only)
                                 </p>
                               </div>
                             </TooltipContent>

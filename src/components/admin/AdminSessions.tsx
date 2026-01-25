@@ -667,12 +667,13 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           : Promise.resolve({ data: [] as any[] });
 
         // Fetch counts for each data type
+        // IMPORTANT: Increase limits to avoid Supabase's default 1000-row cap truncating results
         const [demoRes, oldDemoRes, preRes, postRes, scenarioRes, tutorRes] = await Promise.all([
-          supabase.from('demographic_responses').select('session_id, question_id, answer').in('session_id', sessionIds),
-          supabase.from('demographics').select('session_id').in('session_id', sessionIds),
-          supabase.from('pre_test_responses').select('session_id, question_id, answer').in('session_id', sessionIds),
-          supabase.from('post_test_responses').select('session_id, question_id, answer').in('session_id', sessionIds),
-          supabase.from('scenarios').select('session_id').in('session_id', sessionIds),
+          supabase.from('demographic_responses').select('session_id, question_id, answer').in('session_id', sessionIds).limit(10000),
+          supabase.from('demographics').select('session_id').in('session_id', sessionIds).limit(5000),
+          supabase.from('pre_test_responses').select('session_id, question_id, answer').in('session_id', sessionIds).limit(10000),
+          supabase.from('post_test_responses').select('session_id, question_id, answer').in('session_id', sessionIds).limit(10000),
+          supabase.from('scenarios').select('session_id').in('session_id', sessionIds).limit(5000),
           tutorDialogueQuery,
         ]);
 

@@ -51,6 +51,14 @@ interface QuestionAnalysis {
   hasCorrectAnswer: boolean;
 }
 
+interface StudyQuestionRow {
+  question_id: string;
+  question_text: string;
+  correct_answer: string | null;
+  question_type: string;
+  category: string | null;
+}
+
 interface LikertAnalysis {
   questionId: string;
   questionText: string;
@@ -521,23 +529,26 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           ...postTestResponses.map((r) => r.question_id),
         ])
       );
-      const { data: questionsData } = responseQuestionIds.length > 0
+      const { data: questionsDataRaw } = responseQuestionIds.length > 0
         ? await supabase
             .from('study_questions')
             .select('question_id, question_text, correct_answer, question_type, category')
             .in('question_id', responseQuestionIds)
         : { data: [] };
 
-      const questionMap = new Map(questionsData?.map(q => [q.question_id, q]) || []);
+      const questionsData = (questionsDataRaw || []) as StudyQuestionRow[];
+      const questionMap = new Map<string, StudyQuestionRow>(
+        questionsData.map((q) => [q.question_id, q])
+      );
       
       // Count missing correct answers
-      const preTestQuestions = questionsData?.filter(q => q.question_type === 'pre_test') || [];
+      const preTestQuestions = questionsData.filter((q) => q.question_type === 'pre_test');
       const postTestKnowledgeQuestions =
-        questionsData?.filter(
+        questionsData.filter(
           (q) =>
             q.question_type === 'post_test' &&
             (q.category === 'knowledge' || Boolean(q.correct_answer) || q.question_id.startsWith('knowledge-'))
-        ) || [];
+        );
       const missingPreTest = preTestQuestions.filter(q => !q.correct_answer).length;
       const missingPostTest = postTestKnowledgeQuestions.filter(q => !q.correct_answer).length;
 

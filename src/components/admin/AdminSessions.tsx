@@ -19,7 +19,8 @@ import { describeSuspicionFlag, getSuspicionRequirements } from "@/lib/suspicion
 import { META_DIALOGUE_ID, META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 import { buildSlideLookup, resolveSlideKey } from "@/lib/slideTiming";
 import { canUseTutorDialogueTable } from "@/lib/tutorDialogueAvailability";
-import { fetchAllPages } from "@/lib/fetchAllPages";
+import { fetchAllBySessionIds } from "@/lib/fetchAllPages";
+import { emitAdminRefresh, subscribeAdminRefresh } from "@/lib/adminRefresh";
 import { toast } from "sonner";
 
 interface AdminSessionsProps {
@@ -426,6 +427,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       await fetchSessions();
       await fetchSessionDetails(selectedSession);
       setIsBackfillOpen(false);
+      emitAdminRefresh();
       toast.success('Missing responses saved');
     } catch (error) {
       console.error('Backfill save failed:', error);
@@ -493,6 +495,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
       await fetchSessions();
       await fetchSessionDetails(selectedSession);
+      emitAdminRefresh();
       toast.success('Slide timing backfilled');
     } catch (error) {
       console.error('Backfill timing failed:', error);
@@ -673,47 +676,65 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
         // Fetch counts for each data type.
         // IMPORTANT: We must paginate using .range() because the backend caps rows per request (often 1000).
         const [demoRows, oldDemoRows, preRows, postRows, scenarioRows, tutorRows] = await Promise.all([
-          fetchAllPages(async (from, to) =>
-            await supabase
-              .from('demographic_responses')
-              .select('session_id, question_id, answer')
-              .in('session_id', sessionIdFilter)
-              .range(from, to)
+          fetchAllBySessionIds(
+            sessionIdFilter,
+            async (ids, from, to) =>
+              await supabase
+                .from('demographic_responses')
+                .select('session_id, question_id, answer')
+                .in('session_id', ids)
+                .order('id', { ascending: true })
+                .range(from, to)
           ),
-          fetchAllPages(async (from, to) =>
-            await supabase
-              .from('demographics')
-              .select('session_id')
-              .in('session_id', sessionIdFilter)
-              .range(from, to)
+          fetchAllBySessionIds(
+            sessionIdFilter,
+            async (ids, from, to) =>
+              await supabase
+                .from('demographics')
+                .select('session_id')
+                .in('session_id', ids)
+                .order('id', { ascending: true })
+                .range(from, to)
           ),
-          fetchAllPages(async (from, to) =>
-            await supabase
-              .from('pre_test_responses')
-              .select('session_id, question_id, answer')
-              .in('session_id', sessionIdFilter)
-              .range(from, to)
+          fetchAllBySessionIds(
+            sessionIdFilter,
+            async (ids, from, to) =>
+              await supabase
+                .from('pre_test_responses')
+                .select('session_id, question_id, answer')
+                .in('session_id', ids)
+                .order('id', { ascending: true })
+                .range(from, to)
           ),
-          fetchAllPages(async (from, to) =>
-            await supabase
-              .from('post_test_responses')
-              .select('session_id, question_id, answer')
-              .in('session_id', sessionIdFilter)
-              .range(from, to)
+          fetchAllBySessionIds(
+            sessionIdFilter,
+            async (ids, from, to) =>
+              await supabase
+                .from('post_test_responses')
+                .select('session_id, question_id, answer')
+                .in('session_id', ids)
+                .order('id', { ascending: true })
+                .range(from, to)
           ),
-          fetchAllPages(async (from, to) =>
-            await supabase
-              .from('scenarios')
-              .select('session_id')
-              .in('session_id', sessionIdFilter)
-              .range(from, to)
+          fetchAllBySessionIds(
+            sessionIdFilter,
+            async (ids, from, to) =>
+              await supabase
+                .from('scenarios')
+                .select('session_id')
+                .in('session_id', ids)
+                .order('id', { ascending: true })
+                .range(from, to)
           ),
           canUseTutorDialogue
-            ? fetchAllPages(async (from, to) =>
-                await (supabase.from('tutor_dialogue_turns' as any) as any)
-                  .select('session_id')
-                  .in('session_id', sessionIdFilter)
-                  .range(from, to)
+            ? fetchAllBySessionIds(
+                sessionIdFilter,
+                async (ids, from, to) =>
+                  await (supabase.from('tutor_dialogue_turns' as any) as any)
+                    .select('session_id')
+                    .in('session_id', ids)
+                    .order('id', { ascending: true })
+                    .range(from, to)
               )
             : Promise.resolve([] as any[]),
         ]);
@@ -907,8 +928,11 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
   const queueStatusRefresh = useCallback(
     (sessionId?: string | null) => {
       if (!sessionId) return;
-      if (!sessionsRef.current.some((session) => session.id === sessionId)) return;
-      pendingStatusRefresh.current.add(sessionId);
+      const match = sessionsRef.current.find(
+        (session) => session.id === sessionId || session.session_id === sessionId
+      );
+      if (!match) return;
+      pendingStatusRefresh.current.add(match.id);
       if (pendingStatusTimer.current) return;
       pendingStatusTimer.current = setTimeout(() => {
         const ids = Array.from(pendingStatusRefresh.current);
@@ -924,6 +948,10 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
 
   useEffect(() => {
     fetchSessions();
+  }, [fetchSessions]);
+
+  useEffect(() => {
+    return subscribeAdminRefresh(() => fetchSessions());
   }, [fetchSessions]);
 
   useEffect(() => {
@@ -1815,6 +1843,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       setSelectedSession(updatedSession);
       await fetchSessions();
       await fetchSessionDetails(updatedSession);
+      emitAdminRefresh();
       toast.success('Session data updated');
       setIsEditOpen(false);
     } catch (error) {
@@ -1859,6 +1888,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
     setHasLocalOverride(false);
     await fetchSessions();
     await fetchSessionDetails(selectedSession);
+    emitAdminRefresh();
     toast.success('Local override cleared.');
   };
 
@@ -1901,6 +1931,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           : prev
       );
 
+      emitAdminRefresh();
       toast.success('Session restored');
     } catch (error) {
       console.error('Failed to restore session:', error);
@@ -1943,6 +1974,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           : s
       ));
 
+      emitAdminRefresh();
       toast.success(data.message);
     } catch (error) {
       console.error('Error updating validation status:', error);
@@ -1973,6 +2005,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
           : s
       ));
 
+      emitAdminRefresh();
       toast.success(data.message);
     } catch (error) {
       console.error('Error approving validation:', error);
@@ -2010,6 +2043,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       ));
       
       setSelectedSessionIds(new Set());
+      emitAdminRefresh();
       toast.success(data.message);
     } catch (error) {
       console.error('Error bulk updating validation status:', error);
@@ -2081,6 +2115,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       ));
       
       setSelectedSessionIds(new Set());
+      emitAdminRefresh();
       toast.success(data.message);
     } catch (error) {
       console.error('Error hiding sessions:', error);
@@ -2115,6 +2150,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       ));
       
       setSelectedSessionIds(new Set());
+      emitAdminRefresh();
       toast.success(data.message);
     } catch (error) {
       console.error('Error restoring sessions:', error);
@@ -2151,6 +2187,7 @@ const OWNER_OVERRIDES_KEY = 'ownerSessionOverrides';
       // Remove deleted sessions from local state
       setSessions(prev => prev.filter(s => !selectedSessionIds.has(s.id)));
       setSelectedSessionIds(new Set());
+      emitAdminRefresh();
       toast.success(`${sessionIdsArray.length} session(s) permanently deleted`);
     } catch (error) {
       console.error('Error deleting sessions:', error);

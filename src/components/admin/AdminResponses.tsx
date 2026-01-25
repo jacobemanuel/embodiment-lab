@@ -11,7 +11,8 @@ import { startOfDay, endOfDay, format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 import { canUseTutorDialogueTable } from "@/lib/tutorDialogueAvailability";
-import { fetchAllPages } from "@/lib/fetchAllPages";
+import { fetchAllBySessionIds, fetchAllPages } from "@/lib/fetchAllPages";
+import { subscribeAdminRefresh } from "@/lib/adminRefresh";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 const CORRECT_COLOR = '#22c55e';
@@ -63,7 +64,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
   const [modeFilter, setModeFilter] = useState<ModeFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('completed');
 
-  const fetchQuestionData = async () => {
+  const fetchQuestionData = useCallback(async () => {
     try {
       // Fetch all questions referenced in responses so historical sessions remain accurate
       const { data } = await supabase
@@ -87,7 +88,7 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
     } catch (error) {
       console.error('Error fetching question data:', error);
     }
-  };
+  }, []);
 
   const fetchAllResponses = useCallback(async () => {
     setIsRefreshing(true);
@@ -173,36 +174,54 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
       }
 
       const [preTestRaw, postTestRaw, demographicsRaw] = await Promise.all([
-        fetchAllPages(async (from, to) => {
-          let query = supabase
-            .from('pre_test_responses')
-            .select('question_id, answer, session_id')
-            .range(from, to);
-          if (sessionIdFilter.length > 0) {
-            query = query.in('session_id', sessionIdFilter);
-          }
-          return await query;
-        }),
-        fetchAllPages(async (from, to) => {
-          let query = supabase
-            .from('post_test_responses')
-            .select('question_id, answer, session_id')
-            .range(from, to);
-          if (sessionIdFilter.length > 0) {
-            query = query.in('session_id', sessionIdFilter);
-          }
-          return await query;
-        }),
-        fetchAllPages(async (from, to) => {
-          let query = supabase
-            .from('demographic_responses')
-            .select('question_id, answer, session_id')
-            .range(from, to);
-          if (sessionIdFilter.length > 0) {
-            query = query.in('session_id', sessionIdFilter);
-          }
-          return await query;
-        }),
+        sessionIdFilter.length > 0
+          ? fetchAllBySessionIds(sessionIdFilter, async (ids, from, to) =>
+              await supabase
+                .from('pre_test_responses')
+                .select('question_id, answer, session_id')
+                .in('session_id', ids)
+                .order('id', { ascending: true })
+                .range(from, to)
+            )
+          : fetchAllPages(async (from, to) =>
+              await supabase
+                .from('pre_test_responses')
+                .select('question_id, answer, session_id')
+                .order('id', { ascending: true })
+                .range(from, to)
+            ),
+        sessionIdFilter.length > 0
+          ? fetchAllBySessionIds(sessionIdFilter, async (ids, from, to) =>
+              await supabase
+                .from('post_test_responses')
+                .select('question_id, answer, session_id')
+                .in('session_id', ids)
+                .order('id', { ascending: true })
+                .range(from, to)
+            )
+          : fetchAllPages(async (from, to) =>
+              await supabase
+                .from('post_test_responses')
+                .select('question_id, answer, session_id')
+                .order('id', { ascending: true })
+                .range(from, to)
+            ),
+        sessionIdFilter.length > 0
+          ? fetchAllBySessionIds(sessionIdFilter, async (ids, from, to) =>
+              await supabase
+                .from('demographic_responses')
+                .select('question_id, answer, session_id')
+                .in('session_id', ids)
+                .order('id', { ascending: true })
+                .range(from, to)
+            )
+          : fetchAllPages(async (from, to) =>
+              await supabase
+                .from('demographic_responses')
+                .select('question_id, answer, session_id')
+                .order('id', { ascending: true })
+                .range(from, to)
+            ),
       ]);
 
       // Deduplicate responses per session/question to avoid double-counting
@@ -329,11 +348,20 @@ const AdminResponses = ({ userEmail = '' }: AdminResponsesProps) => {
 
   useEffect(() => {
     fetchQuestionData();
-  }, []);
+  }, [fetchQuestionData]);
 
   useEffect(() => {
     fetchAllResponses();
-  }, [fetchAllResponses]);
+  }, [fetchAllResponses, fetchQuestionData]);
+
+  const handleAdminRefresh = useCallback(() => {
+    fetchQuestionData();
+    fetchAllResponses();
+  }, [fetchAllResponses, fetchQuestionData]);
+
+  useEffect(() => {
+    return subscribeAdminRefresh(handleAdminRefresh);
+  }, [handleAdminRefresh]);
 
   // Real-time subscription for responses
   useEffect(() => {

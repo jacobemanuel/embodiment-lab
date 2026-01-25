@@ -7,7 +7,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, Re
 import { Download, TrendingUp, TrendingDown, Minus, Info, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { startOfDay, endOfDay, format } from "date-fns";
-import { fetchAllPages } from "@/lib/fetchAllPages";
+import { fetchAllBySessionIds } from "@/lib/fetchAllPages";
+import { subscribeAdminRefresh } from "@/lib/adminRefresh";
 
 interface QuestionModePerformance {
   questionId: string;
@@ -97,18 +98,20 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
       }
 
       const [preTestRes, postTestRes] = await Promise.all([
-        fetchAllPages(async (from, to) =>
+        fetchAllBySessionIds(sessionIdFilter, async (ids, from, to) =>
           await supabase
             .from('pre_test_responses')
             .select('*')
-            .in('session_id', sessionIdFilter)
+            .in('session_id', ids)
+            .order('id', { ascending: true })
             .range(from, to)
         ),
-        fetchAllPages(async (from, to) =>
+        fetchAllBySessionIds(sessionIdFilter, async (ids, from, to) =>
           await supabase
             .from('post_test_responses')
             .select('*')
-            .in('session_id', sessionIdFilter)
+            .in('session_id', ids)
+            .order('id', { ascending: true })
             .range(from, to)
         ),
       ]);
@@ -200,6 +203,10 @@ const QuestionPerformanceByMode = ({ startDate, endDate, userEmail = '' }: Props
 
   useEffect(() => {
     fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    return subscribeAdminRefresh(() => fetchData());
   }, [fetchData]);
 
   const exportCSV = () => {

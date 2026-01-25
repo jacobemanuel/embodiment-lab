@@ -18,7 +18,8 @@ import { describeSuspicionFlag, getSuspicionRequirements } from "@/lib/suspicion
 import { META_DIALOGUE_ID, META_TIMING_ID, isTelemetryMetaQuestionId } from "@/lib/sessionTelemetry";
 import { buildSlideLookup, resolveSlideKey } from "@/lib/slideTiming";
 import { canUseTutorDialogueTable } from "@/lib/tutorDialogueAvailability";
-import { fetchAllPages } from "@/lib/fetchAllPages";
+import { fetchAllBySessionIds } from "@/lib/fetchAllPages";
+import { subscribeAdminRefresh } from "@/lib/adminRefresh";
 
 interface AvatarTimeData {
   session_id: string;
@@ -405,27 +406,58 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       if (sessionIdFilter.length > 0) {
         const canUseTutorDialogue = await canUseTutorDialogueTable();
         const [demoRes, preRes, postRes, avatarRes, slideRes, tutorDialogueRes] = await Promise.all([
-            fetchAllPages(async (from, to) =>
-              await supabase.from('demographic_responses').select('*').in('session_id', sessionIdFilter).range(from, to)
-            ),
-            fetchAllPages(async (from, to) =>
-              await supabase.from('pre_test_responses').select('*').in('session_id', sessionIdFilter).range(from, to)
-            ),
-            fetchAllPages(async (from, to) =>
-              await supabase.from('post_test_responses').select('*').in('session_id', sessionIdFilter).range(from, to)
-            ),
-            fetchAllPages(async (from, to) =>
-              await supabase.from('avatar_time_tracking').select('*').in('session_id', sessionIdFilter).range(from, to)
-            ),
+          fetchAllBySessionIds(
+            sessionIdFilter,
+            async (ids, from, to) =>
+              await supabase
+                .from('demographic_responses')
+                .select('*')
+                .in('session_id', ids)
+                .order('id', { ascending: true })
+                .range(from, to)
+          ),
+          fetchAllBySessionIds(
+            sessionIdFilter,
+            async (ids, from, to) =>
+              await supabase
+                .from('pre_test_responses')
+                .select('*')
+                .in('session_id', ids)
+                .order('id', { ascending: true })
+                .range(from, to)
+          ),
+          fetchAllBySessionIds(
+            sessionIdFilter,
+            async (ids, from, to) =>
+              await supabase
+                .from('post_test_responses')
+                .select('*')
+                .in('session_id', ids)
+                .order('id', { ascending: true })
+                .range(from, to)
+          ),
+          fetchAllBySessionIds(
+            sessionIdFilter,
+            async (ids, from, to) =>
+              await supabase
+                .from('avatar_time_tracking')
+                .select('*')
+                .in('session_id', ids)
+                .order('id', { ascending: true })
+                .range(from, to)
+          ),
           supabase.from('study_slides').select('slide_id, title, sort_order, is_active').order('sort_order'),
           canUseTutorDialogue
-              ? fetchAllPages(async (from, to) =>
+            ? fetchAllBySessionIds(
+                sessionIdFilter,
+                async (ids, from, to) =>
                   await (supabase.from('tutor_dialogue_turns' as any) as any)
                     .select('session_id')
-                    .in('session_id', sessionIdFilter)
+                    .in('session_id', ids)
+                    .order('id', { ascending: true })
                     .range(from, to)
-                )
-              : Promise.resolve([] as any[]),
+              )
+            : Promise.resolve([] as any[]),
         ]);
 
         const normalizeRows = <T extends { session_id?: string | null }>(rows: T[]) =>
@@ -1433,6 +1465,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
   useEffect(() => {
     fetchStats();
+  }, [fetchStats]);
+
+  useEffect(() => {
+    return subscribeAdminRefresh(() => fetchStats());
   }, [fetchStats]);
 
   // Real-time subscription for all relevant tables

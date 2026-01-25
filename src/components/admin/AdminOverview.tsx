@@ -924,7 +924,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           sessionPreScores[r.session_id].total++;
           
           const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
-          const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
+          const userAnswers = String(r.answer ?? '')
+            .split('|||')
+            .map((a: string) => a.trim().toLowerCase())
+            .filter((a: string) => a.length > 0);
           
           const allCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca));
           const noExtra = userAnswers.every((ua: string) => correctAnswers.includes(ua));
@@ -1061,6 +1064,116 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
       const calcAvg = (arr: KnowledgeGainData[], key: keyof KnowledgeGainData) => 
         arr.length > 0 ? Math.round(arr.reduce((sum, k) => sum + (k[key] as number), 0) / arr.length) : 0;
 
+      const logGamma = (z: number): number => {
+        const coefficients = [
+          76.18009172947146,
+          -86.50532032941677,
+          24.01409824083091,
+          -1.231739572450155,
+          0.1208650973866179e-2,
+          -0.5395239384953e-5,
+        ];
+        let x = z;
+        let y = x;
+        let tmp = x + 5.5;
+        tmp -= (x + 0.5) * Math.log(tmp);
+        let ser = 1.000000000190015;
+        for (let j = 0; j < coefficients.length; j++) {
+          y += 1;
+          ser += coefficients[j] / y;
+        }
+        return -tmp + Math.log(2.5066282746310005 * ser / x);
+      };
+
+      const betaContinuedFraction = (a: number, b: number, x: number): number => {
+        const MAX_ITER = 100;
+        const EPS = 3e-7;
+        const FPMIN = 1e-30;
+        const qab = a + b;
+        const qap = a + 1;
+        const qam = a - 1;
+        let c = 1;
+        let d = 1 - (qab * x) / qap;
+        if (Math.abs(d) < FPMIN) d = FPMIN;
+        d = 1 / d;
+        let h = d;
+        for (let m = 1; m <= MAX_ITER; m++) {
+          const m2 = 2 * m;
+          let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2));
+          d = 1 + aa * d;
+          if (Math.abs(d) < FPMIN) d = FPMIN;
+          c = 1 + aa / c;
+          if (Math.abs(c) < FPMIN) c = FPMIN;
+          d = 1 / d;
+          h *= d * c;
+          aa = -((a + m) * (qab + m) * x) / ((a + m2) * (qap + m2));
+          d = 1 + aa * d;
+          if (Math.abs(d) < FPMIN) d = FPMIN;
+          c = 1 + aa / c;
+          if (Math.abs(c) < FPMIN) c = FPMIN;
+          d = 1 / d;
+          const del = d * c;
+          h *= del;
+          if (Math.abs(del - 1.0) < EPS) break;
+        }
+        return h;
+      };
+
+      const regularizedIncompleteBeta = (x: number, a: number, b: number): number => {
+        if (x <= 0) return 0;
+        if (x >= 1) return 1;
+        const lnBeta = logGamma(a + b) - logGamma(a) - logGamma(b);
+        const front = Math.exp(lnBeta + a * Math.log(x) + b * Math.log(1 - x));
+        const threshold = (a + 1) / (a + b + 2);
+        if (x < threshold) {
+          return (front * betaContinuedFraction(a, b, x)) / a;
+        }
+        return 1 - (front * betaContinuedFraction(b, a, 1 - x)) / b;
+      };
+
+      const studentTCDF = (t: number, df: number): number => {
+        if (!Number.isFinite(t) || !Number.isFinite(df) || df <= 0) return 0.5;
+        const x = df / (df + t * t);
+        const a = df / 2;
+        const b = 0.5;
+        const ib = regularizedIncompleteBeta(x, a, b);
+        return t >= 0 ? 1 - 0.5 * ib : 0.5 * ib;
+      };
+
+      const inverseStudentTCDF = (p: number, df: number): number => {
+        if (p <= 0) return -Infinity;
+        if (p >= 1) return Infinity;
+        let low = -1;
+        let high = 1;
+        while (studentTCDF(high, df) < p) {
+          high *= 2;
+          if (high > 1e6) break;
+        }
+        while (studentTCDF(low, df) > p) {
+          low *= 2;
+          if (low < -1e6) break;
+        }
+        for (let i = 0; i < 60; i++) {
+          const mid = (low + high) / 2;
+          const cdf = studentTCDF(mid, df);
+          if (cdf < p) {
+            low = mid;
+          } else {
+            high = mid;
+          }
+        }
+        return (low + high) / 2;
+      };
+
+      const calcWelchDf = (var1: number, n1: number, var2: number, n2: number): number => {
+        const numerator = Math.pow(var1 / n1 + var2 / n2, 2);
+        const denom =
+          Math.pow(var1 / n1, 2) / (n1 - 1) +
+          Math.pow(var2 / n2, 2) / (n2 - 1);
+        if (denom === 0) return 0;
+        return numerator / denom;
+      };
+
       // Statistical significance testing (Welch's t-test)
       const welchTTest = (group1: number[], group2: number[]): { tStatistic: number; pValue: number; significant: boolean } => {
         if (group1.length < 2 || group2.length < 2) {
@@ -1079,33 +1192,16 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         const t = (mean1 - mean2) / se;
         
         // Welch-Satterthwaite degrees of freedom
-        const df = Math.pow(var1 / group1.length + var2 / group2.length, 2) / 
-          (Math.pow(var1 / group1.length, 2) / (group1.length - 1) + Math.pow(var2 / group2.length, 2) / (group2.length - 1));
-        
-        // Approximate p-value using normal distribution for large df (simplified)
-        // For proper implementation would need t-distribution CDF
+        const df = calcWelchDf(var1, group1.length, var2, group2.length);
+
+        // Two-tailed p-value using Student's t-distribution
         const absT = Math.abs(t);
-        let pValue = 2 * (1 - normalCDF(absT));
+        let pValue = 2 * (1 - studentTCDF(absT, df));
         pValue = Math.max(0.0001, Math.min(1, pValue));
         
         return { tStatistic: Math.round(t * 100) / 100, pValue: Math.round(pValue * 10000) / 10000, significant: pValue < 0.05 };
       };
       
-      // Normal CDF approximation
-      const normalCDF = (x: number): number => {
-        const a1 =  0.254829592;
-        const a2 = -0.284496736;
-        const a3 =  1.421413741;
-        const a4 = -1.453152027;
-        const a5 =  1.061405429;
-        const p  =  0.3275911;
-        const sign = x < 0 ? -1 : 1;
-        x = Math.abs(x) / Math.sqrt(2);
-        const t = 1.0 / (1.0 + p * x);
-        const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
-        return 0.5 * (1.0 + sign * y);
-      };
-
       // Calculate standard deviation
       const calcStd = (arr: number[]): number => {
         if (arr.length < 2) return 0;
@@ -1155,8 +1251,9 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         
         const se = Math.sqrt(var1 / group1.length + var2 / group2.length);
         
-        // Using 1.96 for 95% CI (normal approximation)
-        const margin = 1.96 * se;
+        const df = calcWelchDf(var1, group1.length, var2, group2.length);
+        const tCrit = df > 0 ? inverseStudentTCDF(1 - 0.05 / 2, df) : 1.96;
+        const margin = tCrit * se;
         
         return {
           lower: Math.round((meanDiff - margin) * 100) / 100,
@@ -1230,7 +1327,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
           
           if (question.correct_answer) {
             const correctAnswers = question.correct_answer.split('|||').map((a: string) => a.trim().toLowerCase());
-            const userAnswers = r.answer.split('|||').map((a: string) => a.trim().toLowerCase());
+            const userAnswers = String(r.answer ?? '')
+              .split('|||')
+              .map((a: string) => a.trim().toLowerCase())
+              .filter((a: string) => a.length > 0);
             const isCorrect = correctAnswers.every((ca: string) => userAnswers.includes(ca)) && 
                              userAnswers.every((ua: string) => correctAnswers.includes(ua));
             if (isCorrect) preTestQuestionStats[r.question_id].correct++;
@@ -3914,9 +4014,10 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                 if (metricsWithData.length === 1) {
                   keyFinding = `Only ${metricsWithData[0].label} has enough data for correlation.`;
                 } else if (metricsWithData.length > 1) {
+                  const strongestStrength = strongestMetric ? getStrength(strongestMetric.corr.r) : 'n/a';
                   keyFinding = hasTie
                     ? 'Metrics show similar correlation strength with learning outcomes.'
-                    : `${strongestMetric?.label} has the highest |r| among these metrics (R²=${((strongestMetric?.corr.r2 || 0) * 100).toFixed(1)}%), indicating the strongest relative association in this set.`;
+                    : `${strongestMetric?.label} has the highest |r| among these metrics (R²=${((strongestMetric?.corr.r2 || 0) * 100).toFixed(1)}%, strength=${strongestStrength}). This is a relative comparison, not a claim of strong correlation.`;
                 }
 
                 return (
@@ -3934,7 +4035,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                               <div className={`w-2 h-2 rounded-full ${metric.dotClass}`} />
                               <span className="text-sm font-medium text-foreground/90">{metric.label}</span>
                               {isStrongest && !hasTie && (
-                                <Badge variant="outline" className={`text-[10px] ${metric.badgeClass}`}>Strongest (relative)</Badge>
+                                <Badge variant="outline" className={`text-[10px] ${metric.badgeClass}`}>Strongest (relative |r|)</Badge>
                               )}
                             </div>
                             <div className="space-y-1 text-xs">

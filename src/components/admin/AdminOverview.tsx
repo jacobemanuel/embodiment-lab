@@ -75,7 +75,7 @@ interface LikertAnalysis {
   responses: number[];
 }
 
-type CorrelationPoint = { x: number; y: number; mode: string; imputed?: boolean };
+type CorrelationPoint = { sessionId: string; x: number; y: number; mode: string; imputed?: boolean };
 
 interface CorrelationData {
   avatarTimeVsGain: CorrelationPoint[];
@@ -383,7 +383,7 @@ const ExportButton = ({ onClick, label, size = "sm", canExport = true }: { onCli
   );
 };
 
-import { getPermissions } from "@/lib/permissions";
+import { getPermissionLevel, getPermissions } from "@/lib/permissions";
 
 interface AdminOverviewProps {
   userEmail?: string;
@@ -391,6 +391,7 @@ interface AdminOverviewProps {
 
 const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
   const permissions = getPermissions(userEmail);
+  const isOwner = getPermissionLevel(userEmail) === 'owner';
   const [stats, setStats] = useState<StudyStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -403,6 +404,8 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
   const [includeImputed, setIncludeImputed] = useState(true);
   const [showMissingScores, setShowMissingScores] = useState(false);
   const [likertView, setLikertView] = useState<LikertView>('overall');
+  const [showZeroGainSessions, setShowZeroGainSessions] = useState(false);
+  const [zeroGainCopied, setZeroGainCopied] = useState(false);
 
   const fetchStats = useCallback(async () => {
     setIsRefreshing(true);
@@ -1457,6 +1460,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         avatarTimeVsGain: knowledgeGain
           .filter(k => k.avatarTime > 0)
           .map(k => ({
+            sessionId: k.sessionId,
             x: Math.round((k.avatarTime / 60) * 100) / 100,
             y: k.gain,
             mode: k.mode,
@@ -1467,6 +1471,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
             const isImputed = k.learningTime <= 0 && durationMinutes > 0;
             const learningMinutes = k.learningTime > 0 ? k.learningTime / 60 : durationMinutes;
             return {
+              sessionId: k.sessionId,
               x: Math.round(learningMinutes * 100) / 100,
               y: k.gain,
               mode: k.mode,
@@ -1477,6 +1482,7 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
         sessionTimeVsGain: knowledgeGain.map(k => {
           const duration = resolveDurationMinutes(k.sessionId);
           return {
+            sessionId: k.sessionId,
             x: Math.round(duration * 10) / 10,
             y: k.gain,
             mode: k.mode,
@@ -2105,16 +2111,20 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
 
   const renderTimeGainTooltip =
     (timeLabel: string) =>
-    ({ active, payload }: { active?: boolean; payload?: Array<{ payload?: { x?: number; y?: number; imputed?: boolean } }> }) => {
+    ({ active, payload }: { active?: boolean; payload?: Array<{ payload?: { x?: number; y?: number; imputed?: boolean; sessionId?: string } }> }) => {
       if (!active || !payload || payload.length === 0) return null;
       const point = payload.find((entry) => typeof entry?.payload?.x === 'number')?.payload ?? payload[0]?.payload;
       const x = typeof point?.x === 'number' ? point.x : 0;
       const y = typeof point?.y === 'number' ? point.y : 0;
       const imputed = Boolean(point?.imputed);
+      const sessionId = typeof point?.sessionId === 'string' ? point.sessionId : '';
       return (
         <div className="rounded-md border border-slate-700/80 bg-slate-900/95 px-3 py-2 text-xs text-white shadow-lg">
           <div className="text-muted-foreground">{timeLabel}: <span className="text-white">{x.toFixed(1)} min</span></div>
           <div className="text-muted-foreground">Knowledge Gain: <span className="text-white">{y.toFixed(1)}%</span></div>
+          {isOwner && sessionId && (
+            <div className="text-muted-foreground">Session: <span className="text-white">{sessionId}</span></div>
+          )}
           {imputed && <div className="text-[10px] text-amber-300">Estimated timing</div>}
         </div>
       );
@@ -3055,6 +3065,20 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
     { name: 'Avatar Mode', gain: stats.avatarModeGain, preScore: stats.avatarModePreScore, postScore: stats.avatarModePostScore, count: stats.avatarModeCompleted },
   ];
   const likertSessionCounts = buildLikertSessionCounts(stats.rawSessions, stats.rawPostTest);
+  const zeroGainAvatarSessions = Array.from(
+    new Set(
+      stats.correlations.avatarTimeVsGain
+        .filter((entry) => entry.x > 0 && entry.y === 0)
+        .map((entry) => entry.sessionId)
+    )
+  );
+  const handleCopyZeroGainSessions = async () => {
+    if (zeroGainAvatarSessions.length === 0) return;
+    if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) return;
+    await navigator.clipboard.writeText(zeroGainAvatarSessions.join('\n'));
+    setZeroGainCopied(true);
+    window.setTimeout(() => setZeroGainCopied(false), 2000);
+  };
 
   return (
     <div className="space-y-6">
@@ -3771,6 +3795,38 @@ const AdminOverview = ({ userEmail = '' }: AdminOverviewProps) => {
                     </div>
                   );
                 })()}
+                {isOwner && zeroGainAvatarSessions.length > 0 && (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span>Zero gain sessions: {zeroGainAvatarSessions.length}</span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={handleCopyZeroGainSessions}
+                        >
+                          {zeroGainCopied ? 'Copied' : 'Copy IDs'}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => setShowZeroGainSessions((prev) => !prev)}
+                        >
+                          {showZeroGainSessions ? 'Hide' : 'Show'}
+                        </Button>
+                      </div>
+                    </div>
+                    {showZeroGainSessions && (
+                      <div className="mt-2 max-h-24 overflow-y-auto rounded border border-border/60 bg-muted/20 p-2 font-mono text-[11px] text-muted-foreground/90">
+                        {zeroGainAvatarSessions.map((sessionId) => (
+                          <div key={sessionId}>{sessionId}</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Learning Slides Time vs Knowledge Gain */}
